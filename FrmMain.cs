@@ -8,7 +8,9 @@ public partial class FrmMain : Form {
     }
 
     private void FrmMain_Load(object? sender, EventArgs e) {
-        FileHandler();
+        if (!FileHandler()) {
+            return;
+        }
 
         var conn = new SQLiteConnection("Data Source=KM2.dat;") {
             Site = null,
@@ -34,12 +36,12 @@ public partial class FrmMain : Form {
         conn.Close();
     }
 
-    private void FileHandler() {
+    private static bool FileHandler() {
         var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
         var filePath = Path.Combine(programsDirectory, "KM2.dat");
 
         if (File.Exists(filePath)) {
-
+            return true;
         }
 
         var fileDialog = new OpenFileDialog {
@@ -58,13 +60,14 @@ public partial class FrmMain : Form {
             ShowReadOnly = true
         };
 
-        if (fileDialog.ShowDialog() != DialogResult.OK) return;
+        if (fileDialog.ShowDialog() != DialogResult.OK) return false;
         
         var selectedFilePath = fileDialog.FileName;
         try {
             File.Copy(selectedFilePath, filePath, true);
-        } catch (Exception ex) {
-            Console.WriteLine("Error copying file: " + ex.Message);
+        } catch (Exception) {
+            return false;
         }
+        return true;
     }
 }
