@@ -26,7 +26,12 @@ public partial class FrmMain : Form {
             VfsName = null,
             TraceFlags = SQLiteTraceFlags.SQLITE_TRACE_NONE
         };
+
         conn.Open();
+        const string query = "SELECT COUNT(*) FROM clippings";
+        var cmd = new SQLiteCommand(query, conn);
+        var a = cmd.ExecuteReader();
+        conn.Close();
     }
 
     private void FileHandler() {
