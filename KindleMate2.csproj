@@ -7,6 +7,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>bookmark.ico</ApplicationIcon>
+    <StartupObject>KindleMate2.Program</StartupObject>
+    <PackageIcon>bookmark.png</PackageIcon>
+    <RepositoryUrl>https://github.com/lzcapp/KindleMate2.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/lzcapp/KindleMate2</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +48,13 @@
 
   <ItemGroup>
     <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\rainy\Pictures\bookmark.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

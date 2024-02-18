@@ -47,7 +47,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public bool DeleteClippings(string key) {
+        public bool DeleteClippingsByKey(string key) {
             if (key == string.Empty) {
                 return false;
             }
@@ -57,6 +57,23 @@ namespace KindleMate2 {
             const string queryDelete = "DELETE FROM clippings WHERE key = @key";
             using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@key", key);
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
+        }
+
+        public bool DeleteClippingsByBook(string bookname) {
+            if (bookname == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryDelete = "DELETE FROM clippings WHERE bookname = @bookname";
+            using var command = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@bookname", bookname);
             var result = command.ExecuteNonQuery();
 
             _connection.Close();

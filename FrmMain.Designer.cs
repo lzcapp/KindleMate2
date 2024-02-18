@@ -41,10 +41,11 @@
             lblAuthor = new Label();
             lblContent = new Label();
             menuBooks = new ContextMenuStrip(components);
-            删除ToolStripMenuItem = new ToolStripMenuItem();
+            booksMenuDelete = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
             openFileDialog = new OpenFileDialog();
             menuClippings = new ContextMenuStrip(components);
+            ClippingMenuCopy = new ToolStripMenuItem();
             ClippingMenuDelete = new ToolStripMenuItem();
             statusStrip1 = new StatusStrip();
             lblCount = new ToolStripStatusLabel();
@@ -82,8 +83,8 @@
             toolStripFile.Name = "toolStripFile";
             toolStripFile.ShortcutKeyDisplayString = "";
             toolStripFile.ShortcutKeys = Keys.Alt | Keys.F;
-            toolStripFile.Size = new Size(125, 32);
-            toolStripFile.Text = "文件（&F）";
+            toolStripFile.Size = new Size(97, 32);
+            toolStripFile.Text = "文件(&F)";
             // 
             // toolStripMenuItem2
             // 
@@ -183,6 +184,7 @@
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
             dataGridView.SelectionChanged += DataGridView_SelectionChanged;
+            dataGridView.KeyDown += DataGridView_KeyDown;
             // 
             // tableLayoutPanel
             // 
@@ -206,6 +208,7 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.Size = new Size(1100, 359);
             tableLayoutPanel.TabIndex = 0;
+            tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // lblLocation
             // 
@@ -218,6 +221,7 @@
             lblLocation.Name = "lblLocation";
             lblLocation.Size = new Size(1090, 31);
             lblLocation.TabIndex = 1;
+            lblLocation.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // flowLayoutPanel
             // 
@@ -233,6 +237,7 @@
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Size = new Size(1090, 31);
             flowLayoutPanel.TabIndex = 3;
+            flowLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // lblBook
             // 
@@ -243,6 +248,7 @@
             lblBook.Name = "lblBook";
             lblBook.Size = new Size(0, 31);
             lblBook.TabIndex = 0;
+            lblBook.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // lblAuthor
             // 
@@ -252,6 +258,7 @@
             lblAuthor.Name = "lblAuthor";
             lblAuthor.Size = new Size(0, 31);
             lblAuthor.TabIndex = 1;
+            lblAuthor.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // lblContent
             // 
@@ -262,27 +269,29 @@
             lblContent.Name = "lblContent";
             lblContent.Size = new Size(1084, 267);
             lblContent.TabIndex = 4;
+            lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // menuBooks
             // 
             menuBooks.ImageScalingSize = new Size(28, 28);
-            menuBooks.Items.AddRange(new ToolStripItem[] { 删除ToolStripMenuItem, toolStripMenuItem1 });
+            menuBooks.Items.AddRange(new ToolStripItem[] { booksMenuDelete, toolStripMenuItem1 });
             menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(243, 72);
+            menuBooks.Size = new Size(271, 110);
             // 
-            // 删除ToolStripMenuItem
+            // booksMenuDelete
             // 
-            删除ToolStripMenuItem.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            删除ToolStripMenuItem.Name = "删除ToolStripMenuItem";
-            删除ToolStripMenuItem.ShortcutKeyDisplayString = "Delete";
-            删除ToolStripMenuItem.Size = new Size(242, 34);
-            删除ToolStripMenuItem.Text = "删除";
+            booksMenuDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            booksMenuDelete.Name = "booksMenuDelete";
+            booksMenuDelete.ShortcutKeyDisplayString = "Delete";
+            booksMenuDelete.Size = new Size(270, 34);
+            booksMenuDelete.Text = "删除";
+            booksMenuDelete.Click += BooksMenuDelete_Click;
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
             toolStripMenuItem1.ShortcutKeyDisplayString = "Rename";
-            toolStripMenuItem1.Size = new Size(242, 34);
+            toolStripMenuItem1.Size = new Size(270, 34);
             toolStripMenuItem1.Text = "重命名";
             // 
             // openFileDialog
@@ -292,14 +301,22 @@
             // menuClippings
             // 
             menuClippings.ImageScalingSize = new Size(28, 28);
-            menuClippings.Items.AddRange(new ToolStripItem[] { ClippingMenuDelete });
+            menuClippings.Items.AddRange(new ToolStripItem[] { ClippingMenuCopy, ClippingMenuDelete });
             menuClippings.Name = "menuClippings";
-            menuClippings.Size = new Size(205, 38);
+            menuClippings.Size = new Size(205, 72);
+            // 
+            // ClippingMenuCopy
+            // 
+            ClippingMenuCopy.Name = "ClippingMenuCopy";
+            ClippingMenuCopy.ShortcutKeyDisplayString = "&Copy";
+            ClippingMenuCopy.Size = new Size(204, 34);
+            ClippingMenuCopy.Text = "复制";
+            ClippingMenuCopy.Click += ClippingMenuCopy_Click;
             // 
             // ClippingMenuDelete
             // 
             ClippingMenuDelete.Name = "ClippingMenuDelete";
-            ClippingMenuDelete.ShortcutKeyDisplayString = "Delete";
+            ClippingMenuDelete.ShortcutKeyDisplayString = "&Delete";
             ClippingMenuDelete.Size = new Size(204, 34);
             ClippingMenuDelete.Text = "删除";
             ClippingMenuDelete.Click += ClippingMenuDelete_Click;
@@ -371,7 +388,7 @@
         private FlowLayoutPanel flowLayoutPanel;
         private Label lblAuthor;
         private ContextMenuStrip menuBooks;
-        private ToolStripMenuItem 删除ToolStripMenuItem;
+        private ToolStripMenuItem booksMenuDelete;
         private ToolStripMenuItem toolStripMenuItem1;
         private ImageList imageList;
         private ContextMenuStrip menuClippings;
@@ -379,5 +396,6 @@
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel lblCount;
         private Label lblContent;
+        private ToolStripMenuItem ClippingMenuCopy;
     }
 }

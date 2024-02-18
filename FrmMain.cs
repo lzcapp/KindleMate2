@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Data;
-using System.Data.SQLite;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -108,7 +107,6 @@ namespace KindleMate2 {
             var authorname = selectedRow.Cells["authorname"].Value.ToString();
             var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
             var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString();
-            var clippingdate = selectedRow.Cells["clippingdate"].Value.ToString();
             var content = selectedRow.Cells["content"].Value.ToString();
 
             lblBook.Text = bookname;
@@ -127,7 +125,7 @@ namespace KindleMate2 {
                 DataTable filteredBooks = dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-                dataGridView.Sort(dataGridView.Columns["PageNumber"], ListSortDirection.Ascending);
+                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"], ListSortDirection.Ascending);
             }
         }
 
@@ -144,7 +142,11 @@ namespace KindleMate2 {
             treeView.SelectedNode = currentNode;
         }
 
-        private void TxtContent_MouseDoubleClick(object sender, MouseEventArgs e) {
+        private void LblContent_MouseDoubleClick(object sender, MouseEventArgs e) {
+            ShowContentEditDialog();
+        }
+
+        private void ShowContentEditDialog() {
             using var dialog = new FrmEdit();
             dialog.LblBook = lblBook.Text;
             dialog.TxtContent = lblContent.Text;
@@ -154,12 +156,7 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
-            using var dialog = new FrmEdit();
-            dialog.LblBook = lblBook.Text;
-            dialog.TxtContent = lblContent.Text;
-            if (dialog.ShowDialog() == DialogResult.OK) {
-                lblContent.Text = dialog.TxtContent;
-            }
+            ShowContentEditDialog();
         }
 
         private void DataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e) {
@@ -183,12 +180,44 @@ namespace KindleMate2 {
             }
 
             foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                if (staticData.DeleteClippings(row.Cells["key"].Value.ToString() ?? string.Empty)) {
+                if (staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
                     dataGridView.Rows.Remove(row);
                 }
             }
 
             CountRows();
+        }
+
+        private void ClippingMenuCopy_Click(object sender, EventArgs e) {
+            if (dataGridView.CurrentRow is null) {
+                return;
+            }
+            Clipboard.SetText(dataGridView.CurrentRow.Cells["content"].Value.ToString());
+        }
+
+        private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode != Keys.Enter) {
+                return;
+            }
+            ShowContentEditDialog();
+            e.Handled = true;
+        }
+
+        private void BooksMenuDelete_Click(object sender, EventArgs e) {
+            if (treeView.SelectedNode is null) {
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("Are you sure you want to delete the selected book?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes) {
+                return;
+            }
+
+            var bookname = treeView.SelectedNode.Text;
+            if (staticData.DeleteClippingsByBook(bookname)) {
+                CountRows();
+            }
         }
     }
 }

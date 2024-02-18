@@ -26,6 +26,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmEdit));
             tableLayoutPanel = new TableLayoutPanel();
             panel = new Panel();
             btnCancel = new Button();
@@ -44,14 +45,14 @@
             tableLayoutPanel.Controls.Add(lblBook, 0, 0);
             tableLayoutPanel.Controls.Add(txtContent, 0, 1);
             tableLayoutPanel.Dock = DockStyle.Fill;
-            tableLayoutPanel.Location = new Point(0, 0);
+            tableLayoutPanel.Location = new Point(10, 10);
+            tableLayoutPanel.Margin = new Padding(10, 5, 10, 5);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.Padding = new Padding(10);
             tableLayoutPanel.RowCount = 1;
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 15F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 65F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
-            tableLayoutPanel.Size = new Size(800, 450);
+            tableLayoutPanel.Size = new Size(780, 430);
             tableLayoutPanel.TabIndex = 0;
             // 
             // panel
@@ -61,9 +62,10 @@
             panel.Controls.Add(btnCancel);
             panel.Controls.Add(btnOK);
             panel.Dock = DockStyle.Fill;
-            panel.Location = new Point(13, 356);
+            panel.Location = new Point(0, 343);
+            panel.Margin = new Padding(0);
             panel.Name = "panel";
-            panel.Size = new Size(774, 81);
+            panel.Size = new Size(780, 87);
             panel.TabIndex = 0;
             // 
             // btnCancel
@@ -91,22 +93,27 @@
             lblBook.AutoSize = true;
             lblBook.Dock = DockStyle.Fill;
             lblBook.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
-            lblBook.Location = new Point(13, 10);
+            lblBook.Location = new Point(0, 0);
+            lblBook.Margin = new Padding(0);
             lblBook.Name = "lblBook";
-            lblBook.Size = new Size(774, 64);
+            lblBook.Padding = new Padding(0, 0, 0, 10);
+            lblBook.Size = new Size(780, 64);
             lblBook.TabIndex = 2;
             lblBook.Text = "书名";
             lblBook.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // txtContent
             // 
-            txtContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtContent.BorderStyle = BorderStyle.None;
-            txtContent.Location = new Point(13, 77);
+            txtContent.BorderStyle = BorderStyle.FixedSingle;
+            txtContent.Dock = DockStyle.Fill;
+            txtContent.Location = new Point(0, 64);
+            txtContent.Margin = new Padding(0);
             txtContent.Name = "txtContent";
-            txtContent.Size = new Size(774, 273);
+            txtContent.ShowSelectionMargin = true;
+            txtContent.Size = new Size(780, 279);
             txtContent.TabIndex = 3;
             txtContent.Text = "";
+            txtContent.TextChanged += TxtContent_TextChanged;
             // 
             // FrmEdit
             // 
@@ -117,9 +124,11 @@
             ClientSize = new Size(800, 450);
             Controls.Add(tableLayoutPanel);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "FrmEdit";
+            Padding = new Padding(10);
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Text = "编辑标注";
