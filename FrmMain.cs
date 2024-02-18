@@ -3,9 +3,9 @@ using System.Data;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        private DataTable dataTable = new();
+        private DataTable _dataTable = new();
 
-        private readonly StaticData staticData = new StaticData();
+        private readonly StaticData _staticData = new();
 
         public FrmMain() {
             InitializeComponent();
@@ -16,11 +16,11 @@ namespace KindleMate2 {
                 return;
             }
 
-            dataTable = staticData.GetClipingsDataTable();
+            _dataTable = _staticData.GetClipingsDataTable();
 
             CountRows();
 
-            dataGridView.DataSource = dataTable;
+            dataGridView.DataSource = _dataTable;
 
             dataGridView.Columns["key"].Visible = false;
             dataGridView.Columns["content"].HeaderText = "Content";
@@ -43,11 +43,12 @@ namespace KindleMate2 {
 
             dataGridView.Sort(dataGridView.Columns["clippingdate"], ListSortDirection.Descending);
 
-            var bookNames = dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
+            var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
 
-            var rootNode = new TreeNode("È«²¿") {
+            var rootNode = new TreeNode("å…¨éƒ¨") {
                 ImageIndex = 2, SelectedImageIndex = 2
             };
+
             treeView.Nodes.Add(rootNode);
 
             foreach (var bookName in bookNames) {
@@ -58,7 +59,7 @@ namespace KindleMate2 {
         }
 
         private void CountRows() {
-            lblCount.Text = "¹² " + staticData.GetClippingsCount() + " Ìõ¼ÇÂ¼";
+            lblCount.Text = "å…± " + _staticData.GetClippingsCount() + " æ¡è®°å½•";
         }
 
         private static bool FileHandler() {
@@ -90,6 +91,7 @@ namespace KindleMate2 {
             } catch (Exception) {
                 return false;
             }
+
             return true;
         }
 
@@ -97,6 +99,7 @@ namespace KindleMate2 {
             if (dataGridView.CurrentRow == null) {
                 return;
             }
+
             DataGridViewRow selectedRow = dataGridView.CurrentRow;
 
             if (selectedRow == null) {
@@ -110,19 +113,19 @@ namespace KindleMate2 {
             var content = selectedRow.Cells["content"].Value.ToString();
 
             lblBook.Text = bookname;
-            lblAuthor.Text = "£¨" + authorname + "£©";
-            lblLocation.Text = clippinglocation + " £¨µÚ" + pagenumber + "Ò³£©";
+            lblAuthor.Text = "ï¼ˆ" + authorname + "ï¼‰";
+            lblLocation.Text = clippinglocation + " ï¼ˆç¬¬" + pagenumber + "é¡µï¼‰";
             lblContent.Text = content;
         }
 
         private void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
-            if (e.Node.Text is "Select All" or "È«²¿") {
-                dataGridView.DataSource = dataTable;
+            if (e.Node.Text is "Select All" or "å…¨éƒ¨") {
+                dataGridView.DataSource = _dataTable;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"], ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
-                DataTable filteredBooks = dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
+                DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                 dataGridView.Sort(dataGridView.Columns["clippingtypelocation"], ListSortDirection.Ascending);
@@ -133,11 +136,13 @@ namespace KindleMate2 {
             if (e.Button != MouseButtons.Right) {
                 return;
             }
+
             var clickPoint = new Point(e.X, e.Y);
             TreeNode currentNode = treeView.GetNodeAt(clickPoint);
             if (currentNode == null) {
                 return;
             }
+
             currentNode.ContextMenuStrip = menuBooks;
             treeView.SelectedNode = currentNode;
         }
@@ -163,6 +168,7 @@ namespace KindleMate2 {
             if (e.Button != MouseButtons.Right) {
                 return;
             }
+
             dataGridView.CurrentCell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
             Point location = dataGridView.PointToClient(Cursor.Position);
             menuClippings.Show(dataGridView, location);
@@ -180,7 +186,7 @@ namespace KindleMate2 {
             }
 
             foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                if (staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
+                if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
                     dataGridView.Rows.Remove(row);
                 }
             }
@@ -192,13 +198,16 @@ namespace KindleMate2 {
             if (dataGridView.CurrentRow is null) {
                 return;
             }
-            Clipboard.SetText(dataGridView.CurrentRow.Cells["content"].Value.ToString());
+
+            var content = dataGridView.CurrentRow.Cells["content"].Value.ToString() ?? string.Empty;
+            Clipboard.SetText(content != string.Empty ? content : lblContent.Text);
         }
 
         private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode != Keys.Enter) {
                 return;
             }
+
             ShowContentEditDialog();
             e.Handled = true;
         }
@@ -215,9 +224,18 @@ namespace KindleMate2 {
             }
 
             var bookname = treeView.SelectedNode.Text;
-            if (staticData.DeleteClippingsByBook(bookname)) {
+            if (_staticData.DeleteClippingsByBook(bookname)) {
                 CountRows();
             }
+        }
+
+        private void ToolStripMenuExit_Click(object sender, EventArgs e) {
+            Close();
+        }
+
+        private void ToolStripMenuAbout_Click(object sender, EventArgs e) {
+            using var dialog = new FrmAboutBox();
+            dialog.ShowDialog();
         }
     }
 }

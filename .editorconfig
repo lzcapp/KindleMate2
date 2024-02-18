@@ -1,4 +1,3 @@
-
 [*.{appxmanifest,axml,build,c,c++,c++m,cc,ccm,cginc,compute,config,cp,cpp,cppm,csproj,cu,cuh,cxx,cxxm,dbml,discomap,dtd,fx,fxh,h,hh,hlsl,hlsli,hlslinc,hpp,hxx,inc,inl,ino,ipp,ixx,jsproj,lsproj,mpp,mq4,mq5,mqh,mxx,njsproj,nuspec,proj,props,proto,resw,resx,StyleCop,targets,tasks,tpp,usf,ush,vbproj,xml,xsd}]
 indent_style = tab
 indent_size = tab
@@ -17,9 +16,10 @@ tab_width = 2
 [*]
 
 # Microsoft .NET properties
+csharp_indent_braces = false
 csharp_new_line_before_catch = false
 csharp_new_line_before_else = false
-csharp_new_line_before_open_brace = accessors,anonymous_methods,control_blocks,events,indexers,lambdas,properties,types
+csharp_new_line_before_open_brace = none
 csharp_preferred_modifier_order = public, private, protected, internal, file, new, static, abstract, virtual, sealed, readonly, override, extern, unsafe, volatile, async, required:suggestion
 csharp_style_prefer_utf8_string_literals = true:suggestion
 csharp_style_var_for_built_in_types = true:suggestion
@@ -39,6 +39,7 @@ resharper_autodetect_indent_settings = true
 resharper_blank_lines_after_block_statements = 0
 resharper_braces_for_foreach = required
 resharper_braces_for_ifelse = required
+resharper_csharp_empty_block_style = together
 resharper_csharp_max_line_length = 240
 resharper_csharp_other_braces = end_of_line
 resharper_csharp_wrap_lines = false
