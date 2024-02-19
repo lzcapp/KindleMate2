@@ -22,27 +22,28 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-	  <DebugType>embedded</DebugType>
+		<CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-	  <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-	  <DebugType>embedded</DebugType>
+		<CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Resources\**" />
-		<EmbeddedResource Remove="Resources\**" />
-		<None Remove="Resources\**" />
+		<Compile Remove="Resources\**"/>
+		<EmbeddedResource Remove="Resources\**"/>
+		<None Remove="Resources\**"/>
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="bookmark.ico" />
+		<Content Include="bookmark.ico"/>
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118"/>
+		<PackageReference Include="System.Management" Version="8.0.0"/>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -70,17 +71,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="KM.dat">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="LICENSE">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	  <None Update="README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
+		<None Update="KM.dat">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

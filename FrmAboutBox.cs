@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {
@@ -28,6 +27,7 @@ namespace KindleMate2 {
         private static string AssemblyProduct {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
+
                 return attributes.Length == 0 ? "" : ((AssemblyProductAttribute)attributes[0]).Product;
             }
         }
@@ -35,6 +35,7 @@ namespace KindleMate2 {
         private static string AssemblyTitle {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+
                 return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
             }
         }
@@ -42,6 +43,7 @@ namespace KindleMate2 {
         private static string AssemblyCopyright {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+
                 return attributes.Length == 0 ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
             }
         }

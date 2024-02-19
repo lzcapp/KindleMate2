@@ -3,7 +3,8 @@ using System.Data;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Globalization;
-using System.Windows.Forms;
+using System.Management;
+using System.Text.RegularExpressions;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -28,28 +29,14 @@ namespace KindleMate2 {
         private void FrmMain_Load(object? sender, EventArgs e) {
             if (File.Exists(_filePath)) {
                 DisplayData();
-
                 CountRows();
-
-                var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
-
-                var rootNode = new TreeNode("全部") {
-                    ImageIndex = 2, SelectedImageIndex = 2
-                };
-
-                treeView.Nodes.Add(rootNode);
-
-                foreach (var bookName in bookNames) {
-                    rootNode.Nodes.Add(bookName);
-                }
-
-                treeView.ExpandAll();
             } else {
-                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "未找到数据库文件", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "数据初始化", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 switch (result) {
                     case DialogResult.Yes:
                         ImportKMDatabase();
+
                         break;
                     case DialogResult.No:
                     case DialogResult.None:
@@ -61,7 +48,20 @@ namespace KindleMate2 {
                     case DialogResult.TryAgain:
                     case DialogResult.Continue:
                     default:
-                        File.Copy(_newFilePath, _filePath, false);
+                        var kindleClippingsPath = IsKindleDeviceConnected();
+
+                        if (!string.IsNullOrEmpty(kindleClippingsPath)) {
+                            DialogResult resultKindle = MessageBox.Show("您连接了Kindle设备，需要从Kindle中导入数据吗？", "数据初始化", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (resultKindle == DialogResult.Yes) {
+                                ImportKindleClippings(kindleClippingsPath);
+
+                                return;
+                            }
+                        }
+
+                        File.Delete(_filePath);
+                        File.Copy(_newFilePath, _filePath, true);
+
                         return;
                 }
             }
@@ -92,6 +92,20 @@ namespace KindleMate2 {
             }
 
             dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+
+            var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
+
+            var rootNode = new TreeNode("全部") {
+                ImageIndex = 2, SelectedImageIndex = 2
+            };
+
+            treeView.Nodes.Add(rootNode);
+
+            foreach (var bookName in bookNames) {
+                rootNode.Nodes.Add(bookName);
+            }
+
+            treeView.ExpandAll();
         }
 
         private void CountRows() {
@@ -101,7 +115,7 @@ namespace KindleMate2 {
             lblCount.Text = "共 " + clippingsCount + " 条标注，已删除 " + diff + " 条";
         }
 
-        private bool ImportKMDatabase() {
+        private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
                 Title = "Import Kindle Mate Data File (KM2.dat)",
@@ -116,37 +130,85 @@ namespace KindleMate2 {
             };
 
             if (fileDialog.ShowDialog() != DialogResult.OK) {
-                return false;
-            }
-
-            var selectedFilePath = fileDialog.FileName;
-            try {
-                File.Copy(selectedFilePath, _filePath, true);
-            } catch (Exception) {
-                return false;
-            }
-
-            return true;
-        }
-
-        private void ImportKindleClippings() {
-            var fileDialog = new OpenFileDialog {
-                InitialDirectory = _programsDirectory,
-                Title = "Import Kindle Clippings File (My Clippings.txt)",
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = "txt",
-                Filter = @"Kindle Clippings File (*.txt)|*.txt",
-                FilterIndex = 2,
-                RestoreDirectory = true,
-                ReadOnlyChecked = true,
-                ShowReadOnly = true
-            };
-
-            if (fileDialog.ShowDialog() != DialogResult.OK) {
                 return;
             }
 
+            var selectedFilePath = fileDialog.FileName;
+
+            var clippingsCount = _staticData.GetClippingsCount();
+            var originClippingsCount = _staticData.GetOriginClippingsCount();
+            if (clippingsCount <= 0 && originClippingsCount <= 0) {
+                File.Copy(selectedFilePath, _filePath, true);
+            } else {
+                SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";") {
+                    Site = null,
+                    DefaultTimeout = 0,
+                    DefaultMaximumSleepTime = 0,
+                    BusyTimeout = 0,
+                    WaitTimeout = 0,
+                    PrepareRetries = 0,
+                    StepRetries = 0,
+                    ProgressOps = 0,
+                    ParseViaFramework = false,
+                    Flags = SQLiteConnectionFlags.None,
+                    DefaultDbType = null,
+                    DefaultTypeName = null,
+                    VfsName = null,
+                    TraceFlags = SQLiteTraceFlags.SQLITE_TRACE_NONE
+                };
+
+                var clippingsDataTable = new DataTable();
+                var originClippingsDataTable = new DataTable();
+
+                connection.Open();
+
+                const string queryClippings = "SELECT * FROM clippings;";
+                using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
+                using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
+                clippingAdapter.Fill(clippingsDataTable);
+
+                const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
+                using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
+                using var originAdapter = new SQLiteDataAdapter(originCommand);
+                originAdapter.Fill(originClippingsDataTable);
+
+                connection.Close();
+
+                var insertedCount = 0;
+
+                var sum = 0;
+                foreach (DataRow row in clippingsDataTable.Rows) {
+                    if (_staticData.IsExistClippings(row["key"].ToString())) {
+                        continue;
+                    }
+
+                    _ = int.TryParse(row["brieftype"].ToString()!.Trim(), out var brieftype);
+                    _ = int.TryParse(row["read"].ToString()!.Trim(), out var read);
+                    _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
+                    _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
+                    _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
+                    sum += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
+                        row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+                }
+
+                foreach (DataRow row in originClippingsDataTable.Rows) {
+                    if (_staticData.IsExistOriginalClippings(row["key"].ToString())) {
+                        continue;
+                    }
+
+                    _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
+                }
+
+                insertedCount += sum;
+
+                DisplayData();
+                CountRows();
+
+                MessageBox.Show("共解析 " + clippingsDataTable.Rows.Count + " 条记录，导入 " + insertedCount + " 条记录", "解析完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void ImportKindleClippings(string clippingsPath) {
             var originClippingsTable = new DataTable();
             originClippingsTable.Columns.Add("key", typeof(string));
             originClippingsTable.Columns.Add("line1", typeof(string));
@@ -171,30 +233,62 @@ namespace KindleMate2 {
             clippingsTable.Columns.Add("colorRGB", typeof(int));
             clippingsTable.Columns.Add("pagenumber", typeof(int));
 
-            List<string> lines = [.. File.ReadAllLines(fileDialog.FileName)];
+            List<string> lines = [.. File.ReadAllLines(clippingsPath)];
 
             for (var i = 0; i <= lines.Count - 5; i += 5) {
                 var line1 = lines[i].Trim();
-                var book = line1.Split(['(', '（']);
-                var authorname = book[^1].Replace(")", "").Replace("）", "").Trim();
-                var bookname = line1.Replace(authorname, "").Trim();
+                string bookname;
+                var authorname = "";
+                var pattern = @"\(([^()]+)\)[^(]*$";
+                Match match = Regex.Match(line1, pattern);
+                if (match.Success) {
+                    authorname = match.Groups[1].Value.Trim();
+                    bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
+                } else {
+                    bookname = line1;
+                }
 
                 var line2 = lines[i + 1].Trim();
                 var loctime = line2.Split('|');
-                var location = loctime[0].Replace("-", "").Trim();
+                var location = "";
                 var pagenumber = 0;
-                var dashIndex = location.IndexOf('-');
-                if (dashIndex != -1 && dashIndex < location.Length - 1) {
-                    _ = int.TryParse(location[(dashIndex + 1)..].Replace("的标注", ""), out pagenumber);
+                var dashIndex = loctime[0].IndexOf('-');
+                if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
+                    location = loctime[0][(dashIndex + 1)..].Trim();
+                    var pagePattern = @"第\s+\d+\s+页";
+                    Match pageMatch = Regex.Match(location, pagePattern);
+                    if (pageMatch.Success) {
+                        _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
+                    } else {
+                        var lastIndexOfDash = location.LastIndexOf('-');
+                        if (lastIndexOfDash != -1) {
+                            _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Trim(), out pagenumber);
+                        }
+
+                        var lastIndexOfDot = location.LastIndexOf('.');
+                        if (lastIndexOfDot != -1) {
+                            _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
+                        }
+                    }
                 }
+
                 var time = "";
-                var readOnlySpan = loctime[1].Replace("添加于", "").Trim();
-                var dayOfWeekIndex = readOnlySpan.IndexOf("星期", StringComparison.Ordinal);
-                if (dayOfWeekIndex != -1) {
-                    readOnlySpan = readOnlySpan.Remove(dayOfWeekIndex, 3);
-                }
-                if (DateTime.TryParseExact(readOnlySpan, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
-                    time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                var datetime = loctime[1].Replace("Added on", "").Replace("添加于", "").Trim();
+                var lastCommaIndex = datetime.LastIndexOf(',');
+                if (lastCommaIndex != -1 && lastCommaIndex < datetime.Length - 1) {
+                    datetime = datetime.Substring(lastCommaIndex + 1).Trim();
+                    if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy, hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
+                        time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    }
+                } else {
+                    var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
+                    if (dayOfWeekIndex != -1) {
+                        datetime = datetime.Remove(dayOfWeekIndex, 3);
+                    }
+
+                    if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
+                        time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    }
                 }
 
                 var key = time + "|" + location;
@@ -205,21 +299,38 @@ namespace KindleMate2 {
 
                 var line5 = lines[i + 4].Trim();
 
+                if (string.IsNullOrWhiteSpace(line4)) {
+                    continue;
+                }
+
                 originClippingsTable.Rows.Add(key, line1, line2, line3, line4, line5);
-                clippingsTable.Rows.Add(key, line3, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
+                clippingsTable.Rows.Add(key, line4, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
             }
 
-            var insertedOriginCount = (from DataRow row in originClippingsTable.Rows where !_staticData.IsExistOriginalClippings(row["key"].ToString()) select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty, row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
+            if (originClippingsTable.Rows.Count <= 0 || clippingsTable.Rows.Count <= 0) {
+                return;
+            }
+
+            var insertedOriginCount = (from DataRow row in originClippingsTable.Rows
+                where !_staticData.IsExistOriginalClippings(row["key"].ToString())
+                select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
+                    row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
 
             var insertedCount = 0;
 
             if (insertedOriginCount > 0) {
-                insertedCount += (from DataRow row in clippingsTable.Rows where !_staticData.IsExistClippings(row["key"].ToString()) select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty, (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty, row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+                insertedCount += (from DataRow row in clippingsTable.Rows
+                    where !_staticData.IsExistClippings(row["key"].ToString())
+                    select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
+                        (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
+                        row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+
                 if (insertedCount > 0) {
                     DisplayData();
                     CountRows();
                 }
             }
+
             MessageBox.Show("共解析 " + originClippingsTable.Rows.Count + " 条记录，导入 " + insertedCount + " 条记录", "解析完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -239,8 +350,13 @@ namespace KindleMate2 {
             var content = selectedRow.Cells["content"].Value.ToString();
 
             lblBook.Text = bookname;
-            lblAuthor.Text = "（" + authorname + "）";
-            lblLocation.Text = clippinglocation + " （第" + pagenumber + "页）";
+            if (authorname != string.Empty) {
+                lblAuthor.Text = "（" + authorname + "）";
+            } else {
+                lblAuthor.Text = "";
+            }
+
+            lblLocation.Text = clippinglocation + " （第 " + pagenumber + " 页）";
             lblContent.Text = content;
         }
 
@@ -316,6 +432,8 @@ namespace KindleMate2 {
             foreach (DataGridViewRow row in dataGridView.SelectedRows) {
                 if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
                     dataGridView.Rows.Remove(row);
+                } else {
+                    MessageBox.Show("删除失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
@@ -345,7 +463,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox.Show("Are you sure you want to delete the selected book?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show("确认要删除这本书中所有的标注吗？", "确认删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result != DialogResult.Yes) {
                 return;
@@ -354,6 +472,8 @@ namespace KindleMate2 {
             var bookname = treeView.SelectedNode.Text;
             if (_staticData.DeleteClippingsByBook(bookname)) {
                 CountRows();
+            } else {
+                MessageBox.Show("删除失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -367,7 +487,24 @@ namespace KindleMate2 {
         }
 
         private void MenuImportKindle_Click(object sender, EventArgs e) {
-            ImportKindleClippings();
+            var fileDialog = new OpenFileDialog {
+                InitialDirectory = _programsDirectory,
+                Title = "Import Kindle Clippings File (My Clippings.txt)",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                DefaultExt = "txt",
+                Filter = @"Kindle Clippings File (*.txt)|*.txt",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+                ReadOnlyChecked = true,
+                ShowReadOnly = true
+            };
+
+            if (fileDialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
+
+            ImportKindleClippings(fileDialog.FileName);
         }
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
@@ -379,6 +516,60 @@ namespace KindleMate2 {
             Process.Start(new ProcessStartInfo {
                 FileName = repoUrl, UseShellExecute = true
             });
+        }
+
+        private static string IsKindleDeviceConnected() {
+            ManagementObjectCollection collection;
+            using (var searcher = new ManagementObjectSearcher(@"SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%Kindle%'")) {
+                collection = searcher.Get();
+            }
+
+            if (collection.Count <= 0) {
+                return string.Empty;
+            }
+
+            var drives = DriveInfo.GetDrives();
+
+            foreach (DriveInfo drive in drives) {
+                if (drive.DriveType != DriveType.Removable) {
+                    continue;
+                }
+
+                var documentsDir = Path.Combine(drive.Name, "documents");
+                if (!Directory.Exists(documentsDir)) {
+                    continue;
+                }
+
+                var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
+
+                if (File.Exists(clippingsPath)) return clippingsPath;
+            }
+
+            return string.Empty;
+        }
+
+        private void MenuSyncFromKindle_Click(object sender, EventArgs e) {
+            ImportKindleClippings();
+        }
+
+        private void Timer_Tick(object sender, EventArgs e) {
+            var kindleClippingsPath = IsKindleDeviceConnected();
+            if (kindleClippingsPath != string.Empty) {
+                menuSyncFromKindle.Visible = true;
+                menuKindle.Visible = true;
+            } else {
+                menuSyncFromKindle.Visible = false;
+                menuKindle.Visible = false;
+            }
+        }
+
+        private void MenuKindle_Click(object sender, EventArgs e) {
+            ImportKindleClippings();
+        }
+
+        private void ImportKindleClippings() {
+            var kindleClippingsPath = IsKindleDeviceConnected();
+            ImportKindleClippings(kindleClippingsPath);
         }
     }
 }

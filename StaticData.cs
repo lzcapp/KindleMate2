@@ -113,7 +113,7 @@ namespace KindleMate2 {
         }
 
         public int InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
-            if (key == string.Empty) {
+            if (key == string.Empty || line4 == string.Empty) {
                 return 0;
             }
 
@@ -136,43 +136,6 @@ namespace KindleMate2 {
             command.Parameters["@line5"].Value = line5;
 
             var result = command.ExecuteNonQuery();
-
-            _connection.Close();
-
-            return result;
-        }
-
-        public int InsertOriginClippingsDataTable(DataTable dataTable) {
-            if (dataTable.Rows.Count == 0) {
-                return 0;
-            }
-
-            var result = 0;
-
-            _connection.Open();
-
-            const string queryInsert = "INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)";
-            using var command = new SQLiteCommand(queryInsert, _connection);
-            command.Parameters.Add("@key", DbType.String);
-            command.Parameters.Add("@line1", DbType.String);
-            command.Parameters.Add("@line2", DbType.String);
-            command.Parameters.Add("@line3", DbType.String);
-            command.Parameters.Add("@line4", DbType.String);
-            command.Parameters.Add("@line5", DbType.String);
-
-            foreach (DataRow row in dataTable.Rows) {
-                command.Parameters["@key"].Value = row["key"];
-                command.Parameters["@line1"].Value = row["line1"];
-                command.Parameters["@line2"].Value = row["line2"];
-                command.Parameters["@line3"].Value = row["line3"];
-                command.Parameters["@line4"].Value = row["line4"];
-                command.Parameters["@line5"].Value = row["line5"];
-                try {
-                    result += command.ExecuteNonQuery();
-                } catch (Exception) {
-                    // ignored
-                }
-            }
 
             _connection.Close();
 
@@ -213,78 +176,32 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool InsertClippingsDataTable(DataTable clippingsTable) {
-            if (clippingsTable.Rows.Count == 0) {
-                return false;
-            }
-
-            var result = 0;
-
-            _connection.Open();
-
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
-            using var command = new SQLiteCommand(queryInsert, _connection);
-            command.Parameters.Add("@key", DbType.String);
-            command.Parameters.Add("@content", DbType.String);
-            command.Parameters.Add("@bookname", DbType.String);
-            command.Parameters.Add("@authorname", DbType.String);
-            command.Parameters.Add("@brieftype", DbType.Int16);
-            command.Parameters.Add("@clippingtypelocation", DbType.String);
-            command.Parameters.Add("@clippingdate", DbType.String);
-            command.Parameters.Add("@read", DbType.String);
-            command.Parameters.Add("@clipping_importdate", DbType.String);
-            command.Parameters.Add("@tag", DbType.String);
-            command.Parameters.Add("@sync", DbType.Int16);
-            command.Parameters.Add("@newbookname", DbType.String);
-            command.Parameters.Add("@colorRGB", DbType.Int16);
-            command.Parameters.Add("@pagenumber", DbType.Int16);
-
-            foreach (DataRow row in clippingsTable.Rows) {
-                command.Parameters["@key"].Value = row["key"];
-                command.Parameters["@content"].Value = row["content"];
-                command.Parameters["@bookname"].Value = row["bookname"];
-                command.Parameters["@authorname"].Value = row["authorname"];
-                command.Parameters["@brieftype"].Value = row["brieftype"];
-                command.Parameters["@clippingtypelocation"].Value = row["clippingtypelocation"];
-                command.Parameters["@clippingdate"].Value = row["clippingdate"];
-                command.Parameters["@read"].Value = row["read"];
-                command.Parameters["@clipping_importdate"].Value = row["clipping_importdate"];
-                command.Parameters["@tag"].Value = row["tag"];
-                command.Parameters["@sync"].Value = row["sync"];
-                command.Parameters["@newbookname"].Value = row["newbookname"];
-                command.Parameters["@colorRGB"].Value = row["colorRGB"];
-                command.Parameters["@pagenumber"].Value = row["pagenumber"];
-                result += command.ExecuteNonQuery();
-            }
-
-            _connection.Close();
-
-            return result > 0;
-        }
-
-        internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {
-            if (key == string.Empty) {
+        internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync,
+            string newbookname, int colorRGB, int pagenumber) {
+            if (key == string.Empty || content == string.Empty) {
                 return 0;
             }
 
             _connection.Open();
 
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
+            const string queryInsert =
+                "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
+
             using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@key", DbType.String);
             command.Parameters.Add("@content", DbType.String);
             command.Parameters.Add("@bookname", DbType.String);
             command.Parameters.Add("@authorname", DbType.String);
-            command.Parameters.Add("@brieftype", DbType.Int16);
+            command.Parameters.Add("@brieftype", DbType.Int64);
             command.Parameters.Add("@clippingtypelocation", DbType.String);
             command.Parameters.Add("@clippingdate", DbType.String);
             command.Parameters.Add("@read", DbType.String);
             command.Parameters.Add("@clipping_importdate", DbType.String);
             command.Parameters.Add("@tag", DbType.String);
-            command.Parameters.Add("@sync", DbType.Int16);
+            command.Parameters.Add("@sync", DbType.Int64);
             command.Parameters.Add("@newbookname", DbType.String);
-            command.Parameters.Add("@colorRGB", DbType.Int16);
-            command.Parameters.Add("@pagenumber", DbType.Int16);
+            command.Parameters.Add("@colorRGB", DbType.Int64);
+            command.Parameters.Add("@pagenumber", DbType.Int64);
 
             command.Parameters["@key"].Value = key;
             command.Parameters["@content"].Value = content;
@@ -308,7 +225,7 @@ namespace KindleMate2 {
             return result;
         }
 
-        internal bool VacuumDatabase() {
+        internal void VacuumDatabase() {
             _connection.Open();
 
             const string queryVacuum = "VACUUM";
@@ -316,8 +233,6 @@ namespace KindleMate2 {
             var result = command.ExecuteNonQuery();
 
             _connection.Close();
-
-            return result > 0;
         }
     }
 }
