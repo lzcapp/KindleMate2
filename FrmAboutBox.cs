@@ -20,7 +20,9 @@ namespace KindleMate2 {
             return $"{size:0.##} {sizes[order]}";
         }
 
-        private static string AssemblyVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+        private static string AssemblyVersion {
+            get => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+        }
 
         private static string AssemblyProduct {
             get {
@@ -45,7 +47,7 @@ namespace KindleMate2 {
 
             labelProductName.Text = AssemblyProduct;
             lblVersion.Text = AssemblyVersion;
-            labelCopyright.Text = AssemblyCopyright;
+            lblCopyright.Text = AssemblyCopyright;
 
             var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
             lblPath.Text = programsDirectory;

@@ -27,7 +27,8 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
             menuStrip = new MenuStrip();
             toolStripMenuFile = new ToolStripMenuItem();
-            toolStripMenuExit = new ToolStripMenuItem();
+            menuImportKindle = new ToolStripMenuItem();
+            menuExit = new ToolStripMenuItem();
             toolStripMenuHelp = new ToolStripMenuItem();
             toolStripMenuAbout = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
@@ -74,47 +75,55 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1620, 39);
+            menuStrip.Size = new Size(1504, 37);
             menuStrip.TabIndex = 1;
             menuStrip.Text = "menuStrip2";
             // 
             // toolStripMenuFile
             // 
             toolStripMenuFile.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            toolStripMenuFile.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuExit });
+            toolStripMenuFile.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuExit });
             toolStripMenuFile.Name = "toolStripMenuFile";
             toolStripMenuFile.ShortcutKeyDisplayString = "";
             toolStripMenuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            toolStripMenuFile.Size = new Size(111, 35);
+            toolStripMenuFile.Size = new Size(97, 33);
             toolStripMenuFile.Text = "文件(&F)";
             // 
-            // toolStripMenuExit
+            // menuImportKindle
             // 
-            toolStripMenuExit.Image = Properties.Resources.cross_mark_button;
-            toolStripMenuExit.Name = "toolStripMenuExit";
-            toolStripMenuExit.Size = new Size(224, 44);
-            toolStripMenuExit.Text = "退出(&E)";
-            toolStripMenuExit.Click += ToolStripMenuExit_Click;
+            menuImportKindle.Image = Properties.Resources.plus;
+            menuImportKindle.Name = "menuImportKindle";
+            menuImportKindle.Size = new Size(319, 44);
+            menuImportKindle.Text = "导入Kindle标注(&I)";
+            menuImportKindle.Click += MenuImportKindle_Click;
+            // 
+            // menuExit
+            // 
+            menuExit.Image = Properties.Resources.cross_mark_button;
+            menuExit.Name = "menuExit";
+            menuExit.Size = new Size(319, 44);
+            menuExit.Text = "退出(&E)";
+            menuExit.Click += MenuExit_Click;
             // 
             // toolStripMenuHelp
             // 
             toolStripMenuHelp.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuAbout });
             toolStripMenuHelp.Name = "toolStripMenuHelp";
-            toolStripMenuHelp.Size = new Size(117, 35);
+            toolStripMenuHelp.Size = new Size(102, 33);
             toolStripMenuHelp.Text = "帮助(&H)";
             // 
             // toolStripMenuAbout
             // 
             toolStripMenuAbout.Image = Properties.Resources.information;
             toolStripMenuAbout.Name = "toolStripMenuAbout";
-            toolStripMenuAbout.Size = new Size(228, 44);
+            toolStripMenuAbout.Size = new Size(200, 40);
             toolStripMenuAbout.Text = "关于(&A)";
             toolStripMenuAbout.Click += ToolStripMenuAbout_Click;
             // 
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 39);
+            splitContainer1.Location = new Point(0, 37);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -126,8 +135,8 @@
             // 
             splitContainer1.Panel2.Controls.Add(splitContainer2);
             splitContainer1.Panel2MinSize = 100;
-            splitContainer1.Size = new Size(1620, 1009);
-            splitContainer1.SplitterDistance = 430;
+            splitContainer1.Size = new Size(1504, 910);
+            splitContainer1.SplitterDistance = 399;
             splitContainer1.TabIndex = 2;
             // 
             // treeView
@@ -143,7 +152,7 @@
             treeView.SelectedImageIndex = 1;
             treeView.ShowNodeToolTips = true;
             treeView.ShowRootLines = false;
-            treeView.Size = new Size(430, 1009);
+            treeView.Size = new Size(399, 910);
             treeView.StateImageList = imageList;
             treeView.TabIndex = 0;
             treeView.NodeMouseClick += TreeView_NodeMouseClick;
@@ -173,8 +182,8 @@
             // 
             splitContainer2.Panel2.Controls.Add(tableLayoutPanel);
             splitContainer2.Panel2MinSize = 200;
-            splitContainer2.Size = new Size(1186, 1009);
-            splitContainer2.SplitterDistance = 605;
+            splitContainer2.Size = new Size(1101, 910);
+            splitContainer2.SplitterDistance = 545;
             splitContainer2.TabIndex = 1;
             // 
             // dataGridView
@@ -192,7 +201,7 @@
             dataGridView.RowHeadersVisible = false;
             dataGridView.RowHeadersWidth = 82;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(1186, 605);
+            dataGridView.Size = new Size(1101, 545);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -213,13 +222,13 @@
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.Padding = new Padding(5, 6, 5, 6);
+            tableLayoutPanel.Padding = new Padding(5);
             tableLayoutPanel.RowCount = 4;
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.Size = new Size(1186, 400);
+            tableLayoutPanel.Size = new Size(1101, 361);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -229,10 +238,10 @@
             lblLocation.BackColor = SystemColors.Window;
             lblLocation.Dock = DockStyle.Fill;
             lblLocation.Font = new Font("Microsoft YaHei UI Light", 10F);
-            lblLocation.Location = new Point(5, 53);
-            lblLocation.Margin = new Padding(0, 11, 0, 11);
+            lblLocation.Location = new Point(5, 46);
+            lblLocation.Margin = new Padding(0, 10, 0, 10);
             lblLocation.Name = "lblLocation";
-            lblLocation.Size = new Size(1176, 35);
+            lblLocation.Size = new Size(1091, 31);
             lblLocation.TabIndex = 1;
             lblLocation.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -245,10 +254,10 @@
             flowLayoutPanel.Controls.Add(lblAuthor);
             flowLayoutPanel.Dock = DockStyle.Fill;
             flowLayoutPanel.Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            flowLayoutPanel.Location = new Point(5, 6);
+            flowLayoutPanel.Location = new Point(5, 5);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Size = new Size(1176, 36);
+            flowLayoutPanel.Size = new Size(1091, 31);
             flowLayoutPanel.TabIndex = 3;
             flowLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -259,7 +268,7 @@
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0);
             lblBook.Name = "lblBook";
-            lblBook.Size = new Size(0, 36);
+            lblBook.Size = new Size(0, 31);
             lblBook.TabIndex = 0;
             lblBook.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -269,7 +278,7 @@
             lblAuthor.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblAuthor.Location = new Point(3, 0);
             lblAuthor.Name = "lblAuthor";
-            lblAuthor.Size = new Size(0, 35);
+            lblAuthor.Size = new Size(0, 31);
             lblAuthor.TabIndex = 1;
             lblAuthor.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -279,9 +288,9 @@
             lblContent.ContextMenuStrip = menuClippings;
             lblContent.Dock = DockStyle.Fill;
             lblContent.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            lblContent.Location = new Point(8, 99);
+            lblContent.Location = new Point(8, 87);
             lblContent.Name = "lblContent";
-            lblContent.Size = new Size(1170, 295);
+            lblContent.Size = new Size(1085, 269);
             lblContent.TabIndex = 4;
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -290,13 +299,13 @@
             menuClippings.ImageScalingSize = new Size(28, 28);
             menuClippings.Items.AddRange(new ToolStripItem[] { ClippingMenuCopy, ClippingMenuDelete });
             menuClippings.Name = "menuClippings";
-            menuClippings.Size = new Size(226, 80);
+            menuClippings.Size = new Size(205, 72);
             // 
             // ClippingMenuCopy
             // 
             ClippingMenuCopy.Name = "ClippingMenuCopy";
             ClippingMenuCopy.ShortcutKeyDisplayString = "&Copy";
-            ClippingMenuCopy.Size = new Size(225, 38);
+            ClippingMenuCopy.Size = new Size(204, 34);
             ClippingMenuCopy.Text = "复制";
             ClippingMenuCopy.Click += ClippingMenuCopy_Click;
             // 
@@ -304,7 +313,7 @@
             // 
             ClippingMenuDelete.Name = "ClippingMenuDelete";
             ClippingMenuDelete.ShortcutKeyDisplayString = "&Delete";
-            ClippingMenuDelete.Size = new Size(225, 38);
+            ClippingMenuDelete.Size = new Size(204, 34);
             ClippingMenuDelete.Text = "删除";
             ClippingMenuDelete.Click += ClippingMenuDelete_Click;
             // 
@@ -313,14 +322,14 @@
             menuBooks.ImageScalingSize = new Size(28, 28);
             menuBooks.Items.AddRange(new ToolStripItem[] { booksMenuDelete, toolStripMenuItem1 });
             menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(269, 80);
+            menuBooks.Size = new Size(243, 72);
             // 
             // booksMenuDelete
             // 
             booksMenuDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
             booksMenuDelete.Name = "booksMenuDelete";
             booksMenuDelete.ShortcutKeyDisplayString = "Delete";
-            booksMenuDelete.Size = new Size(268, 38);
+            booksMenuDelete.Size = new Size(242, 34);
             booksMenuDelete.Text = "删除";
             booksMenuDelete.Click += BooksMenuDelete_Click;
             // 
@@ -328,7 +337,7 @@
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
             toolStripMenuItem1.ShortcutKeyDisplayString = "Rename";
-            toolStripMenuItem1.Size = new Size(268, 38);
+            toolStripMenuItem1.Size = new Size(242, 34);
             toolStripMenuItem1.Text = "重命名";
             // 
             // openFileDialog
@@ -339,10 +348,9 @@
             // 
             statusStrip1.ImageScalingSize = new Size(28, 28);
             statusStrip1.Items.AddRange(new ToolStripItem[] { lblCount });
-            statusStrip1.Location = new Point(0, 1010);
+            statusStrip1.Location = new Point(0, 925);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Padding = new Padding(1, 0, 15, 0);
-            statusStrip1.Size = new Size(1620, 38);
+            statusStrip1.Size = new Size(1504, 22);
             statusStrip1.SizingGrip = false;
             statusStrip1.TabIndex = 3;
             statusStrip1.Text = "statusStrip1";
@@ -351,19 +359,19 @@
             // 
             lblCount.DisplayStyle = ToolStripItemDisplayStyle.Text;
             lblCount.Name = "lblCount";
-            lblCount.Size = new Size(0, 28);
+            lblCount.Size = new Size(0, 13);
             // 
             // FrmMain
             // 
-            AutoScaleDimensions = new SizeF(14F, 31F);
+            AutoScaleDimensions = new SizeF(13F, 28F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1620, 1048);
+            ClientSize = new Size(1504, 947);
             Controls.Add(statusStrip1);
             Controls.Add(splitContainer1);
             Controls.Add(menuStrip);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "FrmMain";
-            Text = " Kindle Mate 2";
+            Text = "Kindle Mate 2";
             Load += FrmMain_Load;
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();
@@ -413,7 +421,8 @@
         private ToolStripStatusLabel lblCount;
         private Label lblContent;
         private ToolStripMenuItem ClippingMenuCopy;
-        private ToolStripMenuItem toolStripMenuExit;
+        private ToolStripMenuItem menuExit;
         private ToolStripMenuItem toolStripMenuAbout;
+        private ToolStripMenuItem menuImportKindle;
     }
 }

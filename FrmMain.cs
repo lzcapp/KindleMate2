@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Data;
+using System.Globalization;
+using static System.Windows.Forms.DataFormats;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -7,87 +9,99 @@ namespace KindleMate2 {
 
         private readonly StaticData _staticData = new();
 
+        private readonly string _programsDirectory;
+
+        private readonly string _filePath;
+
         public FrmMain() {
             InitializeComponent();
+
+            _programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            _filePath = Path.Combine(_programsDirectory, "KM2.dat");
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (!FileHandler()) {
-                return;
+            if (FileHandler()) {
+                DisplayData();
+
+                CountRows();
+
+                var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
+
+                var rootNode = new TreeNode("全部") {
+                    ImageIndex = 2,
+                    SelectedImageIndex = 2
+                };
+
+                treeView.Nodes.Add(rootNode);
+
+                foreach (var bookName in bookNames) {
+                    rootNode.Nodes.Add(bookName);
+                }
+
+                treeView.ExpandAll();
             }
+        }
 
+        private void DisplayData() {
             _dataTable = _staticData.GetClipingsDataTable();
-
-            CountRows();
 
             dataGridView.DataSource = _dataTable;
 
-            dataGridView.Columns["key"].Visible = false;
-            dataGridView.Columns["content"].HeaderText = "Content";
-            dataGridView.Columns["bookname"].HeaderText = "Book";
-            dataGridView.Columns["authorname"].HeaderText = "Author";
-            dataGridView.Columns["brieftype"].Visible = false;
-            dataGridView.Columns["clippingtypelocation"].HeaderText = "Location";
-            dataGridView.Columns["clippingdate"].HeaderText = "Date";
-            dataGridView.Columns["read"].Visible = false;
-            dataGridView.Columns["clipping_importdate"].Visible = false;
-            dataGridView.Columns["tag"].Visible = false;
-            dataGridView.Columns["sync"].Visible = false;
-            dataGridView.Columns["newbookname"].Visible = false;
-            dataGridView.Columns["colorRGB"].Visible = false;
-            dataGridView.Columns["pagenumber"].HeaderText = "Page";
+            dataGridView.Columns["key"]!.Visible = false;
+            dataGridView.Columns["content"]!.HeaderText = "Content";
+            dataGridView.Columns["bookname"]!.HeaderText = "Book";
+            dataGridView.Columns["authorname"]!.HeaderText = "Author";
+            dataGridView.Columns["brieftype"]!.Visible = false;
+            dataGridView.Columns["clippingtypelocation"]!.HeaderText = "Location";
+            dataGridView.Columns["clippingdate"]!.HeaderText = "Date";
+            dataGridView.Columns["read"]!.Visible = false;
+            dataGridView.Columns["clipping_importdate"]!.Visible = false;
+            dataGridView.Columns["tag"]!.Visible = false;
+            dataGridView.Columns["sync"]!.Visible = false;
+            dataGridView.Columns["newbookname"]!.Visible = false;
+            dataGridView.Columns["colorRGB"]!.Visible = false;
+            dataGridView.Columns["pagenumber"]!.HeaderText = "Page";
 
             foreach (DataGridViewColumn column in dataGridView.Columns) {
                 column.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             }
 
-            dataGridView.Sort(dataGridView.Columns["clippingdate"], ListSortDirection.Descending);
-
-            var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
-
-            var rootNode = new TreeNode("全部") {
-                ImageIndex = 2, SelectedImageIndex = 2
-            };
-
-            treeView.Nodes.Add(rootNode);
-
-            foreach (var bookName in bookNames) {
-                rootNode.Nodes.Add(bookName);
-            }
-
-            treeView.ExpandAll();
+            dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
         }
 
         private void CountRows() {
-            lblCount.Text = "共 " + _staticData.GetClippingsCount() + " 条记录";
+            var clippingsCount = _staticData.GetClippingsCount();
+            var originClippingsCount = _staticData.GetOriginClippingsCount();
+            var diff = Math.Abs(originClippingsCount - clippingsCount);
+            lblCount.Text = "共 " + clippingsCount + " 条记录，删除 " + diff + " 条";
         }
 
-        private static bool FileHandler() {
-            var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var filePath = Path.Combine(programsDirectory, "KM2.dat");
+        private bool FileHandler() {
+            return File.Exists(_filePath) || ImportKMDatabase();
+        }
 
-            if (File.Exists(filePath)) {
-                return true;
-            }
-
+        private bool ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
-                InitialDirectory = programsDirectory,
+                InitialDirectory = _programsDirectory,
                 Title = "Import Kindle Mate Data File (KM2.dat)",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
-                Filter = @"KM2 Data Files (*.dat)|*.dat",
+                Filter = @"Kindle Mate Data File (*.dat)|*.dat",
                 FilterIndex = 2,
                 RestoreDirectory = true,
                 ReadOnlyChecked = true,
                 ShowReadOnly = true
             };
 
-            if (fileDialog.ShowDialog() != DialogResult.OK) return false;
+            if (fileDialog.ShowDialog() != DialogResult.OK) {
+                return false;
+            }
 
             var selectedFilePath = fileDialog.FileName;
             try {
-                File.Copy(selectedFilePath, filePath, true);
+                File.Copy(selectedFilePath, _filePath, true);
             } catch (Exception) {
                 return false;
             }
@@ -95,14 +109,101 @@ namespace KindleMate2 {
             return true;
         }
 
-        private void DataGridView_SelectionChanged(object sender, EventArgs e) {
-            if (dataGridView.CurrentRow == null) {
+        private void ImportKindleClippings() {
+            var fileDialog = new OpenFileDialog {
+                InitialDirectory = _programsDirectory,
+                Title = "Import Kindle Clippings File (My Clippings.txt)",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                DefaultExt = "txt",
+                Filter = @"Kindle Clippings File (*.txt)|*.txt",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+                ReadOnlyChecked = true,
+                ShowReadOnly = true
+            };
+
+            if (fileDialog.ShowDialog() != DialogResult.OK) {
                 return;
             }
 
-            DataGridViewRow selectedRow = dataGridView.CurrentRow;
+            var originClippingsTable = new DataTable();
+            originClippingsTable.Columns.Add("key", typeof(string));
+            originClippingsTable.Columns.Add("line1", typeof(string));
+            originClippingsTable.Columns.Add("line2", typeof(string));
+            originClippingsTable.Columns.Add("line3", typeof(string));
+            originClippingsTable.Columns.Add("line4", typeof(string));
+            originClippingsTable.Columns.Add("line5", typeof(string));
 
-            if (selectedRow == null) {
+            var clippingsTable = new DataTable();
+            clippingsTable.Columns.Add("key", typeof(string));
+            clippingsTable.Columns.Add("content", typeof(string));
+            clippingsTable.Columns.Add("bookname", typeof(string));
+            clippingsTable.Columns.Add("authorname", typeof(string));
+            clippingsTable.Columns.Add("brieftype", typeof(int));
+            clippingsTable.Columns.Add("clippingtypelocation", typeof(string));
+            clippingsTable.Columns.Add("clippingdate", typeof(string));
+            clippingsTable.Columns.Add("read", typeof(int));
+            clippingsTable.Columns.Add("clipping_importdate", typeof(string));
+            clippingsTable.Columns.Add("tag", typeof(string));
+            clippingsTable.Columns.Add("sync", typeof(int));
+            clippingsTable.Columns.Add("newbookname", typeof(string));
+            clippingsTable.Columns.Add("colorRGB", typeof(int));
+            clippingsTable.Columns.Add("pagenumber", typeof(int));
+
+            List<string> lines = [.. File.ReadAllLines(fileDialog.FileName)];
+
+            for (var i = 0; i <= lines.Count - 5; i += 5) {
+                var line1 = lines[i].Trim();
+                var book = line1.Split(['(', '（']);
+                var bookname = book[0].Trim();
+                var authorname = book[^1].Replace(")", "").Replace("）", "").Trim();
+
+                var line2 = lines[i + 1].Trim();
+                var loctime = line2.Split('|');
+                var location = loctime[0].Replace("-", "").Trim();
+                var pagenumber = 0;
+                var dashIndex = location.IndexOf('-');
+                if (dashIndex != -1 && dashIndex < location.Length - 1) {
+                    _ = int.TryParse(location[(dashIndex + 1)..].Replace("的标注", ""), out pagenumber);
+                }
+                var time = "";
+                var readOnlySpan = loctime[1].Replace("添加于", "").Trim();
+                var dayOfWeekIndex = readOnlySpan.IndexOf("星期", StringComparison.Ordinal);
+                if (dayOfWeekIndex != -1) {
+                    readOnlySpan = readOnlySpan.Remove(dayOfWeekIndex, 3);
+                }
+                if (DateTime.TryParseExact(readOnlySpan, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
+                    time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+
+                var key = time + "|" + location;
+
+                var line3 = lines[i + 2].Trim();
+
+                var line4 = lines[i + 3].Trim();
+
+                var line5 = lines[i + 4].Trim();
+
+                originClippingsTable.Rows.Add(key, line1, line2, line3, line4, line5);
+                clippingsTable.Rows.Add(key, line3, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
+            }
+
+            var insertedCount = _staticData.InsertOriginClippingsDataTable(originClippingsTable);
+
+            if (insertedCount <= 0) {
+                return;
+            }
+
+            _staticData.InsertClippingsDataTable(clippingsTable);
+        }
+
+        private void DataGridView_SelectionChanged(object sender, EventArgs e) {
+            DataGridViewRow selectedRow;
+
+            if (dataGridView.CurrentRow is not null) {
+                selectedRow = dataGridView.CurrentRow;
+            } else {
                 return;
             }
 
@@ -122,13 +223,13 @@ namespace KindleMate2 {
             if (e.Node.Text is "Select All" or "全部") {
                 dataGridView.DataSource = _dataTable;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-                dataGridView.Sort(dataGridView.Columns["clippingdate"], ListSortDirection.Descending);
+                dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
                 DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"], ListSortDirection.Ascending);
+                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
             }
         }
 
@@ -229,13 +330,17 @@ namespace KindleMate2 {
             }
         }
 
-        private void ToolStripMenuExit_Click(object sender, EventArgs e) {
+        private void MenuExit_Click(object sender, EventArgs e) {
             Close();
         }
 
         private void ToolStripMenuAbout_Click(object sender, EventArgs e) {
             using var dialog = new FrmAboutBox();
             dialog.ShowDialog();
+        }
+
+        private void MenuImportKindle_Click(object sender, EventArgs e) {
+            ImportKindleClippings();
         }
     }
 }
