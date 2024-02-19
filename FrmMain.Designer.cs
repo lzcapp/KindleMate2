@@ -28,9 +28,11 @@
             menuStrip = new MenuStrip();
             toolStripMenuFile = new ToolStripMenuItem();
             menuImportKindle = new ToolStripMenuItem();
+            menuImportKindleMate = new ToolStripMenuItem();
             menuExit = new ToolStripMenuItem();
             toolStripMenuHelp = new ToolStripMenuItem();
             toolStripMenuAbout = new ToolStripMenuItem();
+            menuRepo = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             treeView = new TreeView();
             imageList = new ImageList(components);
@@ -51,6 +53,7 @@
             openFileDialog = new OpenFileDialog();
             statusStrip1 = new StatusStrip();
             lblCount = new ToolStripStatusLabel();
+            lblBookCount = new ToolStripStatusLabel();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -75,14 +78,14 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1504, 37);
+            menuStrip.Size = new Size(1504, 36);
             menuStrip.TabIndex = 1;
             menuStrip.Text = "menuStrip2";
             // 
             // toolStripMenuFile
             // 
             toolStripMenuFile.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            toolStripMenuFile.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuExit });
+            toolStripMenuFile.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleMate, menuExit });
             toolStripMenuFile.Name = "toolStripMenuFile";
             toolStripMenuFile.ShortcutKeyDisplayString = "";
             toolStripMenuFile.ShortcutKeys = Keys.Alt | Keys.F;
@@ -93,21 +96,30 @@
             // 
             menuImportKindle.Image = Properties.Resources.plus;
             menuImportKindle.Name = "menuImportKindle";
-            menuImportKindle.Size = new Size(319, 44);
-            menuImportKindle.Text = "导入Kindle标注(&I)";
+            menuImportKindle.Size = new Size(356, 40);
+            menuImportKindle.Text = "导入Kindle标注";
             menuImportKindle.Click += MenuImportKindle_Click;
+            // 
+            // menuImportKindleMate
+            // 
+            menuImportKindleMate.Image = Properties.Resources.plus;
+            menuImportKindleMate.Name = "menuImportKindleMate";
+            menuImportKindleMate.Size = new Size(356, 40);
+            menuImportKindleMate.Text = "导入Kindle Mate数据库";
+            menuImportKindleMate.Visible = false;
+            menuImportKindleMate.Click += MenuImportKindleMate_Click;
             // 
             // menuExit
             // 
             menuExit.Image = Properties.Resources.cross_mark_button;
             menuExit.Name = "menuExit";
-            menuExit.Size = new Size(319, 44);
+            menuExit.Size = new Size(356, 40);
             menuExit.Text = "退出(&E)";
             menuExit.Click += MenuExit_Click;
             // 
             // toolStripMenuHelp
             // 
-            toolStripMenuHelp.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuAbout });
+            toolStripMenuHelp.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuAbout, menuRepo });
             toolStripMenuHelp.Name = "toolStripMenuHelp";
             toolStripMenuHelp.Size = new Size(102, 33);
             toolStripMenuHelp.Text = "帮助(&H)";
@@ -116,14 +128,22 @@
             // 
             toolStripMenuAbout.Image = Properties.Resources.information;
             toolStripMenuAbout.Name = "toolStripMenuAbout";
-            toolStripMenuAbout.Size = new Size(200, 40);
+            toolStripMenuAbout.Size = new Size(319, 44);
             toolStripMenuAbout.Text = "关于(&A)";
             toolStripMenuAbout.Click += ToolStripMenuAbout_Click;
+            // 
+            // menuRepo
+            // 
+            menuRepo.Image = Properties.Resources.star;
+            menuRepo.Name = "menuRepo";
+            menuRepo.Size = new Size(319, 44);
+            menuRepo.Text = "GitHub仓库";
+            menuRepo.Click += MenuRepo_Click;
             // 
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 37);
+            splitContainer1.Location = new Point(0, 36);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -135,7 +155,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(splitContainer2);
             splitContainer1.Panel2MinSize = 100;
-            splitContainer1.Size = new Size(1504, 910);
+            splitContainer1.Size = new Size(1504, 911);
             splitContainer1.SplitterDistance = 399;
             splitContainer1.TabIndex = 2;
             // 
@@ -152,7 +172,7 @@
             treeView.SelectedImageIndex = 1;
             treeView.ShowNodeToolTips = true;
             treeView.ShowRootLines = false;
-            treeView.Size = new Size(399, 910);
+            treeView.Size = new Size(399, 911);
             treeView.StateImageList = imageList;
             treeView.TabIndex = 0;
             treeView.NodeMouseClick += TreeView_NodeMouseClick;
@@ -182,8 +202,8 @@
             // 
             splitContainer2.Panel2.Controls.Add(tableLayoutPanel);
             splitContainer2.Panel2MinSize = 200;
-            splitContainer2.Size = new Size(1101, 910);
-            splitContainer2.SplitterDistance = 545;
+            splitContainer2.Size = new Size(1101, 911);
+            splitContainer2.SplitterDistance = 543;
             splitContainer2.TabIndex = 1;
             // 
             // dataGridView
@@ -201,7 +221,7 @@
             dataGridView.RowHeadersVisible = false;
             dataGridView.RowHeadersWidth = 82;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(1101, 545);
+            dataGridView.Size = new Size(1101, 543);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -228,7 +248,7 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.Size = new Size(1101, 361);
+            tableLayoutPanel.Size = new Size(1101, 364);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -290,7 +310,7 @@
             lblContent.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblContent.Location = new Point(8, 87);
             lblContent.Name = "lblContent";
-            lblContent.Size = new Size(1085, 269);
+            lblContent.Size = new Size(1085, 272);
             lblContent.TabIndex = 4;
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -343,23 +363,34 @@
             // openFileDialog
             // 
             openFileDialog.FileName = "openFileDialog";
+            openFileDialog.ReadOnlyChecked = true;
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.ShowReadOnly = true;
             // 
             // statusStrip1
             // 
             statusStrip1.ImageScalingSize = new Size(28, 28);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { lblCount });
-            statusStrip1.Location = new Point(0, 925);
+            statusStrip1.Items.AddRange(new ToolStripItem[] { lblCount, lblBookCount });
+            statusStrip1.Location = new Point(0, 914);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1504, 22);
+            statusStrip1.Size = new Size(1504, 33);
             statusStrip1.SizingGrip = false;
             statusStrip1.TabIndex = 3;
             statusStrip1.Text = "statusStrip1";
             // 
             // lblCount
             // 
-            lblCount.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            lblCount.Image = Properties.Resources.keycap_number_sign;
+            lblCount.Margin = new Padding(0);
             lblCount.Name = "lblCount";
-            lblCount.Size = new Size(0, 13);
+            lblCount.Size = new Size(28, 33);
+            // 
+            // lblBookCount
+            // 
+            lblBookCount.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            lblBookCount.Margin = new Padding(0);
+            lblBookCount.Name = "lblBookCount";
+            lblBookCount.Size = new Size(0, 0);
             // 
             // FrmMain
             // 
@@ -371,6 +402,7 @@
             Controls.Add(menuStrip);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "FrmMain";
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Kindle Mate 2";
             Load += FrmMain_Load;
             menuStrip.ResumeLayout(false);
@@ -424,5 +456,8 @@
         private ToolStripMenuItem menuExit;
         private ToolStripMenuItem toolStripMenuAbout;
         private ToolStripMenuItem menuImportKindle;
+        private ToolStripStatusLabel lblBookCount;
+        private ToolStripMenuItem menuImportKindleMate;
+        private ToolStripMenuItem menuRepo;
     }
 }

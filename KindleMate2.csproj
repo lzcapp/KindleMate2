@@ -18,6 +18,7 @@
 		<Title>Kindle Mate 2</Title>
 		<Authors>RainySummer</Authors>
 		<Copyright>Copyright (c) RainySummer 2024</Copyright>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -69,6 +70,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="KM.dat">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="LICENSE">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>

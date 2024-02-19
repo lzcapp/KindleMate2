@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
+using System.Diagnostics;
 using System.Globalization;
-using static System.Windows.Forms.DataFormats;
+using System.Windows.Forms;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -11,17 +13,20 @@ namespace KindleMate2 {
 
         private readonly string _programsDirectory;
 
+        private readonly string _newFilePath;
+
         private readonly string _filePath;
 
         public FrmMain() {
             InitializeComponent();
 
             _programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            _newFilePath = Path.Combine(_programsDirectory, "KM.dat");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (FileHandler()) {
+            if (File.Exists(_filePath)) {
                 DisplayData();
 
                 CountRows();
@@ -29,8 +34,7 @@ namespace KindleMate2 {
                 var bookNames = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct();
 
                 var rootNode = new TreeNode("全部") {
-                    ImageIndex = 2,
-                    SelectedImageIndex = 2
+                    ImageIndex = 2, SelectedImageIndex = 2
                 };
 
                 treeView.Nodes.Add(rootNode);
@@ -40,6 +44,26 @@ namespace KindleMate2 {
                 }
 
                 treeView.ExpandAll();
+            } else {
+                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "未找到数据库文件", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+                switch (result) {
+                    case DialogResult.Yes:
+                        ImportKMDatabase();
+                        break;
+                    case DialogResult.No:
+                    case DialogResult.None:
+                    case DialogResult.OK:
+                    case DialogResult.Cancel:
+                    case DialogResult.Abort:
+                    case DialogResult.Retry:
+                    case DialogResult.Ignore:
+                    case DialogResult.TryAgain:
+                    case DialogResult.Continue:
+                    default:
+                        File.Copy(_newFilePath, _filePath, false);
+                        return;
+                }
             }
         }
 
@@ -74,11 +98,7 @@ namespace KindleMate2 {
             var clippingsCount = _staticData.GetClippingsCount();
             var originClippingsCount = _staticData.GetOriginClippingsCount();
             var diff = Math.Abs(originClippingsCount - clippingsCount);
-            lblCount.Text = "共 " + clippingsCount + " 条记录，删除 " + diff + " 条";
-        }
-
-        private bool FileHandler() {
-            return File.Exists(_filePath) || ImportKMDatabase();
+            lblCount.Text = "共 " + clippingsCount + " 条标注，已删除 " + diff + " 条";
         }
 
         private bool ImportKMDatabase() {
@@ -156,8 +176,8 @@ namespace KindleMate2 {
             for (var i = 0; i <= lines.Count - 5; i += 5) {
                 var line1 = lines[i].Trim();
                 var book = line1.Split(['(', '（']);
-                var bookname = book[0].Trim();
                 var authorname = book[^1].Replace(")", "").Replace("）", "").Trim();
+                var bookname = line1.Replace(authorname, "").Trim();
 
                 var line2 = lines[i + 1].Trim();
                 var loctime = line2.Split('|');
@@ -189,13 +209,18 @@ namespace KindleMate2 {
                 clippingsTable.Rows.Add(key, line3, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
             }
 
-            var insertedCount = _staticData.InsertOriginClippingsDataTable(originClippingsTable);
+            var insertedOriginCount = (from DataRow row in originClippingsTable.Rows where !_staticData.IsExistOriginalClippings(row["key"].ToString()) select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty, row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
 
-            if (insertedCount <= 0) {
-                return;
+            var insertedCount = 0;
+
+            if (insertedOriginCount > 0) {
+                insertedCount += (from DataRow row in clippingsTable.Rows where !_staticData.IsExistClippings(row["key"].ToString()) select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty, (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty, row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+                if (insertedCount > 0) {
+                    DisplayData();
+                    CountRows();
+                }
             }
-
-            _staticData.InsertClippingsDataTable(clippingsTable);
+            MessageBox.Show("共解析 " + originClippingsTable.Rows.Count + " 条记录，导入 " + insertedCount + " 条记录", "解析完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
@@ -221,12 +246,14 @@ namespace KindleMate2 {
 
         private void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
+                lblBookCount.Text = "";
                 dataGridView.DataSource = _dataTable;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
                 DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
+                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                 dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
@@ -280,7 +307,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox.Show("Are you sure you want to delete the selected row(s)?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show("确认要删除选中的标注吗？", "确认删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result != DialogResult.Yes) {
                 return;
@@ -341,6 +368,17 @@ namespace KindleMate2 {
 
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             ImportKindleClippings();
+        }
+
+        private void MenuImportKindleMate_Click(object sender, EventArgs e) {
+            ImportKMDatabase();
+        }
+
+        private void MenuRepo_Click(object sender, EventArgs e) {
+            const string repoUrl = "https://github.com/lzcapp/KindleMate2";
+            Process.Start(new ProcessStartInfo {
+                FileName = repoUrl, UseShellExecute = true
+            });
         }
     }
 }

@@ -29,7 +29,6 @@
             lblDatabase = new Label();
             lblPath = new LinkLabel();
             lblVersion = new Label();
-            labelProductName = new Label();
             lblVersionText = new Label();
             lblCopyrightText = new Label();
             lblCopyright = new Label();
@@ -39,9 +38,16 @@
             flowLayoutPanel1 = new FlowLayoutPanel();
             pictureBox1 = new PictureBox();
             label1 = new Label();
+            flowLayoutPanel2 = new FlowLayoutPanel();
+            lblProductName = new Label();
+            label2 = new Label();
+            flowLayoutPanel3 = new FlowLayoutPanel();
+            lblCleanDatabase = new LinkLabel();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            flowLayoutPanel2.SuspendLayout();
+            flowLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
             // tableLayoutPanel
@@ -52,10 +58,8 @@
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
-            tableLayoutPanel.Controls.Add(lblDatabase, 2, 5);
             tableLayoutPanel.Controls.Add(lblPath, 2, 4);
             tableLayoutPanel.Controls.Add(lblVersion, 2, 1);
-            tableLayoutPanel.Controls.Add(labelProductName, 1, 0);
             tableLayoutPanel.Controls.Add(lblVersionText, 1, 1);
             tableLayoutPanel.Controls.Add(lblCopyrightText, 1, 2);
             tableLayoutPanel.Controls.Add(lblCopyright, 2, 2);
@@ -63,6 +67,8 @@
             tableLayoutPanel.Controls.Add(lblDatabaseText, 1, 5);
             tableLayoutPanel.Controls.Add(okButton, 2, 6);
             tableLayoutPanel.Controls.Add(flowLayoutPanel1, 0, 0);
+            tableLayoutPanel.Controls.Add(flowLayoutPanel2, 1, 0);
+            tableLayoutPanel.Controls.Add(flowLayoutPanel3, 2, 5);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(19, 18, 19, 18);
@@ -76,13 +82,14 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20.0031986F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 49F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanel.Size = new Size(943, 341);
             tableLayoutPanel.TabIndex = 0;
             // 
             // lblDatabase
             // 
             lblDatabase.AutoSize = true;
-            lblDatabase.Location = new Point(384, 223);
+            lblDatabase.Location = new Point(3, 0);
             lblDatabase.Name = "lblDatabase";
             lblDatabase.Size = new Size(0, 28);
             lblDatabase.TabIndex = 27;
@@ -108,20 +115,6 @@
             lblVersion.Size = new Size(0, 28);
             lblVersion.TabIndex = 0;
             lblVersion.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // labelProductName
-            // 
-            labelProductName.AutoSize = true;
-            tableLayoutPanel.SetColumnSpan(labelProductName, 2);
-            labelProductName.Dock = DockStyle.Fill;
-            labelProductName.Location = new Point(250, 18);
-            labelProductName.Margin = new Padding(50, 0, 6, 0);
-            labelProductName.MaximumSize = new Size(0, 37);
-            labelProductName.Name = "labelProductName";
-            labelProductName.Size = new Size(668, 37);
-            labelProductName.TabIndex = 19;
-            labelProductName.Text = "产品名称";
-            labelProductName.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblVersionText
             // 
@@ -218,13 +211,73 @@
             // 
             label1.AutoSize = true;
             label1.Dock = DockStyle.Top;
-            label1.Font = new Font("微软雅黑 Light", 6.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label1.Font = new Font("微软雅黑", 6.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             label1.Location = new Point(3, 185);
             label1.Name = "label1";
             label1.Size = new Size(175, 21);
             label1.TabIndex = 2;
             label1.Text = "Icons from Twemoji";
             label1.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // flowLayoutPanel2
+            // 
+            tableLayoutPanel.SetColumnSpan(flowLayoutPanel2, 2);
+            flowLayoutPanel2.Controls.Add(lblProductName);
+            flowLayoutPanel2.Controls.Add(label2);
+            flowLayoutPanel2.Dock = DockStyle.Fill;
+            flowLayoutPanel2.Location = new Point(200, 18);
+            flowLayoutPanel2.Margin = new Padding(0);
+            flowLayoutPanel2.Name = "flowLayoutPanel2";
+            flowLayoutPanel2.Size = new Size(724, 47);
+            flowLayoutPanel2.TabIndex = 31;
+            // 
+            // lblProductName
+            // 
+            lblProductName.AutoSize = true;
+            lblProductName.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblProductName.Location = new Point(50, 0);
+            lblProductName.Margin = new Padding(50, 0, 6, 0);
+            lblProductName.MaximumSize = new Size(0, 37);
+            lblProductName.Name = "lblProductName";
+            lblProductName.Size = new Size(140, 28);
+            lblProductName.TabIndex = 19;
+            lblProductName.Text = "Kindle Mate";
+            lblProductName.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            label2.ForeColor = Color.Red;
+            label2.Location = new Point(196, 0);
+            label2.Margin = new Padding(0);
+            label2.Name = "label2";
+            label2.Size = new Size(25, 28);
+            label2.TabIndex = 20;
+            label2.Text = "2";
+            label2.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // flowLayoutPanel3
+            // 
+            flowLayoutPanel3.Controls.Add(lblDatabase);
+            flowLayoutPanel3.Controls.Add(lblCleanDatabase);
+            flowLayoutPanel3.Dock = DockStyle.Fill;
+            flowLayoutPanel3.Location = new Point(381, 223);
+            flowLayoutPanel3.Margin = new Padding(0);
+            flowLayoutPanel3.Name = "flowLayoutPanel3";
+            flowLayoutPanel3.Size = new Size(543, 47);
+            flowLayoutPanel3.TabIndex = 32;
+            // 
+            // lblCleanDatabase
+            // 
+            lblCleanDatabase.AutoSize = true;
+            lblCleanDatabase.Location = new Point(9, 0);
+            lblCleanDatabase.Name = "lblCleanDatabase";
+            lblCleanDatabase.Size = new Size(131, 28);
+            lblCleanDatabase.TabIndex = 28;
+            lblCleanDatabase.TabStop = true;
+            lblCleanDatabase.Text = "(清理数据库)";
+            lblCleanDatabase.LinkClicked += LblCleanDatabase_LinkClicked;
             // 
             // FrmAboutBox
             // 
@@ -248,6 +301,10 @@
             flowLayoutPanel1.ResumeLayout(false);
             flowLayoutPanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            flowLayoutPanel2.ResumeLayout(false);
+            flowLayoutPanel2.PerformLayout();
+            flowLayoutPanel3.ResumeLayout(false);
+            flowLayoutPanel3.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -255,7 +312,7 @@
         #endregion
 
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
-        private System.Windows.Forms.Label labelProductName;
+        private System.Windows.Forms.Label lblProductName;
         private System.Windows.Forms.Label lblVersion;
         private System.Windows.Forms.Label lblCopyright;
         private System.Windows.Forms.Button okButton;
@@ -268,5 +325,9 @@
         private FlowLayoutPanel flowLayoutPanel1;
         private PictureBox pictureBox1;
         private Label label1;
+        private FlowLayoutPanel flowLayoutPanel2;
+        private Label label2;
+        private FlowLayoutPanel flowLayoutPanel3;
+        private LinkLabel lblCleanDatabase;
     }
 }
