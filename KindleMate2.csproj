@@ -32,18 +32,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Resources\**"/>
-		<EmbeddedResource Remove="Resources\**"/>
-		<None Remove="Resources\**"/>
+		<Compile Remove="Resources\**" />
+		<EmbeddedResource Remove="Resources\**" />
+		<None Remove="Resources\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="bookmark.ico"/>
+		<Content Include="bookmark.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118"/>
-		<PackageReference Include="System.Management" Version="8.0.0"/>
+		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+		<PackageReference Include="System.Management" Version="8.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

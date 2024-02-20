@@ -1,7 +1,5 @@
-﻿namespace KindleMate2
-{
-    partial class FrmEdit
-    {
+﻿namespace KindleMate2 {
+    partial class FrmBookRename {
         /// <summary>
         /// Required designer variable.
         /// </summary>
@@ -12,8 +10,7 @@
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing) {
-            if (disposing && (components != null))
-            {
+            if (disposing && (components != null)) {
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -26,13 +23,15 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmEdit));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmBookRename));
             tableLayoutPanel = new TableLayoutPanel();
             lblBook = new Label();
             flowLayoutPanel = new FlowLayoutPanel();
             btnOK = new Button();
             btnCancel = new Button();
-            txtContent = new TextBox();
+            label1 = new Label();
+            txtAuthor = new TextBox();
+            txtBook = new TextBox();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel.SuspendLayout();
             SuspendLayout();
@@ -42,31 +41,35 @@
             tableLayoutPanel.ColumnCount = 1;
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
             tableLayoutPanel.Controls.Add(lblBook, 0, 0);
-            tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 2);
-            tableLayoutPanel.Controls.Add(txtContent, 0, 1);
+            tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 4);
+            tableLayoutPanel.Controls.Add(label1, 0, 2);
+            tableLayoutPanel.Controls.Add(txtAuthor, 0, 3);
+            tableLayoutPanel.Controls.Add(txtBook, 0, 1);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(10, 10);
             tableLayoutPanel.Margin = new Padding(10, 5, 10, 5);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.RowCount = 3;
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 18.75F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 81.25F));
+            tableLayoutPanel.RowCount = 5;
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 87F));
-            tableLayoutPanel.Size = new Size(780, 430);
-            tableLayoutPanel.TabIndex = 0;
+            tableLayoutPanel.Size = new Size(780, 304);
+            tableLayoutPanel.TabIndex = 1;
             // 
             // lblBook
             // 
-            lblBook.Dock = DockStyle.Top;
-            lblBook.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblBook.AutoSize = true;
+            lblBook.Dock = DockStyle.Fill;
+            lblBook.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0);
             lblBook.Name = "lblBook";
-            lblBook.Padding = new Padding(0, 0, 0, 10);
-            lblBook.Size = new Size(780, 64);
+            lblBook.Size = new Size(780, 43);
             lblBook.TabIndex = 2;
-            lblBook.Text = "书名";
-            lblBook.TextAlign = ContentAlignment.MiddleLeft;
+            lblBook.Text = "书名：";
+            lblBook.TextAlign = ContentAlignment.BottomLeft;
             // 
             // flowLayoutPanel
             // 
@@ -74,7 +77,7 @@
             flowLayoutPanel.Controls.Add(btnOK);
             flowLayoutPanel.Controls.Add(btnCancel);
             flowLayoutPanel.Dock = DockStyle.Right;
-            flowLayoutPanel.Location = new Point(420, 342);
+            flowLayoutPanel.Location = new Point(420, 216);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Padding = new Padding(0, 20, 0, 0);
@@ -104,33 +107,53 @@
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += BtnCancel_Click;
             // 
-            // txtContent
+            // label1
             // 
-            txtContent.Dock = DockStyle.Top;
-            txtContent.Location = new Point(3, 67);
-            txtContent.Multiline = true;
-            txtContent.Name = "txtContent";
-            txtContent.ScrollBars = ScrollBars.Vertical;
-            txtContent.Size = new Size(774, 272);
-            txtContent.TabIndex = 5;
-            txtContent.TextChanged += TxtContent_TextChanged;
+            label1.AutoSize = true;
+            label1.Dock = DockStyle.Fill;
+            label1.Location = new Point(0, 108);
+            label1.Margin = new Padding(0);
+            label1.Name = "label1";
+            label1.Size = new Size(780, 43);
+            label1.TabIndex = 5;
+            label1.Text = "作者：";
+            label1.TextAlign = ContentAlignment.BottomLeft;
             // 
-            // FrmEdit
+            // txtAuthor
             // 
+            txtAuthor.Dock = DockStyle.Fill;
+            txtAuthor.Location = new Point(3, 154);
+            txtAuthor.Name = "txtAuthor";
+            txtAuthor.Size = new Size(774, 34);
+            txtAuthor.TabIndex = 6;
+            txtAuthor.TextChanged += TxtAuthor_TextChanged;
+            // 
+            // txtBook
+            // 
+            txtBook.Dock = DockStyle.Fill;
+            txtBook.Location = new Point(3, 46);
+            txtBook.Name = "txtBook";
+            txtBook.Size = new Size(774, 34);
+            txtBook.TabIndex = 7;
+            txtBook.TextChanged += TxtBook_TextChanged;
+            // 
+            // FrmBookRename
+            // 
+            AcceptButton = btnOK;
             AutoScaleDimensions = new SizeF(13F, 28F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            CancelButton = btnCancel;
+            ClientSize = new Size(800, 324);
             Controls.Add(tableLayoutPanel);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "FrmEdit";
+            Name = "FrmBookRename";
             Padding = new Padding(10);
-            ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "编辑标注";
-            Load += FrmEdit_Load;
+            Text = "重命名书籍";
+            Load += FrmBookRename_Load;
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();
             flowLayoutPanel.ResumeLayout(false);
@@ -144,6 +167,8 @@
         private FlowLayoutPanel flowLayoutPanel;
         private Button btnOK;
         private Button btnCancel;
-        private TextBox txtContent;
+        private Label label1;
+        private TextBox txtAuthor;
+        private TextBox txtBook;
     }
 }

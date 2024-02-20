@@ -13,11 +13,13 @@
 
         public string TxtContent {
             get => txtContent.Text;
-            set => txtContent.Text = value;
+            set {
+                txtContent.Text = value.Trim();
+                _content = value.Trim();
+            }
         }
 
         private void FrmEdit_Load(object sender, EventArgs e) {
-            _content = txtContent.Text.Trim();
             txtContent.Focus();
             btnOK.Enabled = false;
         }

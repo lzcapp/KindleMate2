@@ -225,12 +225,60 @@ namespace KindleMate2 {
             return result;
         }
 
+        internal bool UpdateClippings(string originBookname, string bookname, string authorname) {
+            if (originBookname == string.Empty || bookname == string.Empty || authorname == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryUpdate = "UPDATE clippings SET bookname = @bookname, authorname = @authorname WHERE bookname = @originBookname";
+
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@bookname", DbType.String);
+            command.Parameters.Add("@authorname", DbType.String);
+            command.Parameters.Add("@originBookname", DbType.String);
+
+            command.Parameters["@bookname"].Value = bookname;
+            command.Parameters["@authorname"].Value = authorname;
+            command.Parameters["@originBookname"].Value = originBookname;
+
+            var result = command.ExecuteNonQuery();
+            
+            _connection.Close();
+
+            return result > 0;
+        }
+
+        internal bool UpdateClippings(string key, string content) {
+            if (key == string.Empty || content == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryUpdate = "UPDATE clippings SET content = @content WHERE key = @key";
+
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@key", DbType.String);
+            command.Parameters.Add("@content", DbType.String);
+            
+            command.Parameters["@key"].Value = key;
+            command.Parameters["@content"].Value = content;
+
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
+        }
+
         internal void VacuumDatabase() {
             _connection.Open();
 
             const string queryVacuum = "VACUUM";
             using var command = new SQLiteCommand(queryVacuum, _connection);
-            var result = command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
             _connection.Close();
         }
