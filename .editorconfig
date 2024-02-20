@@ -21,6 +21,7 @@ csharp_new_line_before_catch = false
 csharp_new_line_before_else = false
 csharp_new_line_before_open_brace = none
 csharp_preferred_modifier_order = public, private, protected, internal, file, new, static, abstract, virtual, sealed, readonly, override, extern, unsafe, volatile, async, required:suggestion
+csharp_style_namespace_declarations = block_scoped:suggestion
 csharp_style_prefer_utf8_string_literals = true:suggestion
 csharp_style_var_for_built_in_types = true:suggestion
 dotnet_style_parentheses_in_arithmetic_binary_operators = never_if_unnecessary:none
@@ -35,6 +36,7 @@ dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
 
 # ReSharper properties
+resharper_accessor_owner_body = accessors_with_expression_body
 resharper_autodetect_indent_settings = true
 resharper_blank_lines_after_block_statements = 0
 resharper_braces_for_foreach = required
@@ -44,14 +46,17 @@ resharper_csharp_max_line_length = 240
 resharper_csharp_other_braces = end_of_line
 resharper_csharp_wrap_lines = false
 resharper_for_simple_types = use_var_when_evident
+resharper_instance_members_qualify_declared_in = 
 resharper_keep_existing_initializer_arrangement = false
 resharper_keep_existing_linebreaks = false
+resharper_place_expr_accessor_on_single_line = true
 resharper_place_simple_initializer_on_single_line = false
 resharper_vb_keep_user_linebreaks = false
 resharper_vb_stick_comment = false
 resharper_vb_wrap_lines = false
 
 # ReSharper inspection severities
+resharper_arrange_namespace_body_highlighting = hint
 resharper_arrange_redundant_parentheses_highlighting = hint
 resharper_arrange_this_qualifier_highlighting = hint
 resharper_arrange_type_member_modifiers_highlighting = hint

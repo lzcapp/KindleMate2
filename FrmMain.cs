@@ -20,6 +20,8 @@ namespace KindleMate2 {
 
         private string _selectedBook;
 
+        private int _selectedIndex;
+
         public FrmMain() {
             InitializeComponent();
 
@@ -27,6 +29,7 @@ namespace KindleMate2 {
             _newFilePath = Path.Combine(_programsDirectory, "KM.dat");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
             _selectedBook = "";
+            _selectedIndex = 0;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -70,8 +73,12 @@ namespace KindleMate2 {
         }
 
         private void RefreshData() {
+            if (dataGridView.CurrentRow is not null) {
+                _selectedIndex = dataGridView.CurrentRow.Index;
+            }
             DisplayData();
             CountRows();
+            SelectRow();
         }
 
         private void DisplayData() {
@@ -105,8 +112,7 @@ namespace KindleMate2 {
             }).Distinct();
 
             var rootNode = new TreeNode("全部") {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeView.Nodes.Clear();
@@ -134,9 +140,8 @@ namespace KindleMate2 {
                         dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                         dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
                         break;
-                    } else {
-                        treeView.SelectedNode = rootNode;
                     }
+                    treeView.SelectedNode = rootNode;
                 }
             }
         }
@@ -227,8 +232,7 @@ namespace KindleMate2 {
                     _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
                     _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
                     _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
-                        row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
                 }
 
                 foreach (DataRow row in originClippingsDataTable.Rows) {
@@ -357,19 +361,12 @@ namespace KindleMate2 {
                 return;
             }
 
-            var insertedOriginCount = (from DataRow row in originClippingsTable.Rows
-                                       where !_staticData.IsExistOriginalClippings(row["key"].ToString())
-                                       select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
-                                           row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
+            var insertedOriginCount = (from DataRow row in originClippingsTable.Rows where !_staticData.IsExistOriginalClippings(row["key"].ToString()) select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty, row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
 
             var insertedCount = 0;
 
             if (insertedOriginCount > 0) {
-                insertedCount += (from DataRow row in clippingsTable.Rows
-                                  where !_staticData.IsExistClippings(row["key"].ToString())
-                                  select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
-                                      (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
-                                      row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+                insertedCount += (from DataRow row in clippingsTable.Rows where !_staticData.IsExistClippings(row["key"].ToString()) select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty, (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty, row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
 
                 if (insertedCount > 0) {
                     DisplayData();
@@ -572,8 +569,7 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl,
-                UseShellExecute = true
+                FileName = repoUrl, UseShellExecute = true
             });
         }
 
@@ -669,6 +665,15 @@ namespace KindleMate2 {
             RefreshData();
         }
 
+        private void SelectRow() {
+            if (_selectedIndex >= dataGridView.Rows.Count) {
+                _selectedIndex = dataGridView.Rows.Count - 1;
+            }
+            dataGridView.CurrentCell = dataGridView.Rows[_selectedIndex].Cells[1];
+            dataGridView.FirstDisplayedScrollingRowIndex = _selectedIndex;
+            dataGridView.Rows[_selectedIndex].Selected = true;
+        }
+
         private void MenuBookRefresh_Click(object sender, EventArgs e) {
             RefreshData();
         }
@@ -682,7 +687,7 @@ namespace KindleMate2 {
 
             var set = new HashSet<string>();
             var list = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
-            booksList.AddRange(list); 
+            booksList.AddRange(list);
 
             var dialog = new FrmCombine {
                 BookNames = booksList

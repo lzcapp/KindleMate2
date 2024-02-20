@@ -53,13 +53,13 @@
             menuBooks = new ContextMenuStrip(components);
             menuBookRefresh = new ToolStripMenuItem();
             booksMenuDelete = new ToolStripMenuItem();
+            menuCombine = new ToolStripMenuItem();
             menuRename = new ToolStripMenuItem();
             openFileDialog = new OpenFileDialog();
             statusStrip = new StatusStrip();
             lblCount = new ToolStripStatusLabel();
             lblBookCount = new ToolStripStatusLabel();
             timer = new System.Windows.Forms.Timer(components);
-            menuCombine = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -142,7 +142,7 @@
             // 
             toolStripMenuAbout.Image = Properties.Resources.information;
             toolStripMenuAbout.Name = "toolStripMenuAbout";
-            toolStripMenuAbout.Size = new Size(243, 40);
+            toolStripMenuAbout.Size = new Size(319, 44);
             toolStripMenuAbout.Text = "关于(&A)";
             toolStripMenuAbout.Click += ToolStripMenuAbout_Click;
             // 
@@ -150,7 +150,7 @@
             // 
             menuRepo.Image = Properties.Resources.star;
             menuRepo.Name = "menuRepo";
-            menuRepo.Size = new Size(243, 40);
+            menuRepo.Size = new Size(319, 44);
             menuRepo.Text = "GitHub仓库";
             menuRepo.Click += MenuRepo_Click;
             // 
@@ -342,13 +342,13 @@
             menuClippings.ImageScalingSize = new Size(28, 28);
             menuClippings.Items.AddRange(new ToolStripItem[] { menuClippingsRefresh, ClippingMenuCopy, ClippingMenuDelete });
             menuClippings.Name = "menuClippings";
-            menuClippings.Size = new Size(127, 106);
+            menuClippings.Size = new Size(271, 144);
             // 
             // menuClippingsRefresh
             // 
             menuClippingsRefresh.Name = "menuClippingsRefresh";
             menuClippingsRefresh.ShortcutKeyDisplayString = "";
-            menuClippingsRefresh.Size = new Size(126, 34);
+            menuClippingsRefresh.Size = new Size(270, 34);
             menuClippingsRefresh.Text = "刷新";
             menuClippingsRefresh.Click += MenuClippingsRefresh_Click;
             // 
@@ -356,7 +356,7 @@
             // 
             ClippingMenuCopy.Name = "ClippingMenuCopy";
             ClippingMenuCopy.ShortcutKeyDisplayString = "";
-            ClippingMenuCopy.Size = new Size(126, 34);
+            ClippingMenuCopy.Size = new Size(270, 34);
             ClippingMenuCopy.Text = "复制";
             ClippingMenuCopy.Click += ClippingMenuCopy_Click;
             // 
@@ -364,7 +364,7 @@
             // 
             ClippingMenuDelete.Name = "ClippingMenuDelete";
             ClippingMenuDelete.ShortcutKeyDisplayString = "";
-            ClippingMenuDelete.Size = new Size(126, 34);
+            ClippingMenuDelete.Size = new Size(270, 34);
             ClippingMenuDelete.Text = "删除";
             ClippingMenuDelete.Click += ClippingMenuDelete_Click;
             // 
@@ -373,7 +373,7 @@
             menuBooks.ImageScalingSize = new Size(28, 28);
             menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, booksMenuDelete, menuCombine, menuRename });
             menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(271, 178);
+            menuBooks.Size = new Size(148, 140);
             // 
             // menuBookRefresh
             // 
@@ -392,6 +392,14 @@
             booksMenuDelete.Size = new Size(147, 34);
             booksMenuDelete.Text = "删除";
             booksMenuDelete.Click += BooksMenuDelete_Click;
+            // 
+            // menuCombine
+            // 
+            menuCombine.Name = "menuCombine";
+            menuCombine.ShortcutKeyDisplayString = "";
+            menuCombine.Size = new Size(147, 34);
+            menuCombine.Text = "合并到";
+            menuCombine.Click += menuCombine_Click;
             // 
             // menuRename
             // 
@@ -438,14 +446,6 @@
             timer.Enabled = true;
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
-            // 
-            // menuCombine
-            // 
-            menuCombine.Name = "menuCombine";
-            menuCombine.ShortcutKeyDisplayString = "";
-            menuCombine.Size = new Size(270, 34);
-            menuCombine.Text = "合并到";
-            menuCombine.Click += menuCombine_Click;
             // 
             // FrmMain
             // 
