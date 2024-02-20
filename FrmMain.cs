@@ -18,6 +18,8 @@ namespace KindleMate2 {
 
         private readonly string _filePath;
 
+        private string _kindleDrive;
+
         private string _selectedBook;
 
         private int _selectedIndex;
@@ -26,9 +28,10 @@ namespace KindleMate2 {
             InitializeComponent();
 
             _programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            _newFilePath = Path.Combine(_programsDirectory, "KM.dat");
+            _newFilePath = Path.Combine(_programsDirectory, "KM2.db");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
-            _selectedBook = "";
+            _kindleDrive = string.Empty;
+            _selectedBook = string.Empty;
             _selectedIndex = 0;
         }
 
@@ -36,7 +39,7 @@ namespace KindleMate2 {
             if (File.Exists(_filePath)) {
                 RefreshData();
             } else {
-                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "数据初始化", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 switch (result) {
                     case DialogResult.Yes:
@@ -53,13 +56,13 @@ namespace KindleMate2 {
                     case DialogResult.TryAgain:
                     case DialogResult.Continue:
                     default:
-                        var kindleClippingsPath = IsKindleDeviceConnected();
-
-                        if (!string.IsNullOrEmpty(kindleClippingsPath)) {
-                            DialogResult resultKindle = MessageBox.Show("您连接了Kindle设备，需要从Kindle中导入数据吗？", "数据初始化", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (!string.IsNullOrEmpty(_kindleDrive)) {
+                            DialogResult resultKindle = MessageBox.Show("您连接了Kindle设备，需要从Kindle中导入数据吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultKindle == DialogResult.Yes) {
+                                var kindleClippingsPath = Path.Combine(_kindleDrive, "documents", "My Clippings.txt");
+                                var kindleWordsPath = Path.Combine(_kindleDrive, "system", "vocabulary", "vocab.db");
                                 ImportKindleClippings(kindleClippingsPath);
-
+                                ImportkindleWords(kindleWordsPath);
                                 return;
                             }
                         }
@@ -70,6 +73,10 @@ namespace KindleMate2 {
                         return;
                 }
             }
+        }
+
+        private void ImportkindleWords(string kindleWordsPath) {
+            throw new NotImplementedException();
         }
 
         private void RefreshData() {
@@ -87,56 +94,65 @@ namespace KindleMate2 {
             dataGridView.DataSource = _dataTable;
 
             dataGridView.Columns["key"]!.Visible = false;
-            dataGridView.Columns["content"]!.HeaderText = "Content";
-            dataGridView.Columns["bookname"]!.HeaderText = "Book";
-            dataGridView.Columns["authorname"]!.HeaderText = "Author";
+            dataGridView.Columns["content"]!.HeaderText = "内容";
+            dataGridView.Columns["bookname"]!.HeaderText = "书籍";
+            dataGridView.Columns["authorname"]!.HeaderText = "作者";
             dataGridView.Columns["brieftype"]!.Visible = false;
-            dataGridView.Columns["clippingtypelocation"]!.HeaderText = "Location";
-            dataGridView.Columns["clippingdate"]!.HeaderText = "Date";
+            dataGridView.Columns["clippingtypelocation"]!.HeaderText = "位置";
+            dataGridView.Columns["clippingdate"]!.HeaderText = "时间";
             dataGridView.Columns["read"]!.Visible = false;
             dataGridView.Columns["clipping_importdate"]!.Visible = false;
             dataGridView.Columns["tag"]!.Visible = false;
             dataGridView.Columns["sync"]!.Visible = false;
             dataGridView.Columns["newbookname"]!.Visible = false;
             dataGridView.Columns["colorRGB"]!.Visible = false;
-            dataGridView.Columns["pagenumber"]!.HeaderText = "Page";
+            dataGridView.Columns["pagenumber"]!.Visible = false;
 
             dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
 
             dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             dataGridView.Columns["bookname"]!.Width = 150;
-            dataGridView.Columns["authorname"]!.Width = 150;
-            dataGridView.Columns["clippingdate"]!.Width = 100;
+            dataGridView.Columns["authorname"]!.Width = 100;
+            dataGridView.Columns["clippingdate"]!.Width = 150;
             dataGridView.Columns["clippingtypelocation"]!.Width = 100;
-            dataGridView.Columns["pagenumber"]!.Width = 100;
 
             var books = _dataTable.AsEnumerable().Select(row => new {
                 BookName = row.Field<string>("bookname")
             }).Distinct();
 
-            var rootNode = new TreeNode("全部") {
-                ImageIndex = 2, SelectedImageIndex = 2
+            var rootNodeBooks = new TreeNode("全部") {
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
-            treeView.Nodes.Clear();
+            treeViewBooks.Nodes.Clear();
 
-            treeView.Nodes.Add(rootNode);
+            treeViewBooks.Nodes.Add(rootNodeBooks);
 
             foreach (var book in books) {
                 var bookNode = new TreeNode(book.BookName) {
                     ToolTipText = book.BookName
                 };
-                treeView.Nodes.Add(bookNode);
+                treeViewBooks.Nodes.Add(bookNode);
             }
 
-            treeView.ExpandAll();
+            treeViewBooks.ExpandAll();
+
+            var rootNodeWords = new TreeNode("全部") {
+                ImageIndex = 2,
+                SelectedImageIndex = 2
+            };
+
+            treeViewWords.Nodes.Clear();
+
+            treeViewWords.Nodes.Add(rootNodeWords);
 
             if (string.IsNullOrWhiteSpace(_selectedBook)) {
-                treeView.SelectedNode = rootNode;
+                treeViewBooks.SelectedNode = rootNodeBooks;
             } else {
-                foreach (TreeNode node in treeView.Nodes) {
-                    if (node.Text.Trim() == _selectedBook.Trim()) {
-                        treeView.SelectedNode = node;
+                foreach (TreeNode node in treeViewBooks.Nodes) {
+                    if (node.Text.Trim().Equals(_selectedBook.Trim())) {
+                        treeViewBooks.SelectedNode = node;
                         DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
                         lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                         dataGridView.DataSource = filteredBooks;
@@ -144,7 +160,7 @@ namespace KindleMate2 {
                         dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
                         break;
                     }
-                    treeView.SelectedNode = rootNode;
+                    treeViewBooks.SelectedNode = rootNodeBooks;
                 }
             }
         }
@@ -159,11 +175,11 @@ namespace KindleMate2 {
         private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = "Import Kindle Mate Data File (KM2.dat)",
+                Title = "导入Kindle Mate数据库文件 (KM2.dat)",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
-                Filter = @"Kindle Mate Data File (*.dat)|*.dat",
+                Filter = @"Kindle Mate数据库文件 (*.dat)|*.dat",
                 FilterIndex = 2,
                 RestoreDirectory = true,
                 ReadOnlyChecked = true,
@@ -298,6 +314,10 @@ namespace KindleMate2 {
                 }
 
                 var line2 = lines[i + 1].Trim();
+                var brieftype = 0;
+                if (line2.Contains("笔记") || line2.Contains("Note")) {
+                    brieftype = 1;
+                }
                 var loctime = line2.Split('|');
                 var location = "";
                 var pagenumber = 0;
@@ -311,9 +331,8 @@ namespace KindleMate2 {
                     } else {
                         var lastIndexOfDash = location.LastIndexOf('-');
                         if (lastIndexOfDash != -1) {
-                            _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Trim(), out pagenumber);
+                            _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
                         }
-
                         var lastIndexOfDot = location.LastIndexOf('.');
                         if (lastIndexOfDot != -1) {
                             _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
@@ -357,7 +376,7 @@ namespace KindleMate2 {
                 }
 
                 originClippingsTable.Rows.Add(key, line1, line2, line3, line4, line5);
-                clippingsTable.Rows.Add(key, line4, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
+                clippingsTable.Rows.Add(key, line4, bookname, authorname, brieftype, location, time, 0, null, null, 0, null, -1, pagenumber);
             }
 
             if (originClippingsTable.Rows.Count <= 0 || clippingsTable.Rows.Count <= 0) {
@@ -406,7 +425,7 @@ namespace KindleMate2 {
             lblContent.Text = content;
         }
 
-        private void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
+        private void TreeViewBooks_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
                 _selectedBook = string.Empty;
                 lblBookCount.Text = string.Empty;
@@ -426,19 +445,19 @@ namespace KindleMate2 {
             }
         }
 
-        private void TreeView_MouseDown(object sender, MouseEventArgs e) {
+        private void TreeViewBooks_MouseDown(object sender, MouseEventArgs e) {
             if (e.Button != MouseButtons.Right) {
                 return;
             }
 
             var clickPoint = new Point(e.X, e.Y);
-            TreeNode currentNode = treeView.GetNodeAt(clickPoint);
+            TreeNode currentNode = treeViewBooks.GetNodeAt(clickPoint);
             if (currentNode == null) {
                 return;
             }
 
             currentNode.ContextMenuStrip = menuBooks;
-            treeView.SelectedNode = currentNode;
+            treeViewBooks.SelectedNode = currentNode;
         }
 
         private void LblContent_MouseDoubleClick(object sender, MouseEventArgs e) {
@@ -469,7 +488,7 @@ namespace KindleMate2 {
                 return;
             }
             var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
-            if (columnName == "Book") {
+            if (columnName == "书籍") {
                 _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
                 DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
                 lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
@@ -497,7 +516,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox.Show("确认要删除选中的标注吗？", "确认删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show("确认要删除选中的标注吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result != DialogResult.Yes) {
                 return;
@@ -533,17 +552,17 @@ namespace KindleMate2 {
         }
 
         private void BooksMenuDelete_Click(object sender, EventArgs e) {
-            if (treeView.SelectedNode is null) {
+            if (treeViewBooks.SelectedNode is null) {
                 return;
             }
 
-            DialogResult result = MessageBox.Show("确认要删除这本书中所有的标注吗？", "确认删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show("确认要删除这本书中所有的标注吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result != DialogResult.Yes) {
                 return;
             }
 
-            var bookname = treeView.SelectedNode.Text;
+            var bookname = treeViewBooks.SelectedNode.Text;
             if (!_staticData.DeleteClippingsByBook(bookname)) {
                 MessageBox.Show("删除失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -563,11 +582,11 @@ namespace KindleMate2 {
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = "Import Kindle Clippings File (My Clippings.txt)",
+                Title = "导入Kindle标注文件 (My Clippings.txt)",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "txt",
-                Filter = @"Kindle Clippings File (*.txt)|*.txt",
+                Filter = @"Kindle标注文件 (*.txt)|*.txt",
                 FilterIndex = 2,
                 RestoreDirectory = true,
                 ReadOnlyChecked = true,
@@ -588,18 +607,20 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl, UseShellExecute = true
+                FileName = repoUrl,
+                UseShellExecute = true
             });
         }
 
-        private static string IsKindleDeviceConnected() {
+        private bool IsKindleDeviceConnected() {
             ManagementObjectCollection collection;
             using (var searcher = new ManagementObjectSearcher(@"SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%Kindle%'")) {
                 collection = searcher.Get();
             }
 
             if (collection.Count <= 0) {
-                return string.Empty;
+                _kindleDrive = string.Empty;
+                return false;
             }
 
             var drives = DriveInfo.GetDrives();
@@ -616,10 +637,15 @@ namespace KindleMate2 {
 
                 var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
 
-                if (File.Exists(clippingsPath)) return clippingsPath;
-            }
+                if (!File.Exists(clippingsPath)) {
+                    continue;
+                }
 
-            return string.Empty;
+                _kindleDrive = drive.Name;
+                return true;
+            }
+            _kindleDrive = string.Empty;
+            return false;
         }
 
         private void MenuSyncFromKindle_Click(object sender, EventArgs e) {
@@ -627,8 +653,7 @@ namespace KindleMate2 {
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
-            var kindleClippingsPath = IsKindleDeviceConnected();
-            if (kindleClippingsPath != string.Empty) {
+            if (IsKindleDeviceConnected()) {
                 menuSyncFromKindle.Visible = true;
                 menuKindle.Visible = true;
             } else {
@@ -642,8 +667,10 @@ namespace KindleMate2 {
         }
 
         private void ImportKindleClippings() {
-            var kindleClippingsPath = IsKindleDeviceConnected();
+            var kindleClippingsPath = Path.Combine(_kindleDrive, "documents", "My Clippings.txt");
+            var kindleWordsPath = Path.Combine(_kindleDrive, "system", "vocabulary", "vocab.db");
             ImportKindleClippings(kindleClippingsPath);
+            ImportkindleWords(kindleWordsPath);
         }
 
         private void MenuRename_Click(object sender, EventArgs e) {
@@ -673,7 +700,7 @@ namespace KindleMate2 {
             }
 
             if (_dataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
-                DialogResult result = MessageBox.Show("同名书籍已存在，确认要合并吗？", "确认合并", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult result = MessageBox.Show("同名书籍已存在，确认要合并吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result != DialogResult.Yes) {
                     return;
                 }
@@ -764,6 +791,48 @@ namespace KindleMate2 {
             MessageBox.Show("书籍重命名成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
             _selectedBook = bookname;
             RefreshData();
+        }
+
+        private void BackupOriginClippings() {
+            DataTable dataTable = _staticData.GetOriginClippingsDataTable();
+            dataTable.DefaultView.Sort = "key ASC";
+            DataTable sortedDataTable = dataTable.DefaultView.ToTable();
+
+            var filePath = Path.Combine(_programsDirectory, "My Clippings.txt");
+
+            if (File.Exists(filePath)) {
+                File.Delete(filePath);
+            }
+
+            using StreamWriter writer = new(filePath);
+            foreach (DataRow row in sortedDataTable.Rows) {
+                writer.WriteLine(row["line1"]);
+                writer.WriteLine(row["line2"]);
+                writer.WriteLine(row["line3"]);
+                writer.WriteLine(row["line4"]);
+                writer.WriteLine(row["line5"]);
+            }
+            writer.Close();
+
+            MessageBox.Show("备份完成", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void MenuBackup_Click(object sender, EventArgs e) {
+            BackupOriginClippings();
+        }
+
+        private void MenuRefresh_Click(object sender, EventArgs e) {
+            RefreshData();
+        }
+
+        private void MenuClear_Click(object sender, EventArgs e) {
+            DialogResult result = MessageBox.Show("确认要清空全部数据吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes) {
+                return;
+            }
+            File.Delete(_filePath);
+            File.Copy(_newFilePath, _filePath, true);
+            MessageBox.Show("数据已清空", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
