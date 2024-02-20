@@ -64,9 +64,9 @@
             lblBook.Dock = DockStyle.Fill;
             lblBook.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(0, 0);
-            lblBook.Margin = new Padding(0);
+            lblBook.Margin = new Padding(0, 0, 0, 10);
             lblBook.Name = "lblBook";
-            lblBook.Size = new Size(780, 43);
+            lblBook.Size = new Size(780, 33);
             lblBook.TabIndex = 2;
             lblBook.Text = "书名：";
             lblBook.TextAlign = ContentAlignment.BottomLeft;
@@ -112,9 +112,9 @@
             label1.AutoSize = true;
             label1.Dock = DockStyle.Fill;
             label1.Location = new Point(0, 108);
-            label1.Margin = new Padding(0);
+            label1.Margin = new Padding(0, 0, 0, 10);
             label1.Name = "label1";
-            label1.Size = new Size(780, 43);
+            label1.Size = new Size(780, 33);
             label1.TabIndex = 5;
             label1.Text = "作者：";
             label1.TextAlign = ContentAlignment.BottomLeft;

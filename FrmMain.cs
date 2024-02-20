@@ -26,6 +26,7 @@ namespace KindleMate2 {
             _programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
             _newFilePath = Path.Combine(_programsDirectory, "KM.dat");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
+            _selectedBook = "";
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -100,11 +101,12 @@ namespace KindleMate2 {
             dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
 
             var books = _dataTable.AsEnumerable().Select(row => new {
-                BookName = row.Field<string>("bookname"), AuthorName = row.Field<string>("authorname")
+                BookName = row.Field<string>("bookname")
             }).Distinct();
 
             var rootNode = new TreeNode("全部") {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeView.Nodes.Clear();
@@ -113,7 +115,7 @@ namespace KindleMate2 {
 
             foreach (var book in books) {
                 var bookNode = new TreeNode(book.BookName) {
-                    ToolTipText = book.BookName + " (" + book.AuthorName + ")"
+                    ToolTipText = book.BookName
                 };
                 treeView.Nodes.Add(bookNode);
             }
@@ -121,19 +123,21 @@ namespace KindleMate2 {
             treeView.ExpandAll();
 
             if (string.IsNullOrWhiteSpace(_selectedBook)) {
-                return;
-            }
-            foreach (TreeNode node in treeView.Nodes) {
-                if (node.Text != _selectedBook) {
-                    continue;
+                treeView.SelectedNode = rootNode;
+            } else {
+                foreach (TreeNode node in treeView.Nodes) {
+                    if (node.Text.Trim() == _selectedBook.Trim()) {
+                        treeView.SelectedNode = node;
+                        DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                        lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                        dataGridView.DataSource = filteredBooks;
+                        dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+                        dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+                        break;
+                    } else {
+                        treeView.SelectedNode = rootNode;
+                    }
                 }
-                treeView.SelectedNode = node;
-                DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
-                dataGridView.DataSource = filteredBooks;
-                dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
-                break;
             }
         }
 
@@ -205,9 +209,16 @@ namespace KindleMate2 {
 
                 var insertedCount = 0;
 
-                var sum = 0;
                 foreach (DataRow row in clippingsDataTable.Rows) {
                     if (_staticData.IsExistClippings(row["key"].ToString())) {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(row["content"].ToString())) {
+                        continue;
+                    }
+
+                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
                         continue;
                     }
 
@@ -216,7 +227,7 @@ namespace KindleMate2 {
                     _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
                     _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
                     _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                    sum += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
+                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
                         row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
                 }
 
@@ -225,10 +236,12 @@ namespace KindleMate2 {
                         continue;
                     }
 
+                    if (string.IsNullOrWhiteSpace(row["line4"].ToString())) {
+                        continue;
+                    }
+
                     _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
                 }
-
-                insertedCount += sum;
 
                 DisplayData();
                 CountRows();
@@ -332,6 +345,10 @@ namespace KindleMate2 {
                     continue;
                 }
 
+                if (string.IsNullOrWhiteSpace(line4)) {
+                    continue;
+                }
+
                 originClippingsTable.Rows.Add(key, line1, line2, line3, line4, line5);
                 clippingsTable.Rows.Add(key, line4, bookname, authorname, 0, location, time, 0, null, null, 0, null, -1, pagenumber);
             }
@@ -341,18 +358,18 @@ namespace KindleMate2 {
             }
 
             var insertedOriginCount = (from DataRow row in originClippingsTable.Rows
-                where !_staticData.IsExistOriginalClippings(row["key"].ToString())
-                select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
-                    row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
+                                       where !_staticData.IsExistOriginalClippings(row["key"].ToString())
+                                       select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
+                                           row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
 
             var insertedCount = 0;
 
             if (insertedOriginCount > 0) {
                 insertedCount += (from DataRow row in clippingsTable.Rows
-                    where !_staticData.IsExistClippings(row["key"].ToString())
-                    select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
-                        (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
-                        row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+                                  where !_staticData.IsExistClippings(row["key"].ToString())
+                                  select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
+                                      (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
+                                      row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
 
                 if (insertedCount > 0) {
                     DisplayData();
@@ -391,12 +408,14 @@ namespace KindleMate2 {
 
         private void TreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
-                lblBookCount.Text = "";
+                _selectedBook = string.Empty;
+                lblBookCount.Text = string.Empty;
                 dataGridView.DataSource = _dataTable;
                 dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
+                _selectedBook = selectedBookName;
                 DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
                 lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                 dataGridView.DataSource = filteredBooks;
@@ -476,7 +495,7 @@ namespace KindleMate2 {
                 }
             }
 
-            CountRows();
+            RefreshData();
         }
 
         private void ClippingMenuCopy_Click(object sender, EventArgs e) {
@@ -509,11 +528,11 @@ namespace KindleMate2 {
             }
 
             var bookname = treeView.SelectedNode.Text;
-            if (_staticData.DeleteClippingsByBook(bookname)) {
-                CountRows();
-            } else {
+            if (!_staticData.DeleteClippingsByBook(bookname)) {
                 MessageBox.Show("删除失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            RefreshData();
         }
 
         private void MenuExit_Click(object sender, EventArgs e) {
@@ -553,7 +572,8 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl, UseShellExecute = true
+                FileName = repoUrl,
+                UseShellExecute = true
             });
         }
 
@@ -626,8 +646,11 @@ namespace KindleMate2 {
             }
             var dialogBook = dialog.TxtBook.Trim();
             var dialogAuthor = dialog.TxtAuthor.Trim();
-            if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
+            if (string.IsNullOrWhiteSpace(dialogBook)) {
                 return;
+            }
+            if (!string.IsNullOrWhiteSpace(authorname) && string.IsNullOrWhiteSpace(dialogAuthor)) {
+                dialogAuthor = authorname;
             }
             if (bookname == dialogBook && authorname == dialogAuthor) {
                 MessageBox.Show("书籍名称未改变", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -639,6 +662,56 @@ namespace KindleMate2 {
             }
             MessageBox.Show("书籍重命名成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
             _selectedBook = dialogBook;
+            RefreshData();
+        }
+
+        private void MenuClippingsRefresh_Click(object sender, EventArgs e) {
+            RefreshData();
+        }
+
+        private void MenuBookRefresh_Click(object sender, EventArgs e) {
+            RefreshData();
+        }
+
+        private void menuCombine_Click(object sender, EventArgs e) {
+            ShowCombineDialog();
+        }
+
+        private void ShowCombineDialog() {
+            var booksList = new List<string>();
+
+            var set = new HashSet<string>();
+            var list = _dataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
+            booksList.AddRange(list); 
+
+            var dialog = new FrmCombine {
+                BookNames = booksList
+            };
+
+            if (dialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
+
+            var bookname = dialog.SelectedBookName;
+
+            if (string.IsNullOrWhiteSpace(bookname)) {
+                return;
+            }
+
+            if (bookname == _selectedBook) {
+                MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var resultRows = _dataTable.Select($"bookname = '{bookname}'");
+            var authorName = resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty;
+
+            if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName ?? string.Empty)) {
+                MessageBox.Show("书籍重命名失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            MessageBox.Show("书籍重命名成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            _selectedBook = bookname;
             RefreshData();
         }
     }

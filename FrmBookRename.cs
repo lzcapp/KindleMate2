@@ -47,7 +47,7 @@
         }
 
         private bool IsRevised() {
-            return _bookname.Trim() != txtBook.Text.Trim() || _authorname.Trim() != txtAuthor.Text.Trim();
+            return (_bookname.Trim() != txtBook.Text.Trim() || _authorname.Trim() != txtAuthor.Text.Trim()) && !string.IsNullOrWhiteSpace(txtBook.Text);
         }
     }
 }

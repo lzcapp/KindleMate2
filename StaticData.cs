@@ -85,6 +85,25 @@ namespace KindleMate2 {
             return count > 0;
         }
 
+        public bool IsExistClippingsOfContent(string? content) {
+            switch (content) {
+                case null:
+                case "":
+                    return true;
+            }
+
+            _connection.Open();
+
+            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content = @content";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@content", content);
+            var count = Convert.ToInt32(commandCount.ExecuteScalar());
+
+            _connection.Close();
+
+            return count > 0;
+        }
+
         public int GetOriginClippingsCount() {
             _connection.Open();
 
@@ -226,13 +245,19 @@ namespace KindleMate2 {
         }
 
         internal bool UpdateClippings(string originBookname, string bookname, string authorname) {
-            if (originBookname == string.Empty || bookname == string.Empty || authorname == string.Empty) {
+            if (string.IsNullOrWhiteSpace(originBookname) || string.IsNullOrWhiteSpace(bookname)) {
                 return false;
             }
 
             _connection.Open();
 
-            const string queryUpdate = "UPDATE clippings SET bookname = @bookname, authorname = @authorname WHERE bookname = @originBookname";
+            var queryUpdate = "UPDATE clippings SET bookname = @bookname";
+            if (!string.IsNullOrWhiteSpace(authorname)) {
+                queryUpdate += ", authorname = @authorname";
+            } else {
+                authorname = string.Empty;
+            }
+            queryUpdate += " WHERE bookname = @originBookname";
 
             using var command = new SQLiteCommand(queryUpdate, _connection);
             command.Parameters.Add("@bookname", DbType.String);
