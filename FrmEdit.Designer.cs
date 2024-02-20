@@ -39,31 +39,35 @@
             // 
             // tableLayoutPanel
             // 
+            tableLayoutPanel.AutoSize = true;
+            tableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tableLayoutPanel.ColumnCount = 1;
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
             tableLayoutPanel.Controls.Add(lblBook, 0, 0);
             tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 2);
             tableLayoutPanel.Controls.Add(txtContent, 0, 1);
             tableLayoutPanel.Dock = DockStyle.Fill;
+            tableLayoutPanel.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
             tableLayoutPanel.Location = new Point(10, 10);
             tableLayoutPanel.Margin = new Padding(10, 5, 10, 5);
             tableLayoutPanel.Name = "tableLayoutPanel";
             tableLayoutPanel.RowCount = 3;
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 18.75F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 81.25F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 70F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 87F));
-            tableLayoutPanel.Size = new Size(780, 430);
+            tableLayoutPanel.Size = new Size(780, 294);
             tableLayoutPanel.TabIndex = 0;
             // 
             // lblBook
             // 
+            lblBook.AutoEllipsis = true;
             lblBook.Dock = DockStyle.Top;
-            lblBook.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblBook.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0);
             lblBook.Name = "lblBook";
             lblBook.Padding = new Padding(0, 0, 0, 10);
-            lblBook.Size = new Size(780, 64);
+            lblBook.Size = new Size(780, 60);
             lblBook.TabIndex = 2;
             lblBook.Text = "书名";
             lblBook.TextAlign = ContentAlignment.MiddleLeft;
@@ -74,7 +78,7 @@
             flowLayoutPanel.Controls.Add(btnOK);
             flowLayoutPanel.Controls.Add(btnCancel);
             flowLayoutPanel.Dock = DockStyle.Right;
-            flowLayoutPanel.Location = new Point(420, 342);
+            flowLayoutPanel.Location = new Point(420, 206);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Padding = new Padding(0, 20, 0, 0);
@@ -107,11 +111,11 @@
             // txtContent
             // 
             txtContent.Dock = DockStyle.Top;
-            txtContent.Location = new Point(3, 67);
+            txtContent.Location = new Point(3, 65);
             txtContent.Multiline = true;
             txtContent.Name = "txtContent";
             txtContent.ScrollBars = ScrollBars.Vertical;
-            txtContent.Size = new Size(774, 272);
+            txtContent.Size = new Size(774, 138);
             txtContent.TabIndex = 5;
             txtContent.TextChanged += TxtContent_TextChanged;
             // 
@@ -119,7 +123,7 @@
             // 
             AutoScaleDimensions = new SizeF(13F, 28F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 314);
             Controls.Add(tableLayoutPanel);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -135,6 +139,7 @@
             tableLayoutPanel.PerformLayout();
             flowLayoutPanel.ResumeLayout(false);
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

@@ -101,11 +101,14 @@ namespace KindleMate2 {
             dataGridView.Columns["colorRGB"]!.Visible = false;
             dataGridView.Columns["pagenumber"]!.HeaderText = "Page";
 
-            foreach (DataGridViewColumn column in dataGridView.Columns) {
-                column.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            }
-
             dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+
+            dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            dataGridView.Columns["bookname"]!.Width = 150;
+            dataGridView.Columns["authorname"]!.Width = 150;
+            dataGridView.Columns["clippingdate"]!.Width = 100;
+            dataGridView.Columns["clippingtypelocation"]!.Width = 100;
+            dataGridView.Columns["pagenumber"]!.Width = 100;
 
             var books = _dataTable.AsEnumerable().Select(row => new {
                 BookName = row.Field<string>("bookname")
@@ -408,7 +411,8 @@ namespace KindleMate2 {
                 _selectedBook = string.Empty;
                 lblBookCount.Text = string.Empty;
                 dataGridView.DataSource = _dataTable;
-                dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+                dataGridView.Columns["bookname"]!.Visible = true;
+                dataGridView.Columns["authorname"]!.Visible = true;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
@@ -416,7 +420,8 @@ namespace KindleMate2 {
                 DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
                 lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                 dataGridView.DataSource = filteredBooks;
-                dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+                dataGridView.Columns["bookname"]!.Visible = false;
+                dataGridView.Columns["authorname"]!.Visible = false;
                 dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
             }
         }
@@ -460,7 +465,21 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
-            ShowContentEditDialog();
+            if (e is not { RowIndex: >= 0, ColumnIndex: >= 0 }) {
+                return;
+            }
+            var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
+            if (columnName == "Book") {
+                _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
+                DataTable filteredBooks = _dataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                dataGridView.DataSource = filteredBooks;
+                dataGridView.Columns["bookname"]!.Visible = false;
+                dataGridView.Columns["authorname"]!.Visible = false;
+                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+            } else {
+                ShowContentEditDialog();
+            }
         }
 
         private void DataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e) {
@@ -652,7 +671,17 @@ namespace KindleMate2 {
                 MessageBox.Show("书籍名称未改变", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            if (!_staticData.UpdateClippings(bookname ?? string.Empty, dialog.TxtBook, dialog.TxtAuthor)) {
+
+            if (_dataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
+                DialogResult result = MessageBox.Show("同名书籍已存在，确认要合并吗？", "确认合并", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (result != DialogResult.Yes) {
+                    return;
+                }
+                var resultRows = _dataTable.Select($"bookname = '{bookname}'");
+                dialogAuthor = resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty;
+            }
+
+            if (!_staticData.UpdateClippings(bookname ?? string.Empty, dialogBook, dialogAuthor ?? string.Empty)) {
                 MessageBox.Show("书籍重命名失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -672,6 +701,23 @@ namespace KindleMate2 {
             dataGridView.CurrentCell = dataGridView.Rows[_selectedIndex].Cells[1];
             dataGridView.FirstDisplayedScrollingRowIndex = _selectedIndex;
             dataGridView.Rows[_selectedIndex].Selected = true;
+
+            DataGridViewRow selectedRow = dataGridView.SelectedRows[0];
+
+            var bookname = selectedRow.Cells["bookname"].Value.ToString();
+            var authorname = selectedRow.Cells["authorname"].Value.ToString();
+            var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
+            var content = selectedRow.Cells["content"].Value.ToString();
+
+            lblBook.Text = bookname;
+            if (authorname != string.Empty) {
+                lblAuthor.Text = "（" + authorname + "）";
+            } else {
+                lblAuthor.Text = "";
+            }
+
+            lblLocation.Text = clippinglocation;
+            lblContent.Text = content;
         }
 
         private void MenuBookRefresh_Click(object sender, EventArgs e) {
