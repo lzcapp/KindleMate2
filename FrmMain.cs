@@ -99,11 +99,12 @@ namespace KindleMate2 {
 
             dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
 
-            var books = _dataTable.AsEnumerable().Select(row => new { BookName = row.Field<string>("bookname"), AuthorName = row.Field<string>("authorname") }).Distinct();
+            var books = _dataTable.AsEnumerable().Select(row => new {
+                BookName = row.Field<string>("bookname"), AuthorName = row.Field<string>("authorname")
+            }).Distinct();
 
             var rootNode = new TreeNode("全部") {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeView.Nodes.Clear();
@@ -340,18 +341,18 @@ namespace KindleMate2 {
             }
 
             var insertedOriginCount = (from DataRow row in originClippingsTable.Rows
-                                       where !_staticData.IsExistOriginalClippings(row["key"].ToString())
-                                       select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
-                                           row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
+                where !_staticData.IsExistOriginalClippings(row["key"].ToString())
+                select _staticData.InsertOriginClippings(row["key"].ToString() ?? string.Empty, row["line1"].ToString() ?? string.Empty, row["line2"].ToString() ?? string.Empty, row["line3"].ToString() ?? string.Empty,
+                    row["line4"].ToString() ?? string.Empty, row["line5"].ToString() ?? string.Empty)).Sum();
 
             var insertedCount = 0;
 
             if (insertedOriginCount > 0) {
                 insertedCount += (from DataRow row in clippingsTable.Rows
-                                  where !_staticData.IsExistClippings(row["key"].ToString())
-                                  select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
-                                      (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
-                                      row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
+                    where !_staticData.IsExistClippings(row["key"].ToString())
+                    select _staticData.InsertClippings(row["key"].ToString() ?? string.Empty, row["content"].ToString() ?? string.Empty, row["bookname"].ToString() ?? string.Empty, row["authorname"].ToString() ?? string.Empty,
+                        (int)row["brieftype"], row["clippingtypelocation"].ToString() ?? string.Empty, row["clippingdate"].ToString() ?? string.Empty, (int)row["read"], row["clipping_importdate"].ToString() ?? string.Empty,
+                        row["tag"].ToString() ?? string.Empty, (int)row["sync"], row["newbookname"].ToString() ?? string.Empty, (int)row["colorRGB"], (int)row["pagenumber"])).Sum();
 
                 if (insertedCount > 0) {
                     DisplayData();
@@ -552,8 +553,7 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl,
-                UseShellExecute = true
+                FileName = repoUrl, UseShellExecute = true
             });
         }
 

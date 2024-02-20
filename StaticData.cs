@@ -244,7 +244,7 @@ namespace KindleMate2 {
             command.Parameters["@originBookname"].Value = originBookname;
 
             var result = command.ExecuteNonQuery();
-            
+
             _connection.Close();
 
             return result > 0;
@@ -262,7 +262,7 @@ namespace KindleMate2 {
             using var command = new SQLiteCommand(queryUpdate, _connection);
             command.Parameters.Add("@key", DbType.String);
             command.Parameters.Add("@content", DbType.String);
-            
+
             command.Parameters["@key"].Value = key;
             command.Parameters["@content"].Value = content;
 
