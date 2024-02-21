@@ -99,20 +99,7 @@ namespace KindleMate2 {
                 MessageBox.Show("Kindle生词本文件不存在", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return string.Empty;
             }
-            SQLiteConnection connection = new("Data Source=" + kindleWordsPath + ";") {
-                Site = null,
-                DefaultTimeout = 0,
-                DefaultMaximumSleepTime = 0,
-                BusyTimeout = 0,
-                WaitTimeout = 0,
-                PrepareRetries = 0,
-                ProgressOps = 0,
-                ParseViaFramework = false,
-                Flags = SQLiteConnectionFlags.None,
-                DefaultDbType = null,
-                DefaultTypeName = null,
-                VfsName = null,
-            };
+            SQLiteConnection connection = new("Data Source=" + kindleWordsPath + ";");
 
             var bookInfoTable = new DataTable();
             var lookupsTable = new DataTable();
@@ -392,20 +379,7 @@ namespace KindleMate2 {
 
             var selectedFilePath = fileDialog.FileName;
 
-            SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";") {
-                Site = null,
-                DefaultTimeout = 0,
-                DefaultMaximumSleepTime = 0,
-                BusyTimeout = 0,
-                WaitTimeout = 0,
-                PrepareRetries = 0,
-                ProgressOps = 0,
-                ParseViaFramework = false,
-                Flags = SQLiteConnectionFlags.None,
-                DefaultDbType = null,
-                DefaultTypeName = null,
-                VfsName = null,
-            };
+            SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";");
 
             var clippingsDataTable = new DataTable();
             var originClippingsDataTable = new DataTable();

@@ -4,4 +4,6 @@
 
 **Kindle Mate 2** is a user-friendly and feature-rich program designed to provide an alternative solution to Kindle Mate, which has ceased updates. This new program aims to offer Kindle users a reliable tool for managing and organizing their Kindle clippings effectively.
 
-![Screenshot](https://github.com/lzcapp/KindleMate2/assets/12462465/2158afb2-b9d2-4f2b-b715-3ee5e879d703)
+![Screenshots 01](Screenshots/01.png)
+
+![Screenshots 02](Screenshots/02.png)
