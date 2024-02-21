@@ -71,6 +71,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="KM.dat">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="KM2.db">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="KM2.db">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
