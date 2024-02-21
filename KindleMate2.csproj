@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -19,6 +19,8 @@
 		<Authors>RainySummer</Authors>
 		<Copyright>Copyright (c) RainySummer 2024</Copyright>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -42,7 +44,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
 		<PackageReference Include="System.Management" Version="8.0.0" />
 	</ItemGroup>
 
@@ -71,7 +73,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="KM.dat">
+		<None Update=".KM.dat">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="KM2.db">

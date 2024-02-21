@@ -3,34 +3,7 @@ using System.Data.SQLite;
 
 namespace KindleMate2 {
     public class StaticData {
-        private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;") {
-            Site = null,
-            DefaultTimeout = 0,
-            DefaultMaximumSleepTime = 0,
-            BusyTimeout = 0,
-            WaitTimeout = 0,
-            PrepareRetries = 0,
-            StepRetries = 0,
-            ProgressOps = 0,
-            ParseViaFramework = false,
-            Flags = SQLiteConnectionFlags.None,
-            DefaultDbType = null,
-            DefaultTypeName = null,
-            VfsName = null,
-            TraceFlags = SQLiteTraceFlags.SQLITE_TRACE_NONE
-        };
-
-        internal int GetClippingsCount() {
-            _connection.Open();
-
-            const string queryCount = "SELECT COUNT(*) FROM clippings";
-            using var commandCount = new SQLiteCommand(queryCount, _connection);
-            var count = Convert.ToInt32(commandCount.ExecuteScalar());
-
-            _connection.Close();
-
-            return count;
-        }
+        private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;");
 
         public DataTable GetClipingsDataTable() {
             var dataTable = new DataTable();

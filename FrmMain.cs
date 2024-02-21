@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Management;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -40,8 +39,8 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
-            _programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            _newFilePath = Path.Combine(_programsDirectory, "KM.dat");
+            _programsDirectory = Environment.CurrentDirectory;
+            _newFilePath = Path.Combine(_programsDirectory, ".KM.dat");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
             _kindleClippingsPath = Path.Combine("documents", "My Clippings.txt");
             _kindleWordsPath = Path.Combine("system", "vocabulary", "vocab.db");
@@ -107,14 +106,12 @@ namespace KindleMate2 {
                 BusyTimeout = 0,
                 WaitTimeout = 0,
                 PrepareRetries = 0,
-                StepRetries = 0,
                 ProgressOps = 0,
                 ParseViaFramework = false,
                 Flags = SQLiteConnectionFlags.None,
                 DefaultDbType = null,
                 DefaultTypeName = null,
                 VfsName = null,
-                TraceFlags = SQLiteTraceFlags.SQLITE_TRACE_NONE
             };
 
             var bookInfoTable = new DataTable();
@@ -402,14 +399,12 @@ namespace KindleMate2 {
                 BusyTimeout = 0,
                 WaitTimeout = 0,
                 PrepareRetries = 0,
-                StepRetries = 0,
                 ProgressOps = 0,
                 ParseViaFramework = false,
                 Flags = SQLiteConnectionFlags.None,
                 DefaultDbType = null,
                 DefaultTypeName = null,
                 VfsName = null,
-                TraceFlags = SQLiteTraceFlags.SQLITE_TRACE_NONE
             };
 
             var clippingsDataTable = new DataTable();
@@ -664,12 +659,14 @@ namespace KindleMate2 {
                         var stem = string.Empty;
                         var frequency = string.Empty;
                         foreach (DataRow row in _vocabDataTable.Rows) {
-                            if (row["word_key"].ToString() == word_key) {
-                                word = row["word"].ToString();
-                                stem = row["stem"].ToString();
-                                frequency = row["frequency"].ToString();
-                                break;
+                            if (row["word_key"].ToString() != word_key) {
+                                continue;
                             }
+
+                            word = row["word"].ToString() ?? string.Empty;
+                            stem = row["stem"].ToString();
+                            frequency = row["frequency"].ToString();
+                            break;
                         }
                         var timestamp = selectedRow.Cells["timestamp"].Value.ToString();
                         var usage = _lookupsDataTable.Rows.Cast<DataRow>().Where(row => row["word_key"].ToString() == word_key).Aggregate("", (current, row) => current + (row["usage"] + "\n"));
