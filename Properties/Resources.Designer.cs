@@ -103,6 +103,16 @@ namespace KindleMate2.Properties {
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
+        internal static System.Drawing.Bitmap clockwise_vertical_arrows {
+            get {
+                object obj = ResourceManager.GetObject("clockwise-vertical-arrows", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
         internal static System.Drawing.Bitmap counterclockwise_arrows_button {
             get {
                 object obj = ResourceManager.GetObject("counterclockwise-arrows-button", resourceCulture);
@@ -116,6 +126,16 @@ namespace KindleMate2.Properties {
         internal static System.Drawing.Bitmap cross_mark_button {
             get {
                 object obj = ResourceManager.GetObject("cross-mark-button", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
+        internal static System.Drawing.Bitmap eight_spoked_asterisk {
+            get {
+                object obj = ResourceManager.GetObject("eight-spoked-asterisk", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -1402,11 +1402,13 @@ namespace KindleMate2 {
                 dataGridView.Columns["authorname"]!.Visible = true;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
-                var selectedBookName = e.Node.Text;
-                _selectedBook = selectedBookName;
-                DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
-                dataGridView.DataSource = filteredBooks;
+                if (e.Node != null) {
+                    var selectedBookName = e.Node.Text;
+                    _selectedBook = selectedBookName;
+                    DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
+                    lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                    dataGridView.DataSource = filteredBooks;
+                }
                 dataGridView.Columns["bookname"]!.Visible = false;
                 dataGridView.Columns["authorname"]!.Visible = false;
                 dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
@@ -1434,6 +1436,10 @@ namespace KindleMate2 {
                     MenuRename_Click(sender, e);
                     break;
             }
+        }
+
+        private void MenuRestart_Click(object sender, EventArgs e) {
+            Restart();
         }
     }
 }
