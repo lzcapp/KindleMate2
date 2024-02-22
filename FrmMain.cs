@@ -57,40 +57,75 @@ namespace KindleMate2 {
 
         private void FrmMain_Load(object? sender, EventArgs e) {
             if (File.Exists(_filePath)) {
-                RefreshData();
-            } else {
-                DialogResult result = MessageBox.Show("您有Kindle Mate的数据库文件吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var fileInfo = new FileInfo(_filePath);
+                var fileSizeInKB = fileInfo.Length / 1024;
 
-                switch (result) {
-                    case DialogResult.Yes:
-                        SetProgressBar(true);
-                        ImportKMDatabase();
-                        SetProgressBar(false);
-                        break;
-                    case DialogResult.No:
-                    case DialogResult.None:
-                    case DialogResult.OK:
-                    case DialogResult.Cancel:
-                    case DialogResult.Abort:
-                    case DialogResult.Retry:
-                    case DialogResult.Ignore:
-                    case DialogResult.TryAgain:
-                    case DialogResult.Continue:
-                    default:
-                        if (!string.IsNullOrEmpty(_kindleDrive)) {
-                            DialogResult resultKindle = MessageBox.Show("您连接了Kindle设备，需要从Kindle中导入数据吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            if (resultKindle == DialogResult.Yes) {
-                                ImportFromKindle();
-                                return;
-                            }
-                        }
-
-                        File.Delete(_filePath);
-                        File.Copy(_newFilePath, _filePath, true);
-
-                        return;
+                if (fileSizeInKB > 20) {
+                    RefreshData();
+                    return;
                 }
             }
+
+            DialogResult result = MessageBox.Show("您需要导入Kindle Mate的数据库文件吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            switch (result) {
+                case DialogResult.Yes:
+                    SetProgressBar(true);
+                    ImportKMDatabase();
+                    SetProgressBar(false);
+                    return;
+                case DialogResult.No:
+                default:
+                    DialogResult resultKm2 = MessageBox.Show("您需要导入Kindle Mate2的数据库文件吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    switch (resultKm2) {
+                        case DialogResult.Yes:
+                            SetProgressBar(true);
+                            ImportKM2Database();
+                            SetProgressBar(false);
+                            return;
+                        case DialogResult.No:
+                        default:
+                            File.Delete(_filePath);
+                            File.Copy(_newFilePath, _filePath, true);
+                            break;
+                    }
+
+                    if (!string.IsNullOrEmpty(_kindleDrive)) {
+                        DialogResult resultKindle = MessageBox.Show("您连接了Kindle设备，需要从Kindle中导入数据吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (resultKindle == DialogResult.Yes) {
+                            ImportFromKindle();
+                            File.Delete(_newFilePath);
+                            return;
+                        }
+                    }
+                    break;
+            }
+            File.Delete(_newFilePath);
+        }
+
+        private void ImportKM2Database() {
+            var fileDialog = new OpenFileDialog {
+                InitialDirectory = _programsDirectory,
+                Title = "导入Kindle Mate 2数据库文件 (KM2.dat)",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                DefaultExt = "dat",
+                Filter = @"Kindle Mate数据库文件 (*.dat)|*.dat",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+                ReadOnlyChecked = true,
+                ShowReadOnly = true
+            };
+
+            if (fileDialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
+
+            File.Copy(fileDialog.FileName, _filePath, true);
+            File.Delete(_newFilePath);
+
+            Restart();
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
