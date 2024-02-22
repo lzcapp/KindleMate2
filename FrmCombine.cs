@@ -13,7 +13,7 @@
             }
         }
 
-        public string SelectedBookName {
+        public string SelectedName {
             get => comboBox.SelectedItem?.ToString() ?? string.Empty;
         }
 

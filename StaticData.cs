@@ -342,9 +342,9 @@ namespace KindleMate2 {
             return result;
         }
 
-        internal int InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
+        internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
             if (id == string.Empty || word == string.Empty) {
-                return 0;
+                return false;
             }
 
             _connection.Open();
@@ -377,7 +377,7 @@ namespace KindleMate2 {
 
             _connection.Close();
 
-            return result;
+            return result > 0;
         }
 
         internal int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
@@ -412,9 +412,9 @@ namespace KindleMate2 {
             return result;
         }
 
-        internal int UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
+        internal bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (word == string.Empty) {
-                return 0;
+                return false;
             }
 
             _connection.Open();
@@ -439,12 +439,12 @@ namespace KindleMate2 {
 
             _connection.Close();
 
-            return result;
+            return result > 0;
         }
 
-        internal int UpdateVocab(string word_key, int frequency) {
+        internal bool UpdateVocab(string word_key, int frequency) {
             if (word_key == string.Empty) {
-                return 0;
+                return false;
             }
 
             _connection.Open();
@@ -461,7 +461,7 @@ namespace KindleMate2 {
 
             _connection.Close();
 
-            return result;
+            return result > 0;
         }
 
         internal DataTable GetVocabDataTable() {
@@ -478,7 +478,7 @@ namespace KindleMate2 {
 
             return dataTable;
         }
-        
+
         internal DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
 
@@ -526,6 +526,57 @@ namespace KindleMate2 {
             _connection.Close();
 
             return count > 0;
+        }
+
+        internal bool DeleteVocab(string word) {
+            if (word == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryDelete = "DELETE FROM vocab WHERE word = @word";
+            using var command = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@word", word);
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
+        }
+
+        internal bool DeleteLookupsByTimeStamp(string timestamp) {
+            if (timestamp == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryDelete = "DELETE FROM lookups WHERE timestamp = @timestamp";
+            using var command = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@timestamp", timestamp);
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
+        }
+
+        internal bool DeleteLookupsByWordKey(string word_key) {
+            if (word_key == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            const string queryDelete = "DELETE FROM lookups WHERE word_key = @word_key";
+            using var command = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@word_key", word_key);
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
         }
     }
 }
