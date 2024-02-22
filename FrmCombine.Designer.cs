@@ -125,6 +125,7 @@
             MinimizeBox = false;
             Name = "FrmCombine";
             Padding = new Padding(10);
+            ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Text = "合并到书籍";
             TopMost = true;

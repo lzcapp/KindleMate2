@@ -151,6 +151,7 @@
             MinimizeBox = false;
             Name = "FrmBookRename";
             Padding = new Padding(10);
+            ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Text = "重命名书籍";
             Load += FrmBookRename_Load;

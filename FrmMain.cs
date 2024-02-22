@@ -51,6 +51,8 @@ namespace KindleMate2 {
             _selectedBook = string.Empty;
             _selectedWord = string.Empty;
             _selectedIndex = 0;
+
+            treeViewBooks.Focus();
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -191,13 +193,17 @@ namespace KindleMate2 {
         }
 
         private void RefreshData() {
-            if (dataGridView.CurrentRow is not null) {
-                _selectedIndex = dataGridView.CurrentRow.Index;
-            }
+            try {
+                if (dataGridView.CurrentRow is not null) {
+                    _selectedIndex = dataGridView.CurrentRow.Index;
+                }
 
-            DisplayData();
-            CountRows();
-            SelectRow();
+                DisplayData();
+                CountRows();
+                SelectRow();
+            } catch (Exception) {
+                // ignored
+            }
         }
 
         private void DisplayData() {
@@ -229,7 +235,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode("全部") {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -255,8 +262,9 @@ namespace KindleMate2 {
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
                         lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                         dataGridView.DataSource = filteredBooks;
-                        dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                         dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+                        menuCombine.Visible = true;
+                        menuRename.Visible = true;
                         break;
                     }
 
@@ -269,7 +277,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode("全部") {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -295,8 +304,9 @@ namespace KindleMate2 {
                         DataTable filteredWords = _vocabDataTable.AsEnumerable().Where(row => row.Field<string>("word") == _selectedWord).CopyToDataTable();
                         lblBookCount.Text = "|  本书中有 " + filteredWords.Rows.Count + " 条词汇";
                         dataGridView.DataSource = filteredWords;
-                        dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
                         dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Ascending);
+                        menuCombine.Visible = false;
+                        menuRename.Visible = false;
                         break;
                     }
 
@@ -373,10 +383,11 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
+                    var booksCount = treeViewBooks.Nodes.Count - 1;
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = "共 " + clippingsCount + " 条标注，已删除 " + diff + " 条";
+                    lblCount.Text = "共 " + booksCount + " 本书，" + clippingsCount + " 条标注，已删除 " + diff + " 条";
                     break;
                 case 1:
                     var vocabCount = _vocabDataTable.Rows.Count;
@@ -660,7 +671,11 @@ namespace KindleMate2 {
                         }
 
                         lblLocation.Text = clippinglocation + " （第 " + pagenumber + " 页）";
-                        lblContent.Text = content;
+
+                        lblContent.Text = "";
+                        lblContent.SelectionBullet = false;
+                        lblContent.AppendText(content);
+
                         break;
                     case 1:
                         var word_key = selectedRow.Cells["word_key"].Value.ToString();
@@ -743,6 +758,9 @@ namespace KindleMate2 {
             var clickPoint = new Point(e.X, e.Y);
             TreeNode currentNode = treeViewBooks.GetNodeAt(clickPoint);
             if (currentNode == null) {
+                return;
+            }
+            if (currentNode.Text is "全选" or "Select All") {
                 return;
             }
 
@@ -868,12 +886,15 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode != Keys.Enter) {
-                return;
+            switch (e.KeyCode) {
+                case Keys.Enter:
+                    ShowContentEditDialog();
+                    e.Handled = true;
+                    break;
+                case Keys.Delete:
+                    ClippingMenuDelete_Click(sender, e);
+                    break;
             }
-
-            ShowContentEditDialog();
-            e.Handled = true;
         }
 
         private void BooksMenuDelete_Click(object sender, EventArgs e) {
@@ -971,7 +992,8 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl, UseShellExecute = true
+                FileName = repoUrl,
+                UseShellExecute = true
             });
         }
 
@@ -1285,7 +1307,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1319,6 +1342,18 @@ namespace KindleMate2 {
             SetDataGridView();
             CountRows();
             SelectRow();
+
+            var index = tabControl.SelectedIndex;
+            switch (index) {
+                case 0:
+                    menuCombine.Visible = true;
+                    menuRename.Visible = true;
+                    break;
+                case 1:
+                    menuCombine.Visible = false;
+                    menuRename.Visible = false;
+                    break;
+            }
         }
 
         private void TreeViewWords_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -1326,22 +1361,12 @@ namespace KindleMate2 {
                 _selectedWord = string.Empty;
                 lblBookCount.Text = string.Empty;
                 dataGridView.DataSource = _lookupsDataTable;
-                //dataGridView.Columns["bookname"]!.Visible = true;
-                //dataGridView.Columns["authorname"]!.Visible = true;
-                //dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
-                menuCombine.Visible = true;
-                menuRename.Visible = true;
             } else {
                 var selectedWord = e.Node.Text;
                 _selectedWord = selectedWord;
                 DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == selectedWord).CopyToDataTable();
                 lblBookCount.Text = "|  本词共有 " + filteredWords.Rows.Count + " 条单词";
                 dataGridView.DataSource = filteredWords;
-                //dataGridView.Columns["bookname"]!.Visible = false;
-                //dataGridView.Columns["authorname"]!.Visible = false;
-                //dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
-                menuCombine.Visible = false;
-                menuRename.Visible = false;
             }
         }
 
@@ -1358,6 +1383,57 @@ namespace KindleMate2 {
 
             currentNode.ContextMenuStrip = menuBooks;
             treeViewBooks.SelectedNode = currentNode;
+        }
+
+        private void TreeViewBooks_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
+            if (e.Node.Text is "全选" or "Select All") {
+                return;
+            }
+
+            ShowBookRenameDialog();
+        }
+
+        private void TreeViewBooks_AfterSelect(object sender, TreeViewEventArgs e) {
+            if (e.Node is { Text: "Select All" or "全部" }) {
+                _selectedBook = string.Empty;
+                lblBookCount.Text = string.Empty;
+                dataGridView.DataSource = _clippingsDataTable;
+                dataGridView.Columns["bookname"]!.Visible = true;
+                dataGridView.Columns["authorname"]!.Visible = true;
+                dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+            } else {
+                var selectedBookName = e.Node.Text;
+                _selectedBook = selectedBookName;
+                DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
+                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                dataGridView.DataSource = filteredBooks;
+                dataGridView.Columns["bookname"]!.Visible = false;
+                dataGridView.Columns["authorname"]!.Visible = false;
+                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+            }
+        }
+
+        private void LblBook_MouseDoubleClick(object sender, MouseEventArgs e) {
+            ShowBookRenameDialog();
+        }
+
+        private void LblAuthor_MouseDoubleClick(object sender, MouseEventArgs e) {
+            ShowBookRenameDialog();
+        }
+
+        private void FlowLayoutPanel_MouseDoubleClick(object sender, MouseEventArgs e) {
+            ShowBookRenameDialog();
+        }
+
+        private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
+            switch (e.KeyCode) {
+                case Keys.Delete:
+                    BooksMenuDelete_Click(sender, e);
+                    break;
+                case Keys.Enter:
+                    MenuRename_Click(sender, e);
+                    break;
+            }
         }
     }
 }

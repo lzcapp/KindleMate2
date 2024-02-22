@@ -98,7 +98,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1504, 36);
+            menuStrip.Size = new Size(1504, 40);
             menuStrip.TabIndex = 1;
             menuStrip.Text = "menuStrip2";
             // 
@@ -282,7 +282,10 @@
             treeViewBooks.Size = new Size(382, 833);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
+            treeViewBooks.AfterSelect += TreeViewBooks_AfterSelect;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
+            treeViewBooks.NodeMouseDoubleClick += TreeViewBooks_NodeMouseDoubleClick;
+            treeViewBooks.KeyDown += TreeViewBooks_KeyDown;
             treeViewBooks.MouseDown += TreeViewBooks_MouseDown;
             // 
             // imageListBooks
@@ -391,7 +394,7 @@
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.Padding = new Padding(5, 5, 5, 5);
+            tableLayoutPanel.Padding = new Padding(5);
             tableLayoutPanel.RowCount = 4;
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
@@ -428,7 +431,7 @@
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Size = new Size(1094, 33);
             flowLayoutPanel.TabIndex = 3;
-            flowLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
+            flowLayoutPanel.MouseDoubleClick += FlowLayoutPanel_MouseDoubleClick;
             // 
             // lblBook
             // 
@@ -439,7 +442,7 @@
             lblBook.Name = "lblBook";
             lblBook.Size = new Size(0, 31);
             lblBook.TabIndex = 0;
-            lblBook.MouseDoubleClick += LblContent_MouseDoubleClick;
+            lblBook.MouseDoubleClick += LblBook_MouseDoubleClick;
             // 
             // lblAuthor
             // 
@@ -449,7 +452,7 @@
             lblAuthor.Name = "lblAuthor";
             lblAuthor.Size = new Size(0, 31);
             lblAuthor.TabIndex = 1;
-            lblAuthor.MouseDoubleClick += LblContent_MouseDoubleClick;
+            lblAuthor.MouseDoubleClick += LblAuthor_MouseDoubleClick;
             // 
             // lblContent
             // 
@@ -459,7 +462,7 @@
             lblContent.Dock = DockStyle.Fill;
             lblContent.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblContent.Location = new Point(10, 94);
-            lblContent.Margin = new Padding(5, 5, 5, 5);
+            lblContent.Margin = new Padding(5);
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
@@ -562,7 +565,7 @@
             lblCount.Image = Properties.Resources.keycap_number_sign;
             lblCount.Margin = new Padding(0);
             lblCount.Name = "lblCount";
-            lblCount.Size = new Size(28, 28);
+            lblCount.Size = new Size(28, 33);
             // 
             // lblBookCount
             // 
@@ -578,7 +581,7 @@
             progressBar.Margin = new Padding(100, 5, 100, 5);
             progressBar.MarqueeAnimationSpeed = 50;
             progressBar.Name = "progressBar";
-            progressBar.Size = new Size(300, 18);
+            progressBar.Size = new Size(200, 23);
             progressBar.Style = ProgressBarStyle.Marquee;
             progressBar.Visible = false;
             // 
