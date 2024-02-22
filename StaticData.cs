@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.SQLite;
+using System.Windows.Forms;
 
 namespace KindleMate2 {
     public class StaticData {
@@ -340,6 +341,37 @@ namespace KindleMate2 {
             _connection.Close();
 
             return result;
+        }
+
+        internal bool UpdateLookups(string origintitle, string title, string authors) {
+            if (origintitle == string.Empty || title == string.Empty) {
+                return false;
+            }
+
+            _connection.Open();
+
+            var queryUpdate = "UPDATE lookups SET title = @title";
+
+            if (!string.IsNullOrWhiteSpace(authors)) {
+                queryUpdate += ", authors = @authors";
+            }
+            
+            queryUpdate += " WHERE title = @origintitle";
+
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@origintitle", DbType.String);
+            command.Parameters.Add("@title", DbType.String);
+            command.Parameters.Add("@authors", DbType.String);
+
+            command.Parameters["@origintitle"].Value = origintitle;
+            command.Parameters["@title"].Value = title;
+            command.Parameters["@authors"].Value = authors;
+
+            var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
         }
 
         internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {

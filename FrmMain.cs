@@ -1061,10 +1061,10 @@ namespace KindleMate2 {
 
         private void ShowBookRenameDialog() {
             using var dialog = new FrmBookRename();
-            var bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString();
-            dialog.TxtBook = bookname ?? string.Empty;
-            var authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString();
-            dialog.TxtAuthor = authorname ?? string.Empty;
+            var bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
+            dialog.TxtBook = bookname;
+            var authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
+            dialog.TxtAuthor = authorname;
             if (dialog.ShowDialog() != DialogResult.OK) {
                 return;
             }
@@ -1091,16 +1091,20 @@ namespace KindleMate2 {
                 }
 
                 var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-                dialogAuthor = resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty;
+                dialogAuthor = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
             }
 
-            if (!_staticData.UpdateClippings(bookname ?? string.Empty, dialogBook, dialogAuthor ?? string.Empty)) {
+            _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
+
+            if (!_staticData.UpdateClippings(bookname, dialogBook, dialogAuthor)) {
                 MessageBox.Show("书籍重命名失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             MessageBox.Show("书籍重命名成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             _selectedBook = dialogBook;
+
             RefreshData();
         }
 
@@ -1193,15 +1197,19 @@ namespace KindleMate2 {
                     }
 
                     var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-                    var authorName = resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty;
+                    var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
 
-                    if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName ?? string.Empty)) {
-                        MessageBox.Show("书籍重命名失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _staticData.UpdateLookups(_selectedBook, bookname, authorName);
+
+                    if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
+                        MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
-                    MessageBox.Show("书籍重命名成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                     _selectedBook = bookname;
+
                     break;
                 case 1:
                     break;
