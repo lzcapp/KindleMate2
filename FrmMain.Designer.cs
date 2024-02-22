@@ -291,7 +291,6 @@
             treeViewBooks.Size = new Size(382, 833);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
-            treeViewBooks.AfterSelect += TreeViewBooks_AfterSelect;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
             treeViewBooks.NodeMouseDoubleClick += TreeViewBooks_NodeMouseDoubleClick;
             treeViewBooks.KeyDown += TreeViewBooks_KeyDown;

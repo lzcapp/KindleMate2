@@ -198,6 +198,8 @@ namespace KindleMate2 {
                     _selectedIndex = dataGridView.CurrentRow.Index;
                 }
 
+                //_selectedBook = GetBookname();
+
                 DisplayData();
                 CountRows();
                 SelectRow();
@@ -257,14 +259,12 @@ namespace KindleMate2 {
                 treeViewBooks.SelectedNode = rootNodeBooks;
             } else {
                 foreach (TreeNode node in treeViewBooks.Nodes) {
-                    if (node.Text.Trim().Equals(_selectedBook.Trim())) {
+                    if (node.Text.Trim() == _selectedBook.Trim()) {
                         treeViewBooks.SelectedNode = node;
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
                         lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
                         dataGridView.DataSource = filteredBooks;
                         dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
-                        menuCombine.Visible = true;
-                        menuRename.Visible = true;
                         break;
                     }
 
@@ -305,8 +305,6 @@ namespace KindleMate2 {
                         lblBookCount.Text = "|  本书中有 " + filteredWords.Rows.Count + " 条词汇";
                         dataGridView.DataSource = filteredWords;
                         dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Ascending);
-                        menuCombine.Visible = false;
-                        menuRename.Visible = false;
                         break;
                     }
 
@@ -732,7 +730,7 @@ namespace KindleMate2 {
 
         private void TreeViewBooks_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
-                _selectedBook = string.Empty;
+                _selectedBook = "全部";
                 lblBookCount.Text = string.Empty;
                 dataGridView.DataSource = _clippingsDataTable;
                 dataGridView.Columns["bookname"]!.Visible = true;
@@ -1083,7 +1081,8 @@ namespace KindleMate2 {
 
         private void ShowBookRenameDialog() {
             using var dialog = new FrmBookRename();
-            var bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
+            var bookname = GetBookname();
+
             dialog.TxtBook = bookname;
             var authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
             dialog.TxtAuthor = authorname;
@@ -1128,6 +1127,16 @@ namespace KindleMate2 {
             _selectedBook = dialogBook;
 
             RefreshData();
+        }
+
+        private string GetBookname() {
+            string bookname;
+            if (!string.IsNullOrWhiteSpace(lblBook.Text)) {
+                bookname = lblBook.Text;
+            } else {
+                bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
+            }
+            return bookname;
         }
 
         private void MenuClippingsRefresh_Click(object sender, EventArgs e) {
@@ -1391,28 +1400,6 @@ namespace KindleMate2 {
             }
 
             ShowBookRenameDialog();
-        }
-
-        private void TreeViewBooks_AfterSelect(object sender, TreeViewEventArgs e) {
-            if (e.Node is { Text: "Select All" or "全部" }) {
-                _selectedBook = string.Empty;
-                lblBookCount.Text = string.Empty;
-                dataGridView.DataSource = _clippingsDataTable;
-                dataGridView.Columns["bookname"]!.Visible = true;
-                dataGridView.Columns["authorname"]!.Visible = true;
-                dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
-            } else {
-                if (e.Node != null) {
-                    var selectedBookName = e.Node.Text;
-                    _selectedBook = selectedBookName;
-                    DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                    lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
-                    dataGridView.DataSource = filteredBooks;
-                }
-                dataGridView.Columns["bookname"]!.Visible = false;
-                dataGridView.Columns["authorname"]!.Visible = false;
-                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
-            }
         }
 
         private void LblBook_MouseDoubleClick(object sender, MouseEventArgs e) {
