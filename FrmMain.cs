@@ -1202,6 +1202,7 @@ namespace KindleMate2 {
             }
             return bookname;
         }
+
         private string GetAuthorname() {
             string authorname;
             if (!string.IsNullOrWhiteSpace(lblAuthor.Text)) {
@@ -1355,7 +1356,7 @@ namespace KindleMate2 {
             return true;
         }
 
-        private bool BackupVocab() {
+        private static bool BackupVocab() {
             // TODO: BackupVocab
             return true;
         }
@@ -1450,7 +1451,7 @@ namespace KindleMate2 {
                 var selectedWord = e.Node.Text;
                 _selectedWord = selectedWord;
                 DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == selectedWord).CopyToDataTable();
-                lblBookCount.Text = "本词共有 " + filteredWords.Rows.Count + " 条单词";
+                lblBookCount.Text = "本词共有 " + filteredWords.Rows.Count + " 次查询";
                 lblBookCount.Image = Properties.Resources.input_latin_uppercase;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;

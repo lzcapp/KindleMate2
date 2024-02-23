@@ -355,7 +355,7 @@ namespace KindleMate2 {
             if (!string.IsNullOrWhiteSpace(authors)) {
                 queryUpdate += ", authors = @authors";
             }
-            
+
             queryUpdate += " WHERE title = @origintitle";
 
             using var command = new SQLiteCommand(queryUpdate, _connection);
