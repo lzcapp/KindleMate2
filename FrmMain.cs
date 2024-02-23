@@ -1384,9 +1384,11 @@ namespace KindleMate2 {
                 return;
             }
 
-            File.Delete(_filePath);
-            File.Copy(_newFilePath, _filePath, true);
-            MessageBox.Show("数据已清空", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (_staticData.EmptyTables()) {
+                MessageBox.Show("数据已清空", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } else {
+                MessageBox.Show("清空失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
 
             Restart();
         }

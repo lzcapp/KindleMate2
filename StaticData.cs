@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using System.Data.SQLite;
-using System.Windows.Forms;
 
 namespace KindleMate2 {
     public class StaticData {
@@ -605,6 +604,28 @@ namespace KindleMate2 {
             using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@word_key", word_key);
             var result = command.ExecuteNonQuery();
+
+            _connection.Close();
+
+            return result > 0;
+        }
+
+        internal bool EmptyTables() {
+            _connection.Open();
+
+            var tableNames = new List<string>() {
+                "clippings",
+                "lookups",
+                "original_clipping_lines",
+                "vocab"
+            };
+
+            var result = 0;
+
+            foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
+                using var command = new SQLiteCommand(queryDelete, _connection);
+                result += command.ExecuteNonQuery();
+            }
 
             _connection.Close();
 
