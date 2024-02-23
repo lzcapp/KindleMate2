@@ -122,10 +122,193 @@
 			PublicKeyToken=b77a5c561934e089
 		</value>
 	</resheader>
-	<data name="FrmMain_FileHandler_Import_KM2_Data" xml:space="preserve">
-    <value/>
-  </data>
-	<data name="FrmMain_FileHandler_Import_Kindle_Mate_Data_File__KM2_dat_" xml:space="preserve">
-    <value>Import Kindle Mate Data File (KM2.dat)</value>
-  </data>
+	<data name="Successful" xml:space="preserve">
+		<value>成功</value>
+	</data>
+	<data name="Confirm" xml:space="preserve">
+		<value>确认</value>
+	</data>
+	<data name="Prompt" xml:space="preserve">
+		<value>提示</value>
+	</data>
+	<data name="Error" xml:space="preserve">
+		<value>错误</value>
+	</data>
+	<data name="Confirm_Import_Kindle_Mate_Database" xml:space="preserve">
+		<value>您需要导入Kindle Mate的数据库文件吗？</value>
+	</data>
+	<data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
+		<value>您需要导入Kindle Mate2的数据库文件吗？</value>
+	</data>
+	<data name="Kindle_Mate_2_Database_File" xml:space="preserve">
+		<value>Kindle Mate 2数据库文件</value>
+	</data>
+	<data name="Import_Kindle_Mate_2_Database" xml:space="preserve">
+		<value>导入Kindle Mate 2数据库文件</value>
+	</data>
+	<data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
+		<value>您连接了Kindle设备，需要从Kindle中导入数据吗？</value>
+	</data>
+	<data name="Kindle_Vocab_Not_Exist" xml:space="preserve">
+		<value>Kindle生词本文件不存在</value>
+	</data>
+	<data name="Page" xml:space="preserve">
+		<value>页数</value>
+	</data>
+	<data name="Time" xml:space="preserve">
+		<value>时间</value>
+	</data>
+	<data name="Author" xml:space="preserve">
+		<value>作者</value>
+	</data>
+	<data name="Total_Clippings" xml:space="preserve">
+		<value>本书中有</value>
+	</data>
+	<data name="X_Clippings" xml:space="preserve">
+		<value> 条标注</value>
+	</data>
+	<data name="Content" xml:space="preserve">
+		<value>内容</value>
+	</data>
+	<data name="Totally" xml:space="preserve">
+		<value>共 </value>
+	</data>
+	<data name="X_Books" xml:space="preserve">
+		<value> 本书</value>
+	</data>
+	<data name="Symbol_Comma" xml:space="preserve">
+		<value>，</value>
+	</data>
+	<data name="Delete_Failed" xml:space="preserve">
+		<value>删除失败</value>
+	</data>
+	<data name="Space" xml:space="preserve">
+		<value> </value>
+	</data>
+	<data name="Book_Renamed_Failed" xml:space="preserve">
+		<value>书籍重命名失败</value>
+	</data>
+	<data name="Totally_Vocabs" xml:space="preserve">
+		<value>本词共有</value>
+	</data>
+	<data name="X_Lookups" xml:space="preserve">
+		<value>次查询</value>
+	</data>
+	<data name="Confirm_Clear_All_Data" xml:space="preserve">
+		<value>确认要清空全部数据吗？</value>
+	</data>
+	<data name="Clear_Failed" xml:space="preserve">
+		<value>清空失败</value>
+	</data>
+	<data name="Data_Cleared" xml:space="preserve">
+		<value>数据已清空</value>
+	</data>
+	<data name="Left_Parenthesis" xml:space="preserve">
+		<value>（</value>
+	</data>
+	<data name="Right_Parenthesis" xml:space="preserve">
+		<value>）</value>
+	</data>
+	<data name="Books" xml:space="preserve">
+		<value>书籍</value>
+	</data>
+	<data name="Vocabulary" xml:space="preserve">
+		<value>单词</value>
+	</data>
+	<data name="X_Vocabs" xml:space="preserve">
+		<value>条词汇</value>
+	</data>
+	<data name="Deleted_X" xml:space="preserve">
+		<value>已删除 </value>
+	</data>
+	<data name="X_Rows" xml:space="preserve">
+		<value>条</value>
+	</data>
+	<data name="X_Times" xml:space="preserve">
+		<value>次</value>
+	</data>
+	<data name="Quried_X" xml:space="preserve">
+		<value>共查询</value>
+	</data>
+	<data name="Stem" xml:space="preserve">
+		<value>词干</value>
+	</data>
+	<data name="Kindle_Vocab_File" xml:space="preserve">
+		<value>Kindle生词本文件</value>
+	</data>
+	<data name="Import_Kindle_Vocab_File" xml:space="preserve">
+		<value>导入Kindle生词本文件</value>
+	</data>
+	<data name="Books_Renamed" xml:space="preserve">
+		<value>书籍重命名成功</value>
+	</data>
+	<data name="Books_Title_Not_Changed" xml:space="preserve">
+		<value>书籍名称未改变</value>
+	</data>
+	<data name="Kindle_Device_Connected" xml:space="preserve">
+		<value>Kindle设备已连接</value>
+	</data>
+	<data name="Kindle_Clipping_File" xml:space="preserve">
+		<value>Kindle标注文件</value>
+	</data>
+	<data name="Import_Kindle_Clipping_File" xml:space="preserve">
+		<value>导入Kindle标注文件</value>
+	</data>
+	<data name="Clippings_Revised" xml:space="preserve">
+		<value>标注已修改</value>
+	</data>
+	<data name="Clippings_Revised_Failed" xml:space="preserve">
+		<value>标注修改失败</value>
+	</data>
+	<data name="Frequency" xml:space="preserve">
+		<value>词频</value>
+	</data>
+	<data name="Symbol_Colon" xml:space="preserve">
+		<value>：</value>
+	</data>
+	<data name="Confirm_Same_Title_Combine" xml:space="preserve">
+		<value>同名书籍已存在，确认要合并吗？</value>
+	</data>
+	<data name="No_Data_To_Backup" xml:space="preserve">
+		<value>没有数据可备份</value>
+	</data>
+	<data name="Kindle_Mate_Database_File" xml:space="preserve">
+		<value>Kindle Mate数据库文件</value>
+	</data>
+	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+		<value>导入Kindle Mate数据库文件</value>
+	</data>
+	<data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
+		<value>确认要删除选中的标注吗？</value>
+	</data>
+	<data name="Page_" xml:space="preserve">
+		<value>第</value>
+	</data>
+	<data name="X_Page" xml:space="preserve">
+		<value>页</value>
+	</data>
+	<data name="Select_All" xml:space="preserve">
+		<value>全选</value>
+	</data>
+	<data name="Confirm_Delete_Lookups" xml:space="preserve">
+		<value>确认要删除选中的查询吗？</value>
+	</data>
+	<data name="Parsed_X" xml:space="preserve">
+		<value>共解析</value>
+	</data>
+	<data name="X_Records" xml:space="preserve">
+		<value>条记录</value>
+	</data>
+	<data name="Imported_X" xml:space="preserve">
+		<value>导入</value>
+	</data>
+	<data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
+		<value>确认要删除这本书中的所有标注吗？</value>
+	</data>
+	<data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
+		<value>确认要删除这个词汇中的所有查询吗？</value>
+	</data>
+	<data name="Backup_Failed" xml:space="preserve">
+		<value>备份失败</value>
+	</data>
 </root>

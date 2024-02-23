@@ -41,6 +41,7 @@
             toolStripMenuAbout = new ToolStripMenuItem();
             menuRepo = new ToolStripMenuItem();
             menuKindle = new ToolStripMenuItem();
+            menuLang = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
             tabControl = new TabControl();
             tabPageBooks = new TabPage();
@@ -94,7 +95,7 @@
             // menuStrip
             // 
             menuStrip.ImageScalingSize = new Size(32, 32);
-            menuStrip.Items.AddRange(new ToolStripItem[] { menuFile, menuManage, menuHelp, menuKindle });
+            menuStrip.Items.AddRange(new ToolStripItem[] { menuFile, menuManage, menuHelp, menuKindle, menuLang });
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
@@ -224,6 +225,15 @@
             menuKindle.Text = " Kindle设备已连接";
             menuKindle.Visible = false;
             menuKindle.Click += MenuKindle_Click;
+            // 
+            // menuLang
+            // 
+            menuLang.Alignment = ToolStripItemAlignment.Right;
+            menuLang.Name = "menuLang";
+            menuLang.Size = new Size(51, 32);
+            menuLang.Text = "文";
+            menuLang.Visible = false;
+            menuLang.Click += MenuLang_Click;
             // 
             // splitContainerMain
             // 
@@ -514,14 +524,14 @@
             menuBooks.ImageScalingSize = new Size(28, 28);
             menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, booksMenuDelete, menuRename });
             menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(271, 144);
+            menuBooks.Size = new Size(148, 106);
             // 
             // menuBookRefresh
             // 
             menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
             menuBookRefresh.Name = "menuBookRefresh";
             menuBookRefresh.ShortcutKeyDisplayString = "";
-            menuBookRefresh.Size = new Size(270, 34);
+            menuBookRefresh.Size = new Size(147, 34);
             menuBookRefresh.Text = "刷新";
             menuBookRefresh.Click += MenuBookRefresh_Click;
             // 
@@ -530,7 +540,7 @@
             booksMenuDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
             booksMenuDelete.Name = "booksMenuDelete";
             booksMenuDelete.ShortcutKeyDisplayString = "";
-            booksMenuDelete.Size = new Size(270, 34);
+            booksMenuDelete.Size = new Size(147, 34);
             booksMenuDelete.Text = "删除";
             booksMenuDelete.Click += BooksMenuDelete_Click;
             // 
@@ -538,7 +548,7 @@
             // 
             menuRename.Name = "menuRename";
             menuRename.ShortcutKeyDisplayString = "";
-            menuRename.Size = new Size(270, 34);
+            menuRename.Size = new Size(147, 34);
             menuRename.Text = "重命名";
             menuRename.Click += MenuRename_Click;
             // 
@@ -679,5 +689,6 @@
         private ToolStripMenuItem menuImportKindleWords;
         private RichTextBox lblContent;
         private ToolStripMenuItem menuRestart;
+        private ToolStripMenuItem menuLang;
     }
 }
