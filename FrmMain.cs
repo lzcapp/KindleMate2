@@ -233,8 +233,6 @@ namespace KindleMate2 {
                     _selectedIndex = dataGridView.CurrentRow.Index;
                 }
 
-                //_selectedBook = GetBookname();
-
                 DisplayData();
                 CountRows();
                 SelectRow();
@@ -272,8 +270,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode("全部") {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -296,10 +293,9 @@ namespace KindleMate2 {
                 foreach (TreeNode node in treeViewBooks.Nodes) {
                     if (node.Text.Trim() == _selectedBook.Trim()) {
                         treeViewBooks.SelectedNode = node;
-                        DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                        lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
-                        dataGridView.DataSource = filteredBooks;
-                        dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+                        lblBookCount.Text = "本书中有 " + dataGridView.Rows.Count + " 条标注";
+                        lblBookCount.Image = Properties.Resources.open_book;
+                        lblBookCount.Visible = true;
                         break;
                     }
 
@@ -312,8 +308,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode("全部") {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -336,10 +331,9 @@ namespace KindleMate2 {
                 foreach (TreeNode node in treeViewWords.Nodes) {
                     if (node.Text.Trim().Equals(_selectedWord.Trim())) {
                         treeViewWords.SelectedNode = node;
-                        DataTable filteredWords = _vocabDataTable.AsEnumerable().Where(row => row.Field<string>("word") == _selectedWord).CopyToDataTable();
-                        lblBookCount.Text = "|  本书中有 " + filteredWords.Rows.Count + " 条词汇";
-                        dataGridView.DataSource = filteredWords;
-                        dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Ascending);
+                        lblBookCount.Text = "本书中有 " + dataGridView.Rows.Count + " 条词汇";
+                        lblBookCount.Image = Properties.Resources.input_latin_uppercase;
+                        lblBookCount.Visible = true;
                         break;
                     }
 
@@ -360,30 +354,60 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    dataGridView.DataSource = _clippingsDataTable;
+                    if (string.IsNullOrWhiteSpace(_selectedBook)) {
+                        dataGridView.DataSource = _clippingsDataTable;
+                        dataGridView.Columns["key"]!.Visible = false;
+                        dataGridView.Columns["content"]!.HeaderText = "内容";
+                        dataGridView.Columns["bookname"]!.HeaderText = "书籍";
+                        dataGridView.Columns["authorname"]!.HeaderText = "作者";
+                        dataGridView.Columns["brieftype"]!.Visible = false;
+                        dataGridView.Columns["clippingtypelocation"]!.Visible = false;
+                        dataGridView.Columns["clippingdate"]!.HeaderText = "时间";
+                        dataGridView.Columns["read"]!.Visible = false;
+                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
+                        dataGridView.Columns["tag"]!.Visible = false;
+                        dataGridView.Columns["sync"]!.Visible = false;
+                        dataGridView.Columns["newbookname"]!.Visible = false;
+                        dataGridView.Columns["colorRGB"]!.Visible = false;
+                        dataGridView.Columns["pagenumber"]!.HeaderText = "页数";
 
-                    dataGridView.Columns["key"]!.Visible = false;
-                    dataGridView.Columns["content"]!.HeaderText = "内容";
-                    dataGridView.Columns["bookname"]!.HeaderText = "书籍";
-                    dataGridView.Columns["authorname"]!.HeaderText = "作者";
-                    dataGridView.Columns["brieftype"]!.Visible = false;
-                    dataGridView.Columns["clippingtypelocation"]!.HeaderText = "位置";
-                    dataGridView.Columns["clippingdate"]!.HeaderText = "时间";
-                    dataGridView.Columns["read"]!.Visible = false;
-                    dataGridView.Columns["clipping_importdate"]!.Visible = false;
-                    dataGridView.Columns["tag"]!.Visible = false;
-                    dataGridView.Columns["sync"]!.Visible = false;
-                    dataGridView.Columns["newbookname"]!.Visible = false;
-                    dataGridView.Columns["colorRGB"]!.Visible = false;
-                    dataGridView.Columns["pagenumber"]!.Visible = false;
+                        dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["bookname"]!.Width = 150;
+                        dataGridView.Columns["authorname"]!.Width = 100;
+                        dataGridView.Columns["clippingdate"]!.Width = 150;
+                        dataGridView.Columns["pagenumber"]!.Width = 100;
 
-                    dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+                        dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+                    } else {
+                        DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                        lblBookCount.Text = "本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                        lblBookCount.Image = Properties.Resources.open_book;
+                        lblBookCount.Visible = true;
+                        dataGridView.DataSource = filteredBooks;
+                        dataGridView.Columns["key"]!.Visible = false;
+                        dataGridView.Columns["content"]!.HeaderText = "内容";
+                        dataGridView.Columns["bookname"]!.Visible = false;
+                        dataGridView.Columns["authorname"]!.Visible = false;
+                        dataGridView.Columns["brieftype"]!.Visible = false;
+                        dataGridView.Columns["clippingtypelocation"]!.Visible = false;
+                        dataGridView.Columns["clippingdate"]!.HeaderText = "时间";
+                        dataGridView.Columns["read"]!.Visible = false;
+                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
+                        dataGridView.Columns["tag"]!.Visible = false;
+                        dataGridView.Columns["sync"]!.Visible = false;
+                        dataGridView.Columns["newbookname"]!.Visible = false;
+                        dataGridView.Columns["colorRGB"]!.Visible = false;
+                        dataGridView.Columns["pagenumber"]!.HeaderText = "页数";
 
-                    dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                    dataGridView.Columns["bookname"]!.Width = 150;
-                    dataGridView.Columns["authorname"]!.Width = 100;
-                    dataGridView.Columns["clippingdate"]!.Width = 150;
-                    dataGridView.Columns["clippingtypelocation"]!.Width = 100;
+                        dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["clippingdate"]!.Width = 150;
+                        dataGridView.Columns["pagenumber"]!.Width = 100;
+
+                        dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
+                    }
+
+                    dataGridView.Columns["pagenumber"]!.DisplayIndex = 4;
+
                     break;
                 case 1:
                     if (_vocabDataTable.Rows.Count <= 0) {
@@ -694,7 +718,7 @@ namespace KindleMate2 {
                         var authorname = selectedRow.Cells["authorname"].Value.ToString();
                         var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
                         var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString();
-                        var content = selectedRow.Cells["content"].Value.ToString();
+                        var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n");
 
                         lblBook.Text = bookname;
                         if (authorname != string.Empty) {
@@ -727,7 +751,7 @@ namespace KindleMate2 {
                         }
 
                         var timestamp = selectedRow.Cells["timestamp"].Value.ToString();
-                        var usage = _lookupsDataTable.Rows.Cast<DataRow>().Where(row => row["word_key"].ToString() == word_key).Aggregate("", (current, row) => current + (row["usage"] + "\n"));
+                        var usage = _lookupsDataTable.Rows.Cast<DataRow>().Where(row => row["word_key"].ToString() == word_key).Aggregate("", (current, row) => current + (row["usage"] + "\n")).Replace(" 　　", "\n");
 
                         lblBook.Text = word;
                         if (stem != string.Empty && stem != word) {
@@ -767,6 +791,8 @@ namespace KindleMate2 {
             if (e.Node.Text is "Select All" or "全部") {
                 _selectedBook = "全部";
                 lblBookCount.Text = string.Empty;
+                lblBookCount.Image = null;
+                lblBookCount.Visible = false;
                 dataGridView.DataSource = _clippingsDataTable;
                 dataGridView.Columns["bookname"]!.Visible = true;
                 dataGridView.Columns["authorname"]!.Visible = true;
@@ -775,11 +801,13 @@ namespace KindleMate2 {
                 var selectedBookName = e.Node.Text;
                 _selectedBook = selectedBookName;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                lblBookCount.Text = "本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                lblBookCount.Image = Properties.Resources.open_book;
+                lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.Columns["bookname"]!.Visible = false;
                 dataGridView.Columns["authorname"]!.Visible = false;
-                dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+                dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
             }
         }
 
@@ -836,7 +864,9 @@ namespace KindleMate2 {
             if (columnName == "书籍") {
                 _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                lblBookCount.Text = "|  本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                lblBookCount.Text = "本书中有 " + filteredBooks.Rows.Count + " 条标注";
+                lblBookCount.Image = Properties.Resources.open_book;
+                lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.Columns["bookname"]!.Visible = false;
                 dataGridView.Columns["authorname"]!.Visible = false;
@@ -1025,8 +1055,7 @@ namespace KindleMate2 {
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             Process.Start(new ProcessStartInfo {
-                FileName = repoUrl,
-                UseShellExecute = true
+                FileName = repoUrl, UseShellExecute = true
             });
         }
 
@@ -1117,9 +1146,9 @@ namespace KindleMate2 {
         private void ShowBookRenameDialog() {
             using var dialog = new FrmBookRename();
             var bookname = GetBookname();
+            var authorname = GetAuthorname();
 
             dialog.TxtBook = bookname;
-            var authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
             dialog.TxtAuthor = authorname;
             if (dialog.ShowDialog() != DialogResult.OK) {
                 return;
@@ -1173,6 +1202,15 @@ namespace KindleMate2 {
             }
             return bookname;
         }
+        private string GetAuthorname() {
+            string authorname;
+            if (!string.IsNullOrWhiteSpace(lblAuthor.Text)) {
+                authorname = lblAuthor.Text;
+            } else {
+                authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
+            }
+            return authorname;
+        }
 
         private void MenuClippingsRefresh_Click(object sender, EventArgs e) {
             RefreshData();
@@ -1183,7 +1221,10 @@ namespace KindleMate2 {
                 return;
             }
 
+            dataGridView.ClearSelection();
+
             var index = tabControl.SelectedIndex;
+
             switch (index) {
                 case 0:
                     if (_selectedIndex >= dataGridView.Rows.Count) {
@@ -1229,60 +1270,60 @@ namespace KindleMate2 {
             RefreshData();
         }
 
-        private void MenuCombine_Click(object sender, EventArgs e) {
-            ShowCombineDialog();
-        }
+        //private void MenuCombine_Click(object sender, EventArgs e) {
+        //    ShowCombineDialog();
+        //}
 
-        private void ShowCombineDialog() {
-            var index = tabControl.SelectedIndex;
-            switch (index) {
-                case 0:
-                    var booksList = new List<string>();
+        //private void ShowCombineDialog() {
+        //    var index = tabControl.SelectedIndex;
+        //    switch (index) {
+        //        case 0:
+        //            var booksList = new List<string>();
 
-                    var set = new HashSet<string>();
-                    var list = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
-                    booksList.AddRange(list);
+        //            var set = new HashSet<string>();
+        //            var list = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
+        //            booksList.AddRange(list);
 
-                    var booksDialog = new FrmCombine {
-                        BookNames = booksList
-                    };
+        //            var booksDialog = new FrmCombine {
+        //                BookNames = booksList
+        //            };
 
-                    if (booksDialog.ShowDialog() != DialogResult.OK) {
-                        return;
-                    }
+        //            if (booksDialog.ShowDialog() != DialogResult.OK) {
+        //                return;
+        //            }
 
-                    var bookname = booksDialog.SelectedName;
+        //            var bookname = booksDialog.SelectedName;
 
-                    if (string.IsNullOrWhiteSpace(bookname)) {
-                        return;
-                    }
+        //            if (string.IsNullOrWhiteSpace(bookname)) {
+        //                return;
+        //            }
 
-                    if (bookname == _selectedBook) {
-                        MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
+        //            if (bookname == _selectedBook) {
+        //                MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //                return;
+        //            }
 
-                    var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-                    var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
+        //            var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
+        //            var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
 
-                    _staticData.UpdateLookups(_selectedBook, bookname, authorName);
+        //            _staticData.UpdateLookups(_selectedBook, bookname, authorName);
 
-                    if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
-                        MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+        //            if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
+        //                MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //                return;
+        //            }
 
-                    MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //            MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    _selectedBook = bookname;
+        //            _selectedBook = bookname;
 
-                    break;
-                case 1:
-                    break;
-            }
+        //            break;
+        //        case 1:
+        //            break;
+        //    }
 
-            RefreshData();
-        }
+        //    RefreshData();
+        //}
 
         private bool BackupOriginClippings() {
             DataTable dataTable = _staticData.GetOriginClippingsDataTable();
@@ -1351,8 +1392,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1388,28 +1428,31 @@ namespace KindleMate2 {
             SelectRow();
 
             var index = tabControl.SelectedIndex;
-            switch (index) {
-                case 0:
-                    menuCombine.Visible = true;
-                    menuRename.Visible = true;
-                    break;
-                case 1:
-                    menuCombine.Visible = false;
-                    menuRename.Visible = false;
-                    break;
-            }
+            menuRename.Visible = index switch {
+                0 =>
+                    //menuCombine.Visible = true;
+                    true,
+                1 =>
+                    //menuCombine.Visible = false;
+                    false,
+                _ => menuRename.Visible
+            };
         }
 
         private void TreeViewWords_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
                 _selectedWord = string.Empty;
                 lblBookCount.Text = string.Empty;
+                lblBookCount.Image = null;
+                lblBookCount.Visible = false;
                 dataGridView.DataSource = _lookupsDataTable;
             } else {
                 var selectedWord = e.Node.Text;
                 _selectedWord = selectedWord;
                 DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == selectedWord).CopyToDataTable();
-                lblBookCount.Text = "|  本词共有 " + filteredWords.Rows.Count + " 条单词";
+                lblBookCount.Text = "本词共有 " + filteredWords.Rows.Count + " 条单词";
+                lblBookCount.Image = Properties.Resources.input_latin_uppercase;
+                lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;
             }
         }

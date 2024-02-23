@@ -153,6 +153,16 @@ namespace KindleMate2.Properties {
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
+        internal static System.Drawing.Bitmap input_latin_uppercase {
+            get {
+                object obj = ResourceManager.GetObject("input-latin-uppercase", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
         internal static System.Drawing.Bitmap keycap_number_sign {
             get {
                 object obj = ResourceManager.GetObject("keycap-number-sign", resourceCulture);
@@ -186,6 +196,16 @@ namespace KindleMate2.Properties {
         internal static System.Drawing.Bitmap mobile_phone_with_arrow {
             get {
                 object obj = ResourceManager.GetObject("mobile-phone-with-arrow", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
+        internal static System.Drawing.Bitmap open_book {
+            get {
+                object obj = ResourceManager.GetObject("open-book", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

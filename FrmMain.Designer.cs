@@ -27,8 +27,8 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
-            menuRestart = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
+            menuRestart = new ToolStripMenuItem();
             menuExit = new ToolStripMenuItem();
             menuManage = new ToolStripMenuItem();
             menuImportKindle = new ToolStripMenuItem();
@@ -64,7 +64,6 @@
             menuBooks = new ContextMenuStrip(components);
             menuBookRefresh = new ToolStripMenuItem();
             booksMenuDelete = new ToolStripMenuItem();
-            menuCombine = new ToolStripMenuItem();
             menuRename = new ToolStripMenuItem();
             openFileDialog = new OpenFileDialog();
             statusStrip = new StatusStrip();
@@ -99,7 +98,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1504, 40);
+            menuStrip.Size = new Size(1504, 36);
             menuStrip.TabIndex = 1;
             menuStrip.Text = "menuStrip2";
             // 
@@ -110,30 +109,30 @@
             menuFile.Name = "menuFile";
             menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            menuFile.Size = new Size(97, 36);
+            menuFile.Size = new Size(97, 32);
             menuFile.Text = "文件(&F)";
-            // 
-            // menuRestart
-            // 
-            menuRestart.Image = Properties.Resources.eight_spoked_asterisk;
-            menuRestart.Name = "menuRestart";
-            menuRestart.Size = new Size(319, 44);
-            menuRestart.Text = "重启";
-            menuRestart.Click += MenuRestart_Click;
             // 
             // menuRefresh
             // 
             menuRefresh.Image = Properties.Resources.counterclockwise_arrows_button;
             menuRefresh.Name = "menuRefresh";
-            menuRefresh.Size = new Size(319, 44);
+            menuRefresh.Size = new Size(171, 40);
             menuRefresh.Text = "刷新";
             menuRefresh.Click += MenuRefresh_Click;
+            // 
+            // menuRestart
+            // 
+            menuRestart.Image = Properties.Resources.eight_spoked_asterisk;
+            menuRestart.Name = "menuRestart";
+            menuRestart.Size = new Size(171, 40);
+            menuRestart.Text = "重启";
+            menuRestart.Click += MenuRestart_Click;
             // 
             // menuExit
             // 
             menuExit.Image = Properties.Resources.cross_mark_button;
             menuExit.Name = "menuExit";
-            menuExit.Size = new Size(319, 44);
+            menuExit.Size = new Size(171, 40);
             menuExit.Text = "退出";
             menuExit.Click += MenuExit_Click;
             // 
@@ -141,7 +140,7 @@
             // 
             menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuBackup, menuClear });
             menuManage.Name = "menuManage";
-            menuManage.Size = new Size(113, 36);
+            menuManage.Size = new Size(113, 32);
             menuManage.Text = "管理 (&M)";
             // 
             // menuImportKindle
@@ -197,7 +196,7 @@
             // 
             menuHelp.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuAbout, menuRepo });
             menuHelp.Name = "menuHelp";
-            menuHelp.Size = new Size(102, 36);
+            menuHelp.Size = new Size(102, 32);
             menuHelp.Text = "帮助(&H)";
             // 
             // toolStripMenuAbout
@@ -323,7 +322,7 @@
             treeViewWords.Dock = DockStyle.Fill;
             treeViewWords.FullRowSelect = true;
             treeViewWords.HideSelection = false;
-            treeViewWords.ImageIndex = 0;
+            treeViewWords.ImageIndex = 1;
             treeViewWords.ImageList = imageListWords;
             treeViewWords.Location = new Point(3, 3);
             treeViewWords.Name = "treeViewWords";
@@ -342,7 +341,7 @@
             imageListWords.ImageStream = (ImageListStreamer)resources.GetObject("imageListWords.ImageStream");
             imageListWords.TransparentColor = Color.Transparent;
             imageListWords.Images.SetKeyName(0, "input-latin-uppercase.png");
-            imageListWords.Images.SetKeyName(1, "input-latin-letters.png");
+            imageListWords.Images.SetKeyName(1, "input-latin-lowercase.png");
             imageListWords.Images.SetKeyName(2, "books.png");
             // 
             // splitContainerDetail
@@ -513,16 +512,16 @@
             // menuBooks
             // 
             menuBooks.ImageScalingSize = new Size(28, 28);
-            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, booksMenuDelete, menuCombine, menuRename });
+            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, booksMenuDelete, menuRename });
             menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(148, 140);
+            menuBooks.Size = new Size(271, 144);
             // 
             // menuBookRefresh
             // 
             menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
             menuBookRefresh.Name = "menuBookRefresh";
             menuBookRefresh.ShortcutKeyDisplayString = "";
-            menuBookRefresh.Size = new Size(147, 34);
+            menuBookRefresh.Size = new Size(270, 34);
             menuBookRefresh.Text = "刷新";
             menuBookRefresh.Click += MenuBookRefresh_Click;
             // 
@@ -531,23 +530,15 @@
             booksMenuDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
             booksMenuDelete.Name = "booksMenuDelete";
             booksMenuDelete.ShortcutKeyDisplayString = "";
-            booksMenuDelete.Size = new Size(147, 34);
+            booksMenuDelete.Size = new Size(270, 34);
             booksMenuDelete.Text = "删除";
             booksMenuDelete.Click += BooksMenuDelete_Click;
-            // 
-            // menuCombine
-            // 
-            menuCombine.Name = "menuCombine";
-            menuCombine.ShortcutKeyDisplayString = "";
-            menuCombine.Size = new Size(147, 34);
-            menuCombine.Text = "合并到";
-            menuCombine.Click += MenuCombine_Click;
             // 
             // menuRename
             // 
             menuRename.Name = "menuRename";
             menuRename.ShortcutKeyDisplayString = "";
-            menuRename.Size = new Size(147, 34);
+            menuRename.Size = new Size(270, 34);
             menuRename.Text = "重命名";
             menuRename.Click += MenuRename_Click;
             // 
@@ -578,10 +569,11 @@
             // 
             // lblBookCount
             // 
-            lblBookCount.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            lblBookCount.Margin = new Padding(0);
+            lblBookCount.Image = Properties.Resources.input_latin_uppercase;
+            lblBookCount.Margin = new Padding(20, 0, 0, 0);
             lblBookCount.Name = "lblBookCount";
-            lblBookCount.Size = new Size(0, 0);
+            lblBookCount.Size = new Size(28, 33);
+            lblBookCount.Visible = false;
             // 
             // progressBar
             // 
@@ -670,7 +662,6 @@
         private ToolStripMenuItem menuKindle;
         private ToolStripMenuItem menuClippingsRefresh;
         private ToolStripMenuItem menuBookRefresh;
-        private ToolStripMenuItem menuCombine;
         private ToolStripMenuItem menuManage;
         private ToolStripMenuItem menuBackup;
         private ToolStripMenuItem menuImportKindleMate;
