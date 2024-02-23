@@ -32,7 +32,7 @@
 	<data name="Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>Kindle Mate 2's Database File</value>
 	</data>
-	<data name="Import_Kindle_Mate_2_Database" xml:space="preserve">
+	<data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>Import Kindle Mate 2's Database File</value>
 	</data>
 	<data name="Time" xml:space="preserve">
@@ -149,7 +149,7 @@
 	<data name="Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Kindle Mate's Database File</value>
 	</data>
-	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+	<data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Import Kindle Mate's Database File</value>
 	</data>
 	<data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
@@ -190,5 +190,116 @@
 	</data>
 	<data name="X_Clippings" xml:space="preserve">
 		<value> clippings</value>
+	</data>
+	<data name="Delete" xml:space="preserve">
+		<value>Delete</value>
+	</data>
+	<data name="Refresh" xml:space="preserve">
+		<value>Refresh</value>
+	</data>
+	<data name="Copy" xml:space="preserve">
+		<value>Copy</value>
+	</data>
+	<data name="Vocabulary_List" xml:space="preserve">
+		<value>Vocabulary List</value>
+	</data>
+	<data name="Clippings" xml:space="preserve">
+		<value>Clippings</value>
+	</data>
+	<data name="GitHub_Repo" xml:space="preserve">
+		<value>GitHub Repo</value>
+	</data>
+	<data name="Import_Kindle_Clippings" xml:space="preserve">
+		<value>Import Kindle's Clippings</value>
+	</data>
+	<data name="Files" xml:space="preserve">
+		<value>Files </value>
+	</data>
+	<data name="Restart" xml:space="preserve">
+		<value>Restart</value>
+	</data>
+	<data name="Import_Kindle_Vocabs" xml:space="preserve">
+		<value>Import Kindle's Vocabulary List</value>
+	</data>
+	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+		<value>Import Kindle Mate's Database</value>
+	</data>
+	<data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
+		<value>Import Kindle's Clippings File From Kindle</value>
+	</data>
+	<data name="Backup" xml:space="preserve">
+		<value>Backup</value>
+	</data>
+	<data name="Clear_Data" xml:space="preserve">
+		<value>Clear Data</value>
+	</data>
+	<data name="Help" xml:space="preserve">
+		<value>Help</value>
+	</data>
+	<data name="Exit" xml:space="preserve">
+		<value>Exit</value>
+	</data>
+	<data name="About" xml:space="preserve">
+		<value>About</value>
+	</data>
+	<data name="Rename" xml:space="preserve">
+		<value>Rename</value>
+	</data>
+	<data name="Language" xml:space="preserve">
+		<value>Language</value>
+	</data>
+	<data name="Management" xml:space="preserve">
+		<value>Management</value>
+	</data>
+	<data name="Book_Title" xml:space="preserve">
+		<value>Book Title</value>
+	</data>
+	<data name="Save" xml:space="preserve">
+		<value>Save</value>
+	</data>
+	<data name="Cancel" xml:space="preserve">
+		<value>Cancel</value>
+	</data>
+	<data name="Edit_Clippings" xml:space="preserve">
+		<value>Edit Clippings</value>
+	</data>
+	<data name="Rename_Book" xml:space="preserve">
+		<value>Rename Book</value>
+	</data>
+	<data name="Version" xml:space="preserve">
+		<value>Version</value>
+	</data>
+	<data name="Copyright" xml:space="preserve">
+		<value>Copyright</value>
+	</data>
+	<data name="Program_Path" xml:space="preserve">
+		<value>Program Path</value>
+	</data>
+	<data name="Database" xml:space="preserve">
+		<value>Database</value>
+	</data>
+	<data name="Confirm_Button" xml:space="preserve">
+		<value>Confirm</value>
+	</data>
+	<data name="Clean_Database" xml:space="preserve">
+		<value>Clean Database</value>
+	</data>
+	<data name="Database_Cleaned" xml:space="preserve">
+		<value>Database has been cleaned</value>
+	</data>
+	<data name="Database_No_Need_Clean" xml:space="preserve">
+		<value>Database does not need to be cleaned</value>
+	</data>
+	<data name="Empty_Clippings_Data" xml:space="preserve">
+		<value>Clipping's data is empty</value>
+	</data>
+	<data name="Backup_Clippings_Failed" xml:space="preserve">
+		<value>Failed to backup clipping's data</value>
+	</data>
+	<data name="Backup_Vocabs_Failed" xml:space="preserve">
+		<value>Failed to backup vocabulary list</value>
+	</data>
+	<data name="Backup_Successful_Open" xml:space="preserve">
+		<value>Backup completed! Do you want to open the backup folder?</value>
 	</data>
 </root>

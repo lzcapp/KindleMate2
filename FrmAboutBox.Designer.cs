@@ -118,7 +118,7 @@
             lblVersionText.Name = "lblVersionText";
             lblVersionText.Size = new Size(54, 28);
             lblVersionText.TabIndex = 1;
-            lblVersionText.Text = "版本";
+            lblVersionText.Text = Strings.Version;
             lblVersionText.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblCopyrightText
@@ -130,7 +130,7 @@
             lblCopyrightText.Name = "lblCopyrightText";
             lblCopyrightText.Size = new Size(54, 28);
             lblCopyrightText.TabIndex = 29;
-            lblCopyrightText.Text = "版权";
+            lblCopyrightText.Text = Strings.Copyright;
             lblCopyrightText.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblCopyright
@@ -152,7 +152,7 @@
             lblPathText.Name = "lblPathText";
             lblPathText.Size = new Size(96, 28);
             lblPathText.TabIndex = 25;
-            lblPathText.Text = "程序路径";
+            lblPathText.Text = Strings.Program_Path;
             // 
             // lblDatabaseText
             // 
@@ -162,7 +162,7 @@
             lblDatabaseText.Name = "lblDatabaseText";
             lblDatabaseText.Size = new Size(75, 28);
             lblDatabaseText.TabIndex = 26;
-            lblDatabaseText.Text = "数据库";
+            lblDatabaseText.Text = Strings.Database;
             // 
             // okButton
             // 
@@ -174,7 +174,7 @@
             okButton.Name = "okButton";
             okButton.Size = new Size(131, 41);
             okButton.TabIndex = 24;
-            okButton.Text = "确定(&O)";
+            okButton.Text = Strings.Confirm_Button;
             // 
             // flowLayoutPanel1
             // 
@@ -277,7 +277,7 @@
             lblCleanDatabase.Size = new Size(131, 28);
             lblCleanDatabase.TabIndex = 28;
             lblCleanDatabase.TabStop = true;
-            lblCleanDatabase.Text = "(清理数据库)";
+            lblCleanDatabase.Text = Strings.Left_Parenthesis + Strings.Clean_Database + Strings.Right_Parenthesis;
             lblCleanDatabase.LinkClicked += LblCleanDatabase_LinkClicked;
             // 
             // FrmAboutBox

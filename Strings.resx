@@ -143,7 +143,7 @@
 	<data name="Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>Kindle Mate 2数据库文件</value>
 	</data>
-	<data name="Import_Kindle_Mate_2_Database" xml:space="preserve">
+	<data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>导入Kindle Mate 2数据库文件</value>
 	</data>
 	<data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
@@ -275,7 +275,7 @@
 	<data name="Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Kindle Mate数据库文件</value>
 	</data>
-	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+	<data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>导入Kindle Mate数据库文件</value>
 	</data>
 	<data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
@@ -288,7 +288,7 @@
 		<value>页</value>
 	</data>
 	<data name="Select_All" xml:space="preserve">
-		<value>全选</value>
+		<value>全部</value>
 	</data>
 	<data name="Confirm_Delete_Lookups" xml:space="preserve">
 		<value>确认要删除选中的查询吗？</value>
@@ -310,5 +310,116 @@
 	</data>
 	<data name="Backup_Failed" xml:space="preserve">
 		<value>备份失败</value>
+	</data>
+	<data name="Delete" xml:space="preserve">
+		<value>删除</value>
+	</data>
+	<data name="Refresh" xml:space="preserve">
+		<value>刷新</value>
+	</data>
+	<data name="Copy" xml:space="preserve">
+		<value>复制</value>
+	</data>
+	<data name="Vocabulary_List" xml:space="preserve">
+		<value>生词本</value>
+	</data>
+	<data name="Clippings" xml:space="preserve">
+		<value>标注</value>
+	</data>
+	<data name="GitHub_Repo" xml:space="preserve">
+		<value>GitHub仓库</value>
+	</data>
+	<data name="Management" xml:space="preserve">
+		<value>管理</value>
+	</data>
+	<data name="Import_Kindle_Clippings" xml:space="preserve">
+		<value>导入Kindle标注</value>
+	</data>
+	<data name="Files" xml:space="preserve">
+		<value>文件</value>
+	</data>
+	<data name="Restart" xml:space="preserve">
+		<value>重启</value>
+	</data>
+	<data name="Exit" xml:space="preserve">
+		<value>退出</value>
+	</data>
+	<data name="Import_Kindle_Vocabs" xml:space="preserve">
+		<value>导入Kindle生词本</value>
+	</data>
+	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+		<value>导入Kindle Mate数据库</value>
+	</data>
+	<data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
+		<value>从Kindle设备导入标注</value>
+	</data>
+	<data name="Backup" xml:space="preserve">
+		<value>备份</value>
+	</data>
+	<data name="Clear_Data" xml:space="preserve">
+		<value>清空数据</value>
+	</data>
+	<data name="Help" xml:space="preserve">
+		<value>帮助</value>
+	</data>
+	<data name="About" xml:space="preserve">
+		<value>关于</value>
+	</data>
+	<data name="Rename" xml:space="preserve">
+		<value>重命名</value>
+	</data>
+	<data name="Language" xml:space="preserve">
+		<value>语言</value>
+	</data>
+	<data name="Book_Title" xml:space="preserve">
+		<value>书名</value>
+	</data>
+	<data name="Save" xml:space="preserve">
+		<value>保存</value>
+	</data>
+	<data name="Cancel" xml:space="preserve">
+		<value>取消</value>
+	</data>
+	<data name="Edit_Clippings" xml:space="preserve">
+		<value>编辑标注</value>
+	</data>
+	<data name="Rename_Book" xml:space="preserve">
+		<value>重命名书籍</value>
+	</data>
+	<data name="Version" xml:space="preserve">
+		<value>版本</value>
+	</data>
+	<data name="Copyright" xml:space="preserve">
+		<value>版权</value>
+	</data>
+	<data name="Program_Path" xml:space="preserve">
+		<value>程序路径</value>
+	</data>
+	<data name="Database" xml:space="preserve">
+		<value>数据库</value>
+	</data>
+	<data name="Confirm_Button" xml:space="preserve">
+		<value>确定</value>
+	</data>
+	<data name="Clean_Database" xml:space="preserve">
+		<value>清理数据库</value>
+	</data>
+	<data name="Database_Cleaned" xml:space="preserve">
+		<value>数据库已清理</value>
+	</data>
+	<data name="Database_No_Need_Clean" xml:space="preserve">
+		<value>数据库无需清理</value>
+	</data>
+	<data name="Empty_Clippings_Data" xml:space="preserve">
+		<value>标注数据为空</value>
+	</data>
+	<data name="Backup_Clippings_Failed" xml:space="preserve">
+		<value>备份标注失败</value>
+	</data>
+	<data name="Backup_Vocabs_Failed" xml:space="preserve">
+		<value>生词本备份失败</value>
+	</data>
+	<data name="Backup_Successful_Open" xml:space="preserve">
+		<value>备份完成！需要打开备份文件夹吗？</value>
 	</data>
 </root>

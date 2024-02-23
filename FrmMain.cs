@@ -51,8 +51,6 @@ namespace KindleMate2 {
             _selectedBook = string.Empty;
             _selectedWord = string.Empty;
             _selectedIndex = 0;
-
-            treeViewBooks.Focus();
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -102,12 +100,14 @@ namespace KindleMate2 {
                     break;
             }
             File.Delete(_newFilePath);
+
+            treeViewBooks.Focus();
         }
 
         private void ImportKM2Database() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = Strings.Import_Kindle_Mate_2_Database + @" (KM2.dat)",
+                Title = Strings.Import_Kindle_Mate_2_Database_File + @" (KM2.dat)",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
@@ -269,7 +269,7 @@ namespace KindleMate2 {
                 BookName = row.Field<string>("bookname")
             }).Distinct().OrderBy(book => book.BookName);
 
-            var rootNodeBooks = new TreeNode("全部") {
+            var rootNodeBooks = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
                 SelectedImageIndex = 2
             };
@@ -308,7 +308,7 @@ namespace KindleMate2 {
                 Word = row.Field<string>("word")
             }).Distinct().OrderBy(word => word.Word);
 
-            var rootNodeWords = new TreeNode("全部") {
+            var rootNodeWords = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
                 SelectedImageIndex = 2
             };
@@ -459,7 +459,7 @@ namespace KindleMate2 {
         private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = Strings.Import_Kindle_Mate_Database + Strings.Space + @"(KM2.dat)",
+                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
@@ -1370,18 +1370,18 @@ namespace KindleMate2 {
                     MessageBox.Show(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
                 default:
-                    MessageBox.Show("标注数据为空", Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(Strings.Empty_Clippings_Data, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     if (_lookupsDataTable.Rows.Count <= 0) {
-                        MessageBox.Show("生词本数据为空", Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(Strings.Empty_Clippings_Data, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
                         if (!BackupOriginClippings() && !BackupVocab()) {
                             MessageBox.Show(Strings.Backup_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         } else if (!BackupOriginClippings() && BackupVocab()) {
-                            MessageBox.Show("备份标注失败", Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         } else if (BackupOriginClippings() && !BackupVocab()) {
-                            MessageBox.Show("生词本备份失败", Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show(Strings.Backup_Vocabs_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         } else {
-                            DialogResult result = MessageBox.Show("备份完成！需要打开备份文件夹吗？", Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            DialogResult result = MessageBox.Show(Strings.Backup_Successful_Open, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (result != DialogResult.Yes) {
                                 return;
                             }

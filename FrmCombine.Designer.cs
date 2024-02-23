@@ -73,7 +73,7 @@
             btnOK.Name = "btnOK";
             btnOK.Size = new Size(150, 47);
             btnOK.TabIndex = 0;
-            btnOK.Text = "保存";
+            btnOK.Text = Strings.Save;
             btnOK.UseVisualStyleBackColor = true;
             btnOK.Click += BtnOK_Click;
             // 
@@ -84,7 +84,7 @@
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(150, 47);
             btnCancel.TabIndex = 1;
-            btnCancel.Text = "取消";
+            btnCancel.Text = Strings.Cancel;
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += BtnCancel_Click;
             // 

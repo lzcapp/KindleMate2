@@ -69,7 +69,7 @@
             lblBook.Padding = new Padding(0, 0, 0, 10);
             lblBook.Size = new Size(780, 60);
             lblBook.TabIndex = 2;
-            lblBook.Text = "书名";
+            lblBook.Text = Strings.Book_Title;
             lblBook.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // flowLayoutPanel
@@ -93,7 +93,7 @@
             btnOK.Name = "btnOK";
             btnOK.Size = new Size(150, 47);
             btnOK.TabIndex = 0;
-            btnOK.Text = "保存";
+            btnOK.Text = Strings.Save;
             btnOK.UseVisualStyleBackColor = true;
             btnOK.Click += BtnOK_Click;
             // 
@@ -104,7 +104,7 @@
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(150, 47);
             btnCancel.TabIndex = 1;
-            btnCancel.Text = "取消";
+            btnCancel.Text = Strings.Cancel;
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += BtnCancel_Click;
             // 
@@ -133,7 +133,7 @@
             Padding = new Padding(10);
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "编辑标注";
+            Text = Strings.Edit_Clippings;
             Load += FrmEdit_Load;
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();

@@ -53,7 +53,7 @@ namespace KindleMate2 {
         }
 
         private void FrmAboutBox_Load(object sender, EventArgs e) {
-            Text = "关于 " + AssemblyProduct;
+            Text = Strings.About + Strings.Space + AssemblyProduct;
 
             //lblProductName.Text = AssemblyTitle;
             lblVersion.Text = AssemblyVersion;
@@ -64,7 +64,7 @@ namespace KindleMate2 {
             var filePath = Path.Combine(programsDirectory, "KM2.dat");
             var fileInfo = new FileInfo(filePath);
             var fileSize = fileInfo.Length;
-            lblDatabase.Text = "KM2.dat (" + FormatFileSize(fileSize) + ")";
+            lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + FormatFileSize(fileSize) + Strings.Right_Parenthesis;
         }
 
         private void LblCleanDatabase_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
@@ -80,9 +80,9 @@ namespace KindleMate2 {
             var newFileSize = fileInfo.Length;
 
             if (newFileSize < originFileSize) {
-                MessageBox.Show("数据库已清理 " + FormatFileSize(originFileSize - newFileSize), "清理数据库", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Strings.Database_Cleaned + Strings.Symbol_Colon + FormatFileSize(originFileSize - newFileSize), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                MessageBox.Show("数据库无需清理", "清理数据库", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
     }
