@@ -64,7 +64,7 @@ namespace KindleMate2 {
                 }
             }
 
-            DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (result) {

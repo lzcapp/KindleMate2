@@ -23,9 +23,6 @@
 	<data name="Error" xml:space="preserve">
 		<value>Error</value>
 	</data>
-	<data name="Confirm_Import_Kindle_Mate_Database" xml:space="preserve">
-		<value>Do you need to import Kindle Mate's database file?</value>
-	</data>
 	<data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
 		<value>Do you need to import Kindle Mate 2's database file?</value>
 	</data>
@@ -301,5 +298,8 @@
 	</data>
 	<data name="Backup_Successful_Open" xml:space="preserve">
 		<value>Backup completed! Do you want to open the backup folder?</value>
+	</data>
+	<data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
+		<value>Do you need to import Kindle Mate's database file?</value>
 	</data>
 </root>

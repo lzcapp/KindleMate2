@@ -134,9 +134,6 @@
 	<data name="Error" xml:space="preserve">
 		<value>错误</value>
 	</data>
-	<data name="Confirm_Import_Kindle_Mate_Database" xml:space="preserve">
-		<value>您需要导入Kindle Mate的数据库文件吗？</value>
-	</data>
 	<data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
 		<value>您需要导入Kindle Mate2的数据库文件吗？</value>
 	</data>
@@ -421,5 +418,8 @@
 	</data>
 	<data name="Backup_Successful_Open" xml:space="preserve">
 		<value>备份完成！需要打开备份文件夹吗？</value>
+	</data>
+	<data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
+		<value>您需要导入Kindle Mate的数据库文件吗？</value>
 	</data>
 </root>

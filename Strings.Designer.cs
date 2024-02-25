@@ -306,9 +306,9 @@ namespace KindleMate2 {
         /// <summary>
         ///   查找类似 您需要导入Kindle Mate的数据库文件吗？ 的本地化字符串。
         /// </summary>
-        internal static string Confirm_Import_Kindle_Mate_Database {
+        internal static string Confirm_Import_Kindle_Mate_Database_File {
             get {
-                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_Database", resourceCulture);
+                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_Database_File", resourceCulture);
             }
         }
         
