@@ -664,6 +664,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 数据库为空 的本地化字符串。
+        /// </summary>
+        internal static string No_Data_To_Clear {
+            get {
+                return ResourceManager.GetString("No_Data_To_Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 页数 的本地化字符串。
         /// </summary>
         internal static string Page {

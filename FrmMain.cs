@@ -1433,6 +1433,11 @@ namespace KindleMate2 {
         }
 
         private void MenuClear_Click(object sender, EventArgs e) {
+            if (_staticData.isDatabaseEmpty()) {
+                MessageBox.Show(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             DialogResult result = MessageBox.Show(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) {
                 return;

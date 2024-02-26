@@ -302,4 +302,7 @@
 	<data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Do you need to import Kindle Mate's database file?</value>
 	</data>
+	<data name="No_Data_To_Clear" xml:space="preserve">
+		<value>Database is empty</value>
+	</data>
 </root>
