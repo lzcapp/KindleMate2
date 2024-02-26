@@ -10,6 +10,10 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -38,6 +42,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -68,6 +76,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -98,6 +110,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -138,6 +154,10 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -164,6 +184,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -204,6 +228,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -232,6 +260,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -260,6 +292,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -305,6 +341,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -362,6 +402,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -404,6 +448,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -433,6 +481,10 @@ namespace KindleMate2 {
 
         internal void VacuumDatabase() {
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -456,6 +508,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -494,6 +550,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -571,6 +631,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -645,6 +709,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -671,6 +739,10 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -695,6 +767,10 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
             try {
@@ -720,6 +796,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -748,6 +828,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -776,6 +860,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -804,6 +892,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -832,6 +924,10 @@ namespace KindleMate2 {
             }
 
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
             
@@ -856,6 +952,10 @@ namespace KindleMate2 {
 
         internal bool EmptyTables() {
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -883,6 +983,10 @@ namespace KindleMate2 {
 
         internal bool IsDatabaseEmpty() {
             _connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
+                command.ExecuteNonQuery();
+            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 

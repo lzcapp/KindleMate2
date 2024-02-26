@@ -153,21 +153,34 @@ namespace KindleMate2 {
             var wordsTable = new DataTable();
 
             connection.Open();
+            
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
+                command.ExecuteNonQuery();
+            }
+            
+            SQLiteTransaction? trans = connection.BeginTransaction();
 
-            const string bookInfoQuery = "SELECT * FROM BOOK_INFO;";
-            using var bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
-            using var bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
-            bookInfoAdapter.Fill(bookInfoTable);
+            try {
+                const string bookInfoQuery = "SELECT * FROM BOOK_INFO;";
+                using var bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
+                using var bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
+                bookInfoAdapter.Fill(bookInfoTable);
 
-            const string lookupsTableQuery = "SELECT * FROM LOOKUPS;";
-            using var lookupsCommand = new SQLiteCommand(lookupsTableQuery, connection);
-            using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-            lookupsAdapter.Fill(lookupsTable);
+                const string lookupsTableQuery = "SELECT * FROM LOOKUPS;";
+                using var lookupsCommand = new SQLiteCommand(lookupsTableQuery, connection);
+                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
+                lookupsAdapter.Fill(lookupsTable);
 
-            const string wordsLookups = "SELECT * FROM WORDS;";
-            using var wordsCommand = new SQLiteCommand(wordsLookups, connection);
-            using var wordsAdapter = new SQLiteDataAdapter(wordsCommand);
-            wordsAdapter.Fill(wordsTable);
+                const string wordsLookups = "SELECT * FROM WORDS;";
+                using var wordsCommand = new SQLiteCommand(wordsLookups, connection);
+                using var wordsAdapter = new SQLiteDataAdapter(wordsCommand);
+
+                wordsAdapter.Fill(wordsTable);
+
+                trans.Commit();
+            } catch (Exception) {
+                trans.Rollback();  
+            }
 
             connection.Close();
 
@@ -531,25 +544,37 @@ namespace KindleMate2 {
 
             connection.Open();
 
-            const string queryClippings = "SELECT * FROM clippings;";
-            using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
-            using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
-            clippingAdapter.Fill(clippingsDataTable);
+            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
+                command.ExecuteNonQuery();
+            }
 
-            const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
-            using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
-            using var originAdapter = new SQLiteDataAdapter(originCommand);
-            originAdapter.Fill(originClippingsDataTable);
+            SQLiteTransaction? trans = connection.BeginTransaction();
 
-            const string queryLookups = "SELECT * FROM lookups;";
-            using var lookupsCommand = new SQLiteCommand(queryLookups, connection);
-            using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-            lookupsAdapter.Fill(lookupsDataTable);
+            try {
+                const string queryClippings = "SELECT * FROM clippings;";
+                using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
+                using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
+                clippingAdapter.Fill(clippingsDataTable);
 
-            const string queryVocab = "SELECT * FROM vocab;";
-            using var vocabCommand = new SQLiteCommand(queryVocab, connection);
-            using var vocabAdapter = new SQLiteDataAdapter(vocabCommand);
-            vocabAdapter.Fill(vocabDataTable);
+                const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
+                using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
+                using var originAdapter = new SQLiteDataAdapter(originCommand);
+                originAdapter.Fill(originClippingsDataTable);
+
+                const string queryLookups = "SELECT * FROM lookups;";
+                using var lookupsCommand = new SQLiteCommand(queryLookups, connection);
+                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
+                lookupsAdapter.Fill(lookupsDataTable);
+
+                const string queryVocab = "SELECT * FROM vocab;";
+                using var vocabCommand = new SQLiteCommand(queryVocab, connection);
+                using var vocabAdapter = new SQLiteDataAdapter(vocabCommand);
+                vocabAdapter.Fill(vocabDataTable);
+
+                trans.Commit();
+            } catch (Exception) {
+                trans.Rollback();
+            }
 
             connection.Close();
 
