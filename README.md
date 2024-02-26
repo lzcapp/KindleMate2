@@ -1,6 +1,6 @@
 # KindleMate2
 
-**Kindle Mate 2** 是Kindle标注/笔记、Kindle生词本内容管理程序，旨在为 [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) 停止更新后提供替代方案。
+**Kindle Mate 2** 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在为 [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) 停止更新后提供替代方案。
 
 **Kindle Mate 2** is a program for managing Kindle annotations/notes and Kindle vocabulary lists, aiming to provide an alternative solution after [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) stopped updating.
 
