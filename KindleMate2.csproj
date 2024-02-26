@@ -165,7 +165,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update=".KM.dat">
+		<None Update="KM2.dat">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="KM2.db">

@@ -20,8 +20,6 @@ namespace KindleMate2 {
 
         private readonly string _programsDirectory;
 
-        private readonly string _newFilePath;
-
         private readonly string _filePath;
 
         private string _kindleDrive;
@@ -42,7 +40,6 @@ namespace KindleMate2 {
             InitializeComponent();
 
             _programsDirectory = Environment.CurrentDirectory;
-            _newFilePath = Path.Combine(_programsDirectory, ".KM.dat");
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
             _kindleClippingsPath = Path.Combine("documents", "My Clippings.txt");
             _kindleWordsPath = Path.Combine("system", "vocabulary", "vocab.db");
@@ -54,56 +51,49 @@ namespace KindleMate2 {
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (File.Exists(_filePath)) {
-                var fileInfo = new FileInfo(_filePath);
-                var fileSizeInKB = fileInfo.Length / 1024;
-
-                if (fileSizeInKB > 20) {
-                    RefreshData();
-                    return;
-                }
+            if (!File.Exists(_filePath)) {
+                return;
             }
+            if (!_staticData.isDatabaseEmpty()) {
+                RefreshData();
+            } else {
+                DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
-            DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                switch (result) {
+                    case DialogResult.Yes:
+                        SetProgressBar(true);
+                        ImportKMDatabase();
+                        SetProgressBar(false);
+                        return;
+                    case DialogResult.No:
+                    default:
+                        DialogResult resultKm2 = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_2_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
-            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-            switch (result) {
-                case DialogResult.Yes:
-                    SetProgressBar(true);
-                    ImportKMDatabase();
-                    SetProgressBar(false);
-                    return;
-                case DialogResult.No:
-                default:
-                    DialogResult resultKm2 = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_2_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                    // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                    switch (resultKm2) {
-                        case DialogResult.Yes:
-                            SetProgressBar(true);
-                            ImportKM2Database();
-                            SetProgressBar(false);
-                            return;
-                        case DialogResult.No:
-                        default:
-                            File.Delete(_filePath);
-                            File.Copy(_newFilePath, _filePath, true);
-                            break;
-                    }
-
-                    if (!string.IsNullOrEmpty(_kindleDrive)) {
-                        DialogResult resultKindle = MessageBox.Show(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (resultKindle == DialogResult.Yes) {
-                            ImportFromKindle();
-                            File.Delete(_newFilePath);
-                            return;
+                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                        switch (resultKm2) {
+                            case DialogResult.Yes:
+                                SetProgressBar(true);
+                                ImportKM2Database();
+                                SetProgressBar(false);
+                                return;
+                            case DialogResult.No:
+                            default:
+                                break;
                         }
-                    }
-                    break;
-            }
-            File.Delete(_newFilePath);
 
-            treeViewBooks.Focus();
+                        if (!string.IsNullOrEmpty(_kindleDrive)) {
+                            DialogResult resultKindle = MessageBox.Show(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (resultKindle == DialogResult.Yes) {
+                                ImportFromKindle();
+                                return;
+                            }
+                        }
+                        break;
+                }
+
+                treeViewBooks.Focus();
+            }
         }
 
         // ReSharper disable once InconsistentNaming
@@ -126,7 +116,6 @@ namespace KindleMate2 {
             }
 
             File.Copy(fileDialog.FileName, _filePath, true);
-            File.Delete(_newFilePath);
 
             Restart();
         }
@@ -281,8 +270,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -320,8 +308,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -477,7 +464,7 @@ namespace KindleMate2 {
                     }
 
                     dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
-                    
+
                     break;
             }
         }
@@ -1098,10 +1085,13 @@ namespace KindleMate2 {
 
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
-            Process.Start(new ProcessStartInfo {
-                FileName = repoUrl,
-                UseShellExecute = true
-            });
+            try {
+                Process.Start(new ProcessStartInfo {
+                    FileName = repoUrl, UseShellExecute = true
+                });
+            } catch (Exception) {
+                // ignored
+            }
         }
 
         private bool IsKindleDeviceConnected() {
@@ -1459,8 +1449,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);

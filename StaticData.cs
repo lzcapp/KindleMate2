@@ -614,10 +614,7 @@ namespace KindleMate2 {
             _connection.Open();
 
             var tableNames = new List<string>() {
-                "clippings",
-                "lookups",
-                "original_clipping_lines",
-                "vocab"
+                "clippings", "lookups", "original_clipping_lines", "vocab"
             };
 
             var result = 0;
@@ -630,6 +627,25 @@ namespace KindleMate2 {
             _connection.Close();
 
             return result > 0;
+        }
+
+        internal bool isDatabaseEmpty() {
+            _connection.Open();
+
+            var tableNames = new List<string>() {
+                "clippings", "lookups", "original_clipping_lines", "vocab"
+            };
+
+            var result = 0;
+
+            foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(*) FROM " + tableName)) {
+                using var commandCount = new SQLiteCommand(queryCount, _connection);
+                result += Convert.ToInt32(commandCount.ExecuteScalar());
+            }
+
+            _connection.Close();
+
+            return result <= 0;
         }
     }
 }
