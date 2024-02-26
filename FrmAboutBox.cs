@@ -65,6 +65,13 @@ namespace KindleMate2 {
             var fileInfo = new FileInfo(filePath);
             var fileSize = fileInfo.Length;
             lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + FormatFileSize(fileSize) + Strings.Right_Parenthesis;
+
+            lblVersionText.Text = Strings.Version;
+            lblCopyrightText.Text = Strings.Copyright;
+            lblPathText.Text = Strings.Program_Path;
+            lblDatabaseText.Text = Strings.Database;
+            lblCleanDatabase.Text = Strings.Clean_Database;
+            okButton.Text = Strings.Confirm_Button;
         }
 
         private void LblCleanDatabase_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {

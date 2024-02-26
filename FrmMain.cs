@@ -676,13 +676,14 @@ namespace KindleMate2 {
                         _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
                     } else {
                         var lastIndexOfDash = location.LastIndexOf('-');
+                        var lastIndexOfDot = location.LastIndexOf('.');
+
                         if (lastIndexOfDash != -1) {
                             _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
-                        }
-
-                        var lastIndexOfDot = location.LastIndexOf('.');
-                        if (lastIndexOfDot != -1) {
+                        } else if (lastIndexOfDot != -1) {
                             _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
+                        } else {
+                            _ = int.TryParse(location.Replace("Your Highlight on page", "").Trim(), out pagenumber);
                         }
                     }
                 }
