@@ -450,6 +450,15 @@ namespace KindleMate2 {
         /// <summary>
         ///   查找类似 文件 的本地化字符串。
         /// </summary>
+        internal static string File {
+            get {
+                return ResourceManager.GetString("File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件 的本地化字符串。
+        /// </summary>
         internal static string Files {
             get {
                 return ResourceManager.GetString("Files", resourceCulture);
@@ -853,7 +862,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似 共  的本地化字符串。
+        ///   查找类似 共 的本地化字符串。
         /// </summary>
         internal static string Totally {
             get {
@@ -898,7 +907,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  本书 的本地化字符串。
+        ///   查找类似 本书 的本地化字符串。
         /// </summary>
         internal static string X_Books {
             get {
@@ -907,7 +916,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  条标注 的本地化字符串。
+        ///   查找类似 条标注 的本地化字符串。
         /// </summary>
         internal static string X_Clippings {
             get {

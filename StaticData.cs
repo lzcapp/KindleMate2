@@ -29,7 +29,7 @@ namespace KindleMate2 {
 
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM original_clipping_lines WHERE key = @key";
+            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -48,7 +48,7 @@ namespace KindleMate2 {
 
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE key = @key";
+            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE key = @key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -67,7 +67,7 @@ namespace KindleMate2 {
 
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content = @content";
+            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE content = @content";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@content", content);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -80,7 +80,7 @@ namespace KindleMate2 {
         internal int GetOriginClippingsCount() {
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM original_clipping_lines";
+            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
 
@@ -342,9 +342,9 @@ namespace KindleMate2 {
             return result;
         }
 
-        internal bool UpdateLookups(string origintitle, string title, string authors) {
+        internal void UpdateLookups(string origintitle, string title, string authors) {
             if (origintitle == string.Empty || title == string.Empty) {
-                return false;
+                return;
             }
 
             _connection.Open();
@@ -366,13 +366,12 @@ namespace KindleMate2 {
             command.Parameters["@title"].Value = title;
             command.Parameters["@authors"].Value = authors;
 
-            var result = command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
             _connection.Close();
-
-            return result > 0;
         }
 
+/*
         internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
             if (id == string.Empty || word == string.Empty) {
                 return false;
@@ -410,6 +409,7 @@ namespace KindleMate2 {
 
             return result > 0;
         }
+*/
 
         internal int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (id == string.Empty || word == string.Empty) {
@@ -443,6 +443,7 @@ namespace KindleMate2 {
             return result;
         }
 
+/*
         internal bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (word == string.Empty) {
                 return false;
@@ -472,10 +473,11 @@ namespace KindleMate2 {
 
             return result > 0;
         }
+*/
 
-        internal bool UpdateVocab(string word_key, int frequency) {
+        internal void UpdateVocab(string word_key, int frequency) {
             if (word_key == string.Empty) {
-                return false;
+                return;
             }
 
             _connection.Open();
@@ -488,11 +490,9 @@ namespace KindleMate2 {
             command.Parameters["@word_key"].Value = word_key;
             command.Parameters["@frequency"].Value = frequency;
 
-            var result = command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
             _connection.Close();
-
-            return result > 0;
         }
 
         internal DataTable GetVocabDataTable() {
@@ -532,7 +532,7 @@ namespace KindleMate2 {
 
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM vocab WHERE id = @id";
+            const string queryCount = "SELECT COUNT(1) FROM vocab WHERE id = @id";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@id", id);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -549,7 +549,7 @@ namespace KindleMate2 {
 
             _connection.Open();
 
-            const string queryCount = "SELECT COUNT(*) FROM lookups WHERE timestamp = @timestamp";
+            const string queryCount = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@timestamp", timestamp);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -629,7 +629,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        internal bool isDatabaseEmpty() {
+        internal bool IsDatabaseEmpty() {
             _connection.Open();
 
             var tableNames = new List<string>() {
@@ -638,7 +638,7 @@ namespace KindleMate2 {
 
             var result = 0;
 
-            foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(*) FROM " + tableName)) {
+            foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(1) FROM " + tableName)) {
                 using var commandCount = new SQLiteCommand(queryCount, _connection);
                 result += Convert.ToInt32(commandCount.ExecuteScalar());
             }

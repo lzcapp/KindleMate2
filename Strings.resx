@@ -162,16 +162,16 @@
 		<value>本书中有</value>
 	</data>
 	<data name="X_Clippings" xml:space="preserve">
-		<value> 条标注</value>
+		<value>条标注</value>
 	</data>
 	<data name="Content" xml:space="preserve">
 		<value>内容</value>
 	</data>
 	<data name="Totally" xml:space="preserve">
-		<value>共 </value>
+		<value>共</value>
 	</data>
 	<data name="X_Books" xml:space="preserve">
-		<value> 本书</value>
+		<value>本书</value>
 	</data>
 	<data name="Symbol_Comma" xml:space="preserve">
 		<value>，</value>
@@ -424,5 +424,8 @@
 	</data>
 	<data name="No_Data_To_Clear" xml:space="preserve">
 		<value>数据库为空</value>
+	</data>
+	<data name="File" xml:space="preserve">
+		<value>文件</value>
 	</data>
 </root>

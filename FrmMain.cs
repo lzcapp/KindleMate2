@@ -48,15 +48,39 @@ namespace KindleMate2 {
             _selectedBook = string.Empty;
             _selectedWord = string.Empty;
             _selectedIndex = 0;
+
+            menuFile.Text = Strings.Files + @"(&F)";
+            menuRefresh.Text = Strings.Refresh;
+            menuRestart.Text = Strings.Restart;
+            menuExit.Text = Strings.Exit;
+            menuManage.Text = Strings.Management + @"(&M)";
+            menuImportKindle.Text = Strings.Import_Kindle_Clippings;
+            menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
+            menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
+            menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
+            menuBackup.Text = Strings.Backup;
+            menuClear.Text = Strings.Clear_Data;
+            menuHelp.Text = Strings.Help + @"(&H)";
+            menuAbout.Text = Strings.About;
+            menuRepo.Text = Strings.GitHub_Repo;
+
+            tabPageBooks.Text = Strings.Clippings;
+            tabPageWords.Text = Strings.Vocabulary_List;
+
+            menuBookRefresh.Text = Strings.Refresh;
+            menuBooksDelete.Text = Strings.Delete;
+            menuRename.Text = Strings.Rename;
+
+            menuClippingsRefresh.Text = Strings.Refresh;
+            menuClippingsCopy.Text = Strings.Copy;
+            menuClippingsDelete.Text = Strings.Delete;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
             if (!File.Exists(_filePath)) {
                 return;
             }
-            if (!_staticData.isDatabaseEmpty()) {
-                RefreshData();
-            } else {
+            if (_staticData.IsDatabaseEmpty()) {
                 DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -68,20 +92,6 @@ namespace KindleMate2 {
                         return;
                     case DialogResult.No:
                     default:
-                        DialogResult resultKm2 = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_2_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                        switch (resultKm2) {
-                            case DialogResult.Yes:
-                                SetProgressBar(true);
-                                ImportKM2Database();
-                                SetProgressBar(false);
-                                return;
-                            case DialogResult.No:
-                            default:
-                                break;
-                        }
-
                         if (!string.IsNullOrEmpty(_kindleDrive)) {
                             DialogResult resultKindle = MessageBox.Show(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultKindle == DialogResult.Yes) {
@@ -91,9 +101,11 @@ namespace KindleMate2 {
                         }
                         break;
                 }
-
-                treeViewBooks.Focus();
             }
+
+            RefreshData();
+
+            treeViewBooks.Focus();
         }
 
         // ReSharper disable once InconsistentNaming
@@ -293,7 +305,7 @@ namespace KindleMate2 {
                 foreach (TreeNode node in treeViewBooks.Nodes) {
                     if (node.Text.Trim() == _selectedBook.Trim()) {
                         treeViewBooks.SelectedNode = node;
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.X_Clippings;
+                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Properties.Resources.open_book;
                         lblBookCount.Visible = true;
                         break;
@@ -380,7 +392,7 @@ namespace KindleMate2 {
                         dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
                     } else {
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.X_Clippings;
+                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Properties.Resources.open_book;
                         lblBookCount.Visible = true;
                         dataGridView.DataSource = filteredBooks;
@@ -477,12 +489,12 @@ namespace KindleMate2 {
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = Strings.Totally + booksCount + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + diff + Strings.Space + Strings.X_Rows;
+                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
                     break;
                 case 1:
                     var vocabCount = _vocabDataTable.Rows.Count;
                     var lookupsCount = _lookupsDataTable.Rows.Count;
-                    lblCount.Text = Strings.Totally + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
+                    lblCount.Text = Strings.Totally + Strings.Space + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
                     break;
             }
         }
@@ -828,7 +840,7 @@ namespace KindleMate2 {
                 var selectedBookName = e.Node.Text;
                 _selectedBook = selectedBookName;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.X_Clippings;
+                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Properties.Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
@@ -891,7 +903,7 @@ namespace KindleMate2 {
             if (columnName == Strings.Books) {
                 _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.X_Clippings;
+                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Properties.Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
@@ -1045,7 +1057,7 @@ namespace KindleMate2 {
             Close();
         }
 
-        private void ToolStripMenuAbout_Click(object sender, EventArgs e) {
+        private void MenuAbout_Click(object sender, EventArgs e) {
             using var dialog = new FrmAboutBox();
             dialog.ShowDialog();
         }
@@ -1433,7 +1445,7 @@ namespace KindleMate2 {
         }
 
         private void MenuClear_Click(object sender, EventArgs e) {
-            if (_staticData.isDatabaseEmpty()) {
+            if (_staticData.IsDatabaseEmpty()) {
                 MessageBox.Show(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }

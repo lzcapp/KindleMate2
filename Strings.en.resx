@@ -45,10 +45,10 @@
 		<value>Page</value>
 	</data>
 	<data name="Totally" xml:space="preserve">
-		<value>Totally </value>
+		<value>Totally</value>
 	</data>
 	<data name="X_Books" xml:space="preserve">
-		<value> books</value>
+		<value>book(s)</value>
 	</data>
 	<data name="Symbol_Comma" xml:space="preserve">
 		<value>, </value>
@@ -66,7 +66,7 @@
 		<value>Totally</value>
 	</data>
 	<data name="X_Lookups" xml:space="preserve">
-		<value> lookup(s)</value>
+		<value>lookup(s)</value>
 	</data>
 	<data name="Confirm_Clear_All_Data" xml:space="preserve">
 		<value>Are you sure you want to clear all data?</value>
@@ -90,13 +90,13 @@
 		<value>Vocabulary</value>
 	</data>
 	<data name="X_Vocabs" xml:space="preserve">
-		<value> vocabulary(s)</value>
+		<value>vocabulary(s)</value>
 	</data>
 	<data name="Quried_X" xml:space="preserve">
-		<value>quried:</value>
+		<value>Quried:</value>
 	</data>
 	<data name="Deleted_X" xml:space="preserve">
-		<value>deleted:</value>
+		<value>Deleted:</value>
 	</data>
 	<data name="Stem" xml:space="preserve">
 		<value>Stem</value>
@@ -156,7 +156,7 @@
 		<value>Page: </value>
 	</data>
 	<data name="X_Times" xml:space="preserve">
-		<value> time(s)</value>
+		<value>time(s)</value>
 	</data>
 	<data name="Select_All" xml:space="preserve">
 		<value>Select All</value>
@@ -186,7 +186,7 @@
 		<value>You have connected a Kindle device. Do you want to import data from the Kindle?</value>
 	</data>
 	<data name="X_Clippings" xml:space="preserve">
-		<value> clippings</value>
+		<value>clipping(s)</value>
 	</data>
 	<data name="Delete" xml:space="preserve">
 		<value>Delete</value>
@@ -222,7 +222,7 @@
 		<value>Import Kindle Mate's Database</value>
 	</data>
 	<data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
-		<value>Import Kindle's Clippings File From Kindle</value>
+		<value>Import from Kindle</value>
 	</data>
 	<data name="Backup" xml:space="preserve">
 		<value>Backup</value>
@@ -304,5 +304,8 @@
 	</data>
 	<data name="No_Data_To_Clear" xml:space="preserve">
 		<value>Database is empty</value>
+	</data>
+	<data name="X_Rows" xml:space="preserve">
+		<value> </value>
 	</data>
 </root>

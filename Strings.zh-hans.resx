@@ -265,7 +265,7 @@
     <value>导入Kindle标注</value>
   </data>
   <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
-    <value>从Kindle设备导入标注</value>
+    <value>从Kindle设备导入</value>
   </data>
   <data name="Import_Kindle_Clipping_File" xml:space="preserve">
     <value>导入Kindle标注文件</value>
@@ -373,7 +373,7 @@
     <value>时间</value>
   </data>
   <data name="Totally" xml:space="preserve">
-    <value>共 </value>
+    <value>共</value>
   </data>
   <data name="Totally_Vocabs" xml:space="preserve">
     <value>本词共有</value>
@@ -391,10 +391,10 @@
     <value>生词本</value>
   </data>
   <data name="X_Books" xml:space="preserve">
-    <value> 本书</value>
+    <value>本书</value>
   </data>
   <data name="X_Clippings" xml:space="preserve">
-    <value> 条标注</value>
+    <value>条标注</value>
   </data>
   <data name="X_Lookups" xml:space="preserve">
     <value>次查询</value>
