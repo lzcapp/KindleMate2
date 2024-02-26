@@ -109,6 +109,7 @@ namespace KindleMate2 {
         }
 
         // ReSharper disable once InconsistentNaming
+/*
         private void ImportKM2Database() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
@@ -131,6 +132,7 @@ namespace KindleMate2 {
 
             Restart();
         }
+*/
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
             var clippingsResult = ImportKindleClippings(kindleClippingsPath);
@@ -254,6 +256,7 @@ namespace KindleMate2 {
             _lookupsDataTable.Columns.Add("word", typeof(string));
             _lookupsDataTable.Columns.Add("stem", typeof(string));
             _lookupsDataTable.Columns.Add("frequency", typeof(string));
+            
             foreach (DataRow row in _lookupsDataTable.Rows) {
                 var word_key = row["word_key"].ToString() ?? string.Empty;
                 var word = "";
@@ -551,6 +554,7 @@ namespace KindleMate2 {
             connection.Close();
 
             var insertedCount = 0;
+            var wordsInsertedCount = 0;
 
             foreach (DataRow row in clippingsDataTable.Rows) {
                 if (_staticData.IsExistClippings(row["key"].ToString())) {
@@ -593,13 +597,21 @@ namespace KindleMate2 {
                 _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
             }
 
-            var wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["word_key"].ToString() ?? string.Empty, row["id"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
+            foreach (DataRow row in vocabDataTable.Rows) {
+                if (_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)) {
+                    continue;
+                }
+
+                wordsInsertedCount += _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty));
+            }
 
             UpdateFrequency();
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
             MessageBox.Show(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            UpdateFrequency();
 
             RefreshData();
         }
@@ -846,6 +858,8 @@ namespace KindleMate2 {
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.Columns["bookname"]!.Visible = false;
                 dataGridView.Columns["authorname"]!.Visible = false;
+                dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
+                dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
                 dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
             }
         }
@@ -1497,9 +1511,7 @@ namespace KindleMate2 {
         }
 
         private void TabControl_SelectedIndexChanged(object sender, EventArgs e) {
-            SetDataGridView();
-            CountRows();
-            SelectRow();
+            RefreshData();
 
             var index = tabControl.SelectedIndex;
             menuRename.Visible = index switch {

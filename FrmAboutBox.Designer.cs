@@ -292,9 +292,7 @@
         private Label lblDatabase;
         private Label lblVersionText;
         private Label lblCopyrightText;
-        private FlowLayoutPanel flowLayoutPanel1;
         private PictureBox pictureBox;
-        private Label label1;
         private FlowLayoutPanel flowLayoutPanel2;
         private Label label2;
         private FlowLayoutPanel flowLayoutPanel3;
