@@ -515,6 +515,7 @@ namespace KindleMate2 {
             }
         }
 
+        // ReSharper disable once InconsistentNaming
         private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
