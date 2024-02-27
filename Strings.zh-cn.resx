@@ -420,4 +420,10 @@
   <data name="No_Data_To_Clear" xml:space="preserve">
     <value>数据库为空</value>
   </data>
+  <data name="Empty_Lookups_Data" xml:space="preserve">
+    <value>生词本数据为空</value>
+  </data>
+  <data name="Confirm_Restore_Database" xml:space="preserve">
+    <value>检测到备份，需要从备份恢复吗？</value>
+  </data>
 </root>

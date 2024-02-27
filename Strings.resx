@@ -428,4 +428,10 @@
 	<data name="File" xml:space="preserve">
 		<value>文件</value>
 	</data>
+	<data name="Empty_Lookups_Data" xml:space="preserve">
+		<value>生词本数据为空</value>
+	</data>
+	<data name="Confirm_Restore_Database" xml:space="preserve">
+		<value>检测到备份，需要从备份恢复吗？</value>
+	</data>
 </root>

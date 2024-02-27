@@ -313,6 +313,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 检测到备份，需要从备份恢复吗？ 的本地化字符串。
+        /// </summary>
+        internal static string Confirm_Restore_Database {
+            get {
+                return ResourceManager.GetString("Confirm_Restore_Database", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 同名书籍已存在，确认要合并吗？ 的本地化字符串。
         /// </summary>
         internal static string Confirm_Same_Title_Combine {
@@ -426,6 +435,15 @@ namespace KindleMate2 {
         internal static string Empty_Clippings_Data {
             get {
                 return ResourceManager.GetString("Empty_Clippings_Data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 生词本数据为空 的本地化字符串。
+        /// </summary>
+        internal static string Empty_Lookups_Data {
+            get {
+                return ResourceManager.GetString("Empty_Lookups_Data", resourceCulture);
             }
         }
         

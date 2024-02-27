@@ -308,4 +308,10 @@
 	<data name="X_Rows" xml:space="preserve">
 		<value> </value>
 	</data>
+	<data name="Empty_Lookups_Data" xml:space="preserve">
+		<value>Vocabulary list is empty</value>
+	</data>
+	<data name="Confirm_Restore_Database" xml:space="preserve">
+		<value>A backup has been detected. Do you want to restore from the backup?</value>
+	</data>
 </root>

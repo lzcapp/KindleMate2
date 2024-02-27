@@ -3,17 +3,22 @@ using System.Data.SQLite;
 
 namespace KindleMate2 {
     public class StaticData {
-        private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;");
+        private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;Version=3;");
+
+        public StaticData() {
+            _connection.Open();
+
+            using var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection);
+            command.ExecuteNonQuery();
+        }
+
+        public void CloseConnection() {
+            _connection.Close();
+        }
 
         // ReSharper disable once IdentifierTypo
         public DataTable GetClipingsDataTable() {
             var dataTable = new DataTable();
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -29,8 +34,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return dataTable;
         }
 
@@ -39,12 +42,6 @@ namespace KindleMate2 {
                 case null:
                 case "":
                     return true;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -63,8 +60,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
@@ -73,12 +68,6 @@ namespace KindleMate2 {
                 case null:
                 case "":
                     return true;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -97,8 +86,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
@@ -109,12 +96,6 @@ namespace KindleMate2 {
                     return true;
             }
 
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
             var result = 0;
@@ -123,7 +104,7 @@ namespace KindleMate2 {
                 const string queryCount = "SELECT COUNT(1) FROM clippings WHERE content = @content";
                 using var commandCount = new SQLiteCommand(queryCount, _connection);
                 commandCount.Parameters.AddWithValue("@content", content);
-                    
+
                 result = Convert.ToInt32(commandCount.ExecuteScalar());
 
                 trans.Commit();
@@ -131,20 +112,18 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
 /*
         internal int GetOriginClippingsCount() {
-            _connection.Open();
+
 
             const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
 
-            _connection.Close();
+
 
             return count;
         }
@@ -152,12 +131,6 @@ namespace KindleMate2 {
 
         internal DataTable GetOriginClippingsDataTable() {
             var dataTable = new DataTable();
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -173,20 +146,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return dataTable;
         }
 
         internal int InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
             if (key == string.Empty || line4 == string.Empty) {
                 return 0;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -217,20 +182,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result;
         }
 
         internal bool DeleteClippingsByKey(string key) {
             if (key == string.Empty) {
                 return false;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -249,20 +206,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool DeleteClippingsByBook(string bookname) {
             if (bookname == string.Empty) {
                 return false;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -281,20 +230,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int pagenumber) {
             if (key == string.Empty || content == string.Empty) {
                 return 0;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -330,20 +271,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result;
         }
 
         internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {
             if (key == string.Empty || content == string.Empty) {
                 return 0;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -391,8 +324,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result;
         }
 
@@ -401,18 +332,11 @@ namespace KindleMate2 {
                 return false;
             }
 
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
             var result = 0;
 
             try {
-
                 var queryUpdate = "UPDATE clippings SET bookname = @bookname";
                 if (!string.IsNullOrWhiteSpace(authorname)) {
                     queryUpdate += ", authorname = @authorname";
@@ -437,20 +361,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool UpdateClippings(string key, string content) {
             if (key == string.Empty || content == string.Empty) {
                 return false;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -474,18 +390,10 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal void VacuumDatabase() {
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
             try {
@@ -498,19 +406,11 @@ namespace KindleMate2 {
             } catch (Exception) {
                 trans.Rollback();
             }
-
-            _connection.Close();
         }
 
         internal int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
             if (word_key == string.Empty || timestamp == string.Empty) {
                 return 0;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -539,20 +439,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result;
         }
 
         internal void UpdateLookups(string origintitle, string title, string authors) {
             if (origintitle == string.Empty || title == string.Empty) {
                 return;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -581,8 +473,6 @@ namespace KindleMate2 {
             } catch (Exception) {
                 trans.Rollback();
             }
-
-            _connection.Close();
         }
 
 /*
@@ -591,7 +481,7 @@ namespace KindleMate2 {
                 return false;
             }
 
-            _connection.Open();
+
 
             const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
             using var command = new SQLiteCommand(queryInsert, _connection);
@@ -619,7 +509,7 @@ namespace KindleMate2 {
 
             var result = command.ExecuteNonQuery();
 
-            _connection.Close();
+
 
             return result > 0;
         }
@@ -628,12 +518,6 @@ namespace KindleMate2 {
         internal int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (id == string.Empty || word == string.Empty) {
                 return 0;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -666,8 +550,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result;
         }
 
@@ -677,7 +559,7 @@ namespace KindleMate2 {
                 return false;
             }
 
-            _connection.Open();
+
 
             const string query = "UPDATE vocab SET word = @word, stem = @stem, category = @category, timestamp = @timestamp, frequency = @frequency WHERE word_key = @word_key";
             using var command = new SQLiteCommand(query, _connection);
@@ -697,7 +579,7 @@ namespace KindleMate2 {
 
             var result = command.ExecuteNonQuery();
 
-            _connection.Close();
+
 
             return result > 0;
         }
@@ -706,12 +588,6 @@ namespace KindleMate2 {
         internal void UpdateVocab(string word_key, int frequency) {
             if (word_key == string.Empty) {
                 return;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -731,18 +607,10 @@ namespace KindleMate2 {
             } catch (Exception) {
                 trans.Rollback();
             }
-
-            _connection.Close();
         }
 
         internal DataTable GetVocabDataTable() {
             var dataTable = new DataTable();
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
@@ -758,19 +626,11 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return dataTable;
         }
 
         internal DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
             try {
@@ -785,20 +645,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return dataTable;
         }
 
         internal bool IsExistVocab(string word_key) {
             if (word_key == string.Empty) {
                 return true;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -817,20 +669,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool IsExistLookups(string timestamp) {
             if (timestamp == string.Empty) {
                 return true;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -849,20 +693,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool DeleteVocab(string word) {
             if (word == string.Empty) {
                 return false;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -881,20 +717,12 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool DeleteLookupsByTimeStamp(string timestamp) {
             if (timestamp == string.Empty) {
                 return false;
-            }
-
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
             }
 
             SQLiteTransaction? trans = _connection.BeginTransaction();
@@ -913,8 +741,6 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
@@ -923,40 +749,26 @@ namespace KindleMate2 {
                 return false;
             }
 
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
-            
+
             var result = 0;
 
             try {
                 const string queryDelete = "DELETE FROM lookups WHERE word_key = @word_key";
                 using var command = new SQLiteCommand(queryDelete, _connection);
                 command.Parameters.AddWithValue("@word_key", word_key);
-                
+
                 result = command.ExecuteNonQuery();
-                
+
                 trans.Commit();
             } catch (Exception) {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool EmptyTables() {
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
             var result = 0;
@@ -976,18 +788,10 @@ namespace KindleMate2 {
                 trans.Rollback();
             }
 
-            _connection.Close();
-
             return result > 0;
         }
 
         internal bool IsDatabaseEmpty() {
-            _connection.Open();
-            
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection)) {
-                command.ExecuteNonQuery();
-            }
-
             SQLiteTransaction? trans = _connection.BeginTransaction();
 
             var result = 0;
@@ -1006,8 +810,6 @@ namespace KindleMate2 {
             } catch (Exception) {
                 trans.Rollback();
             }
-
-            _connection.Close();
 
             return result <= 0;
         }

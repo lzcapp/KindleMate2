@@ -314,4 +314,10 @@
     <data name="No_Data_To_Clear" xml:space="preserve">
       <value>數據庫為空</value>
     </data>
+  <data name="Empty_Lookups_Data" xml:space="preserve">
+    <value>生詞本數據為空</value>
+  </data>
+  <data name="Confirm_Restore_Database" xml:space="preserve">
+    <value>檢測到備份，需要從備份恢復嗎？</value>
+  </data>
 </root>
