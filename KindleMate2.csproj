@@ -52,7 +52,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Office.Interop.Excel" Version="15.0.4795.1001" />
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
+		<PackageReference Include="System.Data.SQLite" Version="1.0.117" />
 		<PackageReference Include="System.Management" Version="8.0.0" />
 	</ItemGroup>
 
