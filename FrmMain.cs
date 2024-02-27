@@ -1499,6 +1499,10 @@ namespace KindleMate2 {
         }
 
         private void BackupDatabase() {
+            if (_staticData.IsDatabaseEmpty()) {
+                return;
+            }
+
             var filePath = Path.Combine(_programsDirectory, "Backups", "KM2.dat");
 
             if (!Directory.Exists(Path.Combine(_programsDirectory, "Backups"))) {
