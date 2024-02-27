@@ -737,19 +737,22 @@ namespace KindleMate2 {
                     }
                 }
 
-                var datetime = loctime[1].Replace("Added on", "").Replace("添加于", "").Trim();
-                var lastCommaIndex = datetime.LastIndexOf(',');
-                if (lastCommaIndex != -1 && lastCommaIndex < datetime.Length - 1) {
-                    datetime = datetime[(lastCommaIndex + 1)..].Trim();
-                    if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy, hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
+                
+                if (loctime.Length >= 3) {
+                    var datetime = loctime[2].Replace("Added on", "").Trim();
+                    var indexOfComma = datetime.IndexOf(',');
+                    datetime = datetime[(indexOfComma + 1)..].Trim();
+                    if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
                         time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    } else {
+                        //
                     }
                 } else {
+                    var datetime = loctime[1].Replace("添加于", "").Trim();
                     var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                     if (dayOfWeekIndex != -1) {
                         datetime = datetime.Remove(dayOfWeekIndex, 3);
                     }
-
                     if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
                         time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                     }
