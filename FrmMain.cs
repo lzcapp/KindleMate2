@@ -1268,12 +1268,12 @@ namespace KindleMate2 {
                 if (File.Exists(kindleVersionPath)) {
                     using var reader = new StreamReader(kindleVersionPath);
 
-                    var kindleVersion = reader.ReadLine()?.Trim().Split('(')[0].Trim();
+                    var kindleVersion = reader.ReadLine()?.Trim().Split('(')[0].Replace("Kindle", "").Trim();
                     if (!string.IsNullOrEmpty(kindleVersion)) {
                         menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected + Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
-                    } else {
-                        menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected;
                     }
+                } else {
+                    menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected;
                 }
 
                 menuSyncFromKindle.Visible = true;
