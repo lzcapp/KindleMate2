@@ -5,6 +5,8 @@ namespace KindleMate2 {
     public class StaticData {
         private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;Version=3;");
 
+        private SQLiteTransaction? _trans;
+
         public StaticData() {
             _connection.Open();
 
@@ -16,23 +18,27 @@ namespace KindleMate2 {
             _connection.Close();
         }
 
+        public void BeginTransaction() {
+            _trans = _connection.BeginTransaction();
+        }
+
+        public void CommitTransaction() {
+            _trans?.Commit();
+        }
+
+        public void RollbackTransaction() {
+            _trans?.Rollback();
+        }
+
         // ReSharper disable once IdentifierTypo
         public DataTable GetClipingsDataTable() {
             var dataTable = new DataTable();
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryClippings = "SELECT * FROM clippings;";
+            using var    command        = new SQLiteCommand(queryClippings, _connection);
+            using var    adapter        = new SQLiteDataAdapter(command);
 
-            try {
-                const string queryClippings = "SELECT * FROM clippings;";
-                using var command = new SQLiteCommand(queryClippings, _connection);
-                using var adapter = new SQLiteDataAdapter(command);
-
-                adapter.Fill(dataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            adapter.Fill(dataTable);
 
             return dataTable;
         }
@@ -44,21 +50,11 @@ namespace KindleMate2 {
                     return true;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryCount   = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
+            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@key", key);
 
-            var result = 0;
-
-            try {
-                const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@key", key);
-
-                result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
             return result > 0;
         }
@@ -70,21 +66,11 @@ namespace KindleMate2 {
                     return true;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryCount   = "SELECT COUNT(1) FROM clippings WHERE key = @key";
+            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@key", key);
 
-            var result = 0;
-
-            try {
-                const string queryCount = "SELECT COUNT(1) FROM clippings WHERE key = @key";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@key", key);
-
-                result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
             return result > 0;
         }
@@ -96,55 +82,37 @@ namespace KindleMate2 {
                     return true;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryCount   = "SELECT COUNT(1) FROM clippings WHERE content = @content";
+            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@content", content);
 
-            var result = 0;
-
-            try {
-                const string queryCount = "SELECT COUNT(1) FROM clippings WHERE content = @content";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@content", content);
-
-                result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
             return result > 0;
         }
 
-/*
-        internal int GetOriginClippingsCount() {
+        /*
+                internal int GetOriginClippingsCount() {
 
 
-            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
-            using var commandCount = new SQLiteCommand(queryCount, _connection);
-            var count = Convert.ToInt32(commandCount.ExecuteScalar());
+                    const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
+                    using var commandCount = new SQLiteCommand(queryCount, _connection);
+                    var count = Convert.ToInt32(commandCount.ExecuteScalar());
 
 
 
-            return count;
-        }
-*/
+                    return count;
+                }
+        */
 
         internal DataTable GetOriginClippingsDataTable() {
             var dataTable = new DataTable();
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryClippings = "SELECT * FROM original_clipping_lines;";
+            using var    command        = new SQLiteCommand(queryClippings, _connection);
+            using var    adapter        = new SQLiteDataAdapter(command);
 
-            try {
-                const string queryClippings = "SELECT * FROM original_clipping_lines;";
-                using var command = new SQLiteCommand(queryClippings, _connection);
-                using var adapter = new SQLiteDataAdapter(command);
-
-                adapter.Fill(dataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            adapter.Fill(dataTable);
 
             return dataTable;
         }
@@ -154,33 +122,23 @@ namespace KindleMate2 {
                 return 0;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryInsert = "INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)";
+            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@key", DbType.String);
+            command.Parameters.Add("@line1", DbType.String);
+            command.Parameters.Add("@line2", DbType.String);
+            command.Parameters.Add("@line3", DbType.String);
+            command.Parameters.Add("@line4", DbType.String);
+            command.Parameters.Add("@line5", DbType.String);
 
-            var result = 0;
+            command.Parameters["@key"].Value   = key;
+            command.Parameters["@line1"].Value = line1;
+            command.Parameters["@line2"].Value = line2;
+            command.Parameters["@line3"].Value = line3;
+            command.Parameters["@line4"].Value = line4;
+            command.Parameters["@line5"].Value = line5;
 
-            try {
-                const string queryInsert = "INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)";
-                using var command = new SQLiteCommand(queryInsert, _connection);
-                command.Parameters.Add("@key", DbType.String);
-                command.Parameters.Add("@line1", DbType.String);
-                command.Parameters.Add("@line2", DbType.String);
-                command.Parameters.Add("@line3", DbType.String);
-                command.Parameters.Add("@line4", DbType.String);
-                command.Parameters.Add("@line5", DbType.String);
-
-                command.Parameters["@key"].Value = key;
-                command.Parameters["@line1"].Value = line1;
-                command.Parameters["@line2"].Value = line2;
-                command.Parameters["@line3"].Value = line3;
-                command.Parameters["@line4"].Value = line4;
-                command.Parameters["@line5"].Value = line5;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result;
         }
@@ -190,21 +148,11 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryDelete = "DELETE FROM clippings WHERE key = @key";
+            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@key", key);
 
-            var result = 0;
-
-            try {
-                const string queryDelete = "DELETE FROM clippings WHERE key = @key";
-                using var command = new SQLiteCommand(queryDelete, _connection);
-                command.Parameters.AddWithValue("@key", key);
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
@@ -214,21 +162,11 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryDelete = "DELETE FROM clippings WHERE bookname = @bookname";
+            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@bookname", bookname);
 
-            var result = 0;
-
-            try {
-                const string queryDelete = "DELETE FROM clippings WHERE bookname = @bookname";
-                using var command = new SQLiteCommand(queryDelete, _connection);
-                command.Parameters.AddWithValue("@bookname", bookname);
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
@@ -238,38 +176,28 @@ namespace KindleMate2 {
                 return 0;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
 
-            var result = 0;
+            using var command = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@key", DbType.String);
+            command.Parameters.Add("@content", DbType.String);
+            command.Parameters.Add("@bookname", DbType.String);
+            command.Parameters.Add("@authorname", DbType.String);
+            command.Parameters.Add("@brieftype", DbType.Int64);
+            command.Parameters.Add("@clippingtypelocation", DbType.String);
+            command.Parameters.Add("@clippingdate", DbType.String);
+            command.Parameters.Add("@pagenumber", DbType.Int64);
 
-            try {
-                const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
+            command.Parameters["@key"].Value                  = key;
+            command.Parameters["@content"].Value              = content;
+            command.Parameters["@bookname"].Value             = bookname;
+            command.Parameters["@authorname"].Value           = authorname;
+            command.Parameters["@brieftype"].Value            = brieftype;
+            command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
+            command.Parameters["@clippingdate"].Value         = clippingdate;
+            command.Parameters["@pagenumber"].Value           = pagenumber;
 
-                using var command = new SQLiteCommand(queryInsert, _connection);
-                command.Parameters.Add("@key", DbType.String);
-                command.Parameters.Add("@content", DbType.String);
-                command.Parameters.Add("@bookname", DbType.String);
-                command.Parameters.Add("@authorname", DbType.String);
-                command.Parameters.Add("@brieftype", DbType.Int64);
-                command.Parameters.Add("@clippingtypelocation", DbType.String);
-                command.Parameters.Add("@clippingdate", DbType.String);
-                command.Parameters.Add("@pagenumber", DbType.Int64);
-
-                command.Parameters["@key"].Value = key;
-                command.Parameters["@content"].Value = content;
-                command.Parameters["@bookname"].Value = bookname;
-                command.Parameters["@authorname"].Value = authorname;
-                command.Parameters["@brieftype"].Value = brieftype;
-                command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-                command.Parameters["@clippingdate"].Value = clippingdate;
-                command.Parameters["@pagenumber"].Value = pagenumber;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result;
         }
@@ -279,50 +207,40 @@ namespace KindleMate2 {
                 return 0;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
 
-            var result = 0;
+            using var command = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@key", DbType.String);
+            command.Parameters.Add("@content", DbType.String);
+            command.Parameters.Add("@bookname", DbType.String);
+            command.Parameters.Add("@authorname", DbType.String);
+            command.Parameters.Add("@brieftype", DbType.Int64);
+            command.Parameters.Add("@clippingtypelocation", DbType.String);
+            command.Parameters.Add("@clippingdate", DbType.String);
+            command.Parameters.Add("@read", DbType.String);
+            command.Parameters.Add("@clipping_importdate", DbType.String);
+            command.Parameters.Add("@tag", DbType.String);
+            command.Parameters.Add("@sync", DbType.Int64);
+            command.Parameters.Add("@newbookname", DbType.String);
+            command.Parameters.Add("@colorRGB", DbType.Int64);
+            command.Parameters.Add("@pagenumber", DbType.Int64);
 
-            try {
-                const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
+            command.Parameters["@key"].Value                  = key;
+            command.Parameters["@content"].Value              = content;
+            command.Parameters["@bookname"].Value             = bookname;
+            command.Parameters["@authorname"].Value           = authorname;
+            command.Parameters["@brieftype"].Value            = brieftype;
+            command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
+            command.Parameters["@clippingdate"].Value         = clippingdate;
+            command.Parameters["@read"].Value                 = read;
+            command.Parameters["@clipping_importdate"].Value  = clipping_importdate;
+            command.Parameters["@tag"].Value                  = tag;
+            command.Parameters["@sync"].Value                 = sync;
+            command.Parameters["@newbookname"].Value          = newbookname;
+            command.Parameters["@colorRGB"].Value             = colorRGB;
+            command.Parameters["@pagenumber"].Value           = pagenumber;
 
-                using var command = new SQLiteCommand(queryInsert, _connection);
-                command.Parameters.Add("@key", DbType.String);
-                command.Parameters.Add("@content", DbType.String);
-                command.Parameters.Add("@bookname", DbType.String);
-                command.Parameters.Add("@authorname", DbType.String);
-                command.Parameters.Add("@brieftype", DbType.Int64);
-                command.Parameters.Add("@clippingtypelocation", DbType.String);
-                command.Parameters.Add("@clippingdate", DbType.String);
-                command.Parameters.Add("@read", DbType.String);
-                command.Parameters.Add("@clipping_importdate", DbType.String);
-                command.Parameters.Add("@tag", DbType.String);
-                command.Parameters.Add("@sync", DbType.Int64);
-                command.Parameters.Add("@newbookname", DbType.String);
-                command.Parameters.Add("@colorRGB", DbType.Int64);
-                command.Parameters.Add("@pagenumber", DbType.Int64);
-
-                command.Parameters["@key"].Value = key;
-                command.Parameters["@content"].Value = content;
-                command.Parameters["@bookname"].Value = bookname;
-                command.Parameters["@authorname"].Value = authorname;
-                command.Parameters["@brieftype"].Value = brieftype;
-                command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-                command.Parameters["@clippingdate"].Value = clippingdate;
-                command.Parameters["@read"].Value = read;
-                command.Parameters["@clipping_importdate"].Value = clipping_importdate;
-                command.Parameters["@tag"].Value = tag;
-                command.Parameters["@sync"].Value = sync;
-                command.Parameters["@newbookname"].Value = newbookname;
-                command.Parameters["@colorRGB"].Value = colorRGB;
-                command.Parameters["@pagenumber"].Value = pagenumber;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result;
         }
@@ -332,34 +250,24 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
-
-            var result = 0;
-
-            try {
-                var queryUpdate = "UPDATE clippings SET bookname = @bookname";
-                if (!string.IsNullOrWhiteSpace(authorname)) {
-                    queryUpdate += ", authorname = @authorname";
-                } else {
-                    authorname = string.Empty;
-                }
-                queryUpdate += " WHERE bookname = @originBookname";
-
-                using var command = new SQLiteCommand(queryUpdate, _connection);
-                command.Parameters.Add("@bookname", DbType.String);
-                command.Parameters.Add("@authorname", DbType.String);
-                command.Parameters.Add("@originBookname", DbType.String);
-
-                command.Parameters["@bookname"].Value = bookname;
-                command.Parameters["@authorname"].Value = authorname;
-                command.Parameters["@originBookname"].Value = originBookname;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
+            var queryUpdate = "UPDATE clippings SET bookname = @bookname";
+            if (!string.IsNullOrWhiteSpace(authorname)) {
+                queryUpdate += ", authorname = @authorname";
+            } else {
+                authorname = string.Empty;
             }
+            queryUpdate += " WHERE bookname = @originBookname";
+
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@bookname", DbType.String);
+            command.Parameters.Add("@authorname", DbType.String);
+            command.Parameters.Add("@originBookname", DbType.String);
+
+            command.Parameters["@bookname"].Value       = bookname;
+            command.Parameters["@authorname"].Value     = authorname;
+            command.Parameters["@originBookname"].Value = originBookname;
+
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
@@ -369,43 +277,25 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryUpdate = "UPDATE clippings SET content = @content WHERE key = @key";
 
-            var result = 0;
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@key", DbType.String);
+            command.Parameters.Add("@content", DbType.String);
 
-            try {
-                const string queryUpdate = "UPDATE clippings SET content = @content WHERE key = @key";
+            command.Parameters["@key"].Value     = key;
+            command.Parameters["@content"].Value = content;
 
-                using var command = new SQLiteCommand(queryUpdate, _connection);
-                command.Parameters.Add("@key", DbType.String);
-                command.Parameters.Add("@content", DbType.String);
-
-                command.Parameters["@key"].Value = key;
-                command.Parameters["@content"].Value = content;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
 
         internal void VacuumDatabase() {
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryVacuum = "VACUUM";
+            using var    command     = new SQLiteCommand(queryVacuum, _connection);
 
-            try {
-                const string queryVacuum = "VACUUM";
-                using var command = new SQLiteCommand(queryVacuum, _connection);
-
-                command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            command.ExecuteNonQuery();
         }
 
         internal int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
@@ -413,31 +303,21 @@ namespace KindleMate2 {
                 return 0;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryInsert = "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)";
+            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@word_key", DbType.String);
+            command.Parameters.Add("@usage", DbType.String);
+            command.Parameters.Add("@title", DbType.String);
+            command.Parameters.Add("@authors", DbType.String);
+            command.Parameters.Add("@timestamp", DbType.String);
 
-            var result = 0;
+            command.Parameters["@word_key"].Value  = word_key;
+            command.Parameters["@usage"].Value     = usage;
+            command.Parameters["@title"].Value     = title;
+            command.Parameters["@authors"].Value   = authors;
+            command.Parameters["@timestamp"].Value = timestamp;
 
-            try {
-                const string queryInsert = "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)";
-                using var command = new SQLiteCommand(queryInsert, _connection);
-                command.Parameters.Add("@word_key", DbType.String);
-                command.Parameters.Add("@usage", DbType.String);
-                command.Parameters.Add("@title", DbType.String);
-                command.Parameters.Add("@authors", DbType.String);
-                command.Parameters.Add("@timestamp", DbType.String);
-
-                command.Parameters["@word_key"].Value = word_key;
-                command.Parameters["@usage"].Value = usage;
-                command.Parameters["@title"].Value = title;
-                command.Parameters["@authors"].Value = authors;
-                command.Parameters["@timestamp"].Value = timestamp;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result;
         }
@@ -447,122 +327,74 @@ namespace KindleMate2 {
                 return;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            var queryUpdate = "UPDATE lookups SET title = @title";
 
-            try {
-                var queryUpdate = "UPDATE lookups SET title = @title";
+            if (!string.IsNullOrWhiteSpace(authors)) {
+                queryUpdate += ", authors = @authors";
+            }
 
-                if (!string.IsNullOrWhiteSpace(authors)) {
-                    queryUpdate += ", authors = @authors";
+            queryUpdate += " WHERE title = @origintitle";
+
+            using var command = new SQLiteCommand(queryUpdate, _connection);
+            command.Parameters.Add("@origintitle", DbType.String);
+            command.Parameters.Add("@title", DbType.String);
+            command.Parameters.Add("@authors", DbType.String);
+
+            command.Parameters["@origintitle"].Value = origintitle;
+            command.Parameters["@title"].Value       = title;
+            command.Parameters["@authors"].Value     = authors;
+
+            command.ExecuteNonQuery();
+        }
+
+        /*
+                internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
+                    if (id == string.Empty || word == string.Empty) {
+                        return false;
+                    }
+
+
+
+                    const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
+                    using var command = new SQLiteCommand(queryInsert, _connection);
+                    command.Parameters.Add("@id", DbType.String);
+                    command.Parameters.Add("@word_key", DbType.String);
+                    command.Parameters.Add("@word", DbType.String);
+                    command.Parameters.Add("@stem", DbType.String);
+                    command.Parameters.Add("@category", DbType.UInt64);
+                    command.Parameters.Add("@translation", DbType.String);
+                    command.Parameters.Add("@timestamp", DbType.String);
+                    command.Parameters.Add("@frequency", DbType.Int64);
+                    command.Parameters.Add("@sync", DbType.Int64);
+                    command.Parameters.Add("@colorRGB", DbType.Int64);
+
+                    command.Parameters["@id"].Value = id;
+                    command.Parameters["@word_key"].Value = word_key;
+                    command.Parameters["@word"].Value = word;
+                    command.Parameters["@stem"].Value = stem;
+                    command.Parameters["@category"].Value = category;
+                    command.Parameters["@translation"].Value = translation;
+                    command.Parameters["@timestamp"].Value = timestamp;
+                    command.Parameters["@frequency"].Value = frequency;
+                    command.Parameters["@sync"].Value = sync;
+                    command.Parameters["@colorRGB"].Value = colorRGB;
+
+                    var result = command.ExecuteNonQuery();
+
+
+
+                    return result > 0;
                 }
-
-                queryUpdate += " WHERE title = @origintitle";
-
-                using var command = new SQLiteCommand(queryUpdate, _connection);
-                command.Parameters.Add("@origintitle", DbType.String);
-                command.Parameters.Add("@title", DbType.String);
-                command.Parameters.Add("@authors", DbType.String);
-
-                command.Parameters["@origintitle"].Value = origintitle;
-                command.Parameters["@title"].Value = title;
-                command.Parameters["@authors"].Value = authors;
-
-                command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-        }
-
-/*
-        internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
-            if (id == string.Empty || word == string.Empty) {
-                return false;
-            }
-
-
-
-            const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
-            using var command = new SQLiteCommand(queryInsert, _connection);
-            command.Parameters.Add("@id", DbType.String);
-            command.Parameters.Add("@word_key", DbType.String);
-            command.Parameters.Add("@word", DbType.String);
-            command.Parameters.Add("@stem", DbType.String);
-            command.Parameters.Add("@category", DbType.UInt64);
-            command.Parameters.Add("@translation", DbType.String);
-            command.Parameters.Add("@timestamp", DbType.String);
-            command.Parameters.Add("@frequency", DbType.Int64);
-            command.Parameters.Add("@sync", DbType.Int64);
-            command.Parameters.Add("@colorRGB", DbType.Int64);
-
-            command.Parameters["@id"].Value = id;
-            command.Parameters["@word_key"].Value = word_key;
-            command.Parameters["@word"].Value = word;
-            command.Parameters["@stem"].Value = stem;
-            command.Parameters["@category"].Value = category;
-            command.Parameters["@translation"].Value = translation;
-            command.Parameters["@timestamp"].Value = timestamp;
-            command.Parameters["@frequency"].Value = frequency;
-            command.Parameters["@sync"].Value = sync;
-            command.Parameters["@colorRGB"].Value = colorRGB;
-
-            var result = command.ExecuteNonQuery();
-
-
-
-            return result > 0;
-        }
-*/
+        */
 
         internal int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (id == string.Empty || word == string.Empty) {
                 return 0;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
-
-            var result = 0;
-
-            try {
-                const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, timestamp, frequency) VALUES (@id, @word_key, @word, @stem, @category, @timestamp, @frequency)";
-                using var command = new SQLiteCommand(queryInsert, _connection);
-                command.Parameters.Add("@id", DbType.String);
-                command.Parameters.Add("@word_key", DbType.String);
-                command.Parameters.Add("@word", DbType.String);
-                command.Parameters.Add("@stem", DbType.String);
-                command.Parameters.Add("@category", DbType.UInt64);
-                command.Parameters.Add("@timestamp", DbType.String);
-                command.Parameters.Add("@frequency", DbType.Int64);
-
-                command.Parameters["@id"].Value = id;
-                command.Parameters["@word_key"].Value = word_key;
-                command.Parameters["@word"].Value = word;
-                command.Parameters["@stem"].Value = stem;
-                command.Parameters["@category"].Value = category;
-                command.Parameters["@timestamp"].Value = timestamp;
-                command.Parameters["@frequency"].Value = frequency;
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-
-            return result;
-        }
-
-/*
-        internal bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
-            if (word == string.Empty) {
-                return false;
-            }
-
-
-
-            const string query = "UPDATE vocab SET word = @word, stem = @stem, category = @category, timestamp = @timestamp, frequency = @frequency WHERE word_key = @word_key";
-            using var command = new SQLiteCommand(query, _connection);
+            const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, timestamp, frequency) VALUES (@id, @word_key, @word, @stem, @category, @timestamp, @frequency)";
+            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@id", DbType.String);
             command.Parameters.Add("@word_key", DbType.String);
             command.Parameters.Add("@word", DbType.String);
             command.Parameters.Add("@stem", DbType.String);
@@ -570,61 +402,75 @@ namespace KindleMate2 {
             command.Parameters.Add("@timestamp", DbType.String);
             command.Parameters.Add("@frequency", DbType.Int64);
 
-            command.Parameters["@word_key"].Value = word_key;
-            command.Parameters["@word"].Value = word;
-            command.Parameters["@stem"].Value = stem;
-            command.Parameters["@category"].Value = category;
+            command.Parameters["@id"].Value        = id;
+            command.Parameters["@word_key"].Value  = word_key;
+            command.Parameters["@word"].Value      = word;
+            command.Parameters["@stem"].Value      = stem;
+            command.Parameters["@category"].Value  = category;
             command.Parameters["@timestamp"].Value = timestamp;
             command.Parameters["@frequency"].Value = frequency;
 
             var result = command.ExecuteNonQuery();
 
-
-
-            return result > 0;
+            return result;
         }
-*/
+
+        /*
+                internal bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
+                    if (word == string.Empty) {
+                        return false;
+                    }
+
+
+
+                    const string query = "UPDATE vocab SET word = @word, stem = @stem, category = @category, timestamp = @timestamp, frequency = @frequency WHERE word_key = @word_key";
+                    using var command = new SQLiteCommand(query, _connection);
+                    command.Parameters.Add("@word_key", DbType.String);
+                    command.Parameters.Add("@word", DbType.String);
+                    command.Parameters.Add("@stem", DbType.String);
+                    command.Parameters.Add("@category", DbType.UInt64);
+                    command.Parameters.Add("@timestamp", DbType.String);
+                    command.Parameters.Add("@frequency", DbType.Int64);
+
+                    command.Parameters["@word_key"].Value = word_key;
+                    command.Parameters["@word"].Value = word;
+                    command.Parameters["@stem"].Value = stem;
+                    command.Parameters["@category"].Value = category;
+                    command.Parameters["@timestamp"].Value = timestamp;
+                    command.Parameters["@frequency"].Value = frequency;
+
+                    var result = command.ExecuteNonQuery();
+
+
+
+                    return result > 0;
+                }
+        */
 
         internal void UpdateVocab(string word_key, int frequency) {
             if (word_key == string.Empty) {
                 return;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string query   = "UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key";
+            using var    command = new SQLiteCommand(query, _connection);
+            command.Parameters.Add("@word_key", DbType.String);
+            command.Parameters.Add("@frequency", DbType.Int64);
 
-            try {
-                const string query = "UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key";
-                using var command = new SQLiteCommand(query, _connection);
-                command.Parameters.Add("@word_key", DbType.String);
-                command.Parameters.Add("@frequency", DbType.Int64);
+            command.Parameters["@word_key"].Value  = word_key;
+            command.Parameters["@frequency"].Value = frequency;
 
-                command.Parameters["@word_key"].Value = word_key;
-                command.Parameters["@frequency"].Value = frequency;
-
-                command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            command.ExecuteNonQuery();
         }
 
         internal DataTable GetVocabDataTable() {
             var dataTable = new DataTable();
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string query   = "SELECT * FROM vocab;";
+            using var    command = new SQLiteCommand(query, _connection);
+            using var    adapter = new SQLiteDataAdapter(command);
 
-            try {
-                const string query = "SELECT * FROM vocab;";
-                using var command = new SQLiteCommand(query, _connection);
-                using var adapter = new SQLiteDataAdapter(command);
-
-                adapter.Fill(dataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            adapter.Fill(dataTable);
 
             return dataTable;
         }
@@ -632,18 +478,11 @@ namespace KindleMate2 {
         internal DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
-            try {
-                const string query = "SELECT * FROM lookups;";
-                using var command = new SQLiteCommand(query, _connection);
-                using var adapter = new SQLiteDataAdapter(command);
+            const string query   = "SELECT * FROM lookups;";
+            using var    command = new SQLiteCommand(query, _connection);
+            using var    adapter = new SQLiteDataAdapter(command);
 
-                adapter.Fill(dataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            adapter.Fill(dataTable);
 
             return dataTable;
         }
@@ -653,21 +492,11 @@ namespace KindleMate2 {
                 return true;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryCount   = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
+            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@word_key", word_key);
 
-            var result = 0;
-
-            try {
-                const string queryCount = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@word_key", word_key);
-
-                result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
             return result > 0;
         }
@@ -677,21 +506,11 @@ namespace KindleMate2 {
                 return true;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryCount   = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
+            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@timestamp", timestamp);
 
-            var result = 0;
-
-            try {
-                const string queryCount = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@timestamp", timestamp);
-
-                result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
             return result > 0;
         }
@@ -701,21 +520,11 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryDelete = "DELETE FROM vocab WHERE word = @word";
+            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@word", word);
 
-            var result = 0;
-
-            try {
-                const string queryDelete = "DELETE FROM vocab WHERE word = @word";
-                using var command = new SQLiteCommand(queryDelete, _connection);
-                command.Parameters.AddWithValue("@word", word);
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
@@ -725,21 +534,11 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryDelete = "DELETE FROM lookups WHERE timestamp = @timestamp";
+            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@timestamp", timestamp);
 
-            var result = 0;
-
-            try {
-                const string queryDelete = "DELETE FROM lookups WHERE timestamp = @timestamp";
-                using var command = new SQLiteCommand(queryDelete, _connection);
-                command.Parameters.AddWithValue("@timestamp", timestamp);
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
@@ -749,66 +548,40 @@ namespace KindleMate2 {
                 return false;
             }
 
-            SQLiteTransaction? trans = _connection.BeginTransaction();
+            const string queryDelete = "DELETE FROM lookups WHERE word_key = @word_key";
+            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            command.Parameters.AddWithValue("@word_key", word_key);
 
-            var result = 0;
-
-            try {
-                const string queryDelete = "DELETE FROM lookups WHERE word_key = @word_key";
-                using var command = new SQLiteCommand(queryDelete, _connection);
-                command.Parameters.AddWithValue("@word_key", word_key);
-
-                result = command.ExecuteNonQuery();
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
+            var result = command.ExecuteNonQuery();
 
             return result > 0;
         }
 
         internal bool EmptyTables() {
-            SQLiteTransaction? trans = _connection.BeginTransaction();
-
             var result = 0;
 
-            try {
-                var tableNames = new List<string>() {
-                    "clippings", "lookups", "original_clipping_lines", "vocab"
-                };
+            var tableNames = new List<string>() {
+                "clippings", "lookups", "original_clipping_lines", "vocab"
+            };
 
-                foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
-                    using var command = new SQLiteCommand(queryDelete, _connection);
-                    result += command.ExecuteNonQuery();
-                }
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
+            foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
+                using var command = new SQLiteCommand(queryDelete, _connection);
+                result += command.ExecuteNonQuery();
             }
 
             return result > 0;
         }
 
         internal bool IsDatabaseEmpty() {
-            SQLiteTransaction? trans = _connection.BeginTransaction();
-
             var result = 0;
 
-            try {
-                var tableNames = new List<string>() {
-                    "clippings", "lookups", "original_clipping_lines", "vocab"
-                };
+            var tableNames = new List<string>() {
+                "clippings", "lookups", "original_clipping_lines", "vocab"
+            };
 
-                foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(1) FROM " + tableName)) {
-                    using var commandCount = new SQLiteCommand(queryCount, _connection);
-                    result += Convert.ToInt32(commandCount.ExecuteScalar());
-                }
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
+            foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(1) FROM " + tableName)) {
+                using var commandCount = new SQLiteCommand(queryCount, _connection);
+                result += Convert.ToInt32(commandCount.ExecuteScalar());
             }
 
             return result <= 0;

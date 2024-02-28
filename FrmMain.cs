@@ -40,8 +40,8 @@ namespace KindleMate2 {
             InitializeComponent();
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
-                _staticData.CloseConnection();
                 BackupDatabase();
+                _staticData.CloseConnection();
             };
 
             _programsDirectory = Environment.CurrentDirectory;
@@ -207,48 +207,56 @@ namespace KindleMate2 {
             var lookupsInsertedCount = 0;
             var wordsInsertedCount = 0;
 
-            foreach (DataRow row in wordsTable.Rows) {
-                var id = row["id"].ToString() ?? string.Empty;
-                var word = row["word"].ToString() ?? string.Empty;
-                var stem = row["stem"].ToString() ?? string.Empty;
-                _ = int.TryParse(row["category"].ToString()!.Trim(), out var category);
-                _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
+            _staticData.BeginTransaction();
 
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            try {
+                foreach (DataRow row in wordsTable.Rows) {
+                    var id   = row["id"].ToString()   ?? string.Empty;
+                    var word = row["word"].ToString() ?? string.Empty;
+                    var stem = row["stem"].ToString() ?? string.Empty;
+                    _ = int.TryParse(row["category"].ToString()!.Trim(), out var category);
+                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
 
-                if (!_staticData.IsExistVocab(word + timestamp)) {
-                    wordsInsertedCount += _staticData.InsertVocab(word + timestamp, id, word, stem, category, formattedDateTime, 0);
+                    DateTimeOffset dateTimeOffset    = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                    DateTime       dateTime          = dateTimeOffset.LocalDateTime;
+                    var            formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    if (!_staticData.IsExistVocab(word + timestamp)) {
+                        wordsInsertedCount += _staticData.InsertVocab(word + timestamp, id, word, stem, category, formattedDateTime, 0);
+                    }
                 }
-            }
 
-            foreach (DataRow row in lookupsTable.Rows) {
-                var word_key = row["word_key"].ToString() ?? string.Empty;
-                var book_key = row["book_key"].ToString() ?? string.Empty;
-                var usage = row["usage"].ToString() ?? string.Empty;
-                _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
+                foreach (DataRow row in lookupsTable.Rows) {
+                    var word_key = row["word_key"].ToString() ?? string.Empty;
+                    var book_key = row["book_key"].ToString() ?? string.Empty;
+                    var usage    = row["usage"].ToString()    ?? string.Empty;
+                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
 
-                var title = "";
-                var authors = "";
-                foreach (DataRow bookInfoRow in bookInfoTable.Rows) {
-                    var id = bookInfoRow["id"].ToString() ?? string.Empty;
-                    var guid = bookInfoRow["guid"].ToString() ?? string.Empty;
-                    if (id != book_key && guid != book_key) {
-                        continue;
+                    var title   = "";
+                    var authors = "";
+                    foreach (DataRow bookInfoRow in bookInfoTable.Rows) {
+                        var id   = bookInfoRow["id"].ToString()   ?? string.Empty;
+                        var guid = bookInfoRow["guid"].ToString() ?? string.Empty;
+                        if (id != book_key && guid != book_key) {
+                            continue;
+                        }
+
+                        title   = bookInfoRow["title"].ToString()   ?? string.Empty;
+                        authors = bookInfoRow["authors"].ToString() ?? string.Empty;
                     }
 
-                    title = bookInfoRow["title"].ToString() ?? string.Empty;
-                    authors = bookInfoRow["authors"].ToString() ?? string.Empty;
+                    DateTimeOffset dateTimeOffset    = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                    DateTime       dateTime          = dateTimeOffset.LocalDateTime;
+                    var            formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    if (!_staticData.IsExistLookups(formattedDateTime)) {
+                        lookupsInsertedCount += _staticData.InsertLookups(word_key, usage, title, authors, formattedDateTime);
+                    }
                 }
 
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-
-                if (!_staticData.IsExistLookups(formattedDateTime)) {
-                    lookupsInsertedCount += _staticData.InsertLookups(word_key, usage, title, authors, formattedDateTime);
-                }
+                _staticData.CommitTransaction();
+            } catch (Exception) {
+                _staticData.RollbackTransaction();
             }
 
             UpdateFrequency();
@@ -259,10 +267,17 @@ namespace KindleMate2 {
         private void UpdateFrequency() {
             DataTable vocabDataTable = _staticData.GetVocabDataTable();
             DataTable lookupsDataTable = _staticData.GetLookupsDataTable();
-            foreach (DataRow row in vocabDataTable.Rows) {
-                var word_key = row["word_key"].ToString() ?? string.Empty;
-                var frequency = lookupsDataTable.AsEnumerable().Count(lookupsRow => lookupsRow["word_key"].ToString()?.Trim() == word_key);
-                _staticData.UpdateVocab(word_key, frequency);
+
+            _staticData.BeginTransaction();
+            try {
+                foreach (DataRow row in vocabDataTable.Rows) {
+                    var word_key  = row["word_key"].ToString() ?? string.Empty;
+                    var frequency = lookupsDataTable.AsEnumerable().Count(lookupsRow => lookupsRow["word_key"].ToString()?.Trim() == word_key);
+                    _staticData.UpdateVocab(word_key, frequency);
+                }
+                _staticData.CommitTransaction();
+            } catch (Exception) {
+                _staticData.RollbackTransaction();
             }
         }
 
@@ -598,50 +613,59 @@ namespace KindleMate2 {
 
             connection.Close();
 
-            var insertedCount = 0;
+            var insertedCount      = 0;
+            var wordsInsertedCount = 0;
 
-            foreach (DataRow row in clippingsDataTable.Rows) {
-                if (_staticData.IsExistClippings(row["key"].ToString())) {
-                    continue;
+            _staticData.BeginTransaction();
+
+            try {
+                foreach (DataRow row in clippingsDataTable.Rows) {
+                    if (_staticData.IsExistClippings(row["key"].ToString())) {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(row["content"].ToString())) {
+                        continue;
+                    }
+
+                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
+                        continue;
+                    }
+
+                    _             =  int.TryParse(row["brieftype"].ToString()!.Trim(), out var brieftype);
+                    _             =  int.TryParse(row["read"].ToString()!.Trim(), out var read);
+                    _             =  int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
+                    _             =  int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
+                    _             =  int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
+                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
                 }
 
-                if (string.IsNullOrWhiteSpace(row["content"].ToString())) {
-                    continue;
+                foreach (DataRow row in originClippingsDataTable.Rows) {
+                    if (_staticData.IsExistOriginalClippings(row["key"].ToString())) {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(row["line4"].ToString())) {
+                        continue;
+                    }
+
+                    _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
                 }
 
-                if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
-                    continue;
+                foreach (DataRow row in lookupsDataTable.Rows) {
+                    if (_staticData.IsExistLookups(row["timestamp"].ToString() ?? string.Empty)) {
+                        continue;
+                    }
+
+                    _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
                 }
 
-                _ = int.TryParse(row["brieftype"].ToString()!.Trim(), out var brieftype);
-                _ = int.TryParse(row["read"].ToString()!.Trim(), out var read);
-                _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
-                _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
-                _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
+
+                _staticData.CommitTransaction();
+            } catch (Exception) {
+                _staticData.RollbackTransaction();
             }
-
-            foreach (DataRow row in originClippingsDataTable.Rows) {
-                if (_staticData.IsExistOriginalClippings(row["key"].ToString())) {
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(row["line4"].ToString())) {
-                    continue;
-                }
-
-                _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
-            }
-
-            foreach (DataRow row in lookupsDataTable.Rows) {
-                if (_staticData.IsExistLookups(row["timestamp"].ToString() ?? string.Empty)) {
-                    continue;
-                }
-
-                _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
-            }
-
-            var wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
 
             UpdateFrequency();
 
@@ -744,8 +768,6 @@ namespace KindleMate2 {
                     datetime = datetime[(indexOfComma + 1)..].Trim();
                     if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
                         time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                    } else {
-                        //
                     }
                 } else {
                     var datetime = loctime[1].Replace("添加于", "").Trim();
@@ -760,36 +782,44 @@ namespace KindleMate2 {
 
                 var key = time + "|" + location;
 
-                if (_staticData.IsExistOriginalClippings(key)) {
-                    continue;
-                }
+                _staticData.BeginTransaction();
 
-                if (_staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5) <= 0) {
-                    continue;
-                }
+                try {
+                    if (_staticData.IsExistOriginalClippings(key)) {
+                        continue;
+                    }
 
-                string bookname;
-                var authorname = "";
-                var pattern = @"\(([^()]+)\)[^(]*$";
-                Match match = Regex.Match(line1, pattern);
-                if (match.Success) {
-                    authorname = match.Groups[1].Value.Trim();
-                    bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
-                } else {
-                    bookname = line1;
-                }
+                    if (_staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5) <= 0) {
+                        continue;
+                    }
 
-                if (string.IsNullOrWhiteSpace(line4)) {
-                    continue;
-                }
+                    string bookname;
+                    var    authorname = "";
+                    var    pattern    = @"\(([^()]+)\)[^(]*$";
+                    Match  match      = Regex.Match(line1, pattern);
+                    if (match.Success) {
+                        authorname = match.Groups[1].Value.Trim();
+                        bookname   = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
+                    } else {
+                        bookname = line1;
+                    }
 
-                if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
-                    continue;
-                }
+                    if (string.IsNullOrWhiteSpace(line4)) {
+                        continue;
+                    }
 
-                var insertResult = _staticData.InsertClippings(key, line4, bookname, authorname, brieftype, location, time, pagenumber);
-                if (insertResult > 0) {
-                    insertedCount += insertResult;
+                    if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
+                        continue;
+                    }
+
+                    var insertResult = _staticData.InsertClippings(key, line4, bookname, authorname, brieftype, location, time, pagenumber);
+                    if (insertResult > 0) {
+                        insertedCount += insertResult;
+                    }
+                    
+                    _staticData.CommitTransaction();
+                } catch (Exception) {
+                    _staticData.RollbackTransaction();
                 }
             }
 
@@ -1001,12 +1031,20 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                        if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
-                            dataGridView.Rows.Remove(row);
-                        } else {
-                            MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _staticData.BeginTransaction();
+
+                    try {
+                        foreach (DataGridViewRow row in dataGridView.SelectedRows) {
+                            if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
+                                dataGridView.Rows.Remove(row);
+                            } else {
+                                MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
+
+                        _staticData.CommitTransaction();
+                    } catch (Exception) {
+                        _staticData.RollbackTransaction();
                     }
 
                     break;
@@ -1016,13 +1054,21 @@ namespace KindleMate2 {
                     if (resultWords != DialogResult.Yes) {
                         return;
                     }
+                    
+                    _staticData.BeginTransaction();
 
-                    foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                        if (_staticData.DeleteLookupsByTimeStamp(row.Cells["timestamp"].Value.ToString() ?? string.Empty)) {
-                            dataGridView.Rows.Remove(row);
-                        } else {
-                            MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    try {
+                        foreach (DataGridViewRow row in dataGridView.SelectedRows) {
+                            if (_staticData.DeleteLookupsByTimeStamp(row.Cells["timestamp"].Value.ToString() ?? string.Empty)) {
+                                dataGridView.Rows.Remove(row);
+                            } else {
+                                MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
+
+                        _staticData.CommitTransaction();
+                    } catch (Exception) {
+                        _staticData.RollbackTransaction();
                     }
 
                     break;
