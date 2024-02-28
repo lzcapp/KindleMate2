@@ -715,75 +715,75 @@ namespace KindleMate2 {
 
             var insertedCount = 0;
 
-            for (var i = 0; i < delimiterIndex.Count; i++) {
-                var lastDelimiter = i == 0 ? 0 : delimiterIndex[i - 1] + 1;
-                var thisDelimiter = delimiterIndex[i];
-                var line1         = lines[lastDelimiter].Trim();
-                var line2         = lines[lastDelimiter + 1].Trim();
-                var line3         = lines[lastDelimiter + 2].Trim(); // line3 is left empty
-                var line4         = "";
-                for (var j = lastDelimiter + 3; j < thisDelimiter; j++) {
-                    line4 += lines[j];
-                    if (j != thisDelimiter - 1) {
-                        line4 += "\n";
-                    }
-                }
+            _staticData.BeginTransaction();
 
-                var line5 = lines[thisDelimiter].Trim(); // line 5 is "=========="
+            try {
 
-                var brieftype = 0;
-                if (line2.Contains("笔记") || line2.Contains("Note")) {
-                    brieftype = 1;
-                }
-
-                var time       = "";
-                var loctime    = line2.Split('|');
-                var location   = "";
-                var pagenumber = 0;
-                var dashIndex  = loctime[0].IndexOf('-');
-                if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
-                    location = loctime[0][(dashIndex + 1)..].Trim();
-                    var   pagePattern = @"第\s+\d+\s+页";
-                    Match pageMatch   = Regex.Match(location, pagePattern);
-                    if (pageMatch.Success) {
-                        _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
-                    } else {
-                        var lastIndexOfDash = location.LastIndexOf('-');
-                        var lastIndexOfDot  = location.LastIndexOf('.');
-
-                        if (lastIndexOfDash != -1) {
-                            _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
-                        } else if (lastIndexOfDot != -1) {
-                            _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
-                        } else {
-                            _ = int.TryParse(location.Replace("Your Highlight on page", "").Trim(), out pagenumber);
+                for (var i = 0; i < delimiterIndex.Count; i++) {
+                    var lastDelimiter = i == 0 ? 0 : delimiterIndex[i - 1] + 1;
+                    var thisDelimiter = delimiterIndex[i];
+                    var line1         = lines[lastDelimiter].Trim();
+                    var line2         = lines[lastDelimiter + 1].Trim();
+                    var line3         = lines[lastDelimiter + 2].Trim(); // line3 is left empty
+                    var line4         = "";
+                    for (var j = lastDelimiter + 3; j < thisDelimiter; j++) {
+                        line4 += lines[j];
+                        if (j != thisDelimiter - 1) {
+                            line4 += "\n";
                         }
                     }
-                }
 
-                if (loctime.Length >= 3) {
-                    var datetime     = loctime[2].Replace("Added on", "").Trim();
-                    var indexOfComma = datetime.IndexOf(',');
-                    datetime = datetime[(indexOfComma + 1)..].Trim();
-                    if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
-                        time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    var line5 = lines[thisDelimiter].Trim(); // line 5 is "=========="
+
+                    var brieftype = 0;
+                    if (line2.Contains("笔记") || line2.Contains("Note")) {
+                        brieftype = 1;
                     }
-                } else {
-                    var datetime       = loctime[1].Replace("添加于", "").Trim();
-                    var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                    if (dayOfWeekIndex != -1) {
-                        datetime = datetime.Remove(dayOfWeekIndex, 3);
+
+                    var time       = "";
+                    var loctime    = line2.Split('|');
+                    var location   = "";
+                    var pagenumber = 0;
+                    var dashIndex  = loctime[0].IndexOf('-');
+                    if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
+                        location = loctime[0][(dashIndex + 1)..].Trim();
+                        var   pagePattern = @"第\s+\d+\s+页";
+                        Match pageMatch   = Regex.Match(location, pagePattern);
+                        if (pageMatch.Success) {
+                            _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
+                        } else {
+                            var lastIndexOfDash = location.LastIndexOf('-');
+                            var lastIndexOfDot  = location.LastIndexOf('.');
+
+                            if (lastIndexOfDash != -1) {
+                                _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
+                            } else if (lastIndexOfDot != -1) {
+                                _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
+                            } else {
+                                _ = int.TryParse(location.Replace("Your Highlight on page", "").Trim(), out pagenumber);
+                            }
+                        }
                     }
-                    if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
-                        time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    if (loctime.Length >= 3) {
+                        var datetime     = loctime[2].Replace("Added on", "").Trim();
+                        var indexOfComma = datetime.IndexOf(',');
+                        datetime = datetime[(indexOfComma + 1)..].Trim();
+                        if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
+                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                        }
+                    } else {
+                        var datetime       = loctime[1].Replace("添加于", "").Trim();
+                        var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
+                        if (dayOfWeekIndex != -1) {
+                            datetime = datetime.Remove(dayOfWeekIndex, 3);
+                        }
+                        if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
+                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                        }
                     }
-                }
 
-                var key = time + "|" + location;
-
-                _staticData.BeginTransaction();
-
-                try {
+                    var key = time + "|" + location;
                     if (_staticData.IsExistOriginalClippings(key)) {
                         continue;
                     }
@@ -815,11 +815,11 @@ namespace KindleMate2 {
                     if (insertResult > 0) {
                         insertedCount += insertResult;
                     }
-
-                    _staticData.CommitTransaction();
-                } catch (Exception) {
-                    _staticData.RollbackTransaction();
                 }
+
+                _staticData.CommitTransaction();
+            } catch (Exception) {
+                _staticData.RollbackTransaction();
             }
 
             return "标注：共解析 " + delimiterIndex.Count + " 条记录，导入 " + insertedCount + " 条记录";
