@@ -553,7 +553,6 @@ namespace KindleMate2 {
         // ReSharper disable once InconsistentNaming
         private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
-                InitialDirectory = _programsDirectory,
                 Title            = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
                 CheckFileExists  = true,
                 CheckPathExists  = true,
@@ -1166,7 +1165,6 @@ namespace KindleMate2 {
 
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                InitialDirectory = _programsDirectory,
                 Title            = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(My Clippings.txt)",
                 CheckFileExists  = true,
                 CheckPathExists  = true,
@@ -1584,7 +1582,6 @@ namespace KindleMate2 {
 
         private void MenuImportKindleWords_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                InitialDirectory = _programsDirectory,
                 Title            = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(vocab.db)",
                 CheckFileExists  = true,
                 CheckPathExists  = true,
