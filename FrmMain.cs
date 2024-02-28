@@ -44,41 +44,41 @@ namespace KindleMate2 {
                 _staticData.CloseConnection();
             };
 
-            _programsDirectory = Environment.CurrentDirectory;
-            _filePath = Path.Combine(_programsDirectory, "KM2.dat");
+            _programsDirectory   = Environment.CurrentDirectory;
+            _filePath            = Path.Combine(_programsDirectory, "KM2.dat");
             _kindleClippingsPath = Path.Combine("documents", "My Clippings.txt");
-            _kindleWordsPath = Path.Combine("system", "vocabulary", "vocab.db");
-            _kindleVersionPath = Path.Combine("system", "version.txt");
-            _kindleDrive = string.Empty;
-            _selectedBook = string.Empty;
-            _selectedWord = string.Empty;
-            _selectedIndex = 0;
+            _kindleWordsPath     = Path.Combine("system", "vocabulary", "vocab.db");
+            _kindleVersionPath   = Path.Combine("system", "version.txt");
+            _kindleDrive         = string.Empty;
+            _selectedBook        = string.Empty;
+            _selectedWord        = string.Empty;
+            _selectedIndex       = 0;
 
-            menuFile.Text = Strings.Files + @"(&F)";
-            menuRefresh.Text = Strings.Refresh;
-            menuRestart.Text = Strings.Restart;
-            menuExit.Text = Strings.Exit;
-            menuManage.Text = Strings.Management + @"(&M)";
-            menuImportKindle.Text = Strings.Import_Kindle_Clippings;
+            menuFile.Text              = Strings.Files + @"(&F)";
+            menuRefresh.Text           = Strings.Refresh;
+            menuRestart.Text           = Strings.Restart;
+            menuExit.Text              = Strings.Exit;
+            menuManage.Text            = Strings.Management + @"(&M)";
+            menuImportKindle.Text      = Strings.Import_Kindle_Clippings;
             menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
-            menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
-            menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
-            menuBackup.Text = Strings.Backup;
-            menuClear.Text = Strings.Clear_Data;
-            menuHelp.Text = Strings.Help + @"(&H)";
-            menuAbout.Text = Strings.About;
-            menuRepo.Text = Strings.GitHub_Repo;
+            menuImportKindleMate.Text  = Strings.Import_Kindle_Mate_Database;
+            menuSyncFromKindle.Text    = Strings.Import_Kindle_Clippings_From_Kindle;
+            menuBackup.Text            = Strings.Backup;
+            menuClear.Text             = Strings.Clear_Data;
+            menuHelp.Text              = Strings.Help + @"(&H)";
+            menuAbout.Text             = Strings.About;
+            menuRepo.Text              = Strings.GitHub_Repo;
 
             tabPageBooks.Text = Strings.Clippings;
             tabPageWords.Text = Strings.Vocabulary_List;
 
             menuBookRefresh.Text = Strings.Refresh;
             menuBooksDelete.Text = Strings.Delete;
-            menuRename.Text = Strings.Rename;
+            menuRename.Text      = Strings.Rename;
 
             menuClippingsRefresh.Text = Strings.Refresh;
-            menuClippingsCopy.Text = Strings.Copy;
-            menuClippingsDelete.Text = Strings.Delete;
+            menuClippingsCopy.Text    = Strings.Copy;
+            menuClippingsDelete.Text  = Strings.Delete;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -156,7 +156,7 @@ namespace KindleMate2 {
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
             var clippingsResult = ImportKindleClippings(kindleClippingsPath);
-            var wordResult = ImportKindleWords(kindleWordsPath);
+            var wordResult      = ImportKindleWords(kindleWordsPath);
             return clippingsResult + "\n" + wordResult;
         }
 
@@ -169,8 +169,8 @@ namespace KindleMate2 {
             SQLiteConnection connection = new("Data Source=" + kindleWordsPath + ";Version=3;");
 
             var bookInfoTable = new DataTable();
-            var lookupsTable = new DataTable();
-            var wordsTable = new DataTable();
+            var lookupsTable  = new DataTable();
+            var wordsTable    = new DataTable();
 
             connection.Open();
 
@@ -181,19 +181,19 @@ namespace KindleMate2 {
             SQLiteTransaction? trans = connection.BeginTransaction();
 
             try {
-                const string bookInfoQuery = "SELECT * FROM BOOK_INFO;";
-                using var bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
-                using var bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
+                const string bookInfoQuery   = "SELECT * FROM BOOK_INFO;";
+                using var    bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
+                using var    bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
                 bookInfoAdapter.Fill(bookInfoTable);
 
                 const string lookupsTableQuery = "SELECT * FROM LOOKUPS;";
-                using var lookupsCommand = new SQLiteCommand(lookupsTableQuery, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
+                using var    lookupsCommand    = new SQLiteCommand(lookupsTableQuery, connection);
+                using var    lookupsAdapter    = new SQLiteDataAdapter(lookupsCommand);
                 lookupsAdapter.Fill(lookupsTable);
 
                 const string wordsLookups = "SELECT * FROM WORDS;";
-                using var wordsCommand = new SQLiteCommand(wordsLookups, connection);
-                using var wordsAdapter = new SQLiteDataAdapter(wordsCommand);
+                using var    wordsCommand = new SQLiteCommand(wordsLookups, connection);
+                using var    wordsAdapter = new SQLiteDataAdapter(wordsCommand);
 
                 wordsAdapter.Fill(wordsTable);
 
@@ -205,7 +205,7 @@ namespace KindleMate2 {
             connection.Close();
 
             var lookupsInsertedCount = 0;
-            var wordsInsertedCount = 0;
+            var wordsInsertedCount   = 0;
 
             _staticData.BeginTransaction();
 
@@ -265,7 +265,7 @@ namespace KindleMate2 {
         }
 
         private void UpdateFrequency() {
-            DataTable vocabDataTable = _staticData.GetVocabDataTable();
+            DataTable vocabDataTable   = _staticData.GetVocabDataTable();
             DataTable lookupsDataTable = _staticData.GetLookupsDataTable();
 
             _staticData.BeginTransaction();
@@ -296,33 +296,33 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
-            _clippingsDataTable = _staticData.GetClipingsDataTable();
+            _clippingsDataTable       = _staticData.GetClipingsDataTable();
             _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
-            _vocabDataTable = _staticData.GetVocabDataTable();
-            _lookupsDataTable = _staticData.GetLookupsDataTable();
+            _vocabDataTable           = _staticData.GetVocabDataTable();
+            _lookupsDataTable         = _staticData.GetLookupsDataTable();
 
             _lookupsDataTable.Columns.Add("word", typeof(string));
             _lookupsDataTable.Columns.Add("stem", typeof(string));
             _lookupsDataTable.Columns.Add("frequency", typeof(string));
 
             foreach (DataRow row in _lookupsDataTable.Rows) {
-                var word_key = row["word_key"].ToString() ?? string.Empty;
-                var word = "";
-                var stem = "";
+                var word_key  = row["word_key"].ToString() ?? string.Empty;
+                var word      = "";
+                var stem      = "";
                 var frequency = "";
                 foreach (DataRow vocabRow in _vocabDataTable.Rows) {
                     if (vocabRow["word_key"].ToString() != word_key) {
                         continue;
                     }
 
-                    word = vocabRow["word"].ToString() ?? string.Empty;
-                    stem = vocabRow["stem"].ToString() ?? string.Empty;
+                    word      = vocabRow["word"].ToString()      ?? string.Empty;
+                    stem      = vocabRow["stem"].ToString()      ?? string.Empty;
                     frequency = vocabRow["frequency"].ToString() ?? string.Empty;
                     break;
                 }
 
-                row["word"] = word;
-                row["stem"] = stem;
+                row["word"]      = word;
+                row["stem"]      = stem;
                 row["frequency"] = frequency;
             }
 
@@ -356,9 +356,9 @@ namespace KindleMate2 {
                 foreach (TreeNode node in treeViewBooks.Nodes) {
                     if (node.Text.Trim() == _selectedBook.Trim()) {
                         treeViewBooks.SelectedNode = node;
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.Space + Strings.X_Clippings;
-                        lblBookCount.Image = Properties.Resources.open_book;
-                        lblBookCount.Visible = true;
+                        lblBookCount.Text          = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.Space + Strings.X_Clippings;
+                        lblBookCount.Image         = Properties.Resources.open_book;
+                        lblBookCount.Visible       = true;
                         break;
                     }
 
@@ -394,9 +394,9 @@ namespace KindleMate2 {
                 foreach (TreeNode node in treeViewWords.Nodes) {
                     if (node.Text.Trim().Equals(_selectedWord.Trim())) {
                         treeViewWords.SelectedNode = node;
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.Space + Strings.X_Vocabs;
-                        lblBookCount.Image = Properties.Resources.input_latin_uppercase;
-                        lblBookCount.Visible = true;
+                        lblBookCount.Text          = Strings.Total_Clippings + Strings.Space + dataGridView.Rows.Count + Strings.Space + Strings.X_Vocabs;
+                        lblBookCount.Image         = Properties.Resources.input_latin_uppercase;
+                        lblBookCount.Visible       = true;
                         break;
                     }
 
@@ -418,53 +418,53 @@ namespace KindleMate2 {
                     }
 
                     if (string.IsNullOrWhiteSpace(_selectedBook) || _selectedBook == Strings.Select_All) {
-                        dataGridView.DataSource = _clippingsDataTable;
-                        dataGridView.Columns["key"]!.Visible = false;
-                        dataGridView.Columns["content"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
-                        dataGridView.Columns["brieftype"]!.Visible = false;
+                        dataGridView.DataSource                               = _clippingsDataTable;
+                        dataGridView.Columns["key"]!.Visible                  = false;
+                        dataGridView.Columns["content"]!.HeaderText           = Strings.Content;
+                        dataGridView.Columns["bookname"]!.HeaderText          = Strings.Books;
+                        dataGridView.Columns["authorname"]!.HeaderText        = Strings.Author;
+                        dataGridView.Columns["brieftype"]!.Visible            = false;
                         dataGridView.Columns["clippingtypelocation"]!.Visible = false;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
-                        dataGridView.Columns["read"]!.Visible = false;
-                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
-                        dataGridView.Columns["tag"]!.Visible = false;
-                        dataGridView.Columns["sync"]!.Visible = false;
-                        dataGridView.Columns["newbookname"]!.Visible = false;
-                        dataGridView.Columns["colorRGB"]!.Visible = false;
-                        dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
+                        dataGridView.Columns["clippingdate"]!.HeaderText      = Strings.Time;
+                        dataGridView.Columns["read"]!.Visible                 = false;
+                        dataGridView.Columns["clipping_importdate"]!.Visible  = false;
+                        dataGridView.Columns["tag"]!.Visible                  = false;
+                        dataGridView.Columns["sync"]!.Visible                 = false;
+                        dataGridView.Columns["newbookname"]!.Visible          = false;
+                        dataGridView.Columns["colorRGB"]!.Visible             = false;
+                        dataGridView.Columns["pagenumber"]!.HeaderText        = Strings.Page;
 
                         dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["bookname"]!.Width = 150;
-                        dataGridView.Columns["authorname"]!.Width = 100;
-                        dataGridView.Columns["clippingdate"]!.Width = 175;
-                        dataGridView.Columns["pagenumber"]!.Width = 75;
+                        dataGridView.Columns["bookname"]!.Width       = 150;
+                        dataGridView.Columns["authorname"]!.Width     = 100;
+                        dataGridView.Columns["clippingdate"]!.Width   = 175;
+                        dataGridView.Columns["pagenumber"]!.Width     = 75;
 
                         dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
                     } else {
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
-                        lblBookCount.Image = Properties.Resources.open_book;
-                        lblBookCount.Visible = true;
-                        dataGridView.DataSource = filteredBooks;
-                        dataGridView.Columns["key"]!.Visible = false;
-                        dataGridView.Columns["content"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["bookname"]!.Visible = false;
-                        dataGridView.Columns["authorname"]!.Visible = false;
-                        dataGridView.Columns["brieftype"]!.Visible = false;
+                        lblBookCount.Text                                     = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
+                        lblBookCount.Image                                    = Properties.Resources.open_book;
+                        lblBookCount.Visible                                  = true;
+                        dataGridView.DataSource                               = filteredBooks;
+                        dataGridView.Columns["key"]!.Visible                  = false;
+                        dataGridView.Columns["content"]!.HeaderText           = Strings.Content;
+                        dataGridView.Columns["bookname"]!.Visible             = false;
+                        dataGridView.Columns["authorname"]!.Visible           = false;
+                        dataGridView.Columns["brieftype"]!.Visible            = false;
                         dataGridView.Columns["clippingtypelocation"]!.Visible = false;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
-                        dataGridView.Columns["read"]!.Visible = false;
-                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
-                        dataGridView.Columns["tag"]!.Visible = false;
-                        dataGridView.Columns["sync"]!.Visible = false;
-                        dataGridView.Columns["newbookname"]!.Visible = false;
-                        dataGridView.Columns["colorRGB"]!.Visible = false;
-                        dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
+                        dataGridView.Columns["clippingdate"]!.HeaderText      = Strings.Time;
+                        dataGridView.Columns["read"]!.Visible                 = false;
+                        dataGridView.Columns["clipping_importdate"]!.Visible  = false;
+                        dataGridView.Columns["tag"]!.Visible                  = false;
+                        dataGridView.Columns["sync"]!.Visible                 = false;
+                        dataGridView.Columns["newbookname"]!.Visible          = false;
+                        dataGridView.Columns["colorRGB"]!.Visible             = false;
+                        dataGridView.Columns["pagenumber"]!.HeaderText        = Strings.Page;
 
                         dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["clippingdate"]!.Width = 175;
-                        dataGridView.Columns["pagenumber"]!.Width = 75;
+                        dataGridView.Columns["clippingdate"]!.Width   = 175;
+                        dataGridView.Columns["pagenumber"]!.Width     = 75;
 
                         dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
                     }
@@ -483,46 +483,46 @@ namespace KindleMate2 {
                     dataGridView.Columns["stem"]!.DisplayIndex = 1;
 
                     if (string.IsNullOrWhiteSpace(_selectedWord) || _selectedWord == Strings.Select_All) {
-                        dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns["usage"]!.Visible = false;
-                        dataGridView.Columns["title"]!.Visible = false;
-                        dataGridView.Columns["authors"]!.Visible = false;
+                        dataGridView.Columns["word"]!.HeaderText      = Strings.Vocabulary;
+                        dataGridView.Columns["usage"]!.Visible        = false;
+                        dataGridView.Columns["title"]!.Visible        = false;
+                        dataGridView.Columns["authors"]!.Visible      = false;
                         dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
-                        dataGridView.Columns["stem"]!.HeaderText = Strings.Stem;
+                        dataGridView.Columns["stem"]!.HeaderText      = Strings.Stem;
                         dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
 
-                        dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["word"]!.MinimumWidth = 150;
-                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["stem"]!.MinimumWidth = 150;
-                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["title"]!.Width = 200;
-                        dataGridView.Columns["authors"]!.Width = 150;
+                        dataGridView.Columns["word_key"]!.Visible       = false;
+                        dataGridView.Columns["word"]!.MinimumWidth      = 150;
+                        dataGridView.Columns["word"]!.AutoSizeMode      = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["stem"]!.MinimumWidth      = 150;
+                        dataGridView.Columns["stem"]!.AutoSizeMode      = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["title"]!.Width            = 200;
+                        dataGridView.Columns["authors"]!.Width          = 150;
                         dataGridView.Columns["timestamp"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                     } else {
                         DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == _selectedWord).CopyToDataTable();
-                        lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
-                        lblBookCount.Image = Properties.Resources.input_latin_uppercase;
-                        lblBookCount.Visible = true;
+                        lblBookCount.Text       = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
+                        lblBookCount.Image      = Properties.Resources.input_latin_uppercase;
+                        lblBookCount.Visible    = true;
                         dataGridView.DataSource = filteredWords;
 
-                        dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["title"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
+                        dataGridView.Columns["word"]!.HeaderText      = Strings.Vocabulary;
+                        dataGridView.Columns["usage"]!.HeaderText     = Strings.Content;
+                        dataGridView.Columns["title"]!.HeaderText     = Strings.Books;
+                        dataGridView.Columns["authors"]!.HeaderText   = Strings.Author;
                         dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
 
-                        dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["word"]!.MinimumWidth = 150;
-                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCells;
-                        dataGridView.Columns["stem"]!.MinimumWidth = 150;
-                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCells;
+                        dataGridView.Columns["word_key"]!.Visible   = false;
+                        dataGridView.Columns["word"]!.MinimumWidth  = 150;
+                        dataGridView.Columns["word"]!.AutoSizeMode  = DataGridViewAutoSizeColumnMode.DisplayedCells;
+                        dataGridView.Columns["stem"]!.MinimumWidth  = 150;
+                        dataGridView.Columns["stem"]!.AutoSizeMode  = DataGridViewAutoSizeColumnMode.DisplayedCells;
                         dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["title"]!.Visible = false;
-                        dataGridView.Columns["authors"]!.Visible = false;
-                        dataGridView.Columns["timestamp"]!.Width = 175;
-                        dataGridView.Columns["frequency"]!.Width = 75;
+                        dataGridView.Columns["title"]!.Visible      = false;
+                        dataGridView.Columns["authors"]!.Visible    = false;
+                        dataGridView.Columns["timestamp"]!.Width    = 175;
+                        dataGridView.Columns["frequency"]!.Width    = 75;
                     }
 
                     dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
@@ -535,14 +535,14 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    var booksCount = treeViewBooks.Nodes.Count - 1;
-                    var clippingsCount = _clippingsDataTable.Rows.Count;
+                    var booksCount           = treeViewBooks.Nodes.Count - 1;
+                    var clippingsCount       = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
-                    var diff = Math.Abs(originClippingsCount - clippingsCount);
+                    var diff                 = Math.Abs(originClippingsCount - clippingsCount);
                     lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
                     break;
                 case 1:
-                    var vocabCount = _vocabDataTable.Rows.Count;
+                    var vocabCount   = _vocabDataTable.Rows.Count;
                     var lookupsCount = _lookupsDataTable.Rows.Count;
                     lblCount.Text = Strings.Totally + Strings.Space + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
                     break;
@@ -553,15 +553,15 @@ namespace KindleMate2 {
         private void ImportKMDatabase() {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = "dat",
-                Filter = Strings.Kindle_Mate_Database_File + Strings.Space + @"(*.dat)|*.dat",
-                FilterIndex = 2,
+                Title            = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
+                CheckFileExists  = true,
+                CheckPathExists  = true,
+                DefaultExt       = "dat",
+                Filter           = Strings.Kindle_Mate_Database_File + Strings.Space + @"(*.dat)|*.dat",
+                FilterIndex      = 2,
                 RestoreDirectory = true,
-                ReadOnlyChecked = true,
-                ShowReadOnly = true
+                ReadOnlyChecked  = true,
+                ShowReadOnly     = true
             };
 
             if (fileDialog.ShowDialog() != DialogResult.OK) {
@@ -572,10 +572,10 @@ namespace KindleMate2 {
 
             SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";Version=3;");
 
-            var clippingsDataTable = new DataTable();
+            var clippingsDataTable       = new DataTable();
             var originClippingsDataTable = new DataTable();
-            var lookupsDataTable = new DataTable();
-            var vocabDataTable = new DataTable();
+            var lookupsDataTable         = new DataTable();
+            var vocabDataTable           = new DataTable();
 
             connection.Open();
 
@@ -586,24 +586,24 @@ namespace KindleMate2 {
             SQLiteTransaction? trans = connection.BeginTransaction();
 
             try {
-                const string queryClippings = "SELECT * FROM clippings;";
-                using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
-                using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
+                const string queryClippings   = "SELECT * FROM clippings;";
+                using var    clippingsCommand = new SQLiteCommand(queryClippings, connection);
+                using var    clippingAdapter  = new SQLiteDataAdapter(clippingsCommand);
                 clippingAdapter.Fill(clippingsDataTable);
 
                 const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
-                using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
-                using var originAdapter = new SQLiteDataAdapter(originCommand);
+                using var    originCommand        = new SQLiteCommand(queryOriginClippings, connection);
+                using var    originAdapter        = new SQLiteDataAdapter(originCommand);
                 originAdapter.Fill(originClippingsDataTable);
 
-                const string queryLookups = "SELECT * FROM lookups;";
-                using var lookupsCommand = new SQLiteCommand(queryLookups, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
+                const string queryLookups   = "SELECT * FROM lookups;";
+                using var    lookupsCommand = new SQLiteCommand(queryLookups, connection);
+                using var    lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
                 lookupsAdapter.Fill(lookupsDataTable);
 
-                const string queryVocab = "SELECT * FROM vocab;";
-                using var vocabCommand = new SQLiteCommand(queryVocab, connection);
-                using var vocabAdapter = new SQLiteDataAdapter(vocabCommand);
+                const string queryVocab   = "SELECT * FROM vocab;";
+                using var    vocabCommand = new SQLiteCommand(queryVocab, connection);
+                using var    vocabAdapter = new SQLiteDataAdapter(vocabCommand);
                 vocabAdapter.Fill(vocabDataTable);
 
                 trans.Commit();
@@ -718,10 +718,10 @@ namespace KindleMate2 {
             for (var i = 0; i < delimiterIndex.Count; i++) {
                 var lastDelimiter = i == 0 ? 0 : delimiterIndex[i - 1] + 1;
                 var thisDelimiter = delimiterIndex[i];
-                var line1 = lines[lastDelimiter].Trim();
-                var line2 = lines[lastDelimiter + 1].Trim();
-                var line3 = lines[lastDelimiter + 2].Trim(); // line3 is left empty
-                var line4 = "";
+                var line1         = lines[lastDelimiter].Trim();
+                var line2         = lines[lastDelimiter + 1].Trim();
+                var line3         = lines[lastDelimiter + 2].Trim(); // line3 is left empty
+                var line4         = "";
                 for (var j = lastDelimiter + 3; j < thisDelimiter; j++) {
                     line4 += lines[j];
                     if (j != thisDelimiter - 1) {
@@ -736,20 +736,20 @@ namespace KindleMate2 {
                     brieftype = 1;
                 }
 
-                var time = "";
-                var loctime = line2.Split('|');
-                var location = "";
+                var time       = "";
+                var loctime    = line2.Split('|');
+                var location   = "";
                 var pagenumber = 0;
-                var dashIndex = loctime[0].IndexOf('-');
+                var dashIndex  = loctime[0].IndexOf('-');
                 if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
                     location = loctime[0][(dashIndex + 1)..].Trim();
-                    var pagePattern = @"第\s+\d+\s+页";
-                    Match pageMatch = Regex.Match(location, pagePattern);
+                    var   pagePattern = @"第\s+\d+\s+页";
+                    Match pageMatch   = Regex.Match(location, pagePattern);
                     if (pageMatch.Success) {
                         _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
                     } else {
                         var lastIndexOfDash = location.LastIndexOf('-');
-                        var lastIndexOfDot = location.LastIndexOf('.');
+                        var lastIndexOfDot  = location.LastIndexOf('.');
 
                         if (lastIndexOfDash != -1) {
                             _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
@@ -761,16 +761,15 @@ namespace KindleMate2 {
                     }
                 }
 
-                
                 if (loctime.Length >= 3) {
-                    var datetime = loctime[2].Replace("Added on", "").Trim();
+                    var datetime     = loctime[2].Replace("Added on", "").Trim();
                     var indexOfComma = datetime.IndexOf(',');
                     datetime = datetime[(indexOfComma + 1)..].Trim();
                     if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
                         time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                     }
                 } else {
-                    var datetime = loctime[1].Replace("添加于", "").Trim();
+                    var datetime       = loctime[1].Replace("添加于", "").Trim();
                     var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                     if (dayOfWeekIndex != -1) {
                         datetime = datetime.Remove(dayOfWeekIndex, 3);
@@ -816,7 +815,7 @@ namespace KindleMate2 {
                     if (insertResult > 0) {
                         insertedCount += insertResult;
                     }
-                    
+
                     _staticData.CommitTransaction();
                 } catch (Exception) {
                     _staticData.RollbackTransaction();
@@ -839,11 +838,11 @@ namespace KindleMate2 {
                 var selectedIndex = tabControl.SelectedIndex;
                 switch (selectedIndex) {
                     case 0:
-                        var bookname = selectedRow.Cells["bookname"].Value.ToString();
-                        var authorname = selectedRow.Cells["authorname"].Value.ToString();
+                        var bookname         = selectedRow.Cells["bookname"].Value.ToString();
+                        var authorname       = selectedRow.Cells["authorname"].Value.ToString();
                         var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
-                        var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString();
-                        var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n");
+                        var pagenumber       = selectedRow.Cells["pagenumber"].Value.ToString();
+                        var content          = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n");
 
                         lblBook.Text = bookname;
                         if (authorname != string.Empty) {
@@ -854,15 +853,15 @@ namespace KindleMate2 {
 
                         lblLocation.Text = clippinglocation + Strings.Space + Strings.Left_Parenthesis + Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page + Strings.Right_Parenthesis;
 
-                        lblContent.Text = string.Empty;
+                        lblContent.Text            = string.Empty;
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
 
                         break;
                     case 1:
-                        var word_key = selectedRow.Cells["word_key"].Value.ToString();
-                        var word = selectedRow.Cells["word"].Value.ToString();
-                        var stem = selectedRow.Cells["stem"].Value.ToString();
+                        var word_key  = selectedRow.Cells["word_key"].Value.ToString();
+                        var word      = selectedRow.Cells["word"].Value.ToString();
+                        var stem      = selectedRow.Cells["stem"].Value.ToString();
                         var frequency = selectedRow.Cells["frequency"].Value.ToString();
 
                         var usage = _lookupsDataTable.Rows.Cast<DataRow>().Where(row => row["word_key"].ToString() == word_key).Aggregate("", (current, row) => current + (row["usage"] + "\n")).Replace(" 　　", "\n");
@@ -876,7 +875,7 @@ namespace KindleMate2 {
 
                         lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
 
-                        lblContent.Text = "";
+                        lblContent.Text            = "";
                         lblContent.SelectionBullet = true;
                         lblContent.AppendText(usage);
                         lblContent.SelectionBullet = false;
@@ -907,25 +906,25 @@ namespace KindleMate2 {
 
         private void TreeViewBooks_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text == Strings.Select_All) {
-                _selectedBook = Strings.Select_All;
-                lblBookCount.Text = string.Empty;
-                lblBookCount.Image = null;
-                lblBookCount.Visible = false;
-                dataGridView.DataSource = _clippingsDataTable;
-                dataGridView.Columns["bookname"]!.Visible = true;
+                _selectedBook                               = Strings.Select_All;
+                lblBookCount.Text                           = string.Empty;
+                lblBookCount.Image                          = null;
+                lblBookCount.Visible                        = false;
+                dataGridView.DataSource                     = _clippingsDataTable;
+                dataGridView.Columns["bookname"]!.Visible   = true;
                 dataGridView.Columns["authorname"]!.Visible = true;
                 dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
             } else {
                 var selectedBookName = e.Node.Text;
                 _selectedBook = selectedBookName;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
-                lblBookCount.Image = Properties.Resources.open_book;
-                lblBookCount.Visible = true;
-                dataGridView.DataSource = filteredBooks;
-                dataGridView.Columns["bookname"]!.Visible = false;
-                dataGridView.Columns["authorname"]!.Visible = false;
-                dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
+                lblBookCount.Text                              = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
+                lblBookCount.Image                             = Properties.Resources.open_book;
+                lblBookCount.Visible                           = true;
+                dataGridView.DataSource                        = filteredBooks;
+                dataGridView.Columns["bookname"]!.Visible      = false;
+                dataGridView.Columns["authorname"]!.Visible    = false;
+                dataGridView.Columns["bookname"]!.HeaderText   = Strings.Books;
                 dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
                 dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
             }
@@ -936,7 +935,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            var clickPoint = new Point(e.X, e.Y);
+            var      clickPoint  = new Point(e.X, e.Y);
             TreeNode currentNode = treeViewBooks.GetNodeAt(clickPoint);
             if (currentNode == null) {
                 return;
@@ -946,7 +945,7 @@ namespace KindleMate2 {
             }
 
             currentNode.ContextMenuStrip = menuBooks;
-            treeViewBooks.SelectedNode = currentNode;
+            treeViewBooks.SelectedNode   = currentNode;
         }
 
         private void LblContent_MouseDoubleClick(object sender, MouseEventArgs e) {
@@ -955,7 +954,7 @@ namespace KindleMate2 {
 
         private void ShowContentEditDialog() {
             using var dialog = new FrmEdit();
-            dialog.LblBook = lblBook.Text;
+            dialog.LblBook    = lblBook.Text;
             dialog.TxtContent = lblContent.Text;
             if (dialog.ShowDialog() != DialogResult.OK) {
                 return;
@@ -988,11 +987,11 @@ namespace KindleMate2 {
                     if (columnName == Strings.Books) {
                         _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
-                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
-                        lblBookCount.Image = Properties.Resources.open_book;
-                        lblBookCount.Visible = true;
-                        dataGridView.DataSource = filteredBooks;
-                        dataGridView.Columns["bookname"]!.Visible = false;
+                        lblBookCount.Text                           = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
+                        lblBookCount.Image                          = Properties.Resources.open_book;
+                        lblBookCount.Visible                        = true;
+                        dataGridView.DataSource                     = filteredBooks;
+                        dataGridView.Columns["bookname"]!.Visible   = false;
                         dataGridView.Columns["authorname"]!.Visible = false;
                         dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
                         RefreshData();
@@ -1054,7 +1053,7 @@ namespace KindleMate2 {
                     if (resultWords != DialogResult.Yes) {
                         return;
                     }
-                    
+
                     _staticData.BeginTransaction();
 
                     try {
@@ -1138,7 +1137,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    var word = treeViewBooks.SelectedNode.Text;
+                    var word     = treeViewBooks.SelectedNode.Text;
                     var word_key = "";
                     foreach (DataRow row in _vocabDataTable.Rows) {
                         if (row["word"].ToString() != word) {
@@ -1169,15 +1168,15 @@ namespace KindleMate2 {
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(My Clippings.txt)",
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = "txt",
-                Filter = Strings.Kindle_Clipping_File + Strings.Space + @"(*.txt)|*.txt",
-                FilterIndex = 2,
+                Title            = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(My Clippings.txt)",
+                CheckFileExists  = true,
+                CheckPathExists  = true,
+                DefaultExt       = "txt",
+                Filter           = Strings.Kindle_Clipping_File + Strings.Space + @"(*.txt)|*.txt",
+                FilterIndex      = 2,
                 RestoreDirectory = true,
-                ReadOnlyChecked = true,
-                ShowReadOnly = true
+                ReadOnlyChecked  = true,
+                ShowReadOnly     = true
             };
 
             if (fileDialog.ShowDialog() != DialogResult.OK) {
@@ -1254,8 +1253,8 @@ namespace KindleMate2 {
         private void ImportFromKindle() {
             SetProgressBar(true);
             var kindleClippingsPath = Path.Combine(_kindleDrive, _kindleClippingsPath);
-            var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
-            var importResult = Import(kindleClippingsPath, kindleWordsPath);
+            var kindleWordsPath     = Path.Combine(_kindleDrive, _kindleWordsPath);
+            var importResult        = Import(kindleClippingsPath, kindleWordsPath);
             if (!string.IsNullOrWhiteSpace(importResult)) {
                 MessageBox.Show(importResult, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -1279,10 +1278,10 @@ namespace KindleMate2 {
                 }
 
                 menuSyncFromKindle.Visible = true;
-                menuKindle.Visible = true;
+                menuKindle.Visible         = true;
             } else {
                 menuSyncFromKindle.Visible = false;
-                menuKindle.Visible = false;
+                menuKindle.Visible         = false;
             }
         }
 
@@ -1295,17 +1294,17 @@ namespace KindleMate2 {
         }
 
         private void ShowBookRenameDialog() {
-            using var dialog = new FrmBookRename();
-            var bookname = GetBookname();
-            var authorname = GetAuthorname();
+            using var dialog     = new FrmBookRename();
+            var       bookname   = GetBookname();
+            var       authorname = GetAuthorname();
 
-            dialog.TxtBook = bookname;
+            dialog.TxtBook   = bookname;
             dialog.TxtAuthor = authorname;
             if (dialog.ShowDialog() != DialogResult.OK) {
                 return;
             }
 
-            var dialogBook = dialog.TxtBook.Trim();
+            var dialogBook   = dialog.TxtBook.Trim();
             var dialogAuthor = dialog.TxtAuthor.Trim();
             if (string.IsNullOrWhiteSpace(dialogBook)) {
                 return;
@@ -1358,8 +1357,8 @@ namespace KindleMate2 {
             string authorname;
             if (!string.IsNullOrWhiteSpace(lblAuthor.Text)) {
                 authorname = lblAuthor.Text;
-                var startIndex = authorname.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
-                var endIndex = authorname.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
+                var startIndex = authorname.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal)      + 1;
+                var endIndex   = authorname.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
                 authorname = authorname.Substring(startIndex, endIndex - startIndex + 1);
             } else {
                 authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
@@ -1387,14 +1386,14 @@ namespace KindleMate2 {
                     }
 
                     dataGridView.FirstDisplayedScrollingRowIndex = _selectedIndex;
-                    dataGridView.Rows[_selectedIndex].Selected = true;
+                    dataGridView.Rows[_selectedIndex].Selected   = true;
 
                     DataGridViewRow selectedRow = dataGridView.SelectedRows[0];
 
-                    var bookname = selectedRow.Cells["bookname"].Value.ToString();
-                    var authorname = selectedRow.Cells["authorname"].Value.ToString();
+                    var bookname         = selectedRow.Cells["bookname"].Value.ToString();
+                    var authorname       = selectedRow.Cells["authorname"].Value.ToString();
                     var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
-                    var content = selectedRow.Cells["content"].Value.ToString();
+                    var content          = selectedRow.Cells["content"].Value.ToString();
 
                     lblBook.Text = bookname;
                     if (authorname != string.Empty) {
@@ -1404,7 +1403,7 @@ namespace KindleMate2 {
                     }
 
                     lblLocation.Text = clippinglocation;
-                    lblContent.Text = content;
+                    lblContent.Text  = content;
                     break;
                 case 1:
                     if (_selectedIndex < 0) {
@@ -1416,7 +1415,7 @@ namespace KindleMate2 {
                     }
 
                     dataGridView.FirstDisplayedScrollingRowIndex = _selectedIndex;
-                    dataGridView.Rows[_selectedIndex].Selected = true;
+                    dataGridView.Rows[_selectedIndex].Selected   = true;
                     break;
             }
         }
@@ -1496,7 +1495,7 @@ namespace KindleMate2 {
             }
 
             using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            using var writer = new StreamWriter(fileStream);
+            using var writer     = new StreamWriter(fileStream);
             foreach (DataRow row in sortedDataTable.Rows) {
                 writer.WriteLine(row["line1"]);
                 writer.WriteLine(row["line2"]);
@@ -1597,15 +1596,15 @@ namespace KindleMate2 {
         private void MenuImportKindleWords_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
                 InitialDirectory = _programsDirectory,
-                Title = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(vocab.db)",
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = "txt",
-                Filter = Strings.Kindle_Vocab_File + Strings.Space + @"(*.db)|*.db",
-                FilterIndex = 2,
+                Title            = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(vocab.db)",
+                CheckFileExists  = true,
+                CheckPathExists  = true,
+                DefaultExt       = "txt",
+                Filter           = Strings.Kindle_Vocab_File + Strings.Space + @"(*.db)|*.db",
+                FilterIndex      = 2,
                 RestoreDirectory = true,
-                ReadOnlyChecked = true,
-                ShowReadOnly = true
+                ReadOnlyChecked  = true,
+                ShowReadOnly     = true
             };
 
             if (fileDialog.ShowDialog() != DialogResult.OK) {
@@ -1635,14 +1634,14 @@ namespace KindleMate2 {
 
         private void TreeViewWords_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Text is "Select All" or "全部") {
-                _selectedWord = string.Empty;
-                lblBookCount.Text = string.Empty;
-                lblBookCount.Image = null;
-                lblBookCount.Visible = false;
+                _selectedWord           = string.Empty;
+                lblBookCount.Text       = string.Empty;
+                lblBookCount.Image      = null;
+                lblBookCount.Visible    = false;
                 dataGridView.DataSource = _lookupsDataTable;
 
-                dataGridView.Columns["usage"]!.Visible = false;
-                dataGridView.Columns["title"]!.Visible = false;
+                dataGridView.Columns["usage"]!.Visible   = false;
+                dataGridView.Columns["title"]!.Visible   = false;
                 dataGridView.Columns["authors"]!.Visible = false;
 
                 dataGridView.Columns["frequency"]!.Visible = true;
@@ -1652,19 +1651,19 @@ namespace KindleMate2 {
                 var selectedWord = e.Node.Text;
                 _selectedWord = selectedWord;
                 DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == selectedWord).CopyToDataTable();
-                lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
-                lblBookCount.Image = Properties.Resources.input_latin_uppercase;
-                lblBookCount.Visible = true;
+                lblBookCount.Text       = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
+                lblBookCount.Image      = Properties.Resources.input_latin_uppercase;
+                lblBookCount.Visible    = true;
                 dataGridView.DataSource = filteredWords;
 
-                dataGridView.Columns["usage"]!.Visible = true;
-                dataGridView.Columns["title"]!.Visible = true;
+                dataGridView.Columns["usage"]!.Visible   = true;
+                dataGridView.Columns["title"]!.Visible   = true;
                 dataGridView.Columns["authors"]!.Visible = true;
 
                 dataGridView.Columns["frequency"]!.Visible = false;
 
-                dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-                dataGridView.Columns["title"]!.HeaderText = Strings.Books;
+                dataGridView.Columns["usage"]!.HeaderText   = Strings.Content;
+                dataGridView.Columns["title"]!.HeaderText   = Strings.Books;
                 dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
             }
         }
@@ -1674,14 +1673,14 @@ namespace KindleMate2 {
                 return;
             }
 
-            var clickPoint = new Point(e.X, e.Y);
+            var      clickPoint  = new Point(e.X, e.Y);
             TreeNode currentNode = treeViewWords.GetNodeAt(clickPoint);
             if (currentNode == null) {
                 return;
             }
 
             currentNode.ContextMenuStrip = menuBooks;
-            treeViewBooks.SelectedNode = currentNode;
+            treeViewBooks.SelectedNode   = currentNode;
         }
 
         private void TreeViewBooks_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -1720,7 +1719,7 @@ namespace KindleMate2 {
         }
 
         private void MenuLang_Click(object sender, EventArgs e) {
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            Thread.CurrentThread.CurrentCulture   = new CultureInfo("en-US");
             Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-US");
 
             RefreshData();
