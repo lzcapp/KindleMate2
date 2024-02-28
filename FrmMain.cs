@@ -3,7 +3,6 @@ using System.Data;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Globalization;
-using System.Management;
 using System.Text.RegularExpressions;
 
 namespace KindleMate2 {
@@ -1210,16 +1209,6 @@ namespace KindleMate2 {
         }
 
         private bool IsKindleDeviceConnected() {
-            ManagementObjectCollection collection;
-            using (var searcher = new ManagementObjectSearcher(@"SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%Kindle%'")) {
-                collection = searcher.Get();
-            }
-
-            if (collection.Count <= 0) {
-                _kindleDrive = string.Empty;
-                return false;
-            }
-
             var drives = DriveInfo.GetDrives();
 
             foreach (DriveInfo drive in drives) {
@@ -1233,7 +1222,6 @@ namespace KindleMate2 {
                 }
 
                 var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
-
                 if (!File.Exists(clippingsPath)) {
                     continue;
                 }

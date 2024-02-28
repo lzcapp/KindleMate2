@@ -32,13 +32,15 @@ namespace KindleMate2 {
             }
         }
 
-        private static string AssemblyTitle {
-            get {
-                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+        /*
+                private static string AssemblyTitle {
+                    get {
+                        var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
 
-                return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
-            }
-        }
+                        return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
+                    }
+                }
+        */
 
         private static string AssemblyCopyright {
             get {
