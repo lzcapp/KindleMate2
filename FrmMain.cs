@@ -1204,7 +1204,8 @@ namespace KindleMate2 {
                     FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
-                // ignored
+                Clipboard.SetText(repoUrl);
+                MessageBox.Show(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

@@ -781,6 +781,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 仓库URL已经复制到剪贴板 的本地化字符串。
+        /// </summary>
+        internal static string Repo_URL_Copied {
+            get {
+                return ResourceManager.GetString("Repo_URL_Copied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重启 的本地化字符串。
         /// </summary>
         internal static string Restart {

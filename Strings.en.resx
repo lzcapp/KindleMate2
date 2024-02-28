@@ -314,4 +314,7 @@
 	<data name="Confirm_Restore_Database" xml:space="preserve">
 		<value>A backup has been detected. Do you want to restore from the backup?</value>
 	</data>
+	<data name="Repo_URL_Copied" xml:space="preserve">
+		<value>Repo URL copied to clipboard</value>
+	</data>
 </root>

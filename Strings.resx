@@ -434,4 +434,7 @@
 	<data name="Confirm_Restore_Database" xml:space="preserve">
 		<value>检测到备份，需要从备份恢复吗？</value>
 	</data>
+	<data name="Repo_URL_Copied" xml:space="preserve">
+		<value>仓库URL已经复制到剪贴板</value>
+	</data>
 </root>

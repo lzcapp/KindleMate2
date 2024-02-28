@@ -320,4 +320,7 @@
   <data name="Confirm_Restore_Database" xml:space="preserve">
     <value>檢測到備份，需要從備份恢復嗎？</value>
   </data>
+  <data name="Repo_URL_Copied" xml:space="preserve">
+    <value>倉庫URL已經復製到剪貼板</value>
+  </data>
 </root>
