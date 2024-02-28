@@ -6,6 +6,12 @@
 
 **Kindle Mate 2** is a program for managing Kindle's clippings/notes and Kindle's vocabulary list, aiming to provide an alternative solution after the [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) stopped updating.
 
+## System Requirements
+
+**Minimum**: Windows 7 or later, **Recommended**: Windows 11, x86 or x64.
+
+[.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) Required.
+
 ## Features
 
 - [x] 导入“My Clippings.txt”
