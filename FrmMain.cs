@@ -42,6 +42,7 @@ namespace KindleMate2 {
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 BackupDatabase();
                 _staticData.CloseConnection();
+                _staticData.DisposeConnection();
             };
 
             _programsDirectory   = Environment.CurrentDirectory;
