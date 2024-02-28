@@ -10,7 +10,7 @@
 
 **Minimum**: Windows 7 or later, **Recommended**: Windows 11, x86 or x64.
 
-[.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) Required.
+[.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) Required.
 
 ## Features
 
