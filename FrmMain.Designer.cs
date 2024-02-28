@@ -109,7 +109,7 @@
             menuFile.Name = "menuFile";
             menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            menuFile.Size = new Size(97, 36);
+            menuFile.Size = new Size(97, 32);
             menuFile.Text = "文件(&F)";
             // 
             // menuRefresh
@@ -140,14 +140,14 @@
             // 
             menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuBackup, menuClear });
             menuManage.Name = "menuManage";
-            menuManage.Size = new Size(107, 36);
+            menuManage.Size = new Size(107, 32);
             menuManage.Text = "管理(&M)";
             // 
             // menuImportKindle
             // 
             menuImportKindle.Image = Properties.Resources.memo;
             menuImportKindle.Name = "menuImportKindle";
-            menuImportKindle.Size = new Size(360, 44);
+            menuImportKindle.Size = new Size(356, 40);
             menuImportKindle.Text = Strings.Import_Kindle_Clippings;
             menuImportKindle.Click += MenuImportKindle_Click;
             // 
@@ -155,7 +155,7 @@
             // 
             menuImportKindleWords.Image = Properties.Resources.memo;
             menuImportKindleWords.Name = "menuImportKindleWords";
-            menuImportKindleWords.Size = new Size(360, 44);
+            menuImportKindleWords.Size = new Size(356, 40);
             menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
             menuImportKindleWords.Click += MenuImportKindleWords_Click;
             // 
@@ -163,7 +163,7 @@
             // 
             menuImportKindleMate.Image = Properties.Resources.bookmark_tabs;
             menuImportKindleMate.Name = "menuImportKindleMate";
-            menuImportKindleMate.Size = new Size(360, 44);
+            menuImportKindleMate.Size = new Size(356, 40);
             menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
             menuImportKindleMate.Click += MenuImportKindleMate_Click;
             // 
@@ -171,7 +171,7 @@
             // 
             menuSyncFromKindle.Image = Properties.Resources.mobile_phone_with_arrow;
             menuSyncFromKindle.Name = "menuSyncFromKindle";
-            menuSyncFromKindle.Size = new Size(360, 44);
+            menuSyncFromKindle.Size = new Size(356, 40);
             menuSyncFromKindle.Text = "从Kindle设备导入";
             menuSyncFromKindle.Visible = false;
             menuSyncFromKindle.Click += MenuSyncFromKindle_Click;
@@ -180,7 +180,7 @@
             // 
             menuBackup.Image = Properties.Resources.card_file_box;
             menuBackup.Name = "menuBackup";
-            menuBackup.Size = new Size(360, 44);
+            menuBackup.Size = new Size(356, 40);
             menuBackup.Text = Strings.Backup;
             menuBackup.Click += MenuBackup_Click;
             // 
@@ -188,7 +188,7 @@
             // 
             menuClear.Image = Properties.Resources.wastebasket;
             menuClear.Name = "menuClear";
-            menuClear.Size = new Size(360, 44);
+            menuClear.Size = new Size(356, 40);
             menuClear.Text = Strings.Clear_Data;
             menuClear.Click += MenuClear_Click;
             // 
@@ -196,7 +196,7 @@
             // 
             menuHelp.DropDownItems.AddRange(new ToolStripItem[] { menuAbout, menuRepo });
             menuHelp.Name = "menuHelp";
-            menuHelp.Size = new Size(102, 36);
+            menuHelp.Size = new Size(102, 32);
             menuHelp.Text = "帮助(&H)";
             // 
             // menuAbout
@@ -229,7 +229,7 @@
             // 
             menuLang.Alignment = ToolStripItemAlignment.Right;
             menuLang.Name = "menuLang";
-            menuLang.Size = new Size(72, 36);
+            menuLang.Size = new Size(72, 32);
             menuLang.Text = Strings.Language;
             menuLang.Visible = false;
             menuLang.Click += MenuLang_Click;

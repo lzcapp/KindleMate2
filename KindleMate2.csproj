@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+		<TargetFramework>net8.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -21,6 +21,8 @@
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 		<LangVersion>latest</LangVersion>
+		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
+		<TargetFrameworks></TargetFrameworks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -51,7 +53,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
+	  <PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
 	</ItemGroup>
 
 	<ItemGroup>
