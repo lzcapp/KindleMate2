@@ -91,7 +91,8 @@ namespace KindleMate2 {
                 if (Directory.Exists(Path.Combine(_programsDirectory, "Backups"))) {
                     var filePath = Path.Combine(_programsDirectory, "Backups", "KM2.dat");
 
-                    if (File.Exists(filePath)) {
+                    var fileSize = new FileInfo(filePath).Length / 1024;
+                    if (File.Exists(filePath) && fileSize >= 20) {
                         DialogResult resultRestore = MessageBox.Show(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (resultRestore == DialogResult.Yes) {
                             File.Copy(filePath, _filePath, true);
@@ -1095,14 +1096,12 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
-            switch (e.KeyCode) {
-                case Keys.Enter:
-                    ShowContentEditDialog();
-                    e.Handled = true;
-                    break;
-                case Keys.Delete:
-                    ClippingMenuDelete_Click(sender, e);
-                    break;
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (e.KeyCode == Keys.Enter) {
+                ShowContentEditDialog();
+                e.Handled = true;
+            } else if (e.KeyCode == Keys.Delete) {
+                ClippingMenuDelete_Click(sender, e);
             }
         }
 
@@ -1704,13 +1703,11 @@ namespace KindleMate2 {
         }
 
         private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
-            switch (e.KeyCode) {
-                case Keys.Delete:
-                    BooksMenuDelete_Click(sender, e);
-                    break;
-                case Keys.Enter:
-                    MenuRename_Click(sender, e);
-                    break;
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (e.KeyCode == Keys.Delete) {
+                BooksMenuDelete_Click(sender, e);
+            } else if (e.KeyCode == Keys.Enter) {
+                MenuRename_Click(sender, e);
             }
         }
 
