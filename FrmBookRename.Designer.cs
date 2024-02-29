@@ -62,13 +62,13 @@
             // 
             lblBook.AutoSize = true;
             lblBook.Dock = DockStyle.Fill;
-            lblBook.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            lblBook.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0, 0, 0, 10);
             lblBook.Name = "lblBook";
             lblBook.Size = new Size(780, 33);
             lblBook.TabIndex = 2;
-            lblBook.Text = Strings.Book_Title + Strings.Symbol_Colon;
+            lblBook.Text = "书名：";
             lblBook.TextAlign = ContentAlignment.BottomLeft;
             // 
             // flowLayoutPanel
@@ -116,7 +116,7 @@
             label1.Name = "label1";
             label1.Size = new Size(780, 33);
             label1.TabIndex = 5;
-            label1.Text = Strings.Author + Strings.Symbol_Colon;
+            label1.Text = "作者：";
             label1.TextAlign = ContentAlignment.BottomLeft;
             // 
             // txtAuthor
@@ -124,7 +124,7 @@
             txtAuthor.Dock = DockStyle.Fill;
             txtAuthor.Location = new Point(3, 154);
             txtAuthor.Name = "txtAuthor";
-            txtAuthor.Size = new Size(774, 34);
+            txtAuthor.Size = new Size(774, 35);
             txtAuthor.TabIndex = 6;
             txtAuthor.TextChanged += TxtAuthor_TextChanged;
             // 
@@ -133,7 +133,7 @@
             txtBook.Dock = DockStyle.Fill;
             txtBook.Location = new Point(3, 46);
             txtBook.Name = "txtBook";
-            txtBook.Size = new Size(774, 34);
+            txtBook.Size = new Size(774, 35);
             txtBook.TabIndex = 7;
             txtBook.TextChanged += TxtBook_TextChanged;
             // 
@@ -145,6 +145,7 @@
             CancelButton = btnCancel;
             ClientSize = new Size(800, 324);
             Controls.Add(tableLayoutPanel);
+            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
@@ -153,7 +154,7 @@
             Padding = new Padding(10);
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = Strings.Rename_Book;
+            Text = "重命名书籍";
             Load += FrmBookRename_Load;
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();

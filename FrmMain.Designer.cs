@@ -426,7 +426,7 @@
             lblLocation.AutoSize = true;
             lblLocation.BackColor = SystemColors.Window;
             lblLocation.Dock = DockStyle.Fill;
-            lblLocation.Font = new Font("Microsoft YaHei UI Light", 10F);
+            lblLocation.Font = new Font("微软雅黑", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblLocation.Location = new Point(0, 53);
             lblLocation.Margin = new Padding(0, 10, 0, 10);
             lblLocation.Name = "lblLocation";
@@ -442,7 +442,7 @@
             flowLayoutPanel.Controls.Add(lblBook);
             flowLayoutPanel.Controls.Add(lblAuthor);
             flowLayoutPanel.Dock = DockStyle.Fill;
-            flowLayoutPanel.Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            flowLayoutPanel.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
             flowLayoutPanel.Location = new Point(0, 10);
             flowLayoutPanel.Margin = new Padding(0, 10, 0, 0);
             flowLayoutPanel.Name = "flowLayoutPanel";
@@ -453,7 +453,7 @@
             // lblBook
             // 
             lblBook.AutoSize = true;
-            lblBook.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblBook.Font = new Font("微软雅黑", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(1, 1);
             lblBook.Margin = new Padding(1);
             lblBook.Name = "lblBook";
@@ -464,7 +464,7 @@
             // lblAuthor
             // 
             lblAuthor.AutoSize = true;
-            lblAuthor.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            lblAuthor.Font = new Font("微软雅黑", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblAuthor.Location = new Point(5, 0);
             lblAuthor.Name = "lblAuthor";
             lblAuthor.Size = new Size(0, 31);
@@ -477,7 +477,7 @@
             lblContent.BorderStyle = BorderStyle.None;
             lblContent.ContextMenuStrip = menuClippings;
             lblContent.Dock = DockStyle.Fill;
-            lblContent.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            lblContent.Font = new Font("微软雅黑", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblContent.Location = new Point(5, 99);
             lblContent.Margin = new Padding(5);
             lblContent.Name = "lblContent";
@@ -571,6 +571,7 @@
             // 
             // lblCount
             // 
+            lblCount.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblCount.Image = Properties.Resources.keycap_number_sign;
             lblCount.Margin = new Padding(0);
             lblCount.Name = "lblCount";
@@ -578,6 +579,7 @@
             // 
             // lblBookCount
             // 
+            lblBookCount.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblBookCount.Image = Properties.Resources.input_latin_uppercase;
             lblBookCount.Margin = new Padding(20, 0, 0, 0);
             lblBookCount.Name = "lblBookCount";

@@ -36,7 +36,7 @@
             okButton = new Button();
             flowLayoutPanel2 = new FlowLayoutPanel();
             lblProductName = new Label();
-            label2 = new Label();
+            lblGen = new Label();
             flowLayoutPanel3 = new FlowLayoutPanel();
             lblDatabase = new Label();
             lblCleanDatabase = new LinkLabel();
@@ -166,7 +166,7 @@
             okButton.DialogResult = DialogResult.Cancel;
             okButton.Dock = DockStyle.Right;
             okButton.Location = new Point(787, 276);
-            okButton.Margin = new Padding(6, 6, 6, 6);
+            okButton.Margin = new Padding(6);
             okButton.Name = "okButton";
             okButton.Size = new Size(131, 41);
             okButton.TabIndex = 24;
@@ -176,7 +176,7 @@
             // 
             tableLayoutPanel.SetColumnSpan(flowLayoutPanel2, 2);
             flowLayoutPanel2.Controls.Add(lblProductName);
-            flowLayoutPanel2.Controls.Add(label2);
+            flowLayoutPanel2.Controls.Add(lblGen);
             flowLayoutPanel2.Dock = DockStyle.Fill;
             flowLayoutPanel2.Location = new Point(223, 18);
             flowLayoutPanel2.Margin = new Padding(0);
@@ -187,7 +187,7 @@
             // lblProductName
             // 
             lblProductName.AutoSize = true;
-            lblProductName.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblProductName.Font = new Font("微软雅黑", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblProductName.Location = new Point(50, 0);
             lblProductName.Margin = new Padding(50, 0, 0, 0);
             lblProductName.MaximumSize = new Size(0, 37);
@@ -197,18 +197,18 @@
             lblProductName.Text = "Kindle Mate";
             lblProductName.TextAlign = ContentAlignment.MiddleLeft;
             // 
-            // label2
+            // lblGen
             // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
-            label2.ForeColor = Color.Red;
-            label2.Location = new Point(190, 0);
-            label2.Margin = new Padding(0);
-            label2.Name = "label2";
-            label2.Size = new Size(25, 28);
-            label2.TabIndex = 20;
-            label2.Text = "2";
-            label2.TextAlign = ContentAlignment.MiddleLeft;
+            lblGen.AutoSize = true;
+            lblGen.Font = new Font("微软雅黑", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblGen.ForeColor = Color.Red;
+            lblGen.Location = new Point(190, 0);
+            lblGen.Margin = new Padding(0);
+            lblGen.Name = "lblGen";
+            lblGen.Size = new Size(25, 28);
+            lblGen.TabIndex = 20;
+            lblGen.Text = "2";
+            lblGen.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // flowLayoutPanel3
             // 
@@ -259,8 +259,9 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(943, 341);
             Controls.Add(tableLayoutPanel);
+            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
-            Margin = new Padding(6, 6, 6, 6);
+            Margin = new Padding(6);
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "FrmAboutBox";
@@ -294,7 +295,7 @@
         private Label lblCopyrightText;
         private PictureBox pictureBox;
         private FlowLayoutPanel flowLayoutPanel2;
-        private Label label2;
+        private Label lblGen;
         private FlowLayoutPanel flowLayoutPanel3;
         private LinkLabel lblCleanDatabase;
     }

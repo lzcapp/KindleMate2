@@ -62,14 +62,14 @@
             // 
             lblBook.AutoEllipsis = true;
             lblBook.Dock = DockStyle.Top;
-            lblBook.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblBook.Font = new Font("微软雅黑", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0);
             lblBook.Name = "lblBook";
             lblBook.Padding = new Padding(0, 0, 0, 10);
             lblBook.Size = new Size(780, 60);
             lblBook.TabIndex = 2;
-            lblBook.Text = Strings.Book_Title;
+            lblBook.Text = "书名";
             lblBook.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // flowLayoutPanel
@@ -125,6 +125,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 314);
             Controls.Add(tableLayoutPanel);
+            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
@@ -133,7 +134,7 @@
             Padding = new Padding(10);
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = Strings.Edit_Clippings;
+            Text = "编辑标注";
             Load += FrmEdit_Load;
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();

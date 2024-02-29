@@ -119,6 +119,7 @@
             CancelButton = btnCancel;
             ClientSize = new Size(800, 241);
             Controls.Add(tableLayoutPanel1);
+            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
