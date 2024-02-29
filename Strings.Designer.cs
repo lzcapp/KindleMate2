@@ -187,6 +187,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 清理 的本地化字符串。
+        /// </summary>
+        internal static string Cleaned {
+            get {
+                return ResourceManager.GetString("Cleaned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 清空数据 的本地化字符串。
         /// </summary>
         internal static string Clear_Data {
@@ -435,6 +444,15 @@ namespace KindleMate2 {
         internal static string Empty_Clippings_Data {
             get {
                 return ResourceManager.GetString("Empty_Clippings_Data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 空内容 的本地化字符串。
+        /// </summary>
+        internal static string Empty_Content {
+            get {
+                return ResourceManager.GetString("Empty_Content", resourceCulture);
             }
         }
         
@@ -903,6 +921,15 @@ namespace KindleMate2 {
         internal static string Totally_Vocabs {
             get {
                 return ResourceManager.GetString("Totally_Vocabs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修剪 的本地化字符串。
+        /// </summary>
+        internal static string Trimmed {
+            get {
+                return ResourceManager.GetString("Trimmed", resourceCulture);
             }
         }
         

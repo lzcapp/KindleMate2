@@ -140,12 +140,19 @@
     <value>..\Resources\link.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
 			PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="mobile-phone-with-arrow" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\mobile-phone-with-arrow.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0,
+			Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="cross-mark-button" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\cross-mark-button.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0,
 			Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="check-mark" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\check-mark.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
+  <data name="carpentry-saw" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\carpentry-saw.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="page-facing-up" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\page-facing-up.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
 			PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="memo" type="System.Resources.ResXFileRef, System.Windows.Forms">
@@ -165,21 +172,17 @@
   <data name="bookmark-tabs" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\bookmark-tabs.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="bookmark" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\bookmark.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
-			PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="page-facing-up" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\page-facing-up.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
+  <data name="check-mark" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\check-mark.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
 			PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="keycap-number-sign" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\keycap-number-sign.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0,
 			Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="mobile-phone-with-arrow" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\mobile-phone-with-arrow.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0,
-			Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="bookmark" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\bookmark.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral,
+			PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="open-book" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\open-book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -187,7 +190,7 @@
   <data name="wastebasket" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\wastebasket.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="carpentry-saw" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\carpentry-saw.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="broom" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\broom.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

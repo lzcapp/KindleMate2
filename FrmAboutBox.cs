@@ -9,8 +9,8 @@ namespace KindleMate2 {
 
         private static string FormatFileSize(long fileSize) {
             string[] sizes = ["B", "KB", "MB", "GB", "TB"];
-            var      order = 0;
-            double   size  = fileSize;
+            var order = 0;
+            double size = fileSize;
 
             while (size >= 1024 && order < sizes.Length - 1) {
                 order++;
@@ -33,13 +33,13 @@ namespace KindleMate2 {
         }
 
         /*
-                private static string AssemblyTitle {
-                    get {
-                        var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+        private static string AssemblyTitle {
+            get {
+                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
 
-                        return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
-                    }
-                }
+                return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
+            }
+        }
         */
 
         private static string AssemblyCopyright {
@@ -58,7 +58,7 @@ namespace KindleMate2 {
             Text = Strings.About + Strings.Space + AssemblyProduct;
 
             //lblProductName.Text = AssemblyTitle;
-            lblVersion.Text   = AssemblyVersion;
+            lblVersion.Text = AssemblyVersion;
             lblCopyright.Text = AssemblyCopyright;
 
             var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -68,31 +68,11 @@ namespace KindleMate2 {
             var fileSize = fileInfo.Length;
             lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + FormatFileSize(fileSize) + Strings.Right_Parenthesis;
 
-            lblVersionText.Text   = Strings.Version;
+            lblVersionText.Text = Strings.Version;
             lblCopyrightText.Text = Strings.Copyright;
-            lblPathText.Text      = Strings.Program_Path;
-            lblDatabaseText.Text  = Strings.Database;
-            lblCleanDatabase.Text = Strings.Clean_Database;
-            okButton.Text         = Strings.Confirm_Button;
-        }
-
-        private void LblCleanDatabase_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            lblPath.Text = programsDirectory;
-            var filePath       = Path.Combine(programsDirectory, "KM2.dat");
-            var fileInfo       = new FileInfo(filePath);
-            var originFileSize = fileInfo.Length;
-
-            var staticData = new StaticData();
-            staticData.VacuumDatabase();
-
-            var newFileSize = fileInfo.Length;
-
-            if (newFileSize < originFileSize) {
-                MessageBox.Show(Strings.Database_Cleaned + Strings.Symbol_Colon + FormatFileSize(originFileSize - newFileSize), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            } else {
-                MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            lblPathText.Text = Strings.Program_Path;
+            lblDatabaseText.Text = Strings.Database;
+            okButton.Text = Strings.Confirm_Button;
         }
     }
 }

@@ -317,4 +317,13 @@
 	<data name="Repo_URL_Copied" xml:space="preserve">
 		<value>Repo URL copied to clipboard</value>
 	</data>
+	<data name="Cleaned" xml:space="preserve">
+		<value>Cleaned</value>
+	</data>
+	<data name="Empty_Content" xml:space="preserve">
+		<value>empty content</value>
+	</data>
+	<data name="Trimmed" xml:space="preserve">
+		<value>Trimmed</value>
+	</data>
 </root>

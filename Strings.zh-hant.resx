@@ -323,4 +323,10 @@
   <data name="Repo_URL_Copied" xml:space="preserve">
     <value>倉庫URL已經復製到剪貼板</value>
   </data>
+  <data name="Cleaned" xml:space="preserve">
+    <value>清理</value>
+  </data>
+  <data name="Empty_Content" xml:space="preserve">
+    <value>空內容</value>
+  </data>
 </root>

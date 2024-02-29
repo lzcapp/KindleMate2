@@ -43,8 +43,8 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             const string queryClippings = "SELECT * FROM clippings;";
-            using var    command        = new SQLiteCommand(queryClippings, _connection);
-            using var    adapter        = new SQLiteDataAdapter(command);
+            using var command = new SQLiteCommand(queryClippings, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);
 
@@ -58,8 +58,8 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount   = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
-            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -74,8 +74,8 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount   = "SELECT COUNT(1) FROM clippings WHERE key = @key";
-            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE key = @key";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -90,8 +90,8 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount   = "SELECT COUNT(1) FROM clippings WHERE content = @content";
-            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE content = @content";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@content", content);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -117,8 +117,8 @@ namespace KindleMate2 {
             var dataTable = new DataTable();
 
             const string queryClippings = "SELECT * FROM original_clipping_lines;";
-            using var    command        = new SQLiteCommand(queryClippings, _connection);
-            using var    adapter        = new SQLiteDataAdapter(command);
+            using var command = new SQLiteCommand(queryClippings, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);
 
@@ -131,7 +131,7 @@ namespace KindleMate2 {
             }
 
             const string queryInsert = "INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)";
-            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@key", DbType.String);
             command.Parameters.Add("@line1", DbType.String);
             command.Parameters.Add("@line2", DbType.String);
@@ -139,7 +139,7 @@ namespace KindleMate2 {
             command.Parameters.Add("@line4", DbType.String);
             command.Parameters.Add("@line5", DbType.String);
 
-            command.Parameters["@key"].Value   = key;
+            command.Parameters["@key"].Value = key;
             command.Parameters["@line1"].Value = line1;
             command.Parameters["@line2"].Value = line2;
             command.Parameters["@line3"].Value = line3;
@@ -157,7 +157,7 @@ namespace KindleMate2 {
             }
 
             const string queryDelete = "DELETE FROM clippings WHERE key = @key";
-            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@key", key);
 
             var result = command.ExecuteNonQuery();
@@ -171,7 +171,7 @@ namespace KindleMate2 {
             }
 
             const string queryDelete = "DELETE FROM clippings WHERE bookname = @bookname";
-            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@bookname", bookname);
 
             var result = command.ExecuteNonQuery();
@@ -196,14 +196,14 @@ namespace KindleMate2 {
             command.Parameters.Add("@clippingdate", DbType.String);
             command.Parameters.Add("@pagenumber", DbType.Int64);
 
-            command.Parameters["@key"].Value                  = key;
-            command.Parameters["@content"].Value              = content;
-            command.Parameters["@bookname"].Value             = bookname;
-            command.Parameters["@authorname"].Value           = authorname;
-            command.Parameters["@brieftype"].Value            = brieftype;
+            command.Parameters["@key"].Value = key;
+            command.Parameters["@content"].Value = content;
+            command.Parameters["@bookname"].Value = bookname;
+            command.Parameters["@authorname"].Value = authorname;
+            command.Parameters["@brieftype"].Value = brieftype;
             command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-            command.Parameters["@clippingdate"].Value         = clippingdate;
-            command.Parameters["@pagenumber"].Value           = pagenumber;
+            command.Parameters["@clippingdate"].Value = clippingdate;
+            command.Parameters["@pagenumber"].Value = pagenumber;
 
             var result = command.ExecuteNonQuery();
 
@@ -233,20 +233,20 @@ namespace KindleMate2 {
             command.Parameters.Add("@colorRGB", DbType.Int64);
             command.Parameters.Add("@pagenumber", DbType.Int64);
 
-            command.Parameters["@key"].Value                  = key;
-            command.Parameters["@content"].Value              = content;
-            command.Parameters["@bookname"].Value             = bookname;
-            command.Parameters["@authorname"].Value           = authorname;
-            command.Parameters["@brieftype"].Value            = brieftype;
+            command.Parameters["@key"].Value = key;
+            command.Parameters["@content"].Value = content;
+            command.Parameters["@bookname"].Value = bookname;
+            command.Parameters["@authorname"].Value = authorname;
+            command.Parameters["@brieftype"].Value = brieftype;
             command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-            command.Parameters["@clippingdate"].Value         = clippingdate;
-            command.Parameters["@read"].Value                 = read;
-            command.Parameters["@clipping_importdate"].Value  = clipping_importdate;
-            command.Parameters["@tag"].Value                  = tag;
-            command.Parameters["@sync"].Value                 = sync;
-            command.Parameters["@newbookname"].Value          = newbookname;
-            command.Parameters["@colorRGB"].Value             = colorRGB;
-            command.Parameters["@pagenumber"].Value           = pagenumber;
+            command.Parameters["@clippingdate"].Value = clippingdate;
+            command.Parameters["@read"].Value = read;
+            command.Parameters["@clipping_importdate"].Value = clipping_importdate;
+            command.Parameters["@tag"].Value = tag;
+            command.Parameters["@sync"].Value = sync;
+            command.Parameters["@newbookname"].Value = newbookname;
+            command.Parameters["@colorRGB"].Value = colorRGB;
+            command.Parameters["@pagenumber"].Value = pagenumber;
 
             var result = command.ExecuteNonQuery();
 
@@ -271,8 +271,8 @@ namespace KindleMate2 {
             command.Parameters.Add("@authorname", DbType.String);
             command.Parameters.Add("@originBookname", DbType.String);
 
-            command.Parameters["@bookname"].Value       = bookname;
-            command.Parameters["@authorname"].Value     = authorname;
+            command.Parameters["@bookname"].Value = bookname;
+            command.Parameters["@authorname"].Value = authorname;
             command.Parameters["@originBookname"].Value = originBookname;
 
             var result = command.ExecuteNonQuery();
@@ -291,7 +291,7 @@ namespace KindleMate2 {
             command.Parameters.Add("@key", DbType.String);
             command.Parameters.Add("@content", DbType.String);
 
-            command.Parameters["@key"].Value     = key;
+            command.Parameters["@key"].Value = key;
             command.Parameters["@content"].Value = content;
 
             var result = command.ExecuteNonQuery();
@@ -301,7 +301,7 @@ namespace KindleMate2 {
 
         internal void VacuumDatabase() {
             const string queryVacuum = "VACUUM";
-            using var    command     = new SQLiteCommand(queryVacuum, _connection);
+            using var command = new SQLiteCommand(queryVacuum, _connection);
 
             command.ExecuteNonQuery();
         }
@@ -312,17 +312,17 @@ namespace KindleMate2 {
             }
 
             const string queryInsert = "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)";
-            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@word_key", DbType.String);
             command.Parameters.Add("@usage", DbType.String);
             command.Parameters.Add("@title", DbType.String);
             command.Parameters.Add("@authors", DbType.String);
             command.Parameters.Add("@timestamp", DbType.String);
 
-            command.Parameters["@word_key"].Value  = word_key;
-            command.Parameters["@usage"].Value     = usage;
-            command.Parameters["@title"].Value     = title;
-            command.Parameters["@authors"].Value   = authors;
+            command.Parameters["@word_key"].Value = word_key;
+            command.Parameters["@usage"].Value = usage;
+            command.Parameters["@title"].Value = title;
+            command.Parameters["@authors"].Value = authors;
             command.Parameters["@timestamp"].Value = timestamp;
 
             var result = command.ExecuteNonQuery();
@@ -349,8 +349,8 @@ namespace KindleMate2 {
             command.Parameters.Add("@authors", DbType.String);
 
             command.Parameters["@origintitle"].Value = origintitle;
-            command.Parameters["@title"].Value       = title;
-            command.Parameters["@authors"].Value     = authors;
+            command.Parameters["@title"].Value = title;
+            command.Parameters["@authors"].Value = authors;
 
             command.ExecuteNonQuery();
         }
@@ -401,7 +401,7 @@ namespace KindleMate2 {
             }
 
             const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, timestamp, frequency) VALUES (@id, @word_key, @word, @stem, @category, @timestamp, @frequency)";
-            using var    command     = new SQLiteCommand(queryInsert, _connection);
+            using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@id", DbType.String);
             command.Parameters.Add("@word_key", DbType.String);
             command.Parameters.Add("@word", DbType.String);
@@ -410,11 +410,11 @@ namespace KindleMate2 {
             command.Parameters.Add("@timestamp", DbType.String);
             command.Parameters.Add("@frequency", DbType.Int64);
 
-            command.Parameters["@id"].Value        = id;
-            command.Parameters["@word_key"].Value  = word_key;
-            command.Parameters["@word"].Value      = word;
-            command.Parameters["@stem"].Value      = stem;
-            command.Parameters["@category"].Value  = category;
+            command.Parameters["@id"].Value = id;
+            command.Parameters["@word_key"].Value = word_key;
+            command.Parameters["@word"].Value = word;
+            command.Parameters["@stem"].Value = stem;
+            command.Parameters["@category"].Value = category;
             command.Parameters["@timestamp"].Value = timestamp;
             command.Parameters["@frequency"].Value = frequency;
 
@@ -460,12 +460,12 @@ namespace KindleMate2 {
                 return;
             }
 
-            const string query   = "UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key";
-            using var    command = new SQLiteCommand(query, _connection);
+            const string query = "UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key";
+            using var command = new SQLiteCommand(query, _connection);
             command.Parameters.Add("@word_key", DbType.String);
             command.Parameters.Add("@frequency", DbType.Int64);
 
-            command.Parameters["@word_key"].Value  = word_key;
+            command.Parameters["@word_key"].Value = word_key;
             command.Parameters["@frequency"].Value = frequency;
 
             command.ExecuteNonQuery();
@@ -474,9 +474,9 @@ namespace KindleMate2 {
         internal DataTable GetVocabDataTable() {
             var dataTable = new DataTable();
 
-            const string query   = "SELECT * FROM vocab;";
-            using var    command = new SQLiteCommand(query, _connection);
-            using var    adapter = new SQLiteDataAdapter(command);
+            const string query = "SELECT * FROM vocab;";
+            using var command = new SQLiteCommand(query, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);
 
@@ -486,9 +486,9 @@ namespace KindleMate2 {
         internal DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
 
-            const string query   = "SELECT * FROM lookups;";
-            using var    command = new SQLiteCommand(query, _connection);
-            using var    adapter = new SQLiteDataAdapter(command);
+            const string query = "SELECT * FROM lookups;";
+            using var command = new SQLiteCommand(query, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);
 
@@ -500,8 +500,8 @@ namespace KindleMate2 {
                 return true;
             }
 
-            const string queryCount   = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
-            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            const string queryCount = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@word_key", word_key);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -514,8 +514,8 @@ namespace KindleMate2 {
                 return true;
             }
 
-            const string queryCount   = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
-            using var    commandCount = new SQLiteCommand(queryCount, _connection);
+            const string queryCount = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@timestamp", timestamp);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -529,7 +529,7 @@ namespace KindleMate2 {
             }
 
             const string queryDelete = "DELETE FROM vocab WHERE word = @word";
-            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@word", word);
 
             var result = command.ExecuteNonQuery();
@@ -543,7 +543,7 @@ namespace KindleMate2 {
             }
 
             const string queryDelete = "DELETE FROM lookups WHERE timestamp = @timestamp";
-            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@timestamp", timestamp);
 
             var result = command.ExecuteNonQuery();
@@ -557,7 +557,7 @@ namespace KindleMate2 {
             }
 
             const string queryDelete = "DELETE FROM lookups WHERE word_key = @word_key";
-            using var    command     = new SQLiteCommand(queryDelete, _connection);
+            using var command = new SQLiteCommand(queryDelete, _connection);
             command.Parameters.AddWithValue("@word_key", word_key);
 
             var result = command.ExecuteNonQuery();

@@ -23,7 +23,7 @@
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks></TargetFrameworks>
-		<Version>1.1.0-tag20240229</Version>
+		<Version>1.0.0-2024.02.29</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

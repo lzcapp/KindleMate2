@@ -39,7 +39,6 @@
             lblGen = new Label();
             flowLayoutPanel3 = new FlowLayoutPanel();
             lblDatabase = new Label();
-            lblCleanDatabase = new LinkLabel();
             pictureBox = new PictureBox();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel2.SuspendLayout();
@@ -213,7 +212,6 @@
             // flowLayoutPanel3
             // 
             flowLayoutPanel3.Controls.Add(lblDatabase);
-            flowLayoutPanel3.Controls.Add(lblCleanDatabase);
             flowLayoutPanel3.Dock = DockStyle.Fill;
             flowLayoutPanel3.Location = new Point(398, 223);
             flowLayoutPanel3.Margin = new Padding(0);
@@ -228,17 +226,6 @@
             lblDatabase.Name = "lblDatabase";
             lblDatabase.Size = new Size(0, 28);
             lblDatabase.TabIndex = 27;
-            // 
-            // lblCleanDatabase
-            // 
-            lblCleanDatabase.AutoSize = true;
-            lblCleanDatabase.Location = new Point(9, 0);
-            lblCleanDatabase.Name = "lblCleanDatabase";
-            lblCleanDatabase.Size = new Size(117, 28);
-            lblCleanDatabase.TabIndex = 28;
-            lblCleanDatabase.TabStop = true;
-            lblCleanDatabase.Text = "清理数据库";
-            lblCleanDatabase.LinkClicked += LblCleanDatabase_LinkClicked;
             // 
             // pictureBox
             // 
@@ -297,6 +284,5 @@
         private FlowLayoutPanel flowLayoutPanel2;
         private Label lblGen;
         private FlowLayoutPanel flowLayoutPanel3;
-        private LinkLabel lblCleanDatabase;
     }
 }

@@ -15,7 +15,7 @@
             get => txtContent.Text;
             set {
                 txtContent.Text = value.Trim();
-                _content        = value.Trim();
+                _content = value.Trim();
             }
         }
 

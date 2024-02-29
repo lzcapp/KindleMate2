@@ -72,6 +72,7 @@
             lblBookCount = new ToolStripStatusLabel();
             progressBar = new ToolStripProgressBar();
             timer = new System.Windows.Forms.Timer(components);
+            menuClean = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).BeginInit();
             splitContainerMain.Panel1.SuspendLayout();
@@ -99,7 +100,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1504, 36);
+            menuStrip.Size = new Size(1504, 40);
             menuStrip.TabIndex = 1;
             // 
             // menuFile
@@ -109,7 +110,7 @@
             menuFile.Name = "menuFile";
             menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            menuFile.Size = new Size(97, 32);
+            menuFile.Size = new Size(97, 36);
             menuFile.Text = "文件(&F)";
             // 
             // menuRefresh
@@ -138,9 +139,9 @@
             // 
             // menuManage
             // 
-            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuBackup, menuClear });
+            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuClean, menuBackup, menuClear });
             menuManage.Name = "menuManage";
-            menuManage.Size = new Size(107, 32);
+            menuManage.Size = new Size(107, 36);
             menuManage.Text = "管理(&M)";
             // 
             // menuImportKindle
@@ -196,7 +197,7 @@
             // 
             menuHelp.DropDownItems.AddRange(new ToolStripItem[] { menuAbout, menuRepo });
             menuHelp.Name = "menuHelp";
-            menuHelp.Size = new Size(102, 32);
+            menuHelp.Size = new Size(102, 36);
             menuHelp.Text = "帮助(&H)";
             // 
             // menuAbout
@@ -229,7 +230,7 @@
             // 
             menuLang.Alignment = ToolStripItemAlignment.Right;
             menuLang.Name = "menuLang";
-            menuLang.Size = new Size(72, 32);
+            menuLang.Size = new Size(72, 36);
             menuLang.Text = Strings.Language;
             menuLang.Visible = false;
             menuLang.Click += MenuLang_Click;
@@ -603,6 +604,14 @@
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
             // 
+            // menuClean
+            // 
+            menuClean.Image = Properties.Resources.broom;
+            menuClean.Name = "menuClean";
+            menuClean.Size = new Size(360, 44);
+            menuClean.Text = "清理数据库";
+            menuClean.Click += MenuClean_Click;
+            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(13F, 28F);
@@ -692,5 +701,6 @@
         private ToolStripMenuItem menuRestart;
         private ToolStripMenuItem menuLang;
         private RichTextBox lblContent;
+        private ToolStripMenuItem menuClean;
     }
 }

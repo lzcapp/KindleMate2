@@ -11,7 +11,7 @@
             get => txtBook.Text.Trim();
             set {
                 txtBook.Text = value.Trim();
-                _bookname    = value.Trim();
+                _bookname = value.Trim();
             }
         }
 
@@ -19,7 +19,7 @@
             get => txtAuthor.Text;
             set {
                 txtAuthor.Text = value.Trim();
-                _authorname    = value.Trim();
+                _authorname = value.Trim();
             }
         }
 

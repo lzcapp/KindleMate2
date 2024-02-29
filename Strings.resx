@@ -437,4 +437,13 @@
 	<data name="Repo_URL_Copied" xml:space="preserve">
 		<value>仓库URL已经复制到剪贴板</value>
 	</data>
+	<data name="Cleaned" xml:space="preserve">
+		<value>清理</value>
+	</data>
+	<data name="Empty_Content" xml:space="preserve">
+		<value>空内容</value>
+	</data>
+	<data name="Trimmed" xml:space="preserve">
+		<value>修剪</value>
+	</data>
 </root>

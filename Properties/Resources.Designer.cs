@@ -83,6 +83,16 @@ namespace KindleMate2.Properties {
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
+        internal static System.Drawing.Bitmap broom {
+            get {
+                object obj = ResourceManager.GetObject("broom", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
         internal static System.Drawing.Bitmap card_file_box {
             get {
                 object obj = ResourceManager.GetObject("card-file-box", resourceCulture);
