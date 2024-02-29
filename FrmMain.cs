@@ -129,32 +129,6 @@ namespace KindleMate2 {
             treeViewBooks.Focus();
         }
 
-        // ReSharper disable once InconsistentNaming
-        /*
-                private void ImportKM2Database() {
-                    var fileDialog = new OpenFileDialog {
-                        InitialDirectory = _programsDirectory,
-                        Title = Strings.Import_Kindle_Mate_2_Database_File + @" (KM2.dat)",
-                        CheckFileExists = true,
-                        CheckPathExists = true,
-                        DefaultExt = "dat",
-                        Filter = Strings.Kindle_Mate_2_Database_File + @" (*.dat)|*.dat",
-                        FilterIndex = 2,
-                        RestoreDirectory = true,
-                        ReadOnlyChecked = true,
-                        ShowReadOnly = true
-                    };
-
-                    if (fileDialog.ShowDialog() != DialogResult.OK) {
-                        return;
-                    }
-
-                    File.Copy(fileDialog.FileName, _filePath, true);
-
-                    Restart();
-                }
-        */
-
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
             var clippingsResult = ImportKindleClippings(kindleClippingsPath);
             var wordResult      = ImportKindleWords(kindleWordsPath);
@@ -718,7 +692,6 @@ namespace KindleMate2 {
             _staticData.BeginTransaction();
 
             try {
-
                 for (var i = 0; i < delimiterIndex.Count; i++) {
                     var lastDelimiter = i == 0 ? 0 : delimiterIndex[i - 1] + 1;
                     var thisDelimiter = delimiterIndex[i];

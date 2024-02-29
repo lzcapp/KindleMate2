@@ -99,7 +99,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1504, 40);
+            menuStrip.Size = new Size(1504, 36);
             menuStrip.TabIndex = 1;
             // 
             // menuFile
@@ -116,7 +116,7 @@
             // 
             menuRefresh.Image = Properties.Resources.counterclockwise_arrows_button;
             menuRefresh.Name = "menuRefresh";
-            menuRefresh.Size = new Size(171, 40);
+            menuRefresh.Size = new Size(175, 44);
             menuRefresh.Text = Strings.Refresh;
             menuRefresh.Click += MenuRefresh_Click;
             // 
@@ -124,7 +124,7 @@
             // 
             menuRestart.Image = Properties.Resources.eight_spoked_asterisk;
             menuRestart.Name = "menuRestart";
-            menuRestart.Size = new Size(171, 40);
+            menuRestart.Size = new Size(175, 44);
             menuRestart.Text = Strings.Restart;
             menuRestart.Click += MenuRestart_Click;
             // 
@@ -132,7 +132,7 @@
             // 
             menuExit.Image = Properties.Resources.cross_mark_button;
             menuExit.Name = "menuExit";
-            menuExit.Size = new Size(171, 40);
+            menuExit.Size = new Size(175, 44);
             menuExit.Text = Strings.Exit;
             menuExit.Click += MenuExit_Click;
             // 
@@ -147,7 +147,7 @@
             // 
             menuImportKindle.Image = Properties.Resources.memo;
             menuImportKindle.Name = "menuImportKindle";
-            menuImportKindle.Size = new Size(356, 40);
+            menuImportKindle.Size = new Size(360, 44);
             menuImportKindle.Text = Strings.Import_Kindle_Clippings;
             menuImportKindle.Click += MenuImportKindle_Click;
             // 
@@ -155,7 +155,7 @@
             // 
             menuImportKindleWords.Image = Properties.Resources.memo;
             menuImportKindleWords.Name = "menuImportKindleWords";
-            menuImportKindleWords.Size = new Size(356, 40);
+            menuImportKindleWords.Size = new Size(360, 44);
             menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
             menuImportKindleWords.Click += MenuImportKindleWords_Click;
             // 
@@ -163,7 +163,7 @@
             // 
             menuImportKindleMate.Image = Properties.Resources.bookmark_tabs;
             menuImportKindleMate.Name = "menuImportKindleMate";
-            menuImportKindleMate.Size = new Size(356, 40);
+            menuImportKindleMate.Size = new Size(360, 44);
             menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
             menuImportKindleMate.Click += MenuImportKindleMate_Click;
             // 
@@ -171,7 +171,7 @@
             // 
             menuSyncFromKindle.Image = Properties.Resources.mobile_phone_with_arrow;
             menuSyncFromKindle.Name = "menuSyncFromKindle";
-            menuSyncFromKindle.Size = new Size(356, 40);
+            menuSyncFromKindle.Size = new Size(360, 44);
             menuSyncFromKindle.Text = "从Kindle设备导入";
             menuSyncFromKindle.Visible = false;
             menuSyncFromKindle.Click += MenuSyncFromKindle_Click;
@@ -180,7 +180,7 @@
             // 
             menuBackup.Image = Properties.Resources.card_file_box;
             menuBackup.Name = "menuBackup";
-            menuBackup.Size = new Size(356, 40);
+            menuBackup.Size = new Size(360, 44);
             menuBackup.Text = Strings.Backup;
             menuBackup.Click += MenuBackup_Click;
             // 
@@ -188,7 +188,7 @@
             // 
             menuClear.Image = Properties.Resources.wastebasket;
             menuClear.Name = "menuClear";
-            menuClear.Size = new Size(356, 40);
+            menuClear.Size = new Size(360, 44);
             menuClear.Text = Strings.Clear_Data;
             menuClear.Click += MenuClear_Click;
             // 
@@ -203,7 +203,7 @@
             // 
             menuAbout.Image = Properties.Resources.information;
             menuAbout.Name = "menuAbout";
-            menuAbout.Size = new Size(243, 40);
+            menuAbout.Size = new Size(247, 44);
             menuAbout.Text = Strings.About;
             menuAbout.Click += MenuAbout_Click;
             // 
@@ -211,7 +211,7 @@
             // 
             menuRepo.Image = Properties.Resources.star;
             menuRepo.Name = "menuRepo";
-            menuRepo.Size = new Size(243, 40);
+            menuRepo.Size = new Size(247, 44);
             menuRepo.Text = Strings.GitHub_Repo;
             menuRepo.Click += MenuRepo_Click;
             // 
@@ -405,19 +405,18 @@
             tableLayoutPanel.BackColor = SystemColors.Window;
             tableLayoutPanel.ColumnCount = 1;
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel.Controls.Add(lblLocation, 0, 2);
+            tableLayoutPanel.Controls.Add(lblLocation, 0, 1);
             tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 0);
-            tableLayoutPanel.Controls.Add(lblContent, 0, 3);
+            tableLayoutPanel.Controls.Add(lblContent, 0, 2);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.Padding = new Padding(5);
-            tableLayoutPanel.RowCount = 4;
+            tableLayoutPanel.RowCount = 3;
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
-            tableLayoutPanel.RowStyles.Add(new RowStyle());
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanel.Size = new Size(1105, 358);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
@@ -428,10 +427,10 @@
             lblLocation.BackColor = SystemColors.Window;
             lblLocation.Dock = DockStyle.Fill;
             lblLocation.Font = new Font("Microsoft YaHei UI Light", 10F);
-            lblLocation.Location = new Point(5, 48);
+            lblLocation.Location = new Point(0, 53);
             lblLocation.Margin = new Padding(0, 10, 0, 10);
             lblLocation.Name = "lblLocation";
-            lblLocation.Size = new Size(1095, 31);
+            lblLocation.Size = new Size(1105, 31);
             lblLocation.TabIndex = 1;
             lblLocation.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -444,10 +443,10 @@
             flowLayoutPanel.Controls.Add(lblAuthor);
             flowLayoutPanel.Dock = DockStyle.Fill;
             flowLayoutPanel.Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            flowLayoutPanel.Location = new Point(5, 5);
-            flowLayoutPanel.Margin = new Padding(0);
+            flowLayoutPanel.Location = new Point(0, 10);
+            flowLayoutPanel.Margin = new Padding(0, 10, 0, 0);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Size = new Size(1095, 33);
+            flowLayoutPanel.Size = new Size(1105, 33);
             flowLayoutPanel.TabIndex = 3;
             flowLayoutPanel.MouseDoubleClick += FlowLayoutPanel_MouseDoubleClick;
             // 
@@ -479,12 +478,12 @@
             lblContent.ContextMenuStrip = menuClippings;
             lblContent.Dock = DockStyle.Fill;
             lblContent.Font = new Font("Microsoft YaHei UI", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            lblContent.Location = new Point(10, 94);
+            lblContent.Location = new Point(5, 99);
             lblContent.Margin = new Padding(5);
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
-            lblContent.Size = new Size(1085, 262);
+            lblContent.Size = new Size(1095, 254);
             lblContent.TabIndex = 4;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
@@ -610,6 +609,7 @@
             Controls.Add(statusStrip);
             Controls.Add(splitContainerMain);
             Controls.Add(menuStrip);
+            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "FrmMain";
             StartPosition = FormStartPosition.CenterScreen;
@@ -687,8 +687,8 @@
         private ImageList imageListWords;
         private ToolStripProgressBar progressBar;
         private ToolStripMenuItem menuImportKindleWords;
-        private RichTextBox lblContent;
         private ToolStripMenuItem menuRestart;
         private ToolStripMenuItem menuLang;
+        private RichTextBox lblContent;
     }
 }
