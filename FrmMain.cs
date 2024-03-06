@@ -743,7 +743,7 @@ namespace KindleMate2 {
                         var datetime = loctime[2].Replace("Added on", "").Trim();
                         var indexOfComma = datetime.IndexOf(',');
                         datetime = datetime[(indexOfComma + 1)..].Trim();
-                        if (DateTime.TryParseExact(datetime, "MMMM dd, yyyy h:m:s tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate)) {
+                        if (DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate)) {
                             time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                         }
                     } else {
