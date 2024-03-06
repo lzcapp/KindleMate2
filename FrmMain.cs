@@ -1566,13 +1566,9 @@ namespace KindleMate2 {
 
             var index = tabControl.SelectedIndex;
             menuRename.Visible = index switch {
-                0 =>
-                    //menuCombine.Visible = true;
-                    true,
-                1 =>
-                    //menuCombine.Visible = false;
-                    false,
-                _ => menuRename.Visible
+                0 => true,
+                1 => false,
+                _ => menuRename.Visible,
             };
         }
 
@@ -1728,7 +1724,7 @@ namespace KindleMate2 {
             }
         }
 
-        private string TrimContent(string content) {
+        private static string TrimContent(string content) {
             var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
             return contentTrimmed;
         }
