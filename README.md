@@ -12,7 +12,7 @@
 - **Recommended**: `Windows 11`
 - **Architecture**: `x86` or `x64`.
 
-[.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) Required for runtime dependent version.
+[.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) required for runtime dependent version.
 
 ## Features
 
