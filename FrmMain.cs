@@ -312,8 +312,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -351,8 +350,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -1178,8 +1176,7 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
+                    FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1392,58 +1389,58 @@ namespace KindleMate2 {
         }
 
         //private void MenuCombine_Click(object sender, EventArgs e) {
-        //    ShowCombineDialog();
+        //ShowCombineDialog();
         //}
 
         //private void ShowCombineDialog() {
-        //    var index = tabControl.SelectedIndex;
-        //    switch (index) {
-        //        case 0:
-        //            var booksList = new List<string>();
+        //var index = tabControl.SelectedIndex;
+        //switch (index) {
+        //case 0:
+        //var booksList = new List<string>();
 
-        //            var set = new HashSet<string>();
-        //            var list = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
-        //            booksList.AddRange(list);
+        //var set = new HashSet<string>();
+        //var list = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
+        //booksList.AddRange(list);
 
-        //            var booksDialog = new FrmCombine {
-        //                BookNames = booksList
-        //            };
+        //var booksDialog = new FrmCombine {
+        //BookNames = booksList
+        //};
 
-        //            if (booksDialog.ShowDialog() != DialogResult.OK) {
-        //                return;
-        //            }
+        //if (booksDialog.ShowDialog() != DialogResult.OK) {
+        //return;
+        //}
 
-        //            var bookname = booksDialog.SelectedName;
+        //var bookname = booksDialog.SelectedName;
 
-        //            if (string.IsNullOrWhiteSpace(bookname)) {
-        //                return;
-        //            }
+        //if (string.IsNullOrWhiteSpace(bookname)) {
+        //return;
+        //}
 
-        //            if (bookname == _selectedBook) {
-        //                MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        //                return;
-        //            }
+        //if (bookname == _selectedBook) {
+        //MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //return;
+        //}
 
-        //            var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-        //            var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
+        //var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
+        //var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
 
-        //            _staticData.UpdateLookups(_selectedBook, bookname, authorName);
+        //_staticData.UpdateLookups(_selectedBook, bookname, authorName);
 
-        //            if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
-        //                MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //                return;
-        //            }
+        //if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
+        //MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //return;
+        //}
 
-        //            MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-        //            _selectedBook = bookname;
+        //_selectedBook = bookname;
 
-        //            break;
-        //        case 1:
-        //            break;
-        //    }
+        //break;
+        //case 1:
+        //break;
+        //}
 
-        //    RefreshData();
+        //RefreshData();
         //}
 
         private bool BackupOriginClippings() {
@@ -1538,8 +1535,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1785,7 +1781,7 @@ namespace KindleMate2 {
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString());
 
             var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-            
+
             htmlContent += Markdown.ToHtml(markdown.ToString());
 
             htmlContent += "\r\n</body>\r\n</html>";
@@ -1834,7 +1830,7 @@ namespace KindleMate2 {
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString());
 
             var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-            
+
             htmlContent += Markdown.ToHtml(markdown.ToString());
 
             htmlContent += "\r\n</body>\r\n</html>";
@@ -1847,7 +1843,7 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            var css = "* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    margin: 20px;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin-left: auto;\r\n    margin-right: auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin-top: 30px;\r\n    margin-bottom: 30px;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin-top: 30px;\r\n    margin-bottom: 30px;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin-bottom: 10px;\r\n}";
+            var css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
