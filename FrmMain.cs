@@ -1752,7 +1752,7 @@ namespace KindleMate2 {
         private void ClippingsToMarkdown() {
             var markdown = new StringBuilder();
 
-            markdown.AppendLine("# Clippings");
+            markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
 
             markdown.AppendLine();
 
@@ -1772,7 +1772,7 @@ namespace KindleMate2 {
                     var clippinglocation = row["clippingtypelocation"].ToString();
                     var content = row["content"].ToString();
 
-                    markdown.AppendLine("**" + clippinglocation + "**");
+                    markdown.AppendLine("**\ud83d\udccd " + clippinglocation + "**");
 
                     markdown.AppendLine();
 
@@ -1782,9 +1782,7 @@ namespace KindleMate2 {
                 }
             }
 
-            var markdownFilePath = Path.Combine(_programsDirectory, "Clippings.md");
-
-            File.WriteAllText(markdownFilePath, markdown.ToString());
+            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString());
 
             var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
             
@@ -1792,15 +1790,71 @@ namespace KindleMate2 {
 
             htmlContent += "\r\n</body>\r\n</html>";
 
-            var htmlFilePath = Path.Combine(_programsDirectory, "Clippings.html");
+            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.html"), htmlContent);
+        }
 
-            File.WriteAllText(htmlFilePath, htmlContent);
+        private void VocabsToMarkdown() {
+            var markdown = new StringBuilder();
 
-            MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
+
+            markdown.AppendLine();
+
+            foreach (TreeNode node in treeViewWords.Nodes) {
+                var word = node.Text;
+
+                if (word.Equals(Strings.Select_All)) {
+                    continue;
+                }
+                DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == word).CopyToDataTable();
+
+                markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
+
+                markdown.AppendLine();
+
+                foreach (DataRow row in filteredBooks.Rows) {
+                    var timestamp = row["timestamp"].ToString();
+                    var title = row["title"].ToString();
+                    var usage = row["usage"].ToString();
+
+                    if (usage == null) {
+                        continue;
+                    }
+
+                    markdown.AppendLine("**\ud83d\udccd 《" + title + "》 @" + timestamp + "**");
+
+                    markdown.AppendLine();
+
+                    markdown.AppendLine(usage.Replace(word, "**" + word + "**"));
+
+                    markdown.AppendLine();
+                }
+            }
+
+            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString());
+
+            var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+            
+            htmlContent += Markdown.ToHtml(markdown.ToString());
+
+            htmlContent += "\r\n</body>\r\n</html>";
+
+            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.html"), htmlContent);
         }
 
         private void MenuExportMd_Click(object sender, EventArgs e) {
+            if (!Directory.Exists(Path.Combine(_programsDirectory, "Exports"))) {
+                Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
+            }
+
+            var css = "* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    margin: 20px;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin-left: auto;\r\n    margin-right: auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin-top: 30px;\r\n    margin-bottom: 30px;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin-top: 30px;\r\n    margin-bottom: 30px;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin-bottom: 10px;\r\n}";
+
+            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
+
             ClippingsToMarkdown();
+            VocabsToMarkdown();
+
+            MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
