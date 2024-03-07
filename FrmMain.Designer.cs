@@ -35,6 +35,8 @@
             menuImportKindleWords = new ToolStripMenuItem();
             menuImportKindleMate = new ToolStripMenuItem();
             menuSyncFromKindle = new ToolStripMenuItem();
+            menuExportMd = new ToolStripMenuItem();
+            menuClean = new ToolStripMenuItem();
             menuBackup = new ToolStripMenuItem();
             menuClear = new ToolStripMenuItem();
             menuHelp = new ToolStripMenuItem();
@@ -72,7 +74,6 @@
             lblBookCount = new ToolStripStatusLabel();
             progressBar = new ToolStripProgressBar();
             timer = new System.Windows.Forms.Timer(components);
-            menuClean = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).BeginInit();
             splitContainerMain.Panel1.SuspendLayout();
@@ -139,7 +140,7 @@
             // 
             // menuManage
             // 
-            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuClean, menuBackup, menuClear });
+            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuExportMd, menuClean, menuBackup, menuClear });
             menuManage.Name = "menuManage";
             menuManage.Size = new Size(107, 36);
             menuManage.Text = "管理(&M)";
@@ -162,7 +163,7 @@
             // 
             // menuImportKindleMate
             // 
-            menuImportKindleMate.Image = Properties.Resources.bookmark_tabs;
+            menuImportKindleMate.Image = Properties.Resources.page_facing_up;
             menuImportKindleMate.Name = "menuImportKindleMate";
             menuImportKindleMate.Size = new Size(360, 44);
             menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
@@ -176,6 +177,22 @@
             menuSyncFromKindle.Text = "从Kindle设备导入";
             menuSyncFromKindle.Visible = false;
             menuSyncFromKindle.Click += MenuSyncFromKindle_Click;
+            // 
+            // menuExportMd
+            // 
+            menuExportMd.Image = Properties.Resources.bookmark_tabs;
+            menuExportMd.Name = "menuExportMd";
+            menuExportMd.Size = new Size(360, 44);
+            menuExportMd.Text = "导出为Markdown";
+            menuExportMd.Click += MenuExportMd_Click;
+            // 
+            // menuClean
+            // 
+            menuClean.Image = Properties.Resources.broom;
+            menuClean.Name = "menuClean";
+            menuClean.Size = new Size(360, 44);
+            menuClean.Text = "清理数据库";
+            menuClean.Click += MenuClean_Click;
             // 
             // menuBackup
             // 
@@ -604,14 +621,6 @@
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
             // 
-            // menuClean
-            // 
-            menuClean.Image = Properties.Resources.broom;
-            menuClean.Name = "menuClean";
-            menuClean.Size = new Size(360, 44);
-            menuClean.Text = "清理数据库";
-            menuClean.Click += MenuClean_Click;
-            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(13F, 28F);
@@ -702,5 +711,6 @@
         private ToolStripMenuItem menuLang;
         private RichTextBox lblContent;
         private ToolStripMenuItem menuClean;
+        private ToolStripMenuItem menuExportMd;
     }
 }

@@ -326,4 +326,10 @@
 	<data name="Trimmed" xml:space="preserve">
 		<value>Trimmed</value>
 	</data>
+	<data name="Export_Successful" xml:space="preserve">
+		<value>Export Successful</value>
+	</data>
+	<data name="Export_To_Markdown" xml:space="preserve">
+		<value>Export as Markdown</value>
+	</data>
 </root>

@@ -3,7 +3,9 @@ using System.Data;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
+using Markdig;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -63,6 +65,7 @@ namespace KindleMate2 {
             menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
             menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
             menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
+            menuExportMd.Text = Strings.Export_To_Markdown;
             menuClean.Text = Strings.Clean_Database;
             menuBackup.Text = Strings.Backup;
             menuClear.Text = Strings.Clear_Data;
@@ -309,7 +312,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -347,7 +351,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -1173,7 +1178,8 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1532,7 +1538,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1740,6 +1747,60 @@ namespace KindleMate2 {
             }
 
             return $"{size:0.##} {sizes[order]}";
+        }
+
+        private void ClippingsToMarkdown() {
+            var markdown = new StringBuilder();
+
+            markdown.AppendLine("# Clippings");
+
+            markdown.AppendLine();
+
+            foreach (TreeNode node in treeViewBooks.Nodes) {
+                var selectedBookName = node.Text;
+
+                if (selectedBookName.Equals(Strings.Select_All)) {
+                    continue;
+                }
+                DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
+
+                markdown.AppendLine("## \ud83d\udcd6 " + selectedBookName.Trim());
+
+                markdown.AppendLine();
+
+                foreach (DataRow row in filteredBooks.Rows) {
+                    var clippinglocation = row["clippingtypelocation"].ToString();
+                    var content = row["content"].ToString();
+
+                    markdown.AppendLine("**" + clippinglocation + "**");
+
+                    markdown.AppendLine();
+
+                    markdown.AppendLine(content);
+
+                    markdown.AppendLine();
+                }
+            }
+
+            var markdownFilePath = Path.Combine(_programsDirectory, "Clippings.md");
+
+            File.WriteAllText(markdownFilePath, markdown.ToString());
+
+            var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+            
+            htmlContent += Markdown.ToHtml(markdown.ToString());
+
+            htmlContent += "\r\n</body>\r\n</html>";
+
+            var htmlFilePath = Path.Combine(_programsDirectory, "Clippings.html");
+
+            File.WriteAllText(htmlFilePath, htmlContent);
+
+            MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void MenuExportMd_Click(object sender, EventArgs e) {
+            ClippingsToMarkdown();
         }
     }
 }

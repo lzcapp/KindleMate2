@@ -484,6 +484,24 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 导出成功 的本地化字符串。
+        /// </summary>
+        internal static string Export_Successful {
+            get {
+                return ResourceManager.GetString("Export_Successful", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        internal static string Export_To_Markdown {
+            get {
+                return ResourceManager.GetString("Export_To_Markdown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件 的本地化字符串。
         /// </summary>
         internal static string File {

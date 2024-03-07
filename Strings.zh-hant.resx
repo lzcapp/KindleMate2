@@ -329,4 +329,10 @@
   <data name="Empty_Content" xml:space="preserve">
     <value>空內容</value>
   </data>
+  <data name="Export_Successful" xml:space="preserve">
+    <value>導出成功</value>
+  </data>
+  <data name="Export_To_Markdown" xml:space="preserve">
+    <value>導出為Markdown</value>
+  </data>
 </root>
