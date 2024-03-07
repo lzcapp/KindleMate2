@@ -1745,97 +1745,109 @@ namespace KindleMate2 {
             return $"{size:0.##} {sizes[order]}";
         }
 
-        private void ClippingsToMarkdown() {
-            var markdown = new StringBuilder();
+        private bool ClippingsToMarkdown() {
+            try {
+                var markdown = new StringBuilder();
 
-            markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
-
-            markdown.AppendLine();
-
-            foreach (TreeNode node in treeViewBooks.Nodes) {
-                var selectedBookName = node.Text;
-
-                if (selectedBookName.Equals(Strings.Select_All)) {
-                    continue;
-                }
-                DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-
-                markdown.AppendLine("## \ud83d\udcd6 " + selectedBookName.Trim());
+                markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
 
                 markdown.AppendLine();
 
-                foreach (DataRow row in filteredBooks.Rows) {
-                    var clippinglocation = row["clippingtypelocation"].ToString();
-                    var content = row["content"].ToString();
+                foreach (TreeNode node in treeViewBooks.Nodes) {
+                    var selectedBookName = node.Text;
 
-                    markdown.AppendLine("**\ud83d\udccd " + clippinglocation + "**");
-
-                    markdown.AppendLine();
-
-                    markdown.AppendLine(content);
-
-                    markdown.AppendLine();
-                }
-            }
-
-            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString());
-
-            var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-            htmlContent += Markdown.ToHtml(markdown.ToString());
-
-            htmlContent += "\r\n</body>\r\n</html>";
-
-            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.html"), htmlContent);
-        }
-
-        private void VocabsToMarkdown() {
-            var markdown = new StringBuilder();
-
-            markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
-
-            markdown.AppendLine();
-
-            foreach (TreeNode node in treeViewWords.Nodes) {
-                var word = node.Text;
-
-                if (word.Equals(Strings.Select_All)) {
-                    continue;
-                }
-                DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == word).CopyToDataTable();
-
-                markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
-
-                markdown.AppendLine();
-
-                foreach (DataRow row in filteredBooks.Rows) {
-                    var timestamp = row["timestamp"].ToString();
-                    var title = row["title"].ToString();
-                    var usage = row["usage"].ToString();
-
-                    if (usage == null) {
+                    if (selectedBookName.Equals(Strings.Select_All)) {
                         continue;
                     }
+                    DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
 
-                    markdown.AppendLine("**\ud83d\udccd 《" + title + "》 @" + timestamp + "**");
-
-                    markdown.AppendLine();
-
-                    markdown.AppendLine(usage.Replace(word, "**" + word + "**"));
+                    markdown.AppendLine("## \ud83d\udcd6 " + selectedBookName.Trim());
 
                     markdown.AppendLine();
+
+                    foreach (DataRow row in filteredBooks.Rows) {
+                        var clippinglocation = row["clippingtypelocation"].ToString();
+                        var content = row["content"].ToString();
+
+                        markdown.AppendLine("**\ud83d\udccd " + clippinglocation + "**");
+
+                        markdown.AppendLine();
+
+                        markdown.AppendLine(content);
+
+                        markdown.AppendLine();
+                    }
                 }
+
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString());
+
+                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+
+                htmlContent += Markdown.ToHtml(markdown.ToString());
+
+                htmlContent += "\r\n</body>\r\n</html>";
+
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.html"), htmlContent);
+
+                return true;
+            } catch (Exception) {
+                return false;
             }
+        }
 
-            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString());
+        private bool VocabsToMarkdown() {
+            try {
+                var markdown = new StringBuilder();
 
-            var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+                markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
 
-            htmlContent += Markdown.ToHtml(markdown.ToString());
+                markdown.AppendLine();
 
-            htmlContent += "\r\n</body>\r\n</html>";
+                foreach (TreeNode node in treeViewWords.Nodes) {
+                    var word = node.Text;
 
-            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.html"), htmlContent);
+                    if (word.Equals(Strings.Select_All)) {
+                        continue;
+                    }
+                    DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == word).CopyToDataTable();
+
+                    markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
+
+                    markdown.AppendLine();
+
+                    foreach (DataRow row in filteredBooks.Rows) {
+                        var timestamp = row["timestamp"].ToString();
+                        var title = row["title"].ToString();
+                        var usage = row["usage"].ToString();
+
+                        if (usage == null) {
+                            continue;
+                        }
+
+                        markdown.AppendLine("**\ud83d\udccd 《" + title + "》 @" + timestamp + "**");
+
+                        markdown.AppendLine();
+
+                        markdown.AppendLine(usage.Replace(word, "**" + word + "**"));
+
+                        markdown.AppendLine();
+                    }
+                }
+
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString());
+
+                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+
+                htmlContent += Markdown.ToHtml(markdown.ToString());
+
+                htmlContent += "\r\n</body>\r\n</html>";
+
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.html"), htmlContent);
+
+                return true;
+            } catch (Exception) {
+                return false;
+            }
         }
 
         private void MenuExportMd_Click(object sender, EventArgs e) {
@@ -1843,14 +1855,13 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            var css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
+            const string css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
-            ClippingsToMarkdown();
-            VocabsToMarkdown();
-
-            MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (ClippingsToMarkdown() && VocabsToMarkdown()) {
+                MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
     }
 }
