@@ -96,6 +96,9 @@
             // 
             // menuStrip
             // 
+            menuStrip.BackColor = SystemColors.Window;
+            menuStrip.BackgroundImageLayout = ImageLayout.None;
+            menuStrip.Font = new Font("微软雅黑", 9F);
             menuStrip.ImageScalingSize = new Size(32, 32);
             menuStrip.Items.AddRange(new ToolStripItem[] { menuFile, menuManage, menuHelp, menuKindle, menuLang });
             menuStrip.Location = new Point(0, 0);
@@ -254,8 +257,8 @@
             // 
             // splitContainerMain
             // 
-            splitContainerMain.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            splitContainerMain.Location = new Point(0, 36);
+            splitContainerMain.Dock = DockStyle.Fill;
+            splitContainerMain.Location = new Point(0, 28);
             splitContainerMain.Margin = new Padding(0);
             splitContainerMain.Name = "splitContainerMain";
             // 
@@ -268,7 +271,7 @@
             // 
             splitContainerMain.Panel2.Controls.Add(splitContainerDetail);
             splitContainerMain.Panel2MinSize = 100;
-            splitContainerMain.Size = new Size(1504, 880);
+            splitContainerMain.Size = new Size(1504, 919);
             splitContainerMain.SplitterDistance = 395;
             splitContainerMain.TabIndex = 2;
             // 
@@ -282,7 +285,7 @@
             tabControl.Multiline = true;
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(395, 880);
+            tabControl.Size = new Size(395, 919);
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -293,7 +296,7 @@
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
             tabPageBooks.Padding = new Padding(3);
-            tabPageBooks.Size = new Size(387, 847);
+            tabPageBooks.Size = new Size(387, 886);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
             tabPageBooks.UseVisualStyleBackColor = true;
@@ -314,7 +317,7 @@
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(381, 841);
+            treeViewBooks.Size = new Size(381, 880);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -338,7 +341,7 @@
             tabPageWords.Margin = new Padding(0);
             tabPageWords.Name = "tabPageWords";
             tabPageWords.Padding = new Padding(3);
-            tabPageWords.Size = new Size(387, 847);
+            tabPageWords.Size = new Size(387, 886);
             tabPageWords.TabIndex = 1;
             tabPageWords.Text = Strings.Vocabulary_List;
             tabPageWords.UseVisualStyleBackColor = true;
@@ -357,7 +360,7 @@
             treeViewWords.ShowLines = false;
             treeViewWords.ShowPlusMinus = false;
             treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(381, 841);
+            treeViewWords.Size = new Size(381, 880);
             treeViewWords.TabIndex = 0;
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
@@ -387,8 +390,8 @@
             // 
             splitContainerDetail.Panel2.Controls.Add(tableLayoutPanel);
             splitContainerDetail.Panel2MinSize = 200;
-            splitContainerDetail.Size = new Size(1105, 880);
-            splitContainerDetail.SplitterDistance = 518;
+            splitContainerDetail.Size = new Size(1105, 919);
+            splitContainerDetail.SplitterDistance = 540;
             splitContainerDetail.TabIndex = 1;
             // 
             // dataGridView
@@ -397,7 +400,7 @@
             dataGridView.AllowUserToDeleteRows = false;
             dataGridView.AllowUserToResizeColumns = false;
             dataGridView.AllowUserToResizeRows = false;
-            dataGridView.BackgroundColor = SystemColors.Control;
+            dataGridView.BackgroundColor = SystemColors.Window;
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.Dock = DockStyle.Fill;
@@ -409,7 +412,7 @@
             dataGridView.RowHeadersVisible = false;
             dataGridView.RowHeadersWidth = 82;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(1105, 518);
+            dataGridView.Size = new Size(1105, 540);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -435,7 +438,7 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel.Size = new Size(1105, 358);
+            tableLayoutPanel.Size = new Size(1105, 375);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -501,7 +504,7 @@
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
-            lblContent.Size = new Size(1095, 269);
+            lblContent.Size = new Size(1095, 286);
             lblContent.TabIndex = 4;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
@@ -625,6 +628,7 @@
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = SystemColors.Window;
             ClientSize = new Size(1504, 947);
             Controls.Add(statusStrip);
             Controls.Add(splitContainerMain);
