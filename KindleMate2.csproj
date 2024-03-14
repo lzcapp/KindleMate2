@@ -57,8 +57,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Markdig" Version="0.35.0" />
+		<PackageReference Include="Markdig" Version="0.36.0" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
+		<PackageReference Include="WinForms.DataVisualization" Version="1.9.2" />
 	</ItemGroup>
 
 	<ItemGroup>
