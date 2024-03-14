@@ -312,7 +312,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -350,7 +351,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -1176,7 +1178,8 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1535,7 +1538,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1861,6 +1865,13 @@ namespace KindleMate2 {
 
             if (ClippingsToMarkdown() && VocabsToMarkdown()) {
                 MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void MenuStatistic_Click(object sender, EventArgs e) {
+            using var dialog = new FrmStatistic();
+            if (dialog.ShowDialog() != DialogResult.OK) {
+                return;
             }
         }
     }
