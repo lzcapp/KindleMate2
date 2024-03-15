@@ -32,263 +32,358 @@
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            tabControl1 = new TabControl();
-            tabPage1 = new TabPage();
-            tableLayoutPanel1 = new TableLayoutPanel();
-            chartBooksDoughnut = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            flowLayoutPanel = new FlowLayoutPanel();
-            lblBooksCount = new Label();
-            label2 = new Label();
-            label3 = new Label();
-            label4 = new Label();
-            label5 = new Label();
-            label6 = new Label();
-            label7 = new Label();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend5 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend6 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmStatistic));
+            tabControl = new TabControl();
+            tabPageBooks = new TabPage();
+            tableLayoutPanelBooks = new TableLayoutPanel();
             chartBooksTime = new System.Windows.Forms.DataVisualization.Charting.Chart();
             chartBooksWeek = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            tabPage2 = new TabPage();
-            tabControl1.SuspendLayout();
-            tabPage1.SuspendLayout();
-            tableLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)chartBooksDoughnut).BeginInit();
-            flowLayoutPanel.SuspendLayout();
+            chartBooksHistory = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            tabPageVocabs = new TabPage();
+            tableLayoutPanelVocabs = new TableLayoutPanel();
+            chartVocabsTime = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            chartVocabsWeek = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            chartVocabsHistory = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            tabControl.SuspendLayout();
+            tabPageBooks.SuspendLayout();
+            tableLayoutPanelBooks.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)chartBooksTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)chartBooksWeek).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)chartBooksHistory).BeginInit();
+            tabPageVocabs.SuspendLayout();
+            tableLayoutPanelVocabs.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)chartVocabsTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)chartVocabsWeek).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)chartVocabsHistory).BeginInit();
             SuspendLayout();
             // 
-            // tabControl1
+            // tabControl
             // 
-            tabControl1.Alignment = TabAlignment.Bottom;
-            tabControl1.Controls.Add(tabPage1);
-            tabControl1.Controls.Add(tabPage2);
-            tabControl1.Dock = DockStyle.Fill;
-            tabControl1.Location = new Point(0, 0);
-            tabControl1.Name = "tabControl1";
-            tabControl1.SelectedIndex = 0;
-            tabControl1.Size = new Size(1126, 610);
-            tabControl1.TabIndex = 0;
+            tabControl.Alignment = TabAlignment.Bottom;
+            tabControl.Controls.Add(tabPageBooks);
+            tabControl.Controls.Add(tabPageVocabs);
+            tabControl.Dock = DockStyle.Fill;
+            tabControl.Location = new Point(0, 0);
+            tabControl.Margin = new Padding(2);
+            tabControl.Name = "tabControl";
+            tabControl.SelectedIndex = 0;
+            tabControl.Size = new Size(724, 394);
+            tabControl.TabIndex = 0;
             // 
-            // tabPage1
+            // tabPageBooks
             // 
-            tabPage1.BackColor = SystemColors.Window;
-            tabPage1.Controls.Add(tableLayoutPanel1);
-            tabPage1.Location = new Point(8, 8);
-            tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(1110, 557);
-            tabPage1.TabIndex = 0;
-            tabPage1.Text = "tabPage1";
+            tabPageBooks.BackColor = SystemColors.Window;
+            tabPageBooks.Controls.Add(tableLayoutPanelBooks);
+            tabPageBooks.Location = new Point(4, 4);
+            tabPageBooks.Margin = new Padding(2);
+            tabPageBooks.Name = "tabPageBooks";
+            tabPageBooks.Padding = new Padding(2);
+            tabPageBooks.Size = new Size(716, 361);
+            tabPageBooks.TabIndex = 0;
             // 
-            // tableLayoutPanel1
+            // tableLayoutPanelBooks
             // 
-            tableLayoutPanel1.ColumnCount = 2;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.Controls.Add(chartBooksDoughnut, 0, 0);
-            tableLayoutPanel1.Controls.Add(flowLayoutPanel, 1, 0);
-            tableLayoutPanel1.Controls.Add(chartBooksTime, 0, 1);
-            tableLayoutPanel1.Controls.Add(chartBooksWeek, 1, 1);
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Location = new Point(3, 3);
-            tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 2;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 64.99303F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 35.0069733F));
-            tableLayoutPanel1.Size = new Size(1104, 551);
-            tableLayoutPanel1.TabIndex = 0;
-            // 
-            // chartBooksDoughnut
-            // 
-            chartArea1.Name = "ChartArea1";
-            chartBooksDoughnut.ChartAreas.Add(chartArea1);
-            chartBooksDoughnut.Dock = DockStyle.Fill;
-            legend1.Name = "Legend1";
-            chartBooksDoughnut.Legends.Add(legend1);
-            chartBooksDoughnut.Location = new Point(3, 3);
-            chartBooksDoughnut.Name = "chartBooksDoughnut";
-            series1.ChartArea = "ChartArea1";
-            series1.Legend = "Legend1";
-            series1.Name = "Series1";
-            chartBooksDoughnut.Series.Add(series1);
-            chartBooksDoughnut.Size = new Size(546, 352);
-            chartBooksDoughnut.TabIndex = 0;
-            // 
-            // flowLayoutPanel
-            // 
-            flowLayoutPanel.Controls.Add(lblBooksCount);
-            flowLayoutPanel.Controls.Add(label2);
-            flowLayoutPanel.Controls.Add(label3);
-            flowLayoutPanel.Controls.Add(label4);
-            flowLayoutPanel.Controls.Add(label5);
-            flowLayoutPanel.Controls.Add(label6);
-            flowLayoutPanel.Controls.Add(label7);
-            flowLayoutPanel.Dock = DockStyle.Fill;
-            flowLayoutPanel.FlowDirection = FlowDirection.TopDown;
-            flowLayoutPanel.Location = new Point(572, 20);
-            flowLayoutPanel.Margin = new Padding(20);
-            flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Size = new Size(512, 318);
-            flowLayoutPanel.TabIndex = 1;
-            // 
-            // lblBooksCount
-            // 
-            lblBooksCount.AutoSize = true;
-            lblBooksCount.Font = new Font("微软雅黑", 9F);
-            lblBooksCount.Location = new Point(6, 6);
-            lblBooksCount.Margin = new Padding(6);
-            lblBooksCount.Name = "lblBooksCount";
-            lblBooksCount.Size = new Size(108, 31);
-            lblBooksCount.TabIndex = 0;
-            lblBooksCount.Text = "X 本书籍";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Font = new Font("微软雅黑", 9F);
-            label2.Location = new Point(6, 49);
-            label2.Margin = new Padding(6);
-            label2.Name = "label2";
-            label2.Size = new Size(108, 31);
-            label2.TabIndex = 1;
-            label2.Text = "X 位作者";
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Font = new Font("微软雅黑", 9F);
-            label3.Location = new Point(6, 92);
-            label3.Margin = new Padding(6);
-            label3.Name = "label3";
-            label3.Size = new Size(82, 31);
-            label3.TabIndex = 2;
-            label3.Text = "label3";
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Font = new Font("微软雅黑", 9F);
-            label4.Location = new Point(6, 135);
-            label4.Margin = new Padding(6);
-            label4.Name = "label4";
-            label4.Size = new Size(82, 31);
-            label4.TabIndex = 3;
-            label4.Text = "label4";
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Font = new Font("微软雅黑", 9F);
-            label5.Location = new Point(6, 178);
-            label5.Margin = new Padding(6);
-            label5.Name = "label5";
-            label5.Size = new Size(82, 31);
-            label5.TabIndex = 4;
-            label5.Text = "label5";
-            // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Font = new Font("微软雅黑", 9F);
-            label6.Location = new Point(6, 221);
-            label6.Margin = new Padding(6);
-            label6.Name = "label6";
-            label6.Size = new Size(82, 31);
-            label6.TabIndex = 5;
-            label6.Text = "label6";
-            // 
-            // label7
-            // 
-            label7.AutoSize = true;
-            label7.Font = new Font("微软雅黑", 9F);
-            label7.Location = new Point(5, 263);
-            label7.Margin = new Padding(5, 5, 5, 0);
-            label7.Name = "label7";
-            label7.Size = new Size(82, 31);
-            label7.TabIndex = 6;
-            label7.Text = "label7";
+            tableLayoutPanelBooks.ColumnCount = 2;
+            tableLayoutPanelBooks.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66.6666641F));
+            tableLayoutPanelBooks.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333359F));
+            tableLayoutPanelBooks.Controls.Add(chartBooksTime, 0, 1);
+            tableLayoutPanelBooks.Controls.Add(chartBooksWeek, 1, 1);
+            tableLayoutPanelBooks.Controls.Add(chartBooksHistory, 0, 0);
+            tableLayoutPanelBooks.Dock = DockStyle.Fill;
+            tableLayoutPanelBooks.Location = new Point(2, 2);
+            tableLayoutPanelBooks.Margin = new Padding(2);
+            tableLayoutPanelBooks.Name = "tableLayoutPanelBooks";
+            tableLayoutPanelBooks.RowCount = 2;
+            tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
+            tableLayoutPanelBooks.Size = new Size(712, 357);
+            tableLayoutPanelBooks.TabIndex = 0;
             // 
             // chartBooksTime
             // 
-            chartArea2.Name = "ChartArea1";
-            chartBooksTime.ChartAreas.Add(chartArea2);
-            legend2.Name = "Legend1";
-            chartBooksTime.Legends.Add(legend2);
-            chartBooksTime.Location = new Point(3, 361);
+            chartBooksTime.BorderlineWidth = 0;
+            chartArea1.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea1.AxisX.IsLabelAutoFit = false;
+            chartArea1.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea1.AxisX.Maximum = 24D;
+            chartArea1.AxisX.Minimum = 0D;
+            chartArea1.AxisY.IsLabelAutoFit = false;
+            chartArea1.AxisY.LabelStyle.Enabled = false;
+            chartArea1.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea1.Name = "ChartArea";
+            chartBooksTime.ChartAreas.Add(chartArea1);
+            chartBooksTime.Dock = DockStyle.Fill;
+            legend1.Enabled = false;
+            legend1.Name = "Legend";
+            chartBooksTime.Legends.Add(legend1);
+            chartBooksTime.Location = new Point(0, 142);
+            chartBooksTime.Margin = new Padding(0);
             chartBooksTime.Name = "chartBooksTime";
-            series2.ChartArea = "ChartArea1";
-            series2.Legend = "Legend1";
-            series2.Name = "Series1";
-            chartBooksTime.Series.Add(series2);
-            chartBooksTime.Size = new Size(546, 187);
+            chartBooksTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series1.ChartArea = "ChartArea";
+            series1.Legend = "Legend";
+            series1.Name = "Series";
+            series1.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            series1.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartBooksTime.Series.Add(series1);
+            chartBooksTime.Size = new Size(474, 215);
             chartBooksTime.TabIndex = 2;
             // 
             // chartBooksWeek
             // 
-            chartArea3.Name = "ChartArea1";
-            chartBooksWeek.ChartAreas.Add(chartArea3);
-            legend3.Name = "Legend1";
-            chartBooksWeek.Legends.Add(legend3);
-            chartBooksWeek.Location = new Point(555, 361);
+            chartBooksWeek.BorderlineWidth = 0;
+            chartArea2.AxisX.IsLabelAutoFit = false;
+            chartArea2.AxisX.LabelAutoFitMinFontSize = 5;
+            chartArea2.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.AxisX.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.AxisX2.LabelAutoFitMinFontSize = 5;
+            chartArea2.AxisY.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea2.AxisY.IsLabelAutoFit = false;
+            chartArea2.AxisY.LabelAutoFitMinFontSize = 5;
+            chartArea2.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.AxisY.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.Name = "ChartArea";
+            chartBooksWeek.ChartAreas.Add(chartArea2);
+            chartBooksWeek.Dock = DockStyle.Fill;
+            legend2.Enabled = false;
+            legend2.Name = "Legend";
+            chartBooksWeek.Legends.Add(legend2);
+            chartBooksWeek.Location = new Point(474, 142);
+            chartBooksWeek.Margin = new Padding(0);
             chartBooksWeek.Name = "chartBooksWeek";
-            series3.ChartArea = "ChartArea1";
-            series3.Legend = "Legend1";
-            series3.Name = "Series1";
-            chartBooksWeek.Series.Add(series3);
-            chartBooksWeek.Size = new Size(546, 187);
+            chartBooksWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series2.BorderWidth = 0;
+            series2.ChartArea = "ChartArea";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Radar;
+            series2.Font = new Font("Microsoft Sans Serif", 8F);
+            series2.Legend = "Legend";
+            series2.Name = "Series";
+            series2.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
+            series2.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartBooksWeek.Series.Add(series2);
+            chartBooksWeek.Size = new Size(238, 215);
             chartBooksWeek.TabIndex = 3;
             // 
-            // tabPage2
+            // chartBooksHistory
             // 
-            tabPage2.BackColor = SystemColors.Window;
-            tabPage2.Location = new Point(8, 8);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1110, 557);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
+            chartBooksHistory.BorderlineWidth = 0;
+            chartArea3.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea3.AxisX.IsLabelAutoFit = false;
+            chartArea3.AxisX.LabelAutoFitMinFontSize = 5;
+            chartArea3.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea3.AxisX2.IsLabelAutoFit = false;
+            chartArea3.AxisX2.LabelStyle.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Pixel);
+            chartArea3.AxisY.IsLabelAutoFit = false;
+            chartArea3.AxisY.LabelAutoFitMinFontSize = 5;
+            chartArea3.AxisY.LabelStyle.Enabled = false;
+            chartArea3.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea3.Name = "ChartArea";
+            chartBooksHistory.ChartAreas.Add(chartArea3);
+            tableLayoutPanelBooks.SetColumnSpan(chartBooksHistory, 2);
+            chartBooksHistory.Dock = DockStyle.Fill;
+            legend3.Enabled = false;
+            legend3.Name = "Legend";
+            chartBooksHistory.Legends.Add(legend3);
+            chartBooksHistory.Location = new Point(0, 0);
+            chartBooksHistory.Margin = new Padding(0);
+            chartBooksHistory.Name = "chartBooksHistory";
+            chartBooksHistory.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series3.BorderWidth = 0;
+            series3.ChartArea = "ChartArea";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Renko;
+            series3.Legend = "Legend";
+            series3.Name = "Series";
+            series3.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series3.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
+            series3.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartBooksHistory.Series.Add(series3);
+            chartBooksHistory.Size = new Size(712, 142);
+            chartBooksHistory.TabIndex = 4;
+            // 
+            // tabPageVocabs
+            // 
+            tabPageVocabs.BackColor = SystemColors.Window;
+            tabPageVocabs.Controls.Add(tableLayoutPanelVocabs);
+            tabPageVocabs.Location = new Point(4, 4);
+            tabPageVocabs.Margin = new Padding(2);
+            tabPageVocabs.Name = "tabPageVocabs";
+            tabPageVocabs.Padding = new Padding(2);
+            tabPageVocabs.Size = new Size(716, 361);
+            tabPageVocabs.TabIndex = 1;
+            // 
+            // tableLayoutPanelVocabs
+            // 
+            tableLayoutPanelVocabs.ColumnCount = 2;
+            tableLayoutPanelVocabs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66.6666641F));
+            tableLayoutPanelVocabs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333359F));
+            tableLayoutPanelVocabs.Controls.Add(chartVocabsTime, 0, 1);
+            tableLayoutPanelVocabs.Controls.Add(chartVocabsWeek, 1, 1);
+            tableLayoutPanelVocabs.Controls.Add(chartVocabsHistory, 0, 0);
+            tableLayoutPanelVocabs.Dock = DockStyle.Fill;
+            tableLayoutPanelVocabs.Location = new Point(2, 2);
+            tableLayoutPanelVocabs.Margin = new Padding(2);
+            tableLayoutPanelVocabs.Name = "tableLayoutPanelVocabs";
+            tableLayoutPanelVocabs.RowCount = 2;
+            tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
+            tableLayoutPanelVocabs.Size = new Size(712, 357);
+            tableLayoutPanelVocabs.TabIndex = 1;
+            // 
+            // chartVocabsTime
+            // 
+            chartVocabsTime.BorderlineWidth = 0;
+            chartArea4.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea4.AxisX.IsLabelAutoFit = false;
+            chartArea4.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea4.AxisX.Maximum = 24D;
+            chartArea4.AxisX.Minimum = 0D;
+            chartArea4.AxisY.IsLabelAutoFit = false;
+            chartArea4.AxisY.LabelStyle.Enabled = false;
+            chartArea4.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea4.Name = "ChartArea";
+            chartVocabsTime.ChartAreas.Add(chartArea4);
+            chartVocabsTime.Dock = DockStyle.Fill;
+            legend4.Enabled = false;
+            legend4.Name = "Legend";
+            chartVocabsTime.Legends.Add(legend4);
+            chartVocabsTime.Location = new Point(0, 142);
+            chartVocabsTime.Margin = new Padding(0);
+            chartVocabsTime.Name = "chartVocabsTime";
+            chartVocabsTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series4.ChartArea = "ChartArea";
+            series4.Legend = "Legend";
+            series4.Name = "Series";
+            series4.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series4.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            series4.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartVocabsTime.Series.Add(series4);
+            chartVocabsTime.Size = new Size(474, 215);
+            chartVocabsTime.TabIndex = 2;
+            // 
+            // chartVocabsWeek
+            // 
+            chartVocabsWeek.BorderlineWidth = 0;
+            chartArea5.AxisX.IsLabelAutoFit = false;
+            chartArea5.AxisX.LabelAutoFitMinFontSize = 5;
+            chartArea5.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.AxisX.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.AxisX2.LabelAutoFitMinFontSize = 5;
+            chartArea5.AxisY.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea5.AxisY.IsLabelAutoFit = false;
+            chartArea5.AxisY.LabelAutoFitMinFontSize = 5;
+            chartArea5.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.AxisY.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.Name = "ChartArea";
+            chartVocabsWeek.ChartAreas.Add(chartArea5);
+            chartVocabsWeek.Dock = DockStyle.Fill;
+            legend5.Enabled = false;
+            legend5.Name = "Legend";
+            chartVocabsWeek.Legends.Add(legend5);
+            chartVocabsWeek.Location = new Point(474, 142);
+            chartVocabsWeek.Margin = new Padding(0);
+            chartVocabsWeek.Name = "chartVocabsWeek";
+            chartVocabsWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series5.BorderWidth = 0;
+            series5.ChartArea = "ChartArea";
+            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Radar;
+            series5.Font = new Font("Microsoft Sans Serif", 8F);
+            series5.Legend = "Legend";
+            series5.Name = "Series";
+            series5.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series5.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
+            series5.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartVocabsWeek.Series.Add(series5);
+            chartVocabsWeek.Size = new Size(238, 215);
+            chartVocabsWeek.TabIndex = 3;
+            // 
+            // chartVocabsHistory
+            // 
+            chartVocabsHistory.BorderlineWidth = 0;
+            chartArea6.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
+            chartArea6.AxisX.IsLabelAutoFit = false;
+            chartArea6.AxisX.LabelAutoFitMinFontSize = 5;
+            chartArea6.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea6.AxisX2.IsLabelAutoFit = false;
+            chartArea6.AxisX2.LabelStyle.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Pixel);
+            chartArea6.AxisY.IsLabelAutoFit = false;
+            chartArea6.AxisY.LabelAutoFitMinFontSize = 5;
+            chartArea6.AxisY.LabelStyle.Enabled = false;
+            chartArea6.AxisY.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea6.Name = "ChartArea";
+            chartVocabsHistory.ChartAreas.Add(chartArea6);
+            tableLayoutPanelVocabs.SetColumnSpan(chartVocabsHistory, 2);
+            chartVocabsHistory.Dock = DockStyle.Fill;
+            legend6.Enabled = false;
+            legend6.Name = "Legend";
+            chartVocabsHistory.Legends.Add(legend6);
+            chartVocabsHistory.Location = new Point(0, 0);
+            chartVocabsHistory.Margin = new Padding(0);
+            chartVocabsHistory.Name = "chartVocabsHistory";
+            chartVocabsHistory.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series6.BorderWidth = 0;
+            series6.ChartArea = "ChartArea";
+            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Renko;
+            series6.Legend = "Legend";
+            series6.Name = "Series";
+            series6.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
+            series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
+            series6.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            chartVocabsHistory.Series.Add(series6);
+            chartVocabsHistory.Size = new Size(712, 142);
+            chartVocabsHistory.TabIndex = 4;
             // 
             // FrmStatistic
             // 
-            AutoScaleDimensions = new SizeF(14F, 31F);
+            AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1126, 610);
-            Controls.Add(tabControl1);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            ClientSize = new Size(724, 394);
+            Controls.Add(tabControl);
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            Margin = new Padding(2);
             MinimizeBox = false;
             Name = "FrmStatistic";
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = "FrmStatistic";
+            Text = Strings.Statistics;
             TopMost = true;
             Load += FrmStatistic_Load;
-            tabControl1.ResumeLayout(false);
-            tabPage1.ResumeLayout(false);
-            tableLayoutPanel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)chartBooksDoughnut).EndInit();
-            flowLayoutPanel.ResumeLayout(false);
-            flowLayoutPanel.PerformLayout();
+            tabControl.ResumeLayout(false);
+            tabPageBooks.ResumeLayout(false);
+            tableLayoutPanelBooks.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)chartBooksTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)chartBooksWeek).EndInit();
+            ((System.ComponentModel.ISupportInitialize)chartBooksHistory).EndInit();
+            tabPageVocabs.ResumeLayout(false);
+            tableLayoutPanelVocabs.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)chartVocabsTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)chartVocabsWeek).EndInit();
+            ((System.ComponentModel.ISupportInitialize)chartVocabsHistory).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
-        private TabControl tabControl1;
-        private TabPage tabPage2;
-        private TabPage tabPage1;
-        private TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chartBooksDoughnut;
-        private FlowLayoutPanel flowLayoutPanel;
+        private TabControl tabControl;
+        private TabPage tabPageVocabs;
+        private TabPage tabPageBooks;
+        private TableLayoutPanel tableLayoutPanelBooks;
         private System.Windows.Forms.DataVisualization.Charting.Chart chartBooksTime;
         private System.Windows.Forms.DataVisualization.Charting.Chart chartBooksWeek;
-        private Label lblBooksCount;
-        private Label label2;
-        private Label label3;
-        private Label label4;
-        private Label label5;
-        private Label label6;
-        private Label label7;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartBooksHistory;
+        private TableLayoutPanel tableLayoutPanelVocabs;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartVocabsTime;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartVocabsWeek;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartVocabsHistory;
     }
 }

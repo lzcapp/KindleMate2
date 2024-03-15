@@ -312,8 +312,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -351,8 +350,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -683,7 +681,9 @@ namespace KindleMate2 {
             clippingsTable.Columns.Add("colorRGB", typeof(int));
             clippingsTable.Columns.Add("pagenumber", typeof(int));
 
-            List<string> lines = [.. File.ReadAllLines(clippingsPath)];
+            List<string> lines = [
+                .. File.ReadAllLines(clippingsPath)
+            ];
 
             var delimiterIndex = new List<int>();
 
@@ -954,7 +954,9 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
-            if (e is not { RowIndex: >= 0, ColumnIndex: >= 0 }) {
+            if (e is not {
+                RowIndex: >= 0, ColumnIndex: >= 0
+            }) {
                 return;
             }
 
@@ -1178,8 +1180,7 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
+                    FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1538,8 +1539,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1737,7 +1737,9 @@ namespace KindleMate2 {
         }
 
         private static string FormatFileSize(long fileSize) {
-            string[] sizes = ["B", "KB", "MB", "GB", "TB"];
+            string[] sizes = [
+                "B", "KB", "MB", "GB", "TB"
+            ];
             var order = 0;
             double size = fileSize;
 

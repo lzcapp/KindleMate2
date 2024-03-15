@@ -332,4 +332,7 @@
 	<data name="Export_To_Markdown" xml:space="preserve">
 		<value>Export as Markdown</value>
 	</data>
+	<data name="Statistics" xml:space="preserve">
+		<value>Statistics</value>
+	</data>
 </root>

@@ -444,4 +444,7 @@
   <data name="Export_To_Markdown" xml:space="preserve">
     <value>导出为Markdown</value>
   </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>统计</value>
+  </data>
 </root>

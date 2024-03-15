@@ -335,4 +335,7 @@
   <data name="Export_To_Markdown" xml:space="preserve">
     <value>導出為Markdown</value>
   </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>統計</value>
+  </data>
 </root>

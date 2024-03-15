@@ -493,7 +493,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 导出为Markdown 的本地化字符串。
         /// </summary>
         internal static string Export_To_Markdown {
             get {
@@ -867,6 +867,15 @@ namespace KindleMate2 {
         internal static string Space {
             get {
                 return ResourceManager.GetString("Space", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        internal static string Statistics {
+            get {
+                return ResourceManager.GetString("Statistics", resourceCulture);
             }
         }
         
