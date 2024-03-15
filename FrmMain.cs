@@ -58,6 +58,7 @@ namespace KindleMate2 {
 
             menuFile.Text = Strings.Files + @"(&F)";
             menuRefresh.Text = Strings.Refresh;
+            menuStatistic.Text = Strings.Statistics;
             menuRestart.Text = Strings.Restart;
             menuExit.Text = Strings.Exit;
             menuManage.Text = Strings.Management + @"(&M)";
@@ -1871,7 +1872,7 @@ namespace KindleMate2 {
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
-            using var dialog = new FrmStatistic();
+            using var dialog = new FrmStatistics();
             if (dialog.ShowDialog() != DialogResult.OK) {
                 return;
             }

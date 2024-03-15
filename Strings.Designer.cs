@@ -628,6 +628,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        internal static string In {
+            get {
+                return ResourceManager.GetString("In", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Kindle标注文件 的本地化字符串。
         /// </summary>
         internal static string Kindle_Clipping_File {
@@ -871,7 +880,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 统计 的本地化字符串。
         /// </summary>
         internal static string Statistics {
             get {
@@ -988,6 +997,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 位作者 的本地化字符串。
+        /// </summary>
+        internal static string X_Authors {
+            get {
+                return ResourceManager.GetString("X_Authors", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 本书 的本地化字符串。
         /// </summary>
         internal static string X_Books {
@@ -1002,6 +1020,15 @@ namespace KindleMate2 {
         internal static string X_Clippings {
             get {
                 return ResourceManager.GetString("X_Clippings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 天内 的本地化字符串。
+        /// </summary>
+        internal static string X_Days {
+            get {
+                return ResourceManager.GetString("X_Days", resourceCulture);
             }
         }
         

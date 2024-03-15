@@ -335,4 +335,13 @@
 	<data name="Statistics" xml:space="preserve">
 		<value>Statistics</value>
 	</data>
+	<data name="X_Authors" xml:space="preserve">
+		<value>author(s)</value>
+	</data>
+	<data name="X_Days" xml:space="preserve">
+		<value>day(s)</value>
+	</data>
+	<data name="In" xml:space="preserve">
+		<value>In</value>
+	</data>
 </root>
