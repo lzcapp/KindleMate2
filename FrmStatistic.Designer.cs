@@ -355,8 +355,7 @@
             Name = "FrmStatistic";
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            Text = Strings.Statistics;
-            TopMost = true;
+            Text = "统计";
             Load += FrmStatistic_Load;
             tabControl.ResumeLayout(false);
             tabPageBooks.ResumeLayout(false);

@@ -92,10 +92,10 @@
             // 
             label1.AutoSize = true;
             label1.Dock = DockStyle.Bottom;
-            label1.Location = new Point(0, 29);
+            label1.Location = new Point(0, 37);
             label1.Margin = new Padding(0, 0, 0, 10);
             label1.Name = "label1";
-            label1.Size = new Size(780, 28);
+            label1.Size = new Size(780, 20);
             label1.TabIndex = 6;
             label1.Text = "将这本书中的标注合并到：";
             // 
@@ -106,7 +106,7 @@
             comboBox.FormattingEnabled = true;
             comboBox.Location = new Point(3, 70);
             comboBox.Name = "comboBox";
-            comboBox.Size = new Size(774, 36);
+            comboBox.Size = new Size(774, 28);
             comboBox.Sorted = true;
             comboBox.TabIndex = 7;
             comboBox.SelectedValueChanged += ComboBox_SelectedValueChanged;
@@ -114,7 +114,7 @@
             // FrmCombine
             // 
             AcceptButton = btnOK;
-            AutoScaleDimensions = new SizeF(13F, 28F);
+            AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             CancelButton = btnCancel;
             ClientSize = new Size(800, 241);
@@ -129,7 +129,6 @@
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Text = "合并到书籍";
-            TopMost = true;
             Load += FrmCombine_Load;
             tableLayoutPanel1.ResumeLayout(false);
             tableLayoutPanel1.PerformLayout();
