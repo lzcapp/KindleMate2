@@ -27,8 +27,7 @@ namespace KindleMate2 {
             var enumBooks = _clippingsDataTable.AsEnumerable().GroupBy(row => new {
                 Time = DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).ToString("yyyy-M-d")
             }).Select(group => new {
-                group.Key.Time,
-                Count = group.Count()
+                group.Key.Time, Count = group.Count()
             });
 
             var listBooks = enumBooks.ToList().OrderBy(x => x.Time);
@@ -37,8 +36,7 @@ namespace KindleMate2 {
             }
 
             var enumBooksTime = _clippingsDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
+                ClippingHour = g.Key, ClippingCount = g.Count()
             });
 
             var listBooksTime = enumBooksTime.ToList();
@@ -47,10 +45,9 @@ namespace KindleMate2 {
             }
 
             var enumBooksWeek = _clippingsDataTable.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
+                Weekday = g.Key, ClippingCount = g.Count()
             });
-            
+
             var listBooksWeek = enumBooksWeek.ToList().OrderBy(x => x.Weekday);
             foreach (var dataPoint in listBooksWeek) {
                 chartBooksWeek.Series[0].Points.AddXY(DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday], dataPoint.ClippingCount);
@@ -59,8 +56,7 @@ namespace KindleMate2 {
             var enumVocabs = _vocabDataTable.AsEnumerable().GroupBy(row => new {
                 Time = DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).ToString("yyyy-M-d")
             }).Select(group => new {
-                group.Key.Time,
-                Count = group.Count()
+                group.Key.Time, Count = group.Count()
             });
 
             var listVocabs = enumVocabs.ToList().OrderBy(x => x.Time);
@@ -69,8 +65,7 @@ namespace KindleMate2 {
             }
 
             var enumVocabsTime = _vocabDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
+                ClippingHour = g.Key, ClippingCount = g.Count()
             });
 
             var listVocabsTime = enumVocabsTime.ToList();
@@ -79,8 +74,7 @@ namespace KindleMate2 {
             }
 
             var enumVocabsWeek = _vocabDataTable.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
+                Weekday = g.Key, ClippingCount = g.Count()
             });
 
             var listVocabsWeek = enumVocabsWeek.ToList().OrderBy(x => x.Weekday);
@@ -121,24 +115,16 @@ namespace KindleMate2 {
             switch (selectedIndex) {
                 case 0:
                     var clippings = _clippingsDataTable.Rows.Count + Strings.Space + Strings.X_Clippings;
-                    var books = _clippingsDataTable.AsEnumerable()
-                                                   .Select(row => row.Field<string>("bookname"))
-                                                   .Distinct().Count() + Strings.Space + Strings.X_Books;
-                    var authors = _clippingsDataTable.AsEnumerable()
-                                                     .Select(row => row.Field<string>("authorname"))
-                                                     .Distinct().Count() + Strings.Space + Strings.X_Authors;
-                    var bookTimes = _vocabDataTable.AsEnumerable()
-                                                    .Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
+                    var books = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct().Count() + Strings.Space + Strings.X_Books;
+                    var authors = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("authorname")).Distinct().Count() + Strings.Space + Strings.X_Authors;
+                    var bookTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
                     var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
                     lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma + authors;
                     break;
                 case 1:
                     var lookups = _vocabDataTable.Rows.Cast<DataRow>().Sum(row => Convert.ToInt32(row["frequency"])) + Strings.Space + Strings.X_Lookups;
-                    var words = _vocabDataTable.AsEnumerable()
-                                                    .Select(row => row.Field<string>("word"))
-                                                    .Distinct().Count() + Strings.Space + Strings.X_Vocabs;
-                    var vocabTimes = _vocabDataTable.AsEnumerable()
-                                                    .Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
+                    var words = _vocabDataTable.AsEnumerable().Select(row => row.Field<string>("word")).Distinct().Count() + Strings.Space + Strings.X_Vocabs;
+                    var vocabTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
                     var vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
                     lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Symbol_Comma + words;
                     break;
