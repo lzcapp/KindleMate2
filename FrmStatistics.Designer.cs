@@ -118,12 +118,11 @@
             chartBooksTime.BorderlineWidth = 0;
             chartArea1.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea1.AxisX.IsLabelAutoFit = false;
-            chartArea1.AxisX.IsMarginVisible = false;
             chartArea1.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
             chartArea1.AxisX.LineWidth = 0;
             chartArea1.AxisX.MajorGrid.Enabled = false;
             chartArea1.AxisX.MajorTickMark.Enabled = false;
-            chartArea1.AxisX.Maximum = 24D;
+            chartArea1.AxisX.Maximum = 23D;
             chartArea1.AxisX.Minimum = 0D;
             chartArea1.AxisY.IsLabelAutoFit = false;
             chartArea1.AxisY.LabelStyle.Enabled = false;
@@ -275,13 +274,12 @@
             chartVocabsTime.BorderlineWidth = 0;
             chartArea4.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea4.AxisX.IsLabelAutoFit = false;
-            chartArea4.AxisX.IsMarginVisible = false;
             chartArea4.AxisX.IsMarksNextToAxis = false;
             chartArea4.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
             chartArea4.AxisX.LineWidth = 0;
             chartArea4.AxisX.MajorGrid.Enabled = false;
             chartArea4.AxisX.MajorTickMark.Enabled = false;
-            chartArea4.AxisX.Maximum = 24D;
+            chartArea4.AxisX.Maximum = 23D;
             chartArea4.AxisX.Minimum = 0D;
             chartArea4.AxisY.IsLabelAutoFit = false;
             chartArea4.AxisY.IsMarksNextToAxis = false;
@@ -448,6 +446,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(2);
             MinimizeBox = false;
+            MinimumSize = new Size(742, 441);
             Name = "FrmStatistics";
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;

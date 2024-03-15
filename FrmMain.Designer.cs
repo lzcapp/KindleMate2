@@ -646,6 +646,7 @@
             Controls.Add(menuStrip);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             Icon = (Icon)resources.GetObject("$this.Icon");
+            MinimumSize = new Size(773, 496);
             Name = "FrmMain";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Kindle Mate 2";
