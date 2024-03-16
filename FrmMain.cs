@@ -1873,9 +1873,7 @@ namespace KindleMate2 {
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
             using var dialog = new FrmStatistics();
-            if (dialog.ShowDialog() != DialogResult.OK) {
-                return;
-            }
+            dialog.ShowDialog();
         }
     }
 }

@@ -27,6 +27,8 @@
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
+		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
