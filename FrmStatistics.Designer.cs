@@ -80,7 +80,7 @@
             tabControl.Margin = new Padding(0);
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(724, 367);
+            tabControl.Size = new Size(1340, 670);
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -88,11 +88,11 @@
             // 
             tabPageBooks.BackColor = SystemColors.Window;
             tabPageBooks.Controls.Add(tableLayoutPanelBooks);
-            tabPageBooks.Location = new Point(4, 4);
+            tabPageBooks.Location = new Point(8, 8);
             tabPageBooks.Margin = new Padding(2);
             tabPageBooks.Name = "tabPageBooks";
             tabPageBooks.Padding = new Padding(2);
-            tabPageBooks.Size = new Size(716, 334);
+            tabPageBooks.Size = new Size(1324, 617);
             tabPageBooks.TabIndex = 0;
             // 
             // tableLayoutPanelBooks
@@ -110,7 +110,7 @@
             tableLayoutPanelBooks.RowCount = 2;
             tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelBooks.Size = new Size(712, 330);
+            tableLayoutPanelBooks.Size = new Size(1320, 613);
             tableLayoutPanelBooks.TabIndex = 0;
             // 
             // chartBooksTime
@@ -118,7 +118,11 @@
             chartBooksTime.BorderlineWidth = 0;
             chartArea1.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea1.AxisX.IsLabelAutoFit = false;
-            chartArea1.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea1.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea1.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea1.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 7F);
+            chartArea1.AxisX.LabelStyle.Interval = 0D;
+            chartArea1.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea1.AxisX.LineWidth = 0;
             chartArea1.AxisX.MajorGrid.Enabled = false;
             chartArea1.AxisX.MajorTickMark.Enabled = false;
@@ -136,7 +140,7 @@
             legend1.Enabled = false;
             legend1.Name = "Legend";
             chartBooksTime.Legends.Add(legend1);
-            chartBooksTime.Location = new Point(0, 132);
+            chartBooksTime.Location = new Point(0, 245);
             chartBooksTime.Margin = new Padding(0);
             chartBooksTime.Name = "chartBooksTime";
             chartBooksTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -147,7 +151,7 @@
             series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series1.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartBooksTime.Series.Add(series1);
-            chartBooksTime.Size = new Size(498, 198);
+            chartBooksTime.Size = new Size(924, 368);
             chartBooksTime.TabIndex = 2;
             // 
             // chartBooksWeek
@@ -156,8 +160,11 @@
             chartArea2.AxisX.IsLabelAutoFit = false;
             chartArea2.AxisX.IsMarginVisible = false;
             chartArea2.AxisX.IsStartedFromZero = false;
-            chartArea2.AxisX.LabelAutoFitMinFontSize = 5;
-            chartArea2.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea2.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea2.AxisX.LabelStyle.Font = new Font("微软雅黑", 7F);
+            chartArea2.AxisX.LabelStyle.Interval = 0D;
+            chartArea2.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea2.AxisX.LineWidth = 0;
             chartArea2.AxisX.MajorGrid.Enabled = false;
             chartArea2.AxisX.MajorTickMark.Enabled = false;
@@ -179,7 +186,7 @@
             legend2.Enabled = false;
             legend2.Name = "Legend";
             chartBooksWeek.Legends.Add(legend2);
-            chartBooksWeek.Location = new Point(498, 132);
+            chartBooksWeek.Location = new Point(924, 245);
             chartBooksWeek.Margin = new Padding(0);
             chartBooksWeek.Name = "chartBooksWeek";
             chartBooksWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -193,7 +200,7 @@
             series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series2.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartBooksWeek.Series.Add(series2);
-            chartBooksWeek.Size = new Size(214, 198);
+            chartBooksWeek.Size = new Size(396, 368);
             chartBooksWeek.TabIndex = 3;
             // 
             // chartBooksHistory
@@ -203,8 +210,11 @@
             chartArea3.AxisX.IsLabelAutoFit = false;
             chartArea3.AxisX.IsMarginVisible = false;
             chartArea3.AxisX.IsStartedFromZero = false;
-            chartArea3.AxisX.LabelAutoFitMinFontSize = 5;
-            chartArea3.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea3.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea3.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea3.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 7F);
+            chartArea3.AxisX.LabelStyle.Interval = 0D;
+            chartArea3.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea3.AxisX.LineWidth = 0;
             chartArea3.AxisX.MajorGrid.Enabled = false;
             chartArea3.AxisX.MajorTickMark.Enabled = false;
@@ -237,18 +247,18 @@
             series3.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series3.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartBooksHistory.Series.Add(series3);
-            chartBooksHistory.Size = new Size(712, 132);
+            chartBooksHistory.Size = new Size(1320, 245);
             chartBooksHistory.TabIndex = 4;
             // 
             // tabPageVocabs
             // 
             tabPageVocabs.BackColor = SystemColors.Window;
             tabPageVocabs.Controls.Add(tableLayoutPanelVocabs);
-            tabPageVocabs.Location = new Point(4, 4);
+            tabPageVocabs.Location = new Point(8, 8);
             tabPageVocabs.Margin = new Padding(2);
             tabPageVocabs.Name = "tabPageVocabs";
             tabPageVocabs.Padding = new Padding(2);
-            tabPageVocabs.Size = new Size(716, 334);
+            tabPageVocabs.Size = new Size(1324, 617);
             tabPageVocabs.TabIndex = 1;
             // 
             // tableLayoutPanelVocabs
@@ -266,7 +276,7 @@
             tableLayoutPanelVocabs.RowCount = 2;
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelVocabs.Size = new Size(712, 330);
+            tableLayoutPanelVocabs.Size = new Size(1320, 613);
             tableLayoutPanelVocabs.TabIndex = 1;
             // 
             // chartVocabsTime
@@ -275,7 +285,11 @@
             chartArea4.AxisX.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea4.AxisX.IsLabelAutoFit = false;
             chartArea4.AxisX.IsMarksNextToAxis = false;
-            chartArea4.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea4.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea4.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea4.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 7F);
+            chartArea4.AxisX.LabelStyle.Interval = 0D;
+            chartArea4.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea4.AxisX.LineWidth = 0;
             chartArea4.AxisX.MajorGrid.Enabled = false;
             chartArea4.AxisX.MajorTickMark.Enabled = false;
@@ -294,7 +308,7 @@
             legend4.Enabled = false;
             legend4.Name = "Legend";
             chartVocabsTime.Legends.Add(legend4);
-            chartVocabsTime.Location = new Point(0, 132);
+            chartVocabsTime.Location = new Point(0, 245);
             chartVocabsTime.Margin = new Padding(0);
             chartVocabsTime.Name = "chartVocabsTime";
             chartVocabsTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -305,7 +319,7 @@
             series4.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series4.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsTime.Series.Add(series4);
-            chartVocabsTime.Size = new Size(498, 198);
+            chartVocabsTime.Size = new Size(924, 368);
             chartVocabsTime.TabIndex = 2;
             // 
             // chartVocabsWeek
@@ -315,8 +329,11 @@
             chartArea5.AxisX.IsMarginVisible = false;
             chartArea5.AxisX.IsMarksNextToAxis = false;
             chartArea5.AxisX.IsStartedFromZero = false;
-            chartArea5.AxisX.LabelAutoFitMinFontSize = 5;
-            chartArea5.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea5.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea5.AxisX.LabelStyle.Font = new Font("微软雅黑", 7F);
+            chartArea5.AxisX.LabelStyle.Interval = 0D;
+            chartArea5.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea5.AxisX.LineWidth = 0;
             chartArea5.AxisX.MajorGrid.Enabled = false;
             chartArea5.AxisX.MajorTickMark.Enabled = false;
@@ -340,7 +357,7 @@
             legend5.Enabled = false;
             legend5.Name = "Legend";
             chartVocabsWeek.Legends.Add(legend5);
-            chartVocabsWeek.Location = new Point(498, 132);
+            chartVocabsWeek.Location = new Point(924, 245);
             chartVocabsWeek.Margin = new Padding(0);
             chartVocabsWeek.Name = "chartVocabsWeek";
             chartVocabsWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -354,7 +371,7 @@
             series5.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series5.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsWeek.Series.Add(series5);
-            chartVocabsWeek.Size = new Size(214, 198);
+            chartVocabsWeek.Size = new Size(396, 368);
             chartVocabsWeek.TabIndex = 3;
             // 
             // chartVocabsHistory
@@ -364,8 +381,11 @@
             chartArea6.AxisX.IsLabelAutoFit = false;
             chartArea6.AxisX.IsMarginVisible = false;
             chartArea6.AxisX.IsStartedFromZero = false;
-            chartArea6.AxisX.LabelAutoFitMinFontSize = 5;
-            chartArea6.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 6F);
+            chartArea6.AxisX.LabelAutoFitMaxFontSize = 7;
+            chartArea6.AxisX.LabelAutoFitMinFontSize = 7;
+            chartArea6.AxisX.LabelStyle.Font = new Font("Microsoft Sans Serif", 7F);
+            chartArea6.AxisX.LabelStyle.Interval = 0D;
+            chartArea6.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea6.AxisX.LineWidth = 0;
             chartArea6.AxisX.MajorGrid.Enabled = false;
             chartArea6.AxisX.MajorTickMark.Enabled = false;
@@ -399,7 +419,7 @@
             series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series6.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsHistory.Series.Add(series6);
-            chartVocabsHistory.Size = new Size(712, 132);
+            chartVocabsHistory.Size = new Size(1320, 245);
             chartVocabsHistory.TabIndex = 4;
             // 
             // toolStrip
@@ -410,7 +430,7 @@
             toolStrip.Items.AddRange(new ToolStripItem[] { btnSave, lblStatistics });
             toolStrip.Location = new Point(0, 0);
             toolStrip.Name = "toolStrip";
-            toolStrip.Size = new Size(724, 27);
+            toolStrip.Size = new Size(1340, 27);
             toolStrip.TabIndex = 1;
             toolStrip.Text = "toolStrip1";
             // 
@@ -422,7 +442,7 @@
             btnSave.ImageTransparentColor = Color.Transparent;
             btnSave.Margin = new Padding(0, 1, 10, 2);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(29, 24);
+            btnSave.Size = new Size(46, 24);
             btnSave.Click += BtnSave_Click;
             btnSave.MouseEnter += BtnSave_MouseEnter;
             btnSave.MouseLeave += BtnSave_MouseLeave;
@@ -436,10 +456,10 @@
             // 
             // FrmStatistics
             // 
-            AutoScaleDimensions = new SizeF(9F, 20F);
+            AutoScaleDimensions = new SizeF(14F, 31F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(724, 394);
+            ClientSize = new Size(1340, 697);
             Controls.Add(toolStrip);
             Controls.Add(tabControl);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
