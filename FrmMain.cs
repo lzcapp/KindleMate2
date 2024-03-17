@@ -727,16 +727,18 @@ namespace KindleMate2 {
                     var dashIndex = loctime[0].IndexOf('-');
                     if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
                         location = loctime[0][(dashIndex + 1)..].Trim();
-                        var pagePattern = @"第\s+\d+\s+页";
+                        const string pagePattern = @"第\s+\d+\s+页";
                         Match pageMatch = Regex.Match(location, pagePattern);
                         if (pageMatch.Success) {
                             _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
                         } else {
-                            var lastIndexOfDash = location.LastIndexOf('-');
+                            var lastIndexOfSharp = location.LastIndexOf('#');
                             var lastIndexOfDot = location.LastIndexOf('.');
 
-                            if (lastIndexOfDash != -1) {
-                                _ = int.TryParse(location[(lastIndexOfDash + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim(), out pagenumber);
+                            if (lastIndexOfSharp != -1) {
+                                var trim = location[(lastIndexOfSharp + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim();
+                                var lastIndexOfDash = trim.LastIndexOf('-');
+                                _ = lastIndexOfDash != -1 ? int.TryParse(trim[(lastIndexOfDash + 1)..], out pagenumber) : int.TryParse(trim, out pagenumber);
                             } else if (lastIndexOfDot != -1) {
                                 _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
                             } else {
@@ -1564,7 +1566,9 @@ namespace KindleMate2 {
             }
 
             var result = ImportKindleWords(fileDialog.FileName);
-            MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (string.IsNullOrEmpty(result)) {
+                MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
 
             RefreshData();
         }
