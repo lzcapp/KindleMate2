@@ -70,6 +70,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        internal static string Analyzed {
+            get {
+                return ResourceManager.GetString("Analyzed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 作者 的本地化字符串。
         /// </summary>
         internal static string Author {
@@ -628,7 +637,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 在 的本地化字符串。
         /// </summary>
         internal static string In {
             get {

@@ -347,4 +347,7 @@
   <data name="In" xml:space="preserve">
     <value>在</value>
   </data>
+	<data name="Analyzed" xml:space="preserve">
+		<value>解析：</value>
+	</data>
 </root>

@@ -11,6 +11,7 @@ namespace KindleMate2 {
             string[] sizes = [
                 "B", "KB", "MB", "GB", "TB"
             ];
+
             var order = 0;
             double size = fileSize;
 

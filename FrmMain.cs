@@ -125,6 +125,7 @@ namespace KindleMate2 {
                                 return;
                             }
                         }
+
                         break;
                 }
             }
@@ -137,7 +138,16 @@ namespace KindleMate2 {
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
             var clippingsResult = ImportKindleClippings(kindleClippingsPath);
             var wordResult = ImportKindleWords(kindleWordsPath);
-            return clippingsResult + "\n" + wordResult;
+            if (string.IsNullOrWhiteSpace(clippingsResult + wordResult)) {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(clippingsResult)) {
+                return wordResult;
+            }
+
+            return string.IsNullOrWhiteSpace(wordResult) ? clippingsResult : string.Empty;
+
         }
 
         private string ImportKindleWords(string kindleWordsPath) {
@@ -255,6 +265,7 @@ namespace KindleMate2 {
                     var frequency = lookupsDataTable.AsEnumerable().Count(lookupsRow => lookupsRow["word_key"].ToString()?.Trim() == word_key);
                     _staticData.UpdateVocab(word_key, frequency);
                 }
+
                 _staticData.CommitTransaction();
             } catch (Exception) {
                 _staticData.RollbackTransaction();
@@ -313,7 +324,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -351,7 +363,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -519,7 +532,9 @@ namespace KindleMate2 {
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
+                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X +
+                                    Strings.Space + diff + Strings.Space + Strings.X_Rows;
+
                     break;
                 case 1:
                     var vocabCount = _vocabDataTable.Rows.Count;
@@ -616,7 +631,8 @@ namespace KindleMate2 {
                     _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
                     _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
                     _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
+                        row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
                 }
 
                 foreach (DataRow row in originClippingsDataTable.Rows) {
@@ -639,7 +655,10 @@ namespace KindleMate2 {
                     _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
                 }
 
-                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
+                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows
+                    where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)
+                    select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty,
+                        int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
 
                 _staticData.CommitTransaction();
             } catch (Exception) {
@@ -650,7 +669,9 @@ namespace KindleMate2 {
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
-            MessageBox.Show(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(
+                Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             UpdateFrequency();
 
@@ -760,6 +781,7 @@ namespace KindleMate2 {
                         if (dayOfWeekIndex != -1) {
                             datetime = datetime.Remove(dayOfWeekIndex, 3);
                         }
+
                         if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
                             time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                         }
@@ -802,9 +824,10 @@ namespace KindleMate2 {
                 _staticData.CommitTransaction();
             } catch (Exception) {
                 _staticData.RollbackTransaction();
+                return string.Empty;
             }
 
-            return "标注：共解析 " + delimiterIndex.Count + " 条记录，导入 " + insertedCount + " 条记录";
+            return Strings.Analyzed + delimiterIndex.Count + Strings.Clippings + Strings.Symbol_Comma + Strings.Imported_X + insertedCount;
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
@@ -922,6 +945,7 @@ namespace KindleMate2 {
             if (currentNode == null) {
                 return;
             }
+
             if (currentNode.Text == Strings.Select_All) {
                 return;
             }
@@ -958,8 +982,8 @@ namespace KindleMate2 {
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
             if (e is not {
-                RowIndex: >= 0, ColumnIndex: >= 0
-            }) {
+                    RowIndex: >= 0, ColumnIndex: >= 0
+                }) {
                 return;
             }
 
@@ -982,6 +1006,7 @@ namespace KindleMate2 {
                     } else {
                         ShowContentEditDialog();
                     }
+
                     break;
             }
         }
@@ -1125,9 +1150,11 @@ namespace KindleMate2 {
                         if (row["word"].ToString() != word) {
                             continue;
                         }
+
                         word_key = row["word_key"].ToString() ?? string.Empty;
                         break;
                     }
+
                     if (!_staticData.DeleteVocab(word) && !_staticData.DeleteLookupsByWordKey(word_key)) {
                         MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
@@ -1165,7 +1192,9 @@ namespace KindleMate2 {
             }
 
             var result = ImportKindleClippings(fileDialog.FileName);
-            MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (string.IsNullOrWhiteSpace(result)) {
+                MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
 
             RefreshData();
         }
@@ -1183,7 +1212,8 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1321,6 +1351,7 @@ namespace KindleMate2 {
             } else {
                 bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
             }
+
             return bookname;
         }
 
@@ -1334,6 +1365,7 @@ namespace KindleMate2 {
             } else {
                 authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
             }
+
             return authorname;
         }
 
@@ -1474,6 +1506,7 @@ namespace KindleMate2 {
                 writer.WriteLine(row["line4"]);
                 writer.WriteLine(row["line5"]);
             }
+
             writer.Close();
             fileStream.Close();
 
@@ -1493,6 +1526,7 @@ namespace KindleMate2 {
                     if (result != DialogResult.Yes) {
                         return;
                     }
+
                     Process.Start("explorer.exe", Path.Combine(_programsDirectory, "Backups"));
                 }
             }
@@ -1512,6 +1546,7 @@ namespace KindleMate2 {
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
+
             File.Copy(_filePath, filePath);
         }
 
@@ -1542,7 +1577,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1566,7 +1602,7 @@ namespace KindleMate2 {
             }
 
             var result = ImportKindleWords(fileDialog.FileName);
-            if (string.IsNullOrEmpty(result)) {
+            if (string.IsNullOrWhiteSpace(result)) {
                 MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
@@ -1693,22 +1729,28 @@ namespace KindleMate2 {
                         if (string.IsNullOrWhiteSpace(key)) {
                             continue;
                         }
+
                         if (string.IsNullOrWhiteSpace(content)) {
                             if (_staticData.DeleteClippingsByKey(key)) {
                                 countEmpty++;
                             }
+
                             continue;
                         }
+
                         var contentTrimmed = TrimContent(content);
                         if (string.IsNullOrWhiteSpace(contentTrimmed)) {
                             if (_staticData.DeleteClippingsByKey(key)) {
                                 countEmpty++;
                             }
+
                             continue;
                         }
+
                         if (contentTrimmed.Equals(content)) {
                             continue;
                         }
+
                         if (_staticData.UpdateClippings(key, contentTrimmed)) {
                             countTrimmed++;
                         }
@@ -1726,7 +1768,9 @@ namespace KindleMate2 {
                     var filesizeDelta = originFileSize - newFileSize;
 
                     if (countEmpty > 0 || countTrimmed > 0 || filesizeDelta > 0) {
-                        MessageBox.Show(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(filesizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(
+                            Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
+                            Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(filesizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
                         MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -1745,6 +1789,7 @@ namespace KindleMate2 {
             string[] sizes = [
                 "B", "KB", "MB", "GB", "TB"
             ];
+
             var order = 0;
             double size = fileSize;
 
@@ -1770,6 +1815,7 @@ namespace KindleMate2 {
                     if (selectedBookName.Equals(Strings.Select_All)) {
                         continue;
                     }
+
                     DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
 
                     markdown.AppendLine("## \ud83d\udcd6 " + selectedBookName.Trim());
@@ -1820,6 +1866,7 @@ namespace KindleMate2 {
                     if (word.Equals(Strings.Select_All)) {
                         continue;
                     }
+
                     DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == word).CopyToDataTable();
 
                     markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
@@ -1866,7 +1913,8 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            const string css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
+            const string css =
+                "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 

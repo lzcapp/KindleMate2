@@ -184,7 +184,8 @@ namespace KindleMate2 {
                 return 0;
             }
 
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
+            const string queryInsert =
+                "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
 
             using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@key", DbType.String);
@@ -210,12 +211,14 @@ namespace KindleMate2 {
             return result;
         }
 
-        internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {
+        internal int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync,
+            string newbookname, int colorRGB, int pagenumber) {
             if (key == string.Empty || content == string.Empty) {
                 return 0;
             }
 
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
+            const string queryInsert =
+                "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
 
             using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@key", DbType.String);
@@ -264,6 +267,7 @@ namespace KindleMate2 {
             } else {
                 authorname = string.Empty;
             }
+
             queryUpdate += " WHERE bookname = @originBookname";
 
             using var command = new SQLiteCommand(queryUpdate, _connection);
@@ -569,7 +573,10 @@ namespace KindleMate2 {
             var result = 0;
 
             var tableNames = new List<string>() {
-                "clippings", "lookups", "original_clipping_lines", "vocab"
+                "clippings",
+                "lookups",
+                "original_clipping_lines",
+                "vocab"
             };
 
             foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
@@ -584,7 +591,10 @@ namespace KindleMate2 {
             var result = 0;
 
             var tableNames = new List<string>() {
-                "clippings", "lookups", "original_clipping_lines", "vocab"
+                "clippings",
+                "lookups",
+                "original_clipping_lines",
+                "vocab"
             };
 
             foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(1) FROM " + tableName)) {

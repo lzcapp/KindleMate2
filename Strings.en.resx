@@ -201,7 +201,7 @@
 		<value>Vocabulary List</value>
 	</data>
 	<data name="Clippings" xml:space="preserve">
-		<value>Clippings</value>
+		<value>Clipping(s)</value>
 	</data>
 	<data name="GitHub_Repo" xml:space="preserve">
 		<value>GitHub Repo</value>
@@ -343,5 +343,8 @@
 	</data>
 	<data name="In" xml:space="preserve">
 		<value>In</value>
+	</data>
+	<data name="Analyzed" xml:space="preserve">
+		<value>Parsed: </value>
 	</data>
 </root>
