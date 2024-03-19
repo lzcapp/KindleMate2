@@ -122,18 +122,17 @@
 		</value>
   </resheader>
   <metadata name="menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>498, 17</value>
+    <value>361, 17</value>
   </metadata>
   <metadata name="imageListBooks.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <!-- ReSharper disable once NotOverriddenInSpecificCulture -->
   <data name="imageListBooks.ImageStream" mimetype="application/x-microsoft.net.object.binary.base64">
     <value>
         AAEAAAD/////AQAAAAAAAAAMAgAAAEZTeXN0ZW0uV2luZG93cy5Gb3JtcywgQ3VsdHVyZT1uZXV0cmFs
         LCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BQEAAAAmU3lzdGVtLldpbmRvd3MuRm9ybXMu
         SW1hZ2VMaXN0U3RyZWFtZXIBAAAABERhdGEHAgIAAAAJAwAAAA8DAAAAKh8AAAJNU0Z0AUkBTAIBAQMB
-        AAEIAQUBCAEFARQBAAEUAQAD/wEAASEBAAj/AUIBTQE2BwABNgMAASgDAAFQAwABFAMAAQEBAAEgBgAB
+        AAEgAQUBIAEFARQBAAEUAQAD/wEAASEBAAj/AUIBTQE2BwABNgMAASgDAAFQAwABFAMAAQEBAAEgBgAB
         GRIAAxEBFgNKAYkCWAFaAb0DXQHMA10BzANdAcwDXQHMA10BzANdAcwDXQHMA10BzANdAcwDXQHMA10B
         zAJcAV8ByANYAbgDMQFMAw8BFGAAAzYBWQFCAUEBQgFyAUIBQQFCAXIDQgFyA0IBcwNCAXIDQgFyA0IB
         cgNCAXIDQgFyA0IBcgNCAXIDQgFyA0IBcgNCAXIDQgFyA0EBcQMYASFQAAM2AVkCXQFgAc4CUQFvAfcB
@@ -269,14 +268,14 @@
 </value>
   </data>
   <metadata name="imageListWords.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>255, 17</value>
+    <value>187, 17</value>
   </metadata>
   <data name="imageListWords.ImageStream" mimetype="application/x-microsoft.net.object.binary.base64">
     <value>
         AAEAAAD/////AQAAAAAAAAAMAgAAAEZTeXN0ZW0uV2luZG93cy5Gb3JtcywgQ3VsdHVyZT1uZXV0cmFs
         LCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BQEAAAAmU3lzdGVtLldpbmRvd3MuRm9ybXMu
         SW1hZ2VMaXN0U3RyZWFtZXIBAAAABERhdGEHAgIAAAAJAwAAAA8DAAAAxiIAAAJNU0Z0AUkBTAIBAQMB
-        AAEIAQUBCAEFARQBAAEUAQAD/wEAASEBAAj/AUIBTQE2BwABNgMAASgDAAFQAwABFAMAAQEBAAEgBgAB
+        AAEgAQUBIAEFARQBAAEUAQAD/wEAASEBAAj/AUIBTQE2BwABNgMAASgDAAFQAwABFAMAAQEBAAEgBgAB
         GRIAAycBOgJjAV8B2gHDAYgBOwH/AcMBiAE7Af8BwwGIATsB/wHDAYgBOwH/AcMBiAE7Af8BwwGIATsB
         /wHDAYgBOwH/AcMBiAE7Af8BwwGIATsB/wHDAYgBOwH/AcMBiAE7Af8BwwGIATsB/wHDAYgBOwH/AcMB
         iAE7Af8BwwGIATsB/wHDAYgBOwH/AmMBXwHaAycBOgMnAToCYwFfAdoBwwGIATsB/wHDAYgBOwH/AcMB
@@ -428,25 +427,24 @@
 </value>
   </data>
   <metadata name="menuClippings.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>874, 17</value>
+    <value>634, 17</value>
   </metadata>
   <metadata name="menuBooks.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>678, 17</value>
+    <value>493, 17</value>
   </metadata>
   <metadata name="openFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 69</value>
+    <value>933, 17</value>
   </metadata>
   <metadata name="statusStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>1106, 17</value>
+    <value>799, 17</value>
   </metadata>
   <metadata name="timer.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>249, 69</value>
+    <value>1099, 17</value>
   </metadata>
   <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>89</value>
+    <value>59</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <!-- ReSharper disable once ResxNotResolved -->
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         AAABAAkAEBAAAAEAIABoBAAAlgAAABgYAAABACAAiAkAAP4EAAAgIAAAAQAgAKgQAACGDgAAMDAAAAEA

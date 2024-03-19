@@ -401,7 +401,7 @@
             splitContainerDetail.Panel2.Controls.Add(tableLayoutPanel);
             splitContainerDetail.Panel2MinSize = 200;
             splitContainerDetail.Size = new Size(656, 508);
-            splitContainerDetail.SplitterDistance = 298;
+            splitContainerDetail.SplitterDistance = 260;
             splitContainerDetail.TabIndex = 1;
             // 
             // dataGridView
@@ -422,7 +422,7 @@
             dataGridView.RowHeadersVisible = false;
             dataGridView.RowHeadersWidth = 82;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(656, 298);
+            dataGridView.Size = new Size(656, 260);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -448,7 +448,7 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel.Size = new Size(656, 206);
+            tableLayoutPanel.Size = new Size(656, 244);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
@@ -504,17 +504,17 @@
             // 
             // lblContent
             // 
+            lblContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblContent.BackColor = SystemColors.Window;
             lblContent.BorderStyle = BorderStyle.None;
             lblContent.ContextMenuStrip = menuClippings;
-            lblContent.Dock = DockStyle.Fill;
             lblContent.Font = new Font("微软雅黑", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblContent.Location = new Point(5, 76);
             lblContent.Margin = new Padding(5);
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
-            lblContent.Size = new Size(646, 288);
+            lblContent.Size = new Size(646, 163);
             lblContent.TabIndex = 4;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
