@@ -1199,7 +1199,7 @@ namespace KindleMate2 {
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
-            const string repoUrl = "https://github.com/lzcapp/KindleMate2";
+            const string repoUrl = "https://github.com/LZC-app/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
                     FileName = repoUrl, UseShellExecute = true
