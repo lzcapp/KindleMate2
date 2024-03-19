@@ -70,7 +70,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 解析： 的本地化字符串。
         /// </summary>
         internal static string Analyzed {
             get {

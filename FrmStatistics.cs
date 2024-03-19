@@ -1,7 +1,5 @@
 ﻿using System.Data;
 using System.Globalization;
-using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {
@@ -27,8 +25,7 @@ namespace KindleMate2 {
             var enumBooks = _clippingsDataTable.AsEnumerable().GroupBy(row => new {
                 Time = DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).ToString("yyyy-M-d")
             }).Select(group => new {
-                group.Key.Time,
-                Count = group.Count()
+                group.Key.Time, Count = group.Count()
             });
 
             var listBooks = enumBooks.ToList().OrderBy(x => x.Time);
@@ -37,8 +34,7 @@ namespace KindleMate2 {
             }
 
             var enumBooksTime = _clippingsDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
+                ClippingHour = g.Key, ClippingCount = g.Count()
             });
 
             var listBooksTime = enumBooksTime.ToList();
@@ -47,8 +43,7 @@ namespace KindleMate2 {
             }
 
             var enumBooksWeek = _clippingsDataTable.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
+                Weekday = g.Key, ClippingCount = g.Count()
             });
 
             var listBooksWeek = enumBooksWeek.ToList().OrderBy(x => x.Weekday);
@@ -59,8 +54,7 @@ namespace KindleMate2 {
             var enumVocabs = _vocabDataTable.AsEnumerable().GroupBy(row => new {
                 Time = DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).ToString("yyyy-M-d")
             }).Select(group => new {
-                group.Key.Time,
-                Count = group.Count()
+                group.Key.Time, Count = group.Count()
             });
 
             var listVocabs = enumVocabs.ToList().OrderBy(x => x.Time);
@@ -69,8 +63,7 @@ namespace KindleMate2 {
             }
 
             var enumVocabsTime = _vocabDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
+                ClippingHour = g.Key, ClippingCount = g.Count()
             });
 
             var listVocabsTime = enumVocabsTime.ToList();
@@ -79,8 +72,7 @@ namespace KindleMate2 {
             }
 
             var enumVocabsWeek = _vocabDataTable.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
+                Weekday = g.Key, ClippingCount = g.Count()
             });
 
             var listVocabsWeek = enumVocabsWeek.ToList().OrderBy(x => x.Weekday);
@@ -126,8 +118,7 @@ namespace KindleMate2 {
                     var authors = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("authorname")).Distinct().Count() + Strings.Space + Strings.X_Authors;
                     var bookTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
                     var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
-                    lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma +
-                                         authors;
+                    lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma + authors;
 
                     break;
                 case 1:

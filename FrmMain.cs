@@ -147,7 +147,6 @@ namespace KindleMate2 {
             }
 
             return string.IsNullOrWhiteSpace(wordResult) ? clippingsResult : string.Empty;
-
         }
 
         private string ImportKindleWords(string kindleWordsPath) {
@@ -324,8 +323,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -363,8 +361,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -532,8 +529,7 @@ namespace KindleMate2 {
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X +
-                                    Strings.Space + diff + Strings.Space + Strings.X_Rows;
+                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
 
                     break;
                 case 1:
@@ -631,8 +627,7 @@ namespace KindleMate2 {
                     _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
                     _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
                     _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!,
-                        row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
                 }
 
                 foreach (DataRow row in originClippingsDataTable.Rows) {
@@ -655,10 +650,7 @@ namespace KindleMate2 {
                     _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
                 }
 
-                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows
-                    where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)
-                    select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty,
-                        int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
+                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
 
                 _staticData.CommitTransaction();
             } catch (Exception) {
@@ -669,9 +661,7 @@ namespace KindleMate2 {
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
-            MessageBox.Show(
-                Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
-                wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             UpdateFrequency();
 
@@ -982,8 +972,8 @@ namespace KindleMate2 {
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
             if (e is not {
-                    RowIndex: >= 0, ColumnIndex: >= 0
-                }) {
+                RowIndex: >= 0, ColumnIndex: >= 0
+            }) {
                 return;
             }
 
@@ -1212,8 +1202,7 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
+                    FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1577,8 +1566,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1768,9 +1756,7 @@ namespace KindleMate2 {
                     var filesizeDelta = originFileSize - newFileSize;
 
                     if (countEmpty > 0 || countTrimmed > 0 || filesizeDelta > 0) {
-                        MessageBox.Show(
-                            Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
-                            Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(filesizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(filesizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
                         MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -1913,14 +1899,20 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            const string css =
-                "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
+            const string css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
-            if (ClippingsToMarkdown() && VocabsToMarkdown()) {
-                MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (!ClippingsToMarkdown() || !VocabsToMarkdown()) {
+                return;
             }
+
+            DialogResult result = MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes) {
+                return;
+            }
+
+            Process.Start("explorer.exe", Path.Combine(_programsDirectory, "Exports"));
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
