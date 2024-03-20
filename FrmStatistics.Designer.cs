@@ -220,6 +220,7 @@
             chartArea3.AxisX.MajorTickMark.Enabled = false;
             chartArea3.AxisX2.IsLabelAutoFit = false;
             chartArea3.AxisX2.LabelStyle.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Pixel);
+            chartArea3.AxisY.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea3.AxisY.IsLabelAutoFit = false;
             chartArea3.AxisY.LabelAutoFitMinFontSize = 5;
             chartArea3.AxisY.LabelStyle.Enabled = false;
@@ -240,12 +241,13 @@
             chartBooksHistory.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
             series3.BorderWidth = 0;
             series3.ChartArea = "ChartArea";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Renko;
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bubble;
+            series3.IsXValueIndexed = true;
             series3.Legend = "Legend";
             series3.Name = "Series";
             series3.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
             series3.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
-            series3.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            series3.YValuesPerPoint = 2;
             chartBooksHistory.Series.Add(series3);
             chartBooksHistory.Size = new Size(714, 136);
             chartBooksHistory.TabIndex = 4;
@@ -392,6 +394,7 @@
             chartArea6.AxisX2.IsLabelAutoFit = false;
             chartArea6.AxisX2.LabelStyle.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Pixel);
             chartArea6.AxisY.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.False;
+            chartArea6.AxisY.IntervalAutoMode = System.Windows.Forms.DataVisualization.Charting.IntervalAutoMode.VariableCount;
             chartArea6.AxisY.IsLabelAutoFit = false;
             chartArea6.AxisY.LabelAutoFitMinFontSize = 5;
             chartArea6.AxisY.LabelStyle.Enabled = false;
@@ -412,12 +415,13 @@
             chartVocabsHistory.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
             series6.BorderWidth = 0;
             series6.ChartArea = "ChartArea";
-            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Renko;
+            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bubble;
+            series6.IsXValueIndexed = true;
             series6.Legend = "Legend";
             series6.Name = "Series";
             series6.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
-            series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
-            series6.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
+            series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Date;
+            series6.YValuesPerPoint = 2;
             chartVocabsHistory.Series.Add(series6);
             chartVocabsHistory.Size = new Size(714, 136);
             chartVocabsHistory.TabIndex = 4;

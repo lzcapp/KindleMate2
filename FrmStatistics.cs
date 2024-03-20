@@ -22,15 +22,21 @@ namespace KindleMate2 {
             _vocabDataTable = _staticData.GetVocabDataTable();
             _staticData.GetLookupsDataTable();
 
-            var enumBooks = _clippingsDataTable.AsEnumerable().GroupBy(row => new {
-                Time = DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).ToString("yyyy-M-d")
-            }).Select(group => new {
-                group.Key.Time, Count = group.Count()
-            });
-
-            var listBooks = enumBooks.ToList().OrderBy(x => x.Time);
+            var enumBooks = _clippingsDataTable.AsEnumerable()
+                .GroupBy(row => new {
+                    DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).Year, DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).Month
+                })
+                .Select(group => new {
+                    group.Key.Year,
+                    group.Key.Month,
+                    Count = group.Count()
+                });
+            var listBooks = enumBooks
+                .OrderBy(x => x.Year)
+                .ThenBy(x => x.Month)
+                .ToList();
             foreach (var dataPoint in listBooks) {
-                chartBooksHistory.Series[0].Points.AddXY(dataPoint.Time, dataPoint.Count);
+                chartBooksHistory.Series[0].Points.AddXY(dataPoint.Year + "-" + dataPoint.Month, dataPoint.Count);
             }
 
             var enumBooksTime = _clippingsDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
@@ -51,15 +57,21 @@ namespace KindleMate2 {
                 chartBooksWeek.Series[0].Points.AddXY(DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday], dataPoint.ClippingCount);
             }
 
-            var enumVocabs = _vocabDataTable.AsEnumerable().GroupBy(row => new {
-                Time = DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).ToString("yyyy-M-d")
-            }).Select(group => new {
-                group.Key.Time, Count = group.Count()
-            });
-
-            var listVocabs = enumVocabs.ToList().OrderBy(x => x.Time);
+            var enumVocabs = _vocabDataTable.AsEnumerable()
+                .GroupBy(row => new { 
+                    DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).Year, DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).Month
+                })
+                .Select(group => new { 
+                    group.Key.Year, 
+                    group.Key.Month, 
+                    Count = group.Count()
+                });
+            var listVocabs = enumVocabs
+                .OrderBy(x => x.Year)
+                .ThenBy(x => x.Month)
+                .ToList();
             foreach (var dataPoint in listVocabs) {
-                chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Time, dataPoint.Count);
+                chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Year + "-" + dataPoint.Month, dataPoint.Count);
             }
 
             var enumVocabsTime = _vocabDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
