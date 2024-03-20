@@ -108,6 +108,8 @@ namespace KindleMate2 {
 
         private void BtnSave_Click(object sender, EventArgs e) {
             try {
+                btnSave.Visible = false;
+
                 var bitmap = new Bitmap(Width, Height);
                 DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
                 var unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + ".png";
@@ -123,6 +125,8 @@ namespace KindleMate2 {
                 MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } catch (Exception) {
                 MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } finally {
+                btnSave.Visible = true;
             }
         }
 
