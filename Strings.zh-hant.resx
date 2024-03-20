@@ -350,4 +350,13 @@
 	<data name="Analyzed" xml:space="preserve">
 		<value>解析：</value>
 	</data>
+  <data name="Statistics_Screenshot_Successful" xml:space="preserve">
+    <value>統計截圖成功</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Statistics_Screenshot_Failed" xml:space="preserve">
+    <value>統計截圖失敗</value>
+  </data>
 </root>

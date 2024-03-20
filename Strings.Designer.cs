@@ -511,6 +511,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 失败 的本地化字符串。
+        /// </summary>
+        internal static string Failed {
+            get {
+                return ResourceManager.GetString("Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件 的本地化字符串。
         /// </summary>
         internal static string File {
@@ -894,6 +903,24 @@ namespace KindleMate2 {
         internal static string Statistics {
             get {
                 return ResourceManager.GetString("Statistics", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似  的本地化字符串。
+        /// </summary>
+        internal static string Statistics_Screenshot_Failed {
+            get {
+                return ResourceManager.GetString("Statistics_Screenshot_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 统计截图成功 的本地化字符串。
+        /// </summary>
+        internal static string Statistics_Screenshot_Successful {
+            get {
+                return ResourceManager.GetString("Statistics_Screenshot_Successful", resourceCulture);
             }
         }
         

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Drawing.Imaging;
 using System.Globalization;
 
 namespace KindleMate2 {
@@ -23,20 +24,25 @@ namespace KindleMate2 {
             _staticData.GetLookupsDataTable();
 
             var enumBooks = _clippingsDataTable.AsEnumerable()
-                .GroupBy(row => new {
-                    DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).Year, DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).Month
+                .GroupBy(row => {
+                    DateTime date = DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty);
+                    return new {
+                        date.Year, date.Month, date.Day
+                    };
                 })
                 .Select(group => new {
                     group.Key.Year,
                     group.Key.Month,
+                    group.Key.Day,
                     Count = group.Count()
                 });
             var listBooks = enumBooks
                 .OrderBy(x => x.Year)
                 .ThenBy(x => x.Month)
+                .ThenBy(x => x.Day)
                 .ToList();
             foreach (var dataPoint in listBooks) {
-                chartBooksHistory.Series[0].Points.AddXY(dataPoint.Year + "-" + dataPoint.Month, dataPoint.Count);
+                chartBooksHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
             }
 
             var enumBooksTime = _clippingsDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
@@ -58,20 +64,25 @@ namespace KindleMate2 {
             }
 
             var enumVocabs = _vocabDataTable.AsEnumerable()
-                .GroupBy(row => new { 
-                    DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).Year, DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).Month
+                .GroupBy(row => {
+                    DateTime date = DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty);
+                    return new {
+                        date.Year, date.Month, date.Day
+                    };
                 })
                 .Select(group => new { 
                     group.Key.Year, 
                     group.Key.Month, 
+                    group.Key.Day, 
                     Count = group.Count()
                 });
             var listVocabs = enumVocabs
                 .OrderBy(x => x.Year)
                 .ThenBy(x => x.Month)
+                .ThenBy(x => x.Day)
                 .ToList();
             foreach (var dataPoint in listVocabs) {
-                chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Year + "-" + dataPoint.Month, dataPoint.Count);
+                chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
             }
 
             var enumVocabsTime = _vocabDataTable.AsEnumerable().GroupBy(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty).TimeOfDay.Hours).Select(g => new {
@@ -96,17 +107,23 @@ namespace KindleMate2 {
         }
 
         private void BtnSave_Click(object sender, EventArgs e) {
-            var bitmap = new Bitmap(Width, Height);
-            DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
-            var unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + ".png";
-            var filePath = Path.Combine(Environment.CurrentDirectory, "Statistics", unixTimestamp);
-            var directoryPath = Path.Combine(Environment.CurrentDirectory, "Statistics");
-            if (!Directory.Exists(directoryPath)) {
-                Directory.CreateDirectory(directoryPath);
-            }
+            try {
+                var bitmap = new Bitmap(Width, Height);
+                DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
+                var unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + ".png";
+                var filePath = Path.Combine(Environment.CurrentDirectory, "Statistics", unixTimestamp);
+                var directoryPath = Path.Combine(Environment.CurrentDirectory, "Statistics");
+                if (!Directory.Exists(directoryPath)) {
+                    Directory.CreateDirectory(directoryPath);
+                }
 
-            bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
-            bitmap.Dispose();
+                bitmap.Save(filePath, ImageFormat.Png);
+                bitmap.Dispose();
+
+                MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } catch (Exception) {
+                MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void BtnSave_MouseEnter(object sender, EventArgs e) {
