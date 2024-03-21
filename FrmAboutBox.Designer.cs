@@ -51,7 +51,7 @@
             tableLayoutPanel.AutoSize = true;
             tableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tableLayoutPanel.ColumnCount = 3;
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 204F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75F));
             tableLayoutPanel.Controls.Add(lblPath, 2, 4);
@@ -71,14 +71,14 @@
             tableLayoutPanel.Name = "tableLayoutPanel";
             tableLayoutPanel.Padding = new Padding(19, 18, 19, 18);
             tableLayoutPanel.RowCount = 7;
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9991989F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 16F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20.0031986F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 49F));
-            tableLayoutPanel.Size = new Size(943, 341);
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+            tableLayoutPanel.Size = new Size(574, 263);
             tableLayoutPanel.TabIndex = 0;
             // 
             // lblPath
@@ -86,32 +86,32 @@
             lblPath.AutoEllipsis = true;
             lblPath.AutoSize = true;
             lblPath.LinkBehavior = LinkBehavior.HoverUnderline;
-            lblPath.Location = new Point(401, 175);
+            lblPath.Location = new Point(253, 130);
             lblPath.MaximumSize = new Size(464, 0);
             lblPath.Name = "lblPath";
-            lblPath.Size = new Size(0, 28);
+            lblPath.Size = new Size(0, 20);
             lblPath.TabIndex = 26;
             lblPath.LinkClicked += LblPath_LinkClicked;
             // 
             // lblVersion
             // 
             lblVersion.AutoSize = true;
-            lblVersion.Location = new Point(401, 65);
+            lblVersion.Location = new Point(253, 50);
             lblVersion.Margin = new Padding(3, 0, 0, 0);
             lblVersion.MaximumSize = new Size(0, 37);
             lblVersion.Name = "lblVersion";
-            lblVersion.Size = new Size(0, 28);
+            lblVersion.Size = new Size(0, 20);
             lblVersion.TabIndex = 0;
             lblVersion.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblVersionText
             // 
             lblVersionText.AutoSize = true;
-            lblVersionText.Location = new Point(273, 65);
-            lblVersionText.Margin = new Padding(50, 0, 6, 0);
+            lblVersionText.Location = new Point(169, 50);
+            lblVersionText.Margin = new Padding(20, 0, 6, 0);
             lblVersionText.MaximumSize = new Size(0, 37);
             lblVersionText.Name = "lblVersionText";
-            lblVersionText.Size = new Size(54, 28);
+            lblVersionText.Size = new Size(39, 20);
             lblVersionText.TabIndex = 1;
             lblVersionText.Text = "版本";
             lblVersionText.TextAlign = ContentAlignment.MiddleLeft;
@@ -119,11 +119,11 @@
             // lblCopyrightText
             // 
             lblCopyrightText.AutoSize = true;
-            lblCopyrightText.Location = new Point(273, 112);
-            lblCopyrightText.Margin = new Padding(50, 0, 6, 0);
+            lblCopyrightText.Location = new Point(169, 82);
+            lblCopyrightText.Margin = new Padding(20, 0, 6, 0);
             lblCopyrightText.MaximumSize = new Size(0, 37);
             lblCopyrightText.Name = "lblCopyrightText";
-            lblCopyrightText.Size = new Size(54, 28);
+            lblCopyrightText.Size = new Size(39, 20);
             lblCopyrightText.TabIndex = 29;
             lblCopyrightText.Text = "版权";
             lblCopyrightText.TextAlign = ContentAlignment.MiddleLeft;
@@ -131,31 +131,31 @@
             // lblCopyright
             // 
             lblCopyright.AutoSize = true;
-            lblCopyright.Location = new Point(401, 112);
+            lblCopyright.Location = new Point(253, 82);
             lblCopyright.Margin = new Padding(3, 0, 0, 0);
             lblCopyright.MaximumSize = new Size(0, 37);
             lblCopyright.Name = "lblCopyright";
-            lblCopyright.Size = new Size(0, 28);
+            lblCopyright.Size = new Size(0, 20);
             lblCopyright.TabIndex = 21;
             lblCopyright.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblPathText
             // 
             lblPathText.AutoSize = true;
-            lblPathText.Location = new Point(273, 175);
-            lblPathText.Margin = new Padding(50, 0, 6, 0);
+            lblPathText.Location = new Point(169, 130);
+            lblPathText.Margin = new Padding(20, 0, 6, 0);
             lblPathText.Name = "lblPathText";
-            lblPathText.Size = new Size(96, 28);
+            lblPathText.Size = new Size(69, 20);
             lblPathText.TabIndex = 25;
             lblPathText.Text = "程序路径";
             // 
             // lblDatabaseText
             // 
             lblDatabaseText.AutoSize = true;
-            lblDatabaseText.Location = new Point(273, 223);
-            lblDatabaseText.Margin = new Padding(50, 0, 6, 0);
+            lblDatabaseText.Location = new Point(169, 162);
+            lblDatabaseText.Margin = new Padding(20, 0, 6, 0);
             lblDatabaseText.Name = "lblDatabaseText";
-            lblDatabaseText.Size = new Size(75, 28);
+            lblDatabaseText.Size = new Size(54, 20);
             lblDatabaseText.TabIndex = 26;
             lblDatabaseText.Text = "数据库";
             // 
@@ -164,10 +164,10 @@
             okButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             okButton.DialogResult = DialogResult.Cancel;
             okButton.Dock = DockStyle.Right;
-            okButton.Location = new Point(787, 276);
-            okButton.Margin = new Padding(6);
+            okButton.Location = new Point(444, 204);
+            okButton.Margin = new Padding(15, 10, 15, 10);
             okButton.Name = "okButton";
-            okButton.Size = new Size(131, 41);
+            okButton.Size = new Size(96, 31);
             okButton.TabIndex = 24;
             okButton.Text = Strings.Confirm_Button;
             // 
@@ -177,21 +177,21 @@
             flowLayoutPanel2.Controls.Add(lblProductName);
             flowLayoutPanel2.Controls.Add(lblGen);
             flowLayoutPanel2.Dock = DockStyle.Fill;
-            flowLayoutPanel2.Location = new Point(223, 18);
+            flowLayoutPanel2.Location = new Point(149, 18);
             flowLayoutPanel2.Margin = new Padding(0);
             flowLayoutPanel2.Name = "flowLayoutPanel2";
-            flowLayoutPanel2.Size = new Size(701, 47);
+            flowLayoutPanel2.Size = new Size(406, 32);
             flowLayoutPanel2.TabIndex = 31;
             // 
             // lblProductName
             // 
             lblProductName.AutoSize = true;
             lblProductName.Font = new Font("微软雅黑", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
-            lblProductName.Location = new Point(50, 0);
-            lblProductName.Margin = new Padding(50, 0, 0, 0);
+            lblProductName.Location = new Point(20, 0);
+            lblProductName.Margin = new Padding(20, 0, 0, 0);
             lblProductName.MaximumSize = new Size(0, 37);
             lblProductName.Name = "lblProductName";
-            lblProductName.Size = new Size(140, 28);
+            lblProductName.Size = new Size(99, 19);
             lblProductName.TabIndex = 19;
             lblProductName.Text = "Kindle Mate";
             lblProductName.TextAlign = ContentAlignment.MiddleLeft;
@@ -201,10 +201,10 @@
             lblGen.AutoSize = true;
             lblGen.Font = new Font("微软雅黑", 9F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblGen.ForeColor = Color.Red;
-            lblGen.Location = new Point(190, 0);
+            lblGen.Location = new Point(119, 0);
             lblGen.Margin = new Padding(0);
             lblGen.Name = "lblGen";
-            lblGen.Size = new Size(25, 28);
+            lblGen.Size = new Size(18, 19);
             lblGen.TabIndex = 20;
             lblGen.Text = "2";
             lblGen.TextAlign = ContentAlignment.MiddleLeft;
@@ -213,10 +213,10 @@
             // 
             flowLayoutPanel3.Controls.Add(lblDatabase);
             flowLayoutPanel3.Dock = DockStyle.Fill;
-            flowLayoutPanel3.Location = new Point(398, 223);
+            flowLayoutPanel3.Location = new Point(250, 162);
             flowLayoutPanel3.Margin = new Padding(0);
             flowLayoutPanel3.Name = "flowLayoutPanel3";
-            flowLayoutPanel3.Size = new Size(526, 47);
+            flowLayoutPanel3.Size = new Size(305, 32);
             flowLayoutPanel3.TabIndex = 32;
             // 
             // lblDatabase
@@ -224,7 +224,7 @@
             lblDatabase.AutoSize = true;
             lblDatabase.Location = new Point(3, 0);
             lblDatabase.Name = "lblDatabase";
-            lblDatabase.Size = new Size(0, 28);
+            lblDatabase.Size = new Size(0, 20);
             lblDatabase.TabIndex = 27;
             // 
             // pictureBox
@@ -233,8 +233,8 @@
             pictureBox.Image = Properties.Resources.bookmark;
             pictureBox.Location = new Point(22, 21);
             pictureBox.Name = "pictureBox";
-            tableLayoutPanel.SetRowSpan(pictureBox, 5);
-            pictureBox.Size = new Size(198, 199);
+            tableLayoutPanel.SetRowSpan(pictureBox, 4);
+            pictureBox.Size = new Size(124, 106);
             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox.TabIndex = 1;
             pictureBox.TabStop = false;
@@ -242,9 +242,8 @@
             // FrmAboutBox
             // 
             AcceptButton = okButton;
-            AutoScaleDimensions = new SizeF(13F, 28F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(943, 341);
+            AutoScaleMode = AutoScaleMode.Inherit;
+            ClientSize = new Size(574, 263);
             Controls.Add(tableLayoutPanel);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;

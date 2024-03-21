@@ -42,6 +42,10 @@
         }
 
         private void FrmBookRename_Load(object sender, EventArgs e) {
+            Text = Strings.Rename;
+            btnOK.Text = Strings.Save;
+            btnCancel.Text = Strings.Cancel;
+
             txtBook.Focus();
             btnOK.Enabled = false;
         }

@@ -15,6 +15,10 @@ namespace KindleMate2 {
         }
 
         private void FrmStatistic_Load(object sender, EventArgs e) {
+            Text = Strings.Statistics;
+            tabPageBooks.Text = Strings.Clippings;
+            tabPageVocabs.Text = Strings.Vocabulary_List;
+
             tabPageBooks.Text = Strings.Clippings;
             tabPageVocabs.Text = Strings.Vocabulary_List;
 
@@ -152,7 +156,6 @@ namespace KindleMate2 {
                     var bookTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
                     var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
                     lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma + authors;
-
                     break;
                 case 1:
                     var lookups = _vocabDataTable.Rows.Cast<DataRow>().Sum(row => Convert.ToInt32(row["frequency"])) + Strings.Space + Strings.X_Lookups;

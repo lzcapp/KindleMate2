@@ -1,359 +1,363 @@
-﻿<root>
-	<resheader name="resmimetype">
-		<value>text/microsoft-resx</value>
-	</resheader>
-	<resheader name="version">
-		<value>1.3</value>
-	</resheader>
-	<resheader name="reader">
-		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-	<resheader name="writer">
-		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-	<data name="Successful" xml:space="preserve">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Successful" xml:space="preserve">
 		<value>Successful</value>
 	</data>
-	<data name="Confirm" xml:space="preserve">
+  <data name="Confirm" xml:space="preserve">
 		<value>Confirm</value>
 	</data>
-	<data name="Prompt" xml:space="preserve">
+  <data name="Prompt" xml:space="preserve">
 		<value>Prompt</value>
 	</data>
-	<data name="Error" xml:space="preserve">
+  <data name="Error" xml:space="preserve">
 		<value>Error</value>
 	</data>
-	<data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
+  <data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
 		<value>Do you need to import Kindle Mate 2's database file?</value>
 	</data>
-	<data name="Kindle_Mate_2_Database_File" xml:space="preserve">
+  <data name="Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>Kindle Mate 2's Database File</value>
 	</data>
-	<data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
+  <data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
 		<value>Import Kindle Mate 2's Database File</value>
 	</data>
-	<data name="Time" xml:space="preserve">
+  <data name="Time" xml:space="preserve">
 		<value>Time</value>
 	</data>
-	<data name="Author" xml:space="preserve">
+  <data name="Author" xml:space="preserve">
 		<value>Author(s)</value>
 	</data>
-	<data name="Total_Clippings" xml:space="preserve">
+  <data name="Total_Clippings" xml:space="preserve">
 		<value>Totally</value>
 	</data>
-	<data name="Page" xml:space="preserve">
+  <data name="Page" xml:space="preserve">
 		<value>Page</value>
 	</data>
-	<data name="Totally" xml:space="preserve">
+  <data name="Totally" xml:space="preserve">
 		<value>Totally</value>
 	</data>
-	<data name="X_Books" xml:space="preserve">
+  <data name="X_Books" xml:space="preserve">
 		<value>book(s)</value>
 	</data>
-	<data name="Symbol_Comma" xml:space="preserve">
+  <data name="Symbol_Comma" xml:space="preserve">
 		<value>, </value>
 	</data>
-	<data name="Delete_Failed" xml:space="preserve">
+  <data name="Delete_Failed" xml:space="preserve">
 		<value>Deletion failed</value>
 	</data>
-	<data name="Space" xml:space="preserve">
+  <data name="Space" xml:space="preserve">
 		<value> </value>
 	</data>
-	<data name="Book_Renamed_Failed" xml:space="preserve">
+  <data name="Book_Renamed_Failed" xml:space="preserve">
 		<value>Book Renamed Failed</value>
 	</data>
-	<data name="Totally_Vocabs" xml:space="preserve">
+  <data name="Totally_Vocabs" xml:space="preserve">
 		<value>Totally</value>
 	</data>
-	<data name="X_Lookups" xml:space="preserve">
+  <data name="X_Lookups" xml:space="preserve">
 		<value>lookup(s)</value>
 	</data>
-	<data name="Confirm_Clear_All_Data" xml:space="preserve">
+  <data name="Confirm_Clear_All_Data" xml:space="preserve">
 		<value>Are you sure you want to clear all data?</value>
 	</data>
-	<data name="Data_Cleared" xml:space="preserve">
+  <data name="Data_Cleared" xml:space="preserve">
 		<value>Data has been cleared</value>
 	</data>
-	<data name="Clear_Failed" xml:space="preserve">
+  <data name="Clear_Failed" xml:space="preserve">
 		<value>Clearing failed</value>
 	</data>
-	<data name="Right_Parenthesis" xml:space="preserve">
+  <data name="Right_Parenthesis" xml:space="preserve">
 		<value>) </value>
 	</data>
-	<data name="Left_Parenthesis" xml:space="preserve">
+  <data name="Left_Parenthesis" xml:space="preserve">
 		<value> (</value>
 	</data>
-	<data name="Books" xml:space="preserve">
+  <data name="Books" xml:space="preserve">
 		<value>Books</value>
 	</data>
-	<data name="Vocabulary" xml:space="preserve">
+  <data name="Vocabulary" xml:space="preserve">
 		<value>Vocabulary</value>
 	</data>
-	<data name="X_Vocabs" xml:space="preserve">
+  <data name="X_Vocabs" xml:space="preserve">
 		<value>vocabulary(s)</value>
 	</data>
-	<data name="Quried_X" xml:space="preserve">
+  <data name="Quried_X" xml:space="preserve">
 		<value>Quried:</value>
 	</data>
-	<data name="Deleted_X" xml:space="preserve">
+  <data name="Deleted_X" xml:space="preserve">
 		<value>Deleted:</value>
 	</data>
-	<data name="Stem" xml:space="preserve">
+  <data name="Stem" xml:space="preserve">
 		<value>Stem</value>
 	</data>
-	<data name="Kindle_Vocab_File" xml:space="preserve">
+  <data name="Kindle_Vocab_File" xml:space="preserve">
 		<value>Kindle's Vocabulary File</value>
 	</data>
-	<data name="Import_Kindle_Vocab_File" xml:space="preserve">
+  <data name="Import_Kindle_Vocab_File" xml:space="preserve">
 		<value>Import Kindle's Vocabulary File</value>
 	</data>
-	<data name="Books_Renamed" xml:space="preserve">
+  <data name="Books_Renamed" xml:space="preserve">
 		<value>Books renamed</value>
 	</data>
-	<data name="Books_Title_Not_Changed" xml:space="preserve">
+  <data name="Books_Title_Not_Changed" xml:space="preserve">
 		<value>Books title not changed</value>
 	</data>
-	<data name="Kindle_Device_Connected" xml:space="preserve">
+  <data name="Kindle_Device_Connected" xml:space="preserve">
 		<value>Kindle Connected</value>
 	</data>
-	<data name="Kindle_Clipping_File" xml:space="preserve">
+  <data name="Kindle_Clipping_File" xml:space="preserve">
 		<value>Kindle's Clippings File</value>
 	</data>
-	<data name="Import_Kindle_Clipping_File" xml:space="preserve">
+  <data name="Import_Kindle_Clipping_File" xml:space="preserve">
 		<value>Import Kindle's Clippings File</value>
 	</data>
-	<data name="Clippings_Revised" xml:space="preserve">
+  <data name="Clippings_Revised" xml:space="preserve">
 		<value>Clipping(s) revised</value>
 	</data>
-	<data name="Clippings_Revised_Failed" xml:space="preserve">
+  <data name="Clippings_Revised_Failed" xml:space="preserve">
 		<value>Failed to revise clipping(s)</value>
 	</data>
-	<data name="Frequency" xml:space="preserve">
+  <data name="Frequency" xml:space="preserve">
 		<value>Frequency</value>
 	</data>
-	<data name="Symbol_Colon" xml:space="preserve">
+  <data name="Symbol_Colon" xml:space="preserve">
 		<value>: </value>
 	</data>
-	<data name="Content" xml:space="preserve">
+  <data name="Content" xml:space="preserve">
 		<value>Content</value>
 	</data>
-	<data name="Confirm_Same_Title_Combine" xml:space="preserve">
+  <data name="Confirm_Same_Title_Combine" xml:space="preserve">
 		<value>A book with the same name already exists. Are you sure you want to merge it?</value>
 	</data>
-	<data name="No_Data_To_Backup" xml:space="preserve">
+  <data name="No_Data_To_Backup" xml:space="preserve">
 		<value>There is no data to backup</value>
 	</data>
-	<data name="Kindle_Mate_Database_File" xml:space="preserve">
+  <data name="Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Kindle Mate's Database File</value>
 	</data>
-	<data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
+  <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Import Kindle Mate's Database File</value>
 	</data>
-	<data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
+  <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
 		<value>Are you sure you want to delete the selected clipping(s)?</value>
 	</data>
-	<data name="Page_" xml:space="preserve">
+  <data name="Page_" xml:space="preserve">
 		<value>Page: </value>
 	</data>
-	<data name="X_Times" xml:space="preserve">
+  <data name="X_Times" xml:space="preserve">
 		<value>time(s)</value>
 	</data>
-	<data name="Select_All" xml:space="preserve">
+  <data name="Select_All" xml:space="preserve">
 		<value>Select All</value>
 	</data>
-	<data name="Confirm_Delete_Lookups" xml:space="preserve">
+  <data name="Confirm_Delete_Lookups" xml:space="preserve">
 		<value>Are you sure you want to delete the selected lookup(s)?</value>
 	</data>
-	<data name="Parsed_X" xml:space="preserve">
+  <data name="Parsed_X" xml:space="preserve">
 		<value>Parsed: </value>
 	</data>
-	<data name="Imported_X" xml:space="preserve">
+  <data name="Imported_X" xml:space="preserve">
 		<value>Imported: </value>
 	</data>
-	<data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
+  <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
 		<value>Are you sure you want to delete all clipping(s) in this book?</value>
 	</data>
-	<data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
+  <data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
 		<value>Are you sure you want to delete all lookup(s) of this vocabulary?</value>
 	</data>
-	<data name="Backup_Failed" xml:space="preserve">
+  <data name="Backup_Failed" xml:space="preserve">
 		<value>Failed to backup</value>
 	</data>
-	<data name="Kindle_Vocab_Not_Exist" xml:space="preserve">
+  <data name="Kindle_Vocab_Not_Exist" xml:space="preserve">
 		<value>Kindle's vocabulary file does not exist</value>
 	</data>
-	<data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
+  <data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
 		<value>You have connected a Kindle device. Do you want to import data from the Kindle?</value>
 	</data>
-	<data name="X_Clippings" xml:space="preserve">
+  <data name="X_Clippings" xml:space="preserve">
 		<value>clipping(s)</value>
 	</data>
-	<data name="Delete" xml:space="preserve">
+  <data name="Delete" xml:space="preserve">
 		<value>Delete</value>
 	</data>
-	<data name="Refresh" xml:space="preserve">
+  <data name="Refresh" xml:space="preserve">
 		<value>Refresh</value>
 	</data>
-	<data name="Copy" xml:space="preserve">
+  <data name="Copy" xml:space="preserve">
 		<value>Copy</value>
 	</data>
-	<data name="Vocabulary_List" xml:space="preserve">
+  <data name="Vocabulary_List" xml:space="preserve">
 		<value>Vocabulary List</value>
 	</data>
-	<data name="Clippings" xml:space="preserve">
+  <data name="Clippings" xml:space="preserve">
 		<value>Clipping(s)</value>
 	</data>
-	<data name="GitHub_Repo" xml:space="preserve">
+  <data name="GitHub_Repo" xml:space="preserve">
 		<value>GitHub Repo</value>
 	</data>
-	<data name="Import_Kindle_Clippings" xml:space="preserve">
+  <data name="Import_Kindle_Clippings" xml:space="preserve">
 		<value>Import Kindle's Clippings</value>
 	</data>
-	<data name="Files" xml:space="preserve">
-		<value>Files </value>
+  <data name="Files" xml:space="preserve">
+		<value>Files</value>
 	</data>
-	<data name="Restart" xml:space="preserve">
+  <data name="Restart" xml:space="preserve">
 		<value>Restart</value>
 	</data>
-	<data name="Import_Kindle_Vocabs" xml:space="preserve">
+  <data name="Import_Kindle_Vocabs" xml:space="preserve">
 		<value>Import Kindle's Vocabulary List</value>
 	</data>
-	<data name="Import_Kindle_Mate_Database" xml:space="preserve">
+  <data name="Import_Kindle_Mate_Database" xml:space="preserve">
 		<value>Import Kindle Mate's Database</value>
 	</data>
-	<data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
+  <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
 		<value>Import from Kindle</value>
 	</data>
-	<data name="Backup" xml:space="preserve">
+  <data name="Backup" xml:space="preserve">
 		<value>Backup</value>
 	</data>
-	<data name="Clear_Data" xml:space="preserve">
+  <data name="Clear_Data" xml:space="preserve">
 		<value>Clear Data</value>
 	</data>
-	<data name="Help" xml:space="preserve">
+  <data name="Help" xml:space="preserve">
 		<value>Help</value>
 	</data>
-	<data name="Exit" xml:space="preserve">
+  <data name="Exit" xml:space="preserve">
 		<value>Exit</value>
 	</data>
-	<data name="About" xml:space="preserve">
+  <data name="About" xml:space="preserve">
 		<value>About</value>
 	</data>
-	<data name="Rename" xml:space="preserve">
+  <data name="Rename" xml:space="preserve">
 		<value>Rename</value>
 	</data>
-	<data name="Language" xml:space="preserve">
+  <data name="Language" xml:space="preserve">
 		<value>Language</value>
 	</data>
-	<data name="Management" xml:space="preserve">
+  <data name="Management" xml:space="preserve">
 		<value>Management</value>
 	</data>
-	<data name="Book_Title" xml:space="preserve">
+  <data name="Book_Title" xml:space="preserve">
 		<value>Book Title</value>
 	</data>
-	<data name="Save" xml:space="preserve">
+  <data name="Save" xml:space="preserve">
 		<value>Save</value>
 	</data>
-	<data name="Cancel" xml:space="preserve">
+  <data name="Cancel" xml:space="preserve">
 		<value>Cancel</value>
 	</data>
-	<data name="Edit_Clippings" xml:space="preserve">
+  <data name="Edit_Clippings" xml:space="preserve">
 		<value>Edit Clippings</value>
 	</data>
-	<data name="Rename_Book" xml:space="preserve">
+  <data name="Rename_Book" xml:space="preserve">
 		<value>Rename Book</value>
 	</data>
-	<data name="Version" xml:space="preserve">
+  <data name="Version" xml:space="preserve">
 		<value>Version</value>
 	</data>
-	<data name="Copyright" xml:space="preserve">
+  <data name="Copyright" xml:space="preserve">
 		<value>Copyright</value>
 	</data>
-	<data name="Program_Path" xml:space="preserve">
+  <data name="Program_Path" xml:space="preserve">
 		<value>Program Path</value>
 	</data>
-	<data name="Database" xml:space="preserve">
+  <data name="Database" xml:space="preserve">
 		<value>Database</value>
 	</data>
-	<data name="Confirm_Button" xml:space="preserve">
+  <data name="Confirm_Button" xml:space="preserve">
 		<value>Confirm</value>
 	</data>
-	<data name="Clean_Database" xml:space="preserve">
+  <data name="Clean_Database" xml:space="preserve">
 		<value>Clean Database</value>
 	</data>
-	<data name="Database_Cleaned" xml:space="preserve">
+  <data name="Database_Cleaned" xml:space="preserve">
 		<value>Database has been cleaned</value>
 	</data>
-	<data name="Database_No_Need_Clean" xml:space="preserve">
+  <data name="Database_No_Need_Clean" xml:space="preserve">
 		<value>Database does not need to be cleaned</value>
 	</data>
-	<data name="Empty_Clippings_Data" xml:space="preserve">
+  <data name="Empty_Clippings_Data" xml:space="preserve">
 		<value>Clipping's data is empty</value>
 	</data>
-	<data name="Backup_Clippings_Failed" xml:space="preserve">
+  <data name="Backup_Clippings_Failed" xml:space="preserve">
 		<value>Failed to backup clipping's data</value>
 	</data>
-	<data name="Backup_Vocabs_Failed" xml:space="preserve">
+  <data name="Backup_Vocabs_Failed" xml:space="preserve">
 		<value>Failed to backup vocabulary list</value>
 	</data>
-	<data name="Backup_Successful_Open" xml:space="preserve">
+  <data name="Backup_Successful_Open" xml:space="preserve">
 		<value>Backup completed! Do you want to open the backup folder?</value>
 	</data>
-	<data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
+  <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Do you need to import Kindle Mate's database file?</value>
 	</data>
-	<data name="No_Data_To_Clear" xml:space="preserve">
+  <data name="No_Data_To_Clear" xml:space="preserve">
 		<value>Database is empty</value>
 	</data>
-	<data name="X_Rows" xml:space="preserve">
+  <data name="X_Rows" xml:space="preserve">
 		<value> </value>
 	</data>
-	<data name="Empty_Lookups_Data" xml:space="preserve">
+  <data name="Empty_Lookups_Data" xml:space="preserve">
 		<value>Vocabulary list is empty</value>
 	</data>
-	<data name="Confirm_Restore_Database" xml:space="preserve">
+  <data name="Confirm_Restore_Database" xml:space="preserve">
 		<value>A backup has been detected. Do you want to restore from the backup?</value>
 	</data>
-	<data name="Repo_URL_Copied" xml:space="preserve">
+  <data name="Repo_URL_Copied" xml:space="preserve">
 		<value>Repo URL copied to clipboard</value>
 	</data>
-	<data name="Cleaned" xml:space="preserve">
+  <data name="Cleaned" xml:space="preserve">
 		<value>Cleaned</value>
 	</data>
-	<data name="Empty_Content" xml:space="preserve">
+  <data name="Empty_Content" xml:space="preserve">
 		<value>empty content</value>
 	</data>
-	<data name="Trimmed" xml:space="preserve">
+  <data name="Trimmed" xml:space="preserve">
 		<value>Trimmed</value>
 	</data>
-	<data name="Export_Successful" xml:space="preserve">
+  <data name="Export_Successful" xml:space="preserve">
 		<value>Export Successful</value>
 	</data>
-	<data name="Export_To_Markdown" xml:space="preserve">
+  <data name="Export_To_Markdown" xml:space="preserve">
 		<value>Export as Markdown</value>
 	</data>
-	<data name="Statistics" xml:space="preserve">
+  <data name="Statistics" xml:space="preserve">
 		<value>Statistics</value>
 	</data>
-	<data name="X_Authors" xml:space="preserve">
+  <data name="X_Authors" xml:space="preserve">
 		<value>author(s)</value>
 	</data>
-	<data name="X_Days" xml:space="preserve">
+  <data name="X_Days" xml:space="preserve">
 		<value>day(s)</value>
 	</data>
-	<data name="In" xml:space="preserve">
+  <data name="In" xml:space="preserve">
 		<value>In</value>
 	</data>
-	<data name="Analyzed" xml:space="preserve">
+  <data name="Analyzed" xml:space="preserve">
 		<value>Parsed: </value>
 	</data>
-	<data name="Statistics_Screenshot_Successful" xml:space="preserve">
+  <data name="Statistics_Screenshot_Successful" xml:space="preserve">
 		<value>Statistics screenshot successful</value>
 	</data>
-	<data name="Failed" xml:space="preserve">
+  <data name="Failed" xml:space="preserve">
 		<value>Failed</value>
 	</data>
-	<data name="Statistics_Screenshot_Failed" xml:space="preserve">
+  <data name="Statistics_Screenshot_Failed" xml:space="preserve">
 		<value>Statistics screenshot failed</value>
 	</data>
+  <data name="File" xml:space="preserve">
+    <value>File</value>
+  </data>
 </root>

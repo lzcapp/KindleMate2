@@ -7,7 +7,6 @@
         }
 
         public string LblBook {
-            get => lblBook.Text.Trim();
             set => lblBook.Text = value.Trim();
         }
 
@@ -20,6 +19,10 @@
         }
 
         private void FrmEdit_Load(object sender, EventArgs e) {
+            Text = Strings.Edit_Clippings;
+            btnOK.Text = Strings.Save;
+            btnCancel.Text = Strings.Cancel;
+
             txtContent.Focus();
             btnOK.Enabled = false;
         }

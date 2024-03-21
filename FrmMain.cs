@@ -663,8 +663,6 @@ namespace KindleMate2 {
 
             MessageBox.Show(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            UpdateFrequency();
-
             RefreshData();
         }
 
@@ -738,8 +736,7 @@ namespace KindleMate2 {
                     var dashIndex = loctime[0].IndexOf('-');
                     if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
                         location = loctime[0][(dashIndex + 1)..].Trim();
-                        const string pagePattern = @"第\s+\d+\s+页";
-                        Match pageMatch = Regex.Match(location, pagePattern);
+                        Match pageMatch = PageNumberRegex().Match(location);
                         if (pageMatch.Success) {
                             _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
                         } else {
@@ -1919,5 +1916,8 @@ namespace KindleMate2 {
             using var dialog = new FrmStatistics();
             dialog.ShowDialog();
         }
+
+        [GeneratedRegex(@"第\s+\d+\s+页")]
+        private static partial Regex PageNumberRegex();
     }
 }

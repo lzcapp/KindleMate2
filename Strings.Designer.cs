@@ -907,7 +907,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似  的本地化字符串。
+        ///   查找类似 统计截图失败 的本地化字符串。
         /// </summary>
         internal static string Statistics_Screenshot_Failed {
             get {

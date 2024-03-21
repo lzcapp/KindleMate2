@@ -468,4 +468,7 @@
   <data name="Statistics_Screenshot_Failed" xml:space="preserve">
     <value>统计截图失败</value>
   </data>
+  <data name="File" xml:space="preserve">
+    <value>文件</value>
+  </data>
 </root>

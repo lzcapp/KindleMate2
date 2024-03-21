@@ -39,7 +39,7 @@
             // tableLayoutPanel
             // 
             tableLayoutPanel.ColumnCount = 1;
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle());
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel.Controls.Add(lblBook, 0, 0);
             tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 4);
             tableLayoutPanel.Controls.Add(label1, 0, 2);
@@ -54,8 +54,8 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 87F));
-            tableLayoutPanel.Size = new Size(780, 304);
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 51F));
+            tableLayoutPanel.Size = new Size(532, 213);
             tableLayoutPanel.TabIndex = 1;
             // 
             // lblBook
@@ -66,7 +66,7 @@
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0, 0, 0, 10);
             lblBook.Name = "lblBook";
-            lblBook.Size = new Size(780, 33);
+            lblBook.Size = new Size(532, 22);
             lblBook.TabIndex = 2;
             lblBook.Text = "书名：";
             lblBook.TextAlign = ContentAlignment.BottomLeft;
@@ -77,20 +77,20 @@
             flowLayoutPanel.Controls.Add(btnOK);
             flowLayoutPanel.Controls.Add(btnCancel);
             flowLayoutPanel.Dock = DockStyle.Right;
-            flowLayoutPanel.Location = new Point(420, 216);
+            flowLayoutPanel.Location = new Point(290, 160);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Padding = new Padding(0, 20, 0, 0);
-            flowLayoutPanel.Size = new Size(360, 88);
+            flowLayoutPanel.Padding = new Padding(0, 10, 0, 0);
+            flowLayoutPanel.Size = new Size(242, 53);
             flowLayoutPanel.TabIndex = 4;
             flowLayoutPanel.WrapContents = false;
             // 
             // btnOK
             // 
-            btnOK.Location = new Point(20, 20);
-            btnOK.Margin = new Padding(20, 0, 10, 0);
+            btnOK.Location = new Point(15, 10);
+            btnOK.Margin = new Padding(15, 0, 10, 0);
             btnOK.Name = "btnOK";
-            btnOK.Size = new Size(150, 47);
+            btnOK.Size = new Size(96, 31);
             btnOK.TabIndex = 0;
             btnOK.Text = Strings.Save;
             btnOK.UseVisualStyleBackColor = true;
@@ -98,10 +98,10 @@
             // 
             // btnCancel
             // 
-            btnCancel.Location = new Point(190, 20);
-            btnCancel.Margin = new Padding(10, 0, 20, 0);
+            btnCancel.Location = new Point(131, 10);
+            btnCancel.Margin = new Padding(10, 0, 15, 0);
             btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(150, 47);
+            btnCancel.Size = new Size(96, 31);
             btnCancel.TabIndex = 1;
             btnCancel.Text = Strings.Cancel;
             btnCancel.UseVisualStyleBackColor = true;
@@ -111,10 +111,10 @@
             // 
             label1.AutoSize = true;
             label1.Dock = DockStyle.Fill;
-            label1.Location = new Point(0, 108);
+            label1.Location = new Point(0, 80);
             label1.Margin = new Padding(0, 0, 0, 10);
             label1.Name = "label1";
-            label1.Size = new Size(780, 33);
+            label1.Size = new Size(532, 22);
             label1.TabIndex = 5;
             label1.Text = "作者：";
             label1.TextAlign = ContentAlignment.BottomLeft;
@@ -122,28 +122,28 @@
             // txtAuthor
             // 
             txtAuthor.Dock = DockStyle.Fill;
-            txtAuthor.Location = new Point(3, 154);
+            txtAuthor.Location = new Point(3, 115);
             txtAuthor.Name = "txtAuthor";
-            txtAuthor.Size = new Size(774, 27);
+            txtAuthor.Size = new Size(526, 27);
             txtAuthor.TabIndex = 6;
             txtAuthor.TextChanged += TxtAuthor_TextChanged;
             // 
             // txtBook
             // 
             txtBook.Dock = DockStyle.Fill;
-            txtBook.Location = new Point(3, 46);
+            txtBook.Location = new Point(3, 35);
             txtBook.Name = "txtBook";
-            txtBook.Size = new Size(774, 27);
+            txtBook.Size = new Size(526, 27);
             txtBook.TabIndex = 7;
             txtBook.TextChanged += TxtBook_TextChanged;
             // 
             // FrmBookRename
             // 
             AcceptButton = btnOK;
-            AutoScaleDimensions = new SizeF(9F, 20F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(120F, 120F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             CancelButton = btnCancel;
-            ClientSize = new Size(800, 324);
+            ClientSize = new Size(552, 233);
             Controls.Add(tableLayoutPanel);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
