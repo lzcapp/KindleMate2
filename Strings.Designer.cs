@@ -115,11 +115,11 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似 备份完成！需要打开备份文件夹吗？ 的本地化字符串。
+        ///   查找类似 备份完成！ 的本地化字符串。
         /// </summary>
-        internal static string Backup_Successful_Open {
+        internal static string Backup_Successful {
             get {
-                return ResourceManager.GetString("Backup_Successful_Open", resourceCulture);
+                return ResourceManager.GetString("Backup_Successful", resourceCulture);
             }
         }
         
@@ -493,7 +493,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似 导出成功 的本地化字符串。
+        ///   查找类似 导出成功！ 的本地化字符串。
         /// </summary>
         internal static string Export_Successful {
             get {
@@ -759,6 +759,15 @@ namespace KindleMate2 {
         internal static string No_Data_To_Clear {
             get {
                 return ResourceManager.GetString("No_Data_To_Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 需要打开备份文件夹吗？ 的本地化字符串。
+        /// </summary>
+        internal static string Open_Folder {
+            get {
+                return ResourceManager.GetString("Open_Folder", resourceCulture);
             }
         }
         

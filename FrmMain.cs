@@ -1508,7 +1508,7 @@ namespace KindleMate2 {
                 if (!BackupOriginClippings()) {
                     MessageBox.Show(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 } else {
-                    DialogResult result = MessageBox.Show(Strings.Backup_Successful_Open, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult result = MessageBox.Show(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
                     }
@@ -1807,13 +1807,15 @@ namespace KindleMate2 {
 
                     foreach (DataRow row in filteredBooks.Rows) {
                         var clippinglocation = row["clippingtypelocation"].ToString();
+                        var clippingdate = row["clippingdate"].ToString();
+                        var pagenumber = row["pagenumber"].ToString();
                         var content = row["content"].ToString();
 
-                        markdown.AppendLine("**\ud83d\udccd " + clippinglocation + "**");
+                        markdown.AppendLine("**\ud83d\udccd " + clippinglocation + Strings.Left_Parenthesis + Strings.Page_ + pagenumber + Strings.X_Page + Strings.Right_Parenthesis + " `" + clippingdate + "`**");
 
                         markdown.AppendLine();
 
-                        markdown.AppendLine(content);
+                        markdown.AppendLine("> " + content);
 
                         markdown.AppendLine();
                     }
@@ -1865,11 +1867,11 @@ namespace KindleMate2 {
                             continue;
                         }
 
-                        markdown.AppendLine("**\ud83d\udccd 《" + title + "》 @" + timestamp + "**");
+                        markdown.AppendLine("**\ud83d\udccd 《" + title + "》 `" + timestamp + "`**");
 
                         markdown.AppendLine();
 
-                        markdown.AppendLine(usage.Replace(word, "**" + word + "**"));
+                        markdown.AppendLine("> " + usage.Replace(word, " **`" + word + "`** "));
 
                         markdown.AppendLine();
                     }
@@ -1896,7 +1898,7 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            const string css = "* {\r\nfont-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif;\r\n}\r\n\r\nbody {\r\nfont-family: 'Arial', sans-serif;\r\nbackground-color: #f9f9f9;\r\ncolor: #333;\r\nline-height: 1.6;\r\nmargin: 20px;\r\nalign-items: center;\r\nwidth: 80vw;\r\nmargin-left: auto;\r\nmargin-right: auto;\r\n}\r\n\r\nh1 {\r\nfont-size: 30px;\r\ntext-align: center;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\nh2 {\r\nfont-size: 24px;\r\nmargin-top: 30px;\r\nmargin-bottom: 30px;\r\ncolor: #333;\r\n}\r\n\r\np {\r\nfont-size: 16px;\r\nmargin-bottom: 10px;\r\n}";
+            const string css = "@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap');\r\n\r\n* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", \"Noto Emoji\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin: 20px auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin: 20px auto;\r\n}\r\n\r\ncode {\r\n    background-color: antiquewhite;\r\n    border-radius: 10px;\r\n    padding: 2px 6px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
@@ -1904,7 +1906,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox.Show(Strings.Export_Successful, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show(Strings.Export_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) {
                 return;
             }

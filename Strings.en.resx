@@ -297,8 +297,8 @@
   <data name="Backup_Vocabs_Failed" xml:space="preserve">
 		<value>Failed to backup vocabulary list</value>
 	</data>
-  <data name="Backup_Successful_Open" xml:space="preserve">
-		<value>Backup completed! Do you want to open the backup folder?</value>
+  <data name="Backup_Successful" xml:space="preserve">
+		<value>Backup completed! </value>
 	</data>
   <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
 		<value>Do you need to import Kindle Mate's database file?</value>
@@ -328,7 +328,7 @@
 		<value>Trimmed</value>
 	</data>
   <data name="Export_Successful" xml:space="preserve">
-		<value>Export Successful</value>
+		<value>Export Successful! </value>
 	</data>
   <data name="Export_To_Markdown" xml:space="preserve">
 		<value>Export as Markdown</value>
@@ -359,5 +359,8 @@
 	</data>
   <data name="File" xml:space="preserve">
     <value>File</value>
+  </data>
+  <data name="Open_Folder" xml:space="preserve">
+    <value>Do you need to open the folder?</value>
   </data>
 </root>

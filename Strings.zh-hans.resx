@@ -138,8 +138,8 @@
   <data name="Backup_Failed" xml:space="preserve">
     <value>备份失败</value>
   </data>
-  <data name="Backup_Successful_Open" xml:space="preserve">
-    <value>备份完成！需要打开备份文件夹吗？</value>
+  <data name="Backup_Successful" xml:space="preserve">
+    <value>备份完成！</value>
   </data>
   <data name="Backup_Vocabs_Failed" xml:space="preserve">
     <value>生词本备份失败</value>
@@ -439,7 +439,7 @@
     <value>修剪</value>
   </data>
   <data name="Export_Successful" xml:space="preserve">
-    <value>导出成功</value>
+    <value>导出成功！</value>
   </data>
   <data name="Export_To_Markdown" xml:space="preserve">
     <value>导出为Markdown</value>
@@ -470,5 +470,8 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>文件</value>
+  </data>
+  <data name="Open_Folder" xml:space="preserve">
+    <value>需要打开备份文件夹吗？</value>
   </data>
 </root>
