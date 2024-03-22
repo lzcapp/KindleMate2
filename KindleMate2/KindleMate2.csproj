@@ -27,7 +27,6 @@
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
-		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
