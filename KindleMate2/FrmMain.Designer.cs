@@ -105,7 +105,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1124, 30);
+            menuStrip.Size = new Size(1124, 28);
             menuStrip.TabIndex = 1;
             // 
             // menuFile
@@ -115,7 +115,7 @@
             menuFile.Name = "menuFile";
             menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            menuFile.Size = new Size(71, 26);
+            menuFile.Size = new Size(71, 24);
             menuFile.Text = "文件(&F)";
             // 
             // menuRefresh
@@ -154,7 +154,7 @@
             // 
             menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuExportMd, menuClean, menuBackup, menuClear });
             menuManage.Name = "menuManage";
-            menuManage.Size = new Size(78, 26);
+            menuManage.Size = new Size(78, 24);
             menuManage.Text = "管理(&M)";
             // 
             // menuImportKindle
@@ -226,7 +226,7 @@
             // 
             menuHelp.DropDownItems.AddRange(new ToolStripItem[] { menuAbout, menuRepo });
             menuHelp.Name = "menuHelp";
-            menuHelp.Size = new Size(75, 26);
+            menuHelp.Size = new Size(75, 24);
             menuHelp.Text = "帮助(&H)";
             // 
             // menuAbout
@@ -259,7 +259,7 @@
             // 
             menuLang.Alignment = ToolStripItemAlignment.Right;
             menuLang.Name = "menuLang";
-            menuLang.Size = new Size(53, 26);
+            menuLang.Size = new Size(53, 24);
             menuLang.Text = Strings.Language;
             menuLang.Visible = false;
             menuLang.Click += MenuLang_Click;

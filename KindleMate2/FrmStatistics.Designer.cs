@@ -260,7 +260,7 @@
             tabPageVocabs.Margin = new Padding(2);
             tabPageVocabs.Name = "tabPageVocabs";
             tabPageVocabs.Padding = new Padding(2);
-            tabPageVocabs.Size = new Size(791, 394);
+            tabPageVocabs.Size = new Size(794, 393);
             tabPageVocabs.TabIndex = 1;
             // 
             // tableLayoutPanelVocabs
@@ -278,7 +278,7 @@
             tableLayoutPanelVocabs.RowCount = 2;
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelVocabs.Size = new Size(787, 390);
+            tableLayoutPanelVocabs.Size = new Size(790, 389);
             tableLayoutPanelVocabs.TabIndex = 1;
             // 
             // chartVocabsTime
@@ -310,7 +310,7 @@
             legend4.Enabled = false;
             legend4.Name = "Legend";
             chartVocabsTime.Legends.Add(legend4);
-            chartVocabsTime.Location = new Point(0, 156);
+            chartVocabsTime.Location = new Point(0, 155);
             chartVocabsTime.Margin = new Padding(0);
             chartVocabsTime.Name = "chartVocabsTime";
             chartVocabsTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -321,7 +321,7 @@
             series4.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series4.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsTime.Series.Add(series4);
-            chartVocabsTime.Size = new Size(550, 234);
+            chartVocabsTime.Size = new Size(553, 234);
             chartVocabsTime.TabIndex = 2;
             // 
             // chartVocabsWeek
@@ -359,7 +359,7 @@
             legend5.Enabled = false;
             legend5.Name = "Legend";
             chartVocabsWeek.Legends.Add(legend5);
-            chartVocabsWeek.Location = new Point(550, 156);
+            chartVocabsWeek.Location = new Point(553, 155);
             chartVocabsWeek.Margin = new Padding(0);
             chartVocabsWeek.Name = "chartVocabsWeek";
             chartVocabsWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -423,7 +423,7 @@
             series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Date;
             series6.YValuesPerPoint = 2;
             chartVocabsHistory.Series.Add(series6);
-            chartVocabsHistory.Size = new Size(787, 156);
+            chartVocabsHistory.Size = new Size(790, 155);
             chartVocabsHistory.TabIndex = 4;
             // 
             // toolStrip
@@ -434,7 +434,7 @@
             toolStrip.Items.AddRange(new ToolStripItem[] { btnSave, lblStatistics });
             toolStrip.Location = new Point(0, 0);
             toolStrip.Name = "toolStrip";
-            toolStrip.Size = new Size(802, 31);
+            toolStrip.Size = new Size(802, 27);
             toolStrip.TabIndex = 1;
             toolStrip.Text = "toolStrip1";
             // 
@@ -446,7 +446,7 @@
             btnSave.ImageTransparentColor = Color.Transparent;
             btnSave.Margin = new Padding(0, 1, 10, 2);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(29, 28);
+            btnSave.Size = new Size(29, 24);
             btnSave.Click += BtnSave_Click;
             btnSave.MouseEnter += BtnSave_MouseEnter;
             btnSave.MouseLeave += BtnSave_MouseLeave;
@@ -456,7 +456,7 @@
             lblStatistics.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblStatistics.Margin = new Padding(10, 1, 0, 2);
             lblStatistics.Name = "lblStatistics";
-            lblStatistics.Size = new Size(0, 28);
+            lblStatistics.Size = new Size(0, 24);
             // 
             // FrmStatistics
             // 

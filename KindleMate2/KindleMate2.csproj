@@ -46,6 +46,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="StaticData.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Content Include="bookmark.ico" />
 	</ItemGroup>
 
@@ -60,6 +64,11 @@
 		<PackageReference Include="Markdig" Version="0.36.2" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
 		<PackageReference Include="WinForms.DataVisualization" Version="1.9.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\DatabaseClassLibrary\DatabaseClassLibrary.csproj" />
+	  <ProjectReference Include="..\DatabaseClassLibrary\DatabaseClassLibrary.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

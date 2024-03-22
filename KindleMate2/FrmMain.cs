@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using DatabaseClassLibrary;
 using Markdig;
 
 namespace KindleMate2 {

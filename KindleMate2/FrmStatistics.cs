@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Drawing.Imaging;
 using System.Globalization;
+using DatabaseClassLibrary;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {
