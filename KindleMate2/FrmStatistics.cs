@@ -154,7 +154,7 @@ namespace KindleMate2 {
                     var clippings = _clippingsDataTable.Rows.Count + Strings.Space + Strings.X_Clippings;
                     var books = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct().Count() + Strings.Space + Strings.X_Books;
                     var authors = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("authorname")).Distinct().Count() + Strings.Space + Strings.X_Authors;
-                    var bookTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
+                    var bookTimes = _clippingsDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty));
                     var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
                     lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma + authors;
                     break;
