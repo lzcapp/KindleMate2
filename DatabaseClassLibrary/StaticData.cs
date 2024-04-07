@@ -100,17 +100,13 @@ namespace DatabaseClassLibrary {
         }
 
         /*
-                public int GetOriginClippingsCount() {
+        public int GetOriginClippingsCount() {
+            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            var count = Convert.ToInt32(commandCount.ExecuteScalar());
 
-
-                    const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
-                    using var commandCount = new SQLiteCommand(queryCount, _connection);
-                    var count = Convert.ToInt32(commandCount.ExecuteScalar());
-
-
-
-                    return count;
-                }
+            return count;
+        }
         */
 
         public DataTable GetOriginClippingsDataTable() {
@@ -357,43 +353,41 @@ namespace DatabaseClassLibrary {
         }
 
         /*
-                public bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
-                    if (id == string.Empty || word == string.Empty) {
-                        return false;
-                    }
+        public bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
+            if (id == string.Empty || word == string.Empty) {
+                return false;
+            }
+        
+            const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
+            using var command = new SQLiteCommand(queryInsert, _connection);
+            command.Parameters.Add("@id", DbType.String);
+            command.Parameters.Add("@word_key", DbType.String);
+            command.Parameters.Add("@word", DbType.String);
+            command.Parameters.Add("@stem", DbType.String);
+            command.Parameters.Add("@category", DbType.UInt64);
+            command.Parameters.Add("@translation", DbType.String);
+            command.Parameters.Add("@timestamp", DbType.String);
+            command.Parameters.Add("@frequency", DbType.Int64);
+            command.Parameters.Add("@sync", DbType.Int64);
+            command.Parameters.Add("@colorRGB", DbType.Int64);
+
+            command.Parameters["@id"].Value = id;
+            command.Parameters["@word_key"].Value = word_key;
+            command.Parameters["@word"].Value = word;
+            command.Parameters["@stem"].Value = stem;
+            command.Parameters["@category"].Value = category;
+            command.Parameters["@translation"].Value = translation;
+            command.Parameters["@timestamp"].Value = timestamp;
+            command.Parameters["@frequency"].Value = frequency;
+            command.Parameters["@sync"].Value = sync;
+            command.Parameters["@colorRGB"].Value = colorRGB;
+
+            var result = command.ExecuteNonQuery();
 
 
 
-                    const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
-                    using var command = new SQLiteCommand(queryInsert, _connection);
-                    command.Parameters.Add("@id", DbType.String);
-                    command.Parameters.Add("@word_key", DbType.String);
-                    command.Parameters.Add("@word", DbType.String);
-                    command.Parameters.Add("@stem", DbType.String);
-                    command.Parameters.Add("@category", DbType.UInt64);
-                    command.Parameters.Add("@translation", DbType.String);
-                    command.Parameters.Add("@timestamp", DbType.String);
-                    command.Parameters.Add("@frequency", DbType.Int64);
-                    command.Parameters.Add("@sync", DbType.Int64);
-                    command.Parameters.Add("@colorRGB", DbType.Int64);
-
-                    command.Parameters["@id"].Value = id;
-                    command.Parameters["@word_key"].Value = word_key;
-                    command.Parameters["@word"].Value = word;
-                    command.Parameters["@stem"].Value = stem;
-                    command.Parameters["@category"].Value = category;
-                    command.Parameters["@translation"].Value = translation;
-                    command.Parameters["@timestamp"].Value = timestamp;
-                    command.Parameters["@frequency"].Value = frequency;
-                    command.Parameters["@sync"].Value = sync;
-                    command.Parameters["@colorRGB"].Value = colorRGB;
-
-                    var result = command.ExecuteNonQuery();
-
-
-
-                    return result > 0;
-                }
+            return result > 0;
+        }
         */
 
         public int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
@@ -498,12 +492,26 @@ namespace DatabaseClassLibrary {
 
         public bool IsExistVocab(string word_key) {
             if (word_key == string.Empty) {
-                return true;
+                return false;
             }
 
             const string queryCount = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@word_key", word_key);
+
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
+
+            return result > 0;
+        }
+
+        public bool IsExistVocabById(string id) {
+            if (id == string.Empty) {
+                return false;
+            }
+
+            const string queryCount = "SELECT COUNT(1) FROM vocab WHERE id = @id";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@id", id);
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
 

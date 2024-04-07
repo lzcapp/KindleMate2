@@ -147,7 +147,11 @@ namespace KindleMate2 {
                 return wordResult;
             }
 
-            return string.IsNullOrWhiteSpace(wordResult) ? clippingsResult : string.Empty;
+            if (string.IsNullOrWhiteSpace(wordResult)) {
+                return clippingsResult;
+            }
+
+            return clippingsResult + "\n" + wordResult;
         }
 
         private string ImportKindleWords(string kindleWordsPath) {
@@ -211,7 +215,7 @@ namespace KindleMate2 {
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    if (!_staticData.IsExistVocab(word + timestamp)) {
+                    if (!_staticData.IsExistVocabById(word + timestamp)) {
                         wordsInsertedCount += _staticData.InsertVocab(word + timestamp, id, word, stem, category, formattedDateTime, 0);
                     }
                 }
@@ -251,7 +255,7 @@ namespace KindleMate2 {
 
             UpdateFrequency();
 
-            return "生词本：共解析 " + lookupsTable.Rows.Count + " 条记录，导入 " + lookupsInsertedCount + " 条记录，" + wordsInsertedCount + " 条词汇";
+            return Strings.Parsed_X + Strings.Space + lookupsTable.Rows.Count + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + lookupsInsertedCount + Strings.Space + Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private void UpdateFrequency() {
@@ -815,7 +819,7 @@ namespace KindleMate2 {
                 return string.Empty;
             }
 
-            return Strings.Analyzed + delimiterIndex.Count + Strings.Clippings + Strings.Symbol_Comma + Strings.Imported_X + insertedCount;
+            return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
