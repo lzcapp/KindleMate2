@@ -267,7 +267,7 @@
             // 
             // splitContainerMain
             // 
-            splitContainerMain.Dock = DockStyle.Fill;
+            splitContainerMain.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             splitContainerMain.Location = new Point(0, 30);
             splitContainerMain.Margin = new Padding(0);
             splitContainerMain.Name = "splitContainerMain";
@@ -281,7 +281,7 @@
             // 
             splitContainerMain.Panel2.Controls.Add(splitContainerDetail);
             splitContainerMain.Panel2MinSize = 100;
-            splitContainerMain.Size = new Size(1124, 635);
+            splitContainerMain.Size = new Size(1124, 605);
             splitContainerMain.SplitterDistance = 294;
             splitContainerMain.TabIndex = 2;
             // 
@@ -295,7 +295,7 @@
             tabControl.Multiline = true;
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(294, 635);
+            tabControl.Size = new Size(294, 605);
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -306,7 +306,7 @@
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
             tabPageBooks.Padding = new Padding(3);
-            tabPageBooks.Size = new Size(286, 602);
+            tabPageBooks.Size = new Size(286, 572);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
             tabPageBooks.UseVisualStyleBackColor = true;
@@ -327,7 +327,7 @@
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(280, 596);
+            treeViewBooks.Size = new Size(280, 566);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -401,8 +401,8 @@
             // 
             splitContainerDetail.Panel2.Controls.Add(tableLayoutPanel);
             splitContainerDetail.Panel2MinSize = 200;
-            splitContainerDetail.Size = new Size(826, 635);
-            splitContainerDetail.SplitterDistance = 323;
+            splitContainerDetail.Size = new Size(826, 605);
+            splitContainerDetail.SplitterDistance = 307;
             splitContainerDetail.TabIndex = 1;
             // 
             // dataGridView
@@ -427,7 +427,7 @@
             dataGridView.RowHeadersWidth = 82;
             dataGridView.RowTemplate.ReadOnly = true;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(826, 323);
+            dataGridView.Size = new Size(826, 307);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -453,7 +453,7 @@
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel.Size = new Size(826, 308);
+            tableLayoutPanel.Size = new Size(826, 294);
             tableLayoutPanel.TabIndex = 0;
             tableLayoutPanel.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
