@@ -97,6 +97,7 @@
             // 
             // menuStrip
             // 
+            menuStrip.AutoSize = false;
             menuStrip.BackColor = SystemColors.Window;
             menuStrip.BackgroundImageLayout = ImageLayout.None;
             menuStrip.Font = new Font("微软雅黑", 9F);
@@ -105,7 +106,7 @@
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new Size(1124, 28);
+            menuStrip.Size = new Size(1124, 30);
             menuStrip.TabIndex = 1;
             // 
             // menuFile
@@ -115,7 +116,7 @@
             menuFile.Name = "menuFile";
             menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
-            menuFile.Size = new Size(71, 24);
+            menuFile.Size = new Size(71, 26);
             menuFile.Text = "文件(&F)";
             // 
             // menuRefresh
@@ -154,7 +155,7 @@
             // 
             menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuExportMd, menuClean, menuBackup, menuClear });
             menuManage.Name = "menuManage";
-            menuManage.Size = new Size(78, 24);
+            menuManage.Size = new Size(78, 26);
             menuManage.Text = "管理(&M)";
             // 
             // menuImportKindle
@@ -226,7 +227,7 @@
             // 
             menuHelp.DropDownItems.AddRange(new ToolStripItem[] { menuAbout, menuRepo });
             menuHelp.Name = "menuHelp";
-            menuHelp.Size = new Size(75, 24);
+            menuHelp.Size = new Size(75, 26);
             menuHelp.Text = "帮助(&H)";
             // 
             // menuAbout
@@ -250,7 +251,7 @@
             menuKindle.Image = Properties.Resources.mobile_phone_with_arrow;
             menuKindle.Margin = new Padding(10, 0, 0, 0);
             menuKindle.Name = "menuKindle";
-            menuKindle.Size = new Size(180, 36);
+            menuKindle.Size = new Size(180, 26);
             menuKindle.Text = " Kindle设备已连接";
             menuKindle.Visible = false;
             menuKindle.Click += MenuKindle_Click;
@@ -259,7 +260,7 @@
             // 
             menuLang.Alignment = ToolStripItemAlignment.Right;
             menuLang.Name = "menuLang";
-            menuLang.Size = new Size(53, 24);
+            menuLang.Size = new Size(53, 26);
             menuLang.Text = Strings.Language;
             menuLang.Visible = false;
             menuLang.Click += MenuLang_Click;
@@ -267,7 +268,7 @@
             // splitContainerMain
             // 
             splitContainerMain.Dock = DockStyle.Fill;
-            splitContainerMain.Location = new Point(0, 28);
+            splitContainerMain.Location = new Point(0, 30);
             splitContainerMain.Margin = new Padding(0);
             splitContainerMain.Name = "splitContainerMain";
             // 
@@ -280,7 +281,7 @@
             // 
             splitContainerMain.Panel2.Controls.Add(splitContainerDetail);
             splitContainerMain.Panel2MinSize = 100;
-            splitContainerMain.Size = new Size(1124, 637);
+            splitContainerMain.Size = new Size(1124, 635);
             splitContainerMain.SplitterDistance = 294;
             splitContainerMain.TabIndex = 2;
             // 
@@ -294,7 +295,7 @@
             tabControl.Multiline = true;
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(294, 637);
+            tabControl.Size = new Size(294, 635);
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -305,7 +306,7 @@
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
             tabPageBooks.Padding = new Padding(3);
-            tabPageBooks.Size = new Size(286, 604);
+            tabPageBooks.Size = new Size(286, 602);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
             tabPageBooks.UseVisualStyleBackColor = true;
@@ -326,7 +327,7 @@
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(280, 598);
+            treeViewBooks.Size = new Size(280, 596);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -350,7 +351,7 @@
             tabPageWords.Margin = new Padding(0);
             tabPageWords.Name = "tabPageWords";
             tabPageWords.Padding = new Padding(3);
-            tabPageWords.Size = new Size(286, 604);
+            tabPageWords.Size = new Size(286, 602);
             tabPageWords.TabIndex = 1;
             tabPageWords.Text = Strings.Vocabulary_List;
             tabPageWords.UseVisualStyleBackColor = true;
@@ -369,7 +370,7 @@
             treeViewWords.ShowLines = false;
             treeViewWords.ShowPlusMinus = false;
             treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(280, 598);
+            treeViewWords.Size = new Size(280, 596);
             treeViewWords.TabIndex = 0;
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
@@ -400,8 +401,8 @@
             // 
             splitContainerDetail.Panel2.Controls.Add(tableLayoutPanel);
             splitContainerDetail.Panel2MinSize = 200;
-            splitContainerDetail.Size = new Size(826, 637);
-            splitContainerDetail.SplitterDistance = 325;
+            splitContainerDetail.Size = new Size(826, 635);
+            splitContainerDetail.SplitterDistance = 323;
             splitContainerDetail.TabIndex = 1;
             // 
             // dataGridView
@@ -426,7 +427,7 @@
             dataGridView.RowHeadersWidth = 82;
             dataGridView.RowTemplate.ReadOnly = true;
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView.Size = new Size(826, 325);
+            dataGridView.Size = new Size(826, 323);
             dataGridView.TabIndex = 0;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
@@ -596,13 +597,14 @@
             // 
             // statusStrip
             // 
+            statusStrip.AutoSize = false;
             statusStrip.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             statusStrip.ImageScalingSize = new Size(28, 28);
             statusStrip.Items.AddRange(new ToolStripItem[] { lblCount, lblBookCount, progressBar });
             statusStrip.LayoutStyle = ToolStripLayoutStyle.Flow;
-            statusStrip.Location = new Point(0, 637);
+            statusStrip.Location = new Point(0, 635);
             statusStrip.Name = "statusStrip";
-            statusStrip.Size = new Size(1124, 28);
+            statusStrip.Size = new Size(1124, 30);
             statusStrip.SizingGrip = false;
             statusStrip.TabIndex = 3;
             // 
@@ -679,7 +681,6 @@
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
