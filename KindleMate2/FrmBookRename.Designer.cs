@@ -124,7 +124,7 @@
             txtAuthor.Dock = DockStyle.Fill;
             txtAuthor.Location = new Point(3, 115);
             txtAuthor.Name = "txtAuthor";
-            txtAuthor.Size = new Size(526, 27);
+            txtAuthor.Size = new Size(526, 39);
             txtAuthor.TabIndex = 6;
             txtAuthor.TextChanged += TxtAuthor_TextChanged;
             // 
@@ -133,15 +133,16 @@
             txtBook.Dock = DockStyle.Fill;
             txtBook.Location = new Point(3, 35);
             txtBook.Name = "txtBook";
-            txtBook.Size = new Size(526, 27);
+            txtBook.Size = new Size(526, 39);
             txtBook.TabIndex = 7;
             txtBook.TextChanged += TxtBook_TextChanged;
             // 
             // FrmBookRename
             // 
             AcceptButton = btnOK;
-            AutoScaleDimensions = new SizeF(120F, 120F);
+            AutoScaleDimensions = new SizeF(192F, 192F);
             AutoScaleMode = AutoScaleMode.Dpi;
+            AutoSize = true;
             CancelButton = btnCancel;
             ClientSize = new Size(552, 233);
             Controls.Add(tableLayoutPanel);

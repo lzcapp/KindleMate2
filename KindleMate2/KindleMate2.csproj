@@ -27,6 +27,7 @@
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

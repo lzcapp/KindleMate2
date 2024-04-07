@@ -120,7 +120,9 @@
             // 
             // FrmEdit
             // 
-            AutoScaleMode = AutoScaleMode.Inherit;
+            AutoScaleDimensions = new SizeF(192F, 192F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoSize = true;
             ClientSize = new Size(552, 233);
             Controls.Add(tableLayoutPanel);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
