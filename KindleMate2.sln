@@ -10,7 +10,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KindleMate2", "KindleMate2\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseClassLibrary", "DatabaseClassLibrary\DatabaseClassLibrary.csproj", "{53469D6E-B846-4544-9840-4C8EA9009159}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KindleMate2_WPF", "KindleMate2_WPF\KindleMate2_WPF.csproj", "{B356C248-51DC-4E94-9BC8-654B6B248CBA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2_WPF", "KindleMate2_WPF\KindleMate2_WPF.csproj", "{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,10 +26,10 @@ Global
 		{53469D6E-B846-4544-9840-4C8EA9009159}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53469D6E-B846-4544-9840-4C8EA9009159}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53469D6E-B846-4544-9840-4C8EA9009159}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B356C248-51DC-4E94-9BC8-654B6B248CBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B356C248-51DC-4E94-9BC8-654B6B248CBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B356C248-51DC-4E94-9BC8-654B6B248CBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B356C248-51DC-4E94-9BC8-654B6B248CBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

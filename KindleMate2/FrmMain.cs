@@ -39,7 +39,6 @@ namespace KindleMate2 {
         private int _selectedIndex;
 
         public FrmMain() {
-
             InitializeComponent();
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {

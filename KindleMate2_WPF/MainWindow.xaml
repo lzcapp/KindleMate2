@@ -1,8 +1,119 @@
 ﻿<Window x:Class="KindleMate2_WPF.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:KindleMate2_WPF"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800"/>
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d"
+	Title="MainWindow" Height="450" Width="800"
+    Loaded="Window_Loaded">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Menu -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open" />
+                <MenuItem Header="_Save" />
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Cut" />
+                <MenuItem Header="_Copy" />
+                <MenuItem Header="_Paste" />
+            </MenuItem>
+        </Menu>
+
+        <!-- Grid with Splitter -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="3" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="LightGray">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Panel with TreeView and Buttons -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- TreeView -->
+                        <TreeView x:Name="TreeView" Grid.Row="0" />
+
+                        <!-- Group of Buttons at the bottom -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="BtnClippings" Content="Clippings" GroupName="Options" IsChecked="True" Margin="2,2,0,2" Click="RadioButton_Click" />
+                                <RadioButton x:Name="BtnVocabularies" Content="Vocabularies" GroupName="Options" Margin="10,2,0,2" Click="RadioButton_Click" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="2" Background="DarkGray" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" />
+
+            <Border Grid.Column="2" Background="LightGray">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Content in the upper row -->
+                    <Border Grid.Row="0" Background="LightBlue">
+                        <DataGrid x:Name="DataGrid" SelectionChanged="DataGrid_SelectionChanged" />
+                    </Border>
+
+                    <!-- GridSplitter to separate the rows -->
+                    <GridSplitter Grid.Row="1" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" Background="DarkGray" />
+
+                    <!-- Content in the lower row -->
+                    <Border Grid.Row="2">
+                        <Grid Background="White">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Content in the first row -->
+                            <Border Grid.Row="0" Background="LightBlue" Padding="5,2,0,2">
+                                <TextBlock x:Name="TextTitle" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Content in the second row -->
+                            <Border Grid.Row="1" Padding="5,2,0,2">
+                                <TextBlock x:Name="TextTime" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Content in the third row -->
+                            <Border Grid.Row="2">
+                                <RichTextBox x:Name="TextContent" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsReadOnly="True" BorderThickness="0,0,0,0" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock>Status: Ready</TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
