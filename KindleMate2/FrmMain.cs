@@ -1418,61 +1418,6 @@ namespace KindleMate2 {
             RefreshData();
         }
 
-        //private void MenuCombine_Click(object sender, EventArgs e) {
-        //ShowCombineDialog();
-        //}
-
-        //private void ShowCombineDialog() {
-        //var index = tabControl.SelectedIndex;
-        //switch (index) {
-        //case 0:
-        //var booksList = new List<string>();
-
-        //var set = new HashSet<string>();
-        //var list = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).OfType<string>().Where(set.Add).ToList();
-        //booksList.AddRange(list);
-
-        //var booksDialog = new FrmCombine {
-        //BookNames = booksList
-        //};
-
-        //if (booksDialog.ShowDialog() != DialogResult.OK) {
-        //return;
-        //}
-
-        //var bookname = booksDialog.SelectedName;
-
-        //if (string.IsNullOrWhiteSpace(bookname)) {
-        //return;
-        //}
-
-        //if (bookname == _selectedBook) {
-        //MessageBox.Show("不能合并到原书籍", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        //return;
-        //}
-
-        //var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-        //var authorName = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
-
-        //_staticData.UpdateLookups(_selectedBook, bookname, authorName);
-
-        //if (!_staticData.UpdateClippings(_selectedBook, bookname, authorName)) {
-        //MessageBox.Show("书籍合并失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //return;
-        //}
-
-        //MessageBox.Show("书籍合并成功", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-        //_selectedBook = bookname;
-
-        //break;
-        //case 1:
-        //break;
-        //}
-
-        //RefreshData();
-        //}
-
         private bool BackupOriginClippings() {
             DataTable dataTable = _staticData.GetOriginClippingsDataTable();
             dataTable.DefaultView.Sort = "key ASC";
