@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -68,7 +69,8 @@ namespace KindleMate2_WPF {
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             if (File.Exists(_filePath)) {
-                RefreshData();
+                BtnClippings.IsChecked = true;
+                RadioButton_Click(BtnClippings, null);
             } else {
             }
         }
@@ -105,6 +107,10 @@ namespace KindleMate2_WPF {
                                            .Distinct();
 
             TreeView.Items.Clear();
+            var rootNode = new TreeViewItem() {
+                Header = "Select All"
+            };
+            TreeView.Items.Add(rootNode);
             foreach (var bookName in bookNames) {
                 TreeViewItem bookNode = new() {
                     Header = bookName
@@ -152,49 +158,69 @@ namespace KindleMate2_WPF {
         private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             TextContent.Document.Blocks.Clear();
             var selectedRow = (DataRowView)DataGrid.SelectedItem;
-            var content = "";
             if (selectedRow is null) {
-                content = "";
-            } else {
-                if (IsClippingsTab()) {
-                    content = selectedRow["content"].ToString();
-                    TextContent.AppendText(content);
+                if (DataGrid.Items.Count > 0) {
+                    DataGrid.SelectedItem = DataGrid.Items[0];
+                    selectedRow = (DataRowView)DataGrid.SelectedItem;
                 } else {
-                    var word_key = selectedRow["word_key"].ToString();
-                    var word = selectedRow["word"].ToString();
-                    var usages = _lookupsDataTable.AsEnumerable()
-                                                  .Where(row => row.Field<string>("word_key") == word_key)
-                                                  .Select(row => row.Field<string>("usage"))
-                                                  .Distinct()
-                                                  .ToList();
-                    
-                    var flowDocument = new FlowDocument();
-                    foreach (Paragraph para in usages.Select(usage => new Paragraph(new Run(usage)))) {
-                        flowDocument.Blocks.Add(para);
-                    }
-
-                    TextContent.Document = flowDocument;
-
-                    var textRange = new TextRange(TextContent.Document.ContentStart, TextContent.Document.ContentEnd);
-                    var text = textRange.Text;
-
-                    var index = text.IndexOf(word, StringComparison.InvariantCulture);
-                    if (index == -1) {
-                        return;
-                    }
-                    TextPointer start = textRange.Start.GetPositionAtOffset(index);
-                    if (start == null) {
-                        return;
-                    }
-                    TextPointer end = start.GetPositionAtOffset(word.Length);
-                    var range = new TextRange(start, end);
-                    range.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Underline);
+                    return;
                 }
+            }
+            if (IsClippingsTab()) {
+                var content = selectedRow["content"].ToString();
+                TextContent.AppendText(content);
+            } else {
+                var word_key = selectedRow["word_key"].ToString();
+                var word = selectedRow["word"].ToString();
+                var usages = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key") == word_key).Select(row => row.Field<string>("usage")).Distinct().ToList();
+
+                var flowDocument = new FlowDocument();
+                foreach (Paragraph para in usages.Select(usage => new Paragraph(new Run(usage)))) {
+                    flowDocument.Blocks.Add(para);
+                }
+
+                TextContent.Document = flowDocument;
+
+                var textRange = new TextRange(TextContent.Document.ContentStart, TextContent.Document.ContentEnd);
+                var text = textRange.Text;
+
+                var index = text.IndexOf(word, StringComparison.InvariantCulture);
+                if (index == -1) {
+                    return;
+                }
+                TextPointer start = textRange.Start.GetPositionAtOffset(index);
+                if (start == null) {
+                    return;
+                }
+                TextPointer end = start.GetPositionAtOffset(word.Length);
+                var range = new TextRange(start, end);
+                range.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Underline);
             }
         }
 
         private bool IsClippingsTab() {
             return BtnClippings.IsChecked == true;
+        }
+
+        private void MenuExit_Click(object sender, RoutedEventArgs e) {
+            Environment.Exit(0);
+        }
+
+        private void MenuRestart_Click(object sender, RoutedEventArgs e) {
+            ProcessModule processModule = Process.GetCurrentProcess().MainModule;
+            if (processModule != null) {
+                var currentProcess = processModule.FileName;
+                Process.Start(currentProcess);
+            }
+            Environment.Exit(0);
+        }
+
+        private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) {
+            if (TreeView.SelectedItem is TreeViewItem selectedItem) {
+                var selectedNode = selectedItem.Header.ToString();
+                var selectedRows = _clippingsTable.AsEnumerable()
+                                                  .Where(row => row.Field<string>("bookname") == selectedNode);
+            }
         }
     }
 }

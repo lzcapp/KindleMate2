@@ -50,11 +50,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="StaticData.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Include="bookmark.ico" />
+		<None Include="Resources\empty.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -71,14 +68,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DatabaseClassLibrary\DatabaseClassLibrary.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Settings.settings</DependentUpon>
 		</Compile>
 		<Compile Update="Strings.Designer.cs">
 			<DesignTime>True</DesignTime>
@@ -195,6 +193,10 @@
 		<None Update="LICENSE">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="Properties\Settings.settings">
+		  <Generator>SettingsSingleFileGenerator</Generator>
+		  <LastGenOutput>Settings.Designer.cs</LastGenOutput>
 		</None>
 		<None Update="README.md">
 			<Pack>True</Pack>

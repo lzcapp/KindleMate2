@@ -120,8 +120,7 @@
             // 
             // FrmEdit
             // 
-            AutoScaleDimensions = new SizeF(192F, 192F);
-            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleMode = AutoScaleMode.Inherit;
             AutoSize = true;
             ClientSize = new Size(552, 233);
             Controls.Add(tableLayoutPanel);
