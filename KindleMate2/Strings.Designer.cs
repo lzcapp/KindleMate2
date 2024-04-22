@@ -430,7 +430,7 @@ namespace KindleMate2 {
         }
         
         /// <summary>
-        ///   查找类似 已删除  的本地化字符串。
+        ///   查找类似 已删除 的本地化字符串。
         /// </summary>
         internal static string Deleted_X {
             get {

@@ -51,6 +51,28 @@
 
 	<ItemGroup>
 		<Content Include="bookmark.ico" />
+		<None Include="Resources\wastebasket.png" />
+		<None Include="Resources\star.png" />
+		<None Include="Resources\plus.png" />
+		<None Include="Resources\page-facing-up.png" />
+		<None Include="Resources\open-book.png" />
+		<None Include="Resources\mobile-phone-with-arrow.png" />
+		<None Include="Resources\memo.png" />
+		<None Include="Resources\link.png" />
+		<None Include="Resources\keycap-number-sign.png" />
+		<None Include="Resources\input-latin-uppercase.png" />
+		<None Include="Resources\information.png" />
+		<None Include="Resources\floppy-disk.png" />
+		<None Include="Resources\eight-spoked-asterisk.png" />
+		<None Include="Resources\cross-mark-button.png" />
+		<None Include="Resources\counterclockwise-arrows-button.png" />
+		<None Include="Resources\clockwise-vertical-arrows.png" />
+		<None Include="Resources\check-mark.png" />
+		<None Include="Resources\carpentry-saw.png" />
+		<None Include="Resources\card-file-box.png" />
+		<None Include="Resources\broom.png" />
+		<None Include="Resources\bookmark-tabs.png" />
+		<None Include="Resources\bar-chart.png" />
 		<None Include="Resources\empty.png" />
 	</ItemGroup>
 

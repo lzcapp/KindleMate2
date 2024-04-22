@@ -260,7 +260,7 @@
             tabPageVocabs.Margin = new Padding(2);
             tabPageVocabs.Name = "tabPageVocabs";
             tabPageVocabs.Padding = new Padding(2);
-            tabPageVocabs.Size = new Size(794, 393);
+            tabPageVocabs.Size = new Size(674, 293);
             tabPageVocabs.TabIndex = 1;
             // 
             // tableLayoutPanelVocabs
@@ -278,7 +278,7 @@
             tableLayoutPanelVocabs.RowCount = 2;
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelVocabs.Size = new Size(790, 389);
+            tableLayoutPanelVocabs.Size = new Size(670, 289);
             tableLayoutPanelVocabs.TabIndex = 1;
             // 
             // chartVocabsTime
@@ -310,7 +310,7 @@
             legend4.Enabled = false;
             legend4.Name = "Legend";
             chartVocabsTime.Legends.Add(legend4);
-            chartVocabsTime.Location = new Point(0, 155);
+            chartVocabsTime.Location = new Point(0, 115);
             chartVocabsTime.Margin = new Padding(0);
             chartVocabsTime.Name = "chartVocabsTime";
             chartVocabsTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -321,7 +321,7 @@
             series4.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series4.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsTime.Series.Add(series4);
-            chartVocabsTime.Size = new Size(553, 234);
+            chartVocabsTime.Size = new Size(469, 174);
             chartVocabsTime.TabIndex = 2;
             // 
             // chartVocabsWeek
@@ -359,7 +359,7 @@
             legend5.Enabled = false;
             legend5.Name = "Legend";
             chartVocabsWeek.Legends.Add(legend5);
-            chartVocabsWeek.Location = new Point(553, 155);
+            chartVocabsWeek.Location = new Point(469, 115);
             chartVocabsWeek.Margin = new Padding(0);
             chartVocabsWeek.Name = "chartVocabsWeek";
             chartVocabsWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -373,7 +373,7 @@
             series5.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series5.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsWeek.Series.Add(series5);
-            chartVocabsWeek.Size = new Size(237, 234);
+            chartVocabsWeek.Size = new Size(201, 174);
             chartVocabsWeek.TabIndex = 3;
             // 
             // chartVocabsHistory
@@ -423,7 +423,7 @@
             series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Date;
             series6.YValuesPerPoint = 2;
             chartVocabsHistory.Series.Add(series6);
-            chartVocabsHistory.Size = new Size(790, 155);
+            chartVocabsHistory.Size = new Size(670, 115);
             chartVocabsHistory.TabIndex = 4;
             // 
             // toolStrip
@@ -461,7 +461,6 @@
             // FrmStatistics
             // 
             AutoScaleMode = AutoScaleMode.Inherit;
-            AutoSize = true;
             BackColor = SystemColors.Window;
             ClientSize = new Size(682, 353);
             Controls.Add(toolStrip);

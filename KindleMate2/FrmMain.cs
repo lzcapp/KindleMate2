@@ -328,7 +328,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -366,7 +367,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -1201,10 +1203,11 @@ namespace KindleMate2 {
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
-            const string repoUrl = "https://github.com/LZC-app/KindleMate2";
+            const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1513,7 +1516,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1871,5 +1875,13 @@ namespace KindleMate2 {
 
         [GeneratedRegex(@"第\s+\d+\s+页")]
         private static partial Regex PageNumberRegex();
+
+        private void MenuKindle_MouseEnter(object sender, EventArgs e) {
+            Cursor = Cursors.Hand;
+        }
+
+        private void MenuKindle_MouseLeave(object sender, EventArgs e) {
+            Cursor = Cursors.Default;
+        }
     }
 }

@@ -215,7 +215,7 @@
 		<value>条词汇</value>
 	</data>
   <data name="Deleted_X" xml:space="preserve">
-		<value>已删除 </value>
+		<value>已删除</value>
 	</data>
   <data name="X_Rows" xml:space="preserve">
 		<value>条</value>

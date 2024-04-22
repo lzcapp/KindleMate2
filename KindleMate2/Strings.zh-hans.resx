@@ -229,7 +229,7 @@
     <value>删除</value>
   </data>
   <data name="Deleted_X" xml:space="preserve">
-    <value>已删除 </value>
+    <value>已删除</value>
   </data>
   <data name="Delete_Failed" xml:space="preserve">
     <value>删除失败</value>

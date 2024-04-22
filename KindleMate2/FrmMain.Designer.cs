@@ -25,7 +25,7 @@
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -99,6 +99,7 @@
             // 
             // menuStrip
             // 
+            menuStrip.AutoSize = false;
             menuStrip.BackColor = SystemColors.Window;
             menuStrip.BackgroundImageLayout = ImageLayout.None;
             menuStrip.Font = new Font("微软雅黑", 9F);
@@ -254,9 +255,12 @@
             menuKindle.Image = Properties.Resources.mobile_phone_with_arrow;
             menuKindle.Margin = new Padding(10, 0, 0, 0);
             menuKindle.Name = "menuKindle";
-            menuKindle.Size = new Size(180, 36);
+            menuKindle.Padding = new Padding(0);
+            menuKindle.Size = new Size(170, 36);
             menuKindle.Text = " Kindle设备已连接";
             menuKindle.Click += MenuKindle_Click;
+            menuKindle.MouseEnter += MenuKindle_MouseEnter;
+            menuKindle.MouseLeave += MenuKindle_MouseLeave;
             // 
             // menuLang
             // 
@@ -269,6 +273,7 @@
             // 
             // toolStripMenuItem1
             // 
+            toolStripMenuItem1.Alignment = ToolStripItemAlignment.Right;
             toolStripMenuItem1.Enabled = false;
             toolStripMenuItem1.Image = Properties.Resources.empty;
             toolStripMenuItem1.Name = "toolStripMenuItem1";
@@ -302,10 +307,10 @@
             tabControl.Dock = DockStyle.Fill;
             tabControl.Location = new Point(0, 0);
             tabControl.Margin = new Padding(0);
-            tabControl.Multiline = true;
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
             tabControl.Size = new Size(286, 601);
+            tabControl.SizeMode = TabSizeMode.FillToRight;
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -422,14 +427,14 @@
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = SystemColors.Window;
-            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = SystemColors.Window;
+            dataGridViewCellStyle2.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridView.ColumnHeadersHeight = 27;
             dataGridView.Dock = DockStyle.Fill;
             dataGridView.EditMode = DataGridViewEditMode.EditProgrammatically;
@@ -538,7 +543,7 @@
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
-            lblContent.Size = new Size(796, 401);
+            lblContent.Size = new Size(796, 205);
             lblContent.TabIndex = 4;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
@@ -623,10 +628,10 @@
             statusStrip.GripMargin = new Padding(0);
             statusStrip.ImageScalingSize = new Size(28, 28);
             statusStrip.Items.AddRange(new ToolStripItem[] { lblCount, lblBookCount, progressBar });
-            statusStrip.Location = new Point(0, 640);
+            statusStrip.Location = new Point(0, 646);
             statusStrip.Name = "statusStrip";
             statusStrip.RenderMode = ToolStripRenderMode.Professional;
-            statusStrip.Size = new Size(1096, 46);
+            statusStrip.Size = new Size(1096, 40);
             statusStrip.SizingGrip = false;
             statusStrip.TabIndex = 3;
             // 
@@ -636,7 +641,7 @@
             lblCount.Image = Properties.Resources.keycap_number_sign;
             lblCount.Margin = new Padding(0);
             lblCount.Name = "lblCount";
-            lblCount.Size = new Size(28, 46);
+            lblCount.Size = new Size(28, 40);
             // 
             // lblBookCount
             // 
@@ -644,7 +649,7 @@
             lblBookCount.Image = Properties.Resources.input_latin_uppercase;
             lblBookCount.Margin = new Padding(20, 0, 0, 0);
             lblBookCount.Name = "lblBookCount";
-            lblBookCount.Size = new Size(28, 46);
+            lblBookCount.Size = new Size(28, 40);
             lblBookCount.Visible = false;
             // 
             // progressBar
@@ -654,7 +659,7 @@
             progressBar.Margin = new Padding(100, 5, 100, 5);
             progressBar.MarqueeAnimationSpeed = 50;
             progressBar.Name = "progressBar";
-            progressBar.Size = new Size(200, 36);
+            progressBar.Size = new Size(200, 30);
             progressBar.Style = ProgressBarStyle.Marquee;
             progressBar.TextDirection = ToolStripTextDirection.Vertical270;
             progressBar.Visible = false;
@@ -707,7 +712,6 @@
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
