@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using System.Data.SQLite;
 
-namespace DatabaseClassLibrary {
+namespace KindleMate2 {
     public class StaticData {
         private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;Version=3;");
 
@@ -296,13 +296,6 @@ namespace DatabaseClassLibrary {
             return result > 0;
         }
 
-        public void VacuumDatabase() {
-            const string queryVacuum = "VACUUM";
-            using var command = new SQLiteCommand(queryVacuum, _connection);
-
-            command.ExecuteNonQuery();
-        }
-
         public int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
             if (word_key == string.Empty || timestamp == string.Empty) {
                 return 0;
@@ -572,6 +565,44 @@ namespace DatabaseClassLibrary {
             var result = command.ExecuteNonQuery();
 
             return result > 0;
+        }
+
+        public string GetSettings(string name) {
+            if (name == string.Empty) {
+                return string.Empty;
+            }
+
+            var query = "DELETE FROM lookups ";
+            if (name != string.Empty) {
+                query += "WHERE word_key = @word_key";
+            }
+            using var command = new SQLiteCommand(query, _connection);
+            command.Parameters.AddWithValue("@setting_item", name);
+
+            using SQLiteDataReader? reader = command.ExecuteReader();
+            if (reader.Read()) {
+                return reader["setting_value"].ToString() ?? string.Empty;
+            }
+            return string.Empty;
+        }
+
+        public void SetSettings(string name, string value) {
+            if (string.IsNullOrEmpty(name)) {
+                return;
+            }
+
+            const string query = "INSERT OR REPLACE INTO lookups (name, value) VALUES (@name, @value)";
+            using var command = new SQLiteCommand(query, _connection);
+            command.Parameters.AddWithValue("@name", name);
+            command.Parameters.AddWithValue("@value", value);
+
+            command.ExecuteNonQuery();
+        }
+
+
+        public void VacuumDatabase() {
+            using var command = new SQLiteCommand("VACUUM;", _connection);
+            command.ExecuteNonQuery();
         }
 
         public bool EmptyTables() {
