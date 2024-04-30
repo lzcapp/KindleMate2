@@ -3,7 +3,9 @@ using System.Data.SQLite;
 
 namespace KindleMate2 {
     public class StaticData {
-        private readonly SQLiteConnection _connection = new("Data Source=KM2.dat;Version=3;");
+        private const string ConnectionString = "Data Source=KM2.dat;Version=3;";
+
+        private readonly SQLiteConnection _connection = new(ConnectionString);
 
         private SQLiteTransaction? _trans;
 
@@ -572,16 +574,16 @@ namespace KindleMate2 {
                 return string.Empty;
             }
 
-            var query = "DELETE FROM lookups ";
+            var query = "SELECT * FROM settings ";
             if (name != string.Empty) {
-                query += "WHERE word_key = @word_key";
+                query += "WHERE name = @name";
             }
             using var command = new SQLiteCommand(query, _connection);
-            command.Parameters.AddWithValue("@setting_item", name);
+            command.Parameters.AddWithValue("@name", name);
 
             using SQLiteDataReader? reader = command.ExecuteReader();
             if (reader.Read()) {
-                return reader["setting_value"].ToString() ?? string.Empty;
+                return reader["value"].ToString() ?? string.Empty;
             }
             return string.Empty;
         }
@@ -591,7 +593,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            const string query = "INSERT OR REPLACE INTO lookups (name, value) VALUES (@name, @value)";
+            const string query = "INSERT OR REPLACE INTO settings (name, value) VALUES (@name, @value)";
             using var command = new SQLiteCommand(query, _connection);
             command.Parameters.AddWithValue("@name", name);
             command.Parameters.AddWithValue("@value", value);
@@ -599,10 +601,34 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
-
         public void VacuumDatabase() {
-            using var command = new SQLiteCommand("VACUUM;", _connection);
-            command.ExecuteNonQuery();
+            if (IsConnectionOpen()) {
+                CloseConnection();
+
+                using var vacuumConnection = new SQLiteConnection(ConnectionString);
+                vacuumConnection.Open();
+        
+                using (var command = new SQLiteCommand("VACUUM;", vacuumConnection)) {
+                    command.ExecuteNonQuery();
+                }
+        
+                vacuumConnection.Close();
+
+                OpenConnection();
+            } else {
+                using var vacuumConnection = new SQLiteConnection(ConnectionString);
+                vacuumConnection.Open();
+        
+                using (var command = new SQLiteCommand("VACUUM;", vacuumConnection)) {
+                    command.ExecuteNonQuery();
+                }
+        
+                vacuumConnection.Close();
+            }
+        }
+
+        private bool IsConnectionOpen() {
+            return _connection.State == ConnectionState.Open;
         }
 
         public bool EmptyTables() {

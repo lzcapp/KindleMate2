@@ -327,8 +327,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -366,8 +365,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -431,10 +429,10 @@ namespace KindleMate2 {
                         dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
 
                         dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["bookname"]!.Width = 150;
-                        dataGridView.Columns["authorname"]!.Width = 100;
-                        dataGridView.Columns["clippingdate"]!.Width = 175;
-                        dataGridView.Columns["pagenumber"]!.Width = 75;
+                        dataGridView.Columns["bookname"]!.Width = 100;
+                        dataGridView.Columns["authorname"]!.Width = 50;
+                        dataGridView.Columns["clippingdate"]!.Width = 135;
+                        dataGridView.Columns["pagenumber"]!.Width = 50;
 
                         dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
                     } else {
@@ -459,8 +457,8 @@ namespace KindleMate2 {
                         dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
 
                         dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["clippingdate"]!.Width = 175;
-                        dataGridView.Columns["pagenumber"]!.Width = 75;
+                        dataGridView.Columns["clippingdate"]!.Width = 135;
+                        dataGridView.Columns["pagenumber"]!.Width = 50;
 
                         dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
                     }
@@ -480,7 +478,7 @@ namespace KindleMate2 {
 
                     if (string.IsNullOrWhiteSpace(_selectedWord) || _selectedWord == Strings.Select_All) {
                         dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns["usage"]!.Visible = false;
+                        dataGridView.Columns["usage"]!.Visible = true;
                         dataGridView.Columns["title"]!.Visible = false;
                         dataGridView.Columns["authors"]!.Visible = false;
                         dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
@@ -488,14 +486,11 @@ namespace KindleMate2 {
                         dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
 
                         dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["word"]!.MinimumWidth = 150;
                         dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["stem"]!.MinimumWidth = 150;
                         dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["title"]!.Width = 200;
-                        dataGridView.Columns["authors"]!.Width = 150;
-                        dataGridView.Columns["timestamp"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["timestamp"]!.Width = 135;
+                        dataGridView.Columns["frequency"]!.Width = 50;
                     } else {
                         DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == _selectedWord).CopyToDataTable();
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
@@ -508,17 +503,20 @@ namespace KindleMate2 {
                         dataGridView.Columns["title"]!.HeaderText = Strings.Books;
                         dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
                         dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
+                        dataGridView.Columns["stem"]!.HeaderText = Strings.Stem;
+                        dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
 
+                        dataGridView.Columns["usage"]!.Visible = true;
+                        dataGridView.Columns["title"]!.Visible = true;
+                        dataGridView.Columns["authors"]!.Visible = true;
                         dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["word"]!.MinimumWidth = 150;
-                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCells;
-                        dataGridView.Columns["stem"]!.MinimumWidth = 150;
-                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCells;
+                        dataGridView.Columns["frequency"]!.Visible = false;
+                        
+                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["title"]!.Visible = false;
-                        dataGridView.Columns["authors"]!.Visible = false;
-                        dataGridView.Columns["timestamp"]!.Width = 175;
-                        dataGridView.Columns["frequency"]!.Width = 75;
+                        dataGridView.Columns["timestamp"]!.Width = 135;
+                        dataGridView.Columns["frequency"]!.Width = 50;
                     }
 
                     dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
@@ -981,11 +979,11 @@ namespace KindleMate2 {
             }
 
             var index = tabControl.SelectedIndex;
+            var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
 
             switch (index) {
                 case 0:
-                    var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
-                    if (columnName == Strings.Books) {
+                    if (columnName.Equals(Strings.Books)) {
                         _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
                         DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
@@ -1000,6 +998,24 @@ namespace KindleMate2 {
                         ShowContentEditDialog();
                     }
 
+                    break;
+                case 1:
+                    if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
+                        _selectedWord = dataGridView.Rows[e.RowIndex].Cells["word"].Value.ToString()!;
+                        DataTable filteredWord = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == _selectedWord).CopyToDataTable();
+                        lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
+                        lblBookCount.Image = Properties.Resources.open_book;
+                        lblBookCount.Visible = true;
+                        dataGridView.Columns["usage"]!.Visible = true;
+                        dataGridView.Columns["title"]!.Visible = true;
+                        dataGridView.Columns["authors"]!.Visible = true;
+                        dataGridView.Columns["frequency"]!.Visible = false;
+                        dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
+                        dataGridView.Columns["title"]!.HeaderText = Strings.Books;
+                        dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
+                        dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
+                        RefreshData();
+                    } 
                     break;
             }
         }
@@ -1205,8 +1221,7 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
+                    FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1515,8 +1530,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1548,14 +1562,13 @@ namespace KindleMate2 {
         }
 
         private void TabControl_SelectedIndexChanged(object sender, EventArgs e) {
-            RefreshData();
-
             var index = tabControl.SelectedIndex;
             menuRename.Visible = index switch {
                 0 => true,
                 1 => false,
                 _ => menuRename.Visible,
             };
+            RefreshData();
         }
 
         private void TreeViewWords_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -1703,10 +1716,10 @@ namespace KindleMate2 {
 
                     var newFileSize = fileInfo.Length;
 
-                    var filesizeDelta = originFileSize - newFileSize;
+                    var fileSizeDelta = originFileSize - newFileSize;
 
-                    if (countEmpty > 0 || countTrimmed > 0 || filesizeDelta > 0) {
-                        MessageBox.Show(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(filesizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (countEmpty > 0 || countTrimmed > 0 || fileSizeDelta > 0) {
+                        MessageBox.Show(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(fileSizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
                         MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
