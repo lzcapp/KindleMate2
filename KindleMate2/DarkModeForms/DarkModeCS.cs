@@ -931,6 +931,7 @@ namespace KindleMate2.DarkModeForms {
         }
 
         // Re-Colors the Icon Images to a Clear color:
+        /*
         protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e) {
             if (ColorizeIcons && e.Image != null) {
                 // Get the current icon
@@ -946,6 +947,7 @@ namespace KindleMate2.DarkModeForms {
                 }
             }
         }
+        */
 
         /// <summary>Colorea una imagen usando una Matrix de Color.</summary>
         /// <param name="bmp">Imagen a Colorear</param>

@@ -5,12 +5,16 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using BlueMystic;
 using KindleMate2.DarkModeForms;
 using Markdig;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
+        // ReSharper disable once NotAccessedField.Local
+        #pragma warning disable IDE0052 // 删除未读的私有成员
+        private readonly DarkModeCS _dm = null!;
+        #pragma warning restore IDE0052 // 删除未读的私有成员
+
         private DataTable _clippingsDataTable = new();
 
         private DataTable _originClippingsDataTable = new();
@@ -39,12 +43,12 @@ namespace KindleMate2 {
 
         private int _selectedIndex;
 
-        private readonly DarkModeCS _dm;
-
         public FrmMain() {
             InitializeComponent();
 
-            _dm = new DarkModeCS(this);
+            if (_staticData.IsDarkTheme()) {
+                _dm = new DarkModeCS(this);
+            }
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 BackupDatabase();
@@ -90,6 +94,8 @@ namespace KindleMate2 {
             menuClippingsRefresh.Text = Strings.Refresh;
             menuClippingsCopy.Text = Strings.Copy;
             menuClippingsDelete.Text = Strings.Delete;
+
+            dataGridView.ColumnHeadersHeight = 23;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {

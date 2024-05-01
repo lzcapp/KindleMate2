@@ -601,6 +601,10 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
+        public bool IsDarkTheme() {
+            return GetSettings("theme").Equals("dark", StringComparison.OrdinalIgnoreCase);
+        }
+
         public void VacuumDatabase() {
             if (IsConnectionOpen()) {
                 CloseConnection();
