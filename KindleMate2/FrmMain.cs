@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using BlueMystic;
+using KindleMate2.DarkModeForms;
 using Markdig;
 
 namespace KindleMate2 {
@@ -37,8 +39,12 @@ namespace KindleMate2 {
 
         private int _selectedIndex;
 
+        private readonly DarkModeCS _dm;
+
         public FrmMain() {
             InitializeComponent();
+
+            _dm = new DarkModeCS(this);
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 BackupDatabase();
