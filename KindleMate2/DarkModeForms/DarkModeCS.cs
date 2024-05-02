@@ -216,7 +216,7 @@ namespace KindleMate2.DarkModeForms {
         /// <param name="_Form">The Form to become Dark</param>
         public DarkModeCS(Form _Form) {
             OwnerForm = _Form;
-            IsDarkMode = GetWindowsColorMode() <= 0 ? true : false;
+            IsDarkMode = GetWindowsColorMode() <= 0;
             OScolors = GetSystemColors(OwnerForm);
 
             if (IsDarkMode && OScolors != null) {

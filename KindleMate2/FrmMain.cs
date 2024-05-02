@@ -11,9 +11,9 @@ using Markdig;
 namespace KindleMate2 {
     public partial class FrmMain : Form {
         // ReSharper disable once NotAccessedField.Local
-        #pragma warning disable IDE0052 // 删除未读的私有成员
+#pragma warning disable IDE0052 // 删除未读的私有成员
         private readonly DarkModeCS _dm = null!;
-        #pragma warning restore IDE0052 // 删除未读的私有成员
+#pragma warning restore IDE0052 // 删除未读的私有成员
 
         private DataTable _clippingsDataTable = new();
 
@@ -48,6 +48,11 @@ namespace KindleMate2 {
 
             if (_staticData.IsDarkTheme()) {
                 _dm = new DarkModeCS(this);
+                menuTheme.Image = Properties.Resources.sun;
+                menuTheme.ToolTipText = "切换到亮色模式";
+            } else {
+                menuTheme.Image = Properties.Resources.new_moon;
+                menuTheme.ToolTipText = "切换到暗色模式";
             }
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
@@ -339,7 +344,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -377,7 +383,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -523,7 +530,7 @@ namespace KindleMate2 {
                         dataGridView.Columns["authors"]!.Visible = true;
                         dataGridView.Columns["word_key"]!.Visible = false;
                         dataGridView.Columns["frequency"]!.Visible = false;
-                        
+
                         dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
@@ -1027,7 +1034,7 @@ namespace KindleMate2 {
                         dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
                         dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
                         RefreshData();
-                    } 
+                    }
                     break;
             }
         }
@@ -1233,7 +1240,8 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1542,7 +1550,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -1905,6 +1914,23 @@ namespace KindleMate2 {
         }
 
         private void MenuKindle_MouseLeave(object sender, EventArgs e) {
+            Cursor = Cursors.Default;
+        }
+
+        private void MenuTheme_Click(object sender, EventArgs e) {
+            if (_staticData.IsDarkTheme()) {
+                _staticData.SetSettings("theme", "light");
+            } else {
+                _staticData.SetSettings("theme", "dark");
+            }
+            Restart();
+        }
+
+        private void MenuTheme_MouseEnter(object sender, EventArgs e) {
+            Cursor = Cursors.Hand;
+        }
+
+        private void MenuTheme_MouseLeave(object sender, EventArgs e) {
             Cursor = Cursors.Default;
         }
     }
