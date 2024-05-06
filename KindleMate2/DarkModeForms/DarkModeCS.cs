@@ -1,6 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
-using BlueMystic;
+using Microsoft.Win32;
 
 //using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -135,7 +135,7 @@ namespace KindleMate2.DarkModeForms {
             /// <summary>
             /// The maximum recognized DWMWINDOWATTRIBUTE value, used for validation purposes.
             /// </summary>
-            DWMWA_LAST,
+            DWMWA_LAST
         }
 
         [Flags]
@@ -147,7 +147,8 @@ namespace KindleMate2.DarkModeForms {
         }
 
 
-        [Serializable, StructLayout(LayoutKind.Sequential)]
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
         public struct RECT {
             public int Left;
             public int Top;
@@ -162,7 +163,7 @@ namespace KindleMate2.DarkModeForms {
         public const int EM_SETCUEBANNER = 5377;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public extern static IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
 
 
         [DllImport("DwmApi")]
@@ -172,7 +173,7 @@ namespace KindleMate2.DarkModeForms {
         public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
         [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+        private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
 
         [DllImport("dwmapi.dll", EntryPoint = "#127")]
         public static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
@@ -249,8 +250,8 @@ namespace KindleMate2.DarkModeForms {
         /// <summary>Recursively apply the Colors from 'OScolors' to the Control and all its childs.</summary>
         /// <param name="control">Can be a Form or any Winforms Control.</param>
         public void ThemeControl(Control control) {
-            BorderStyle BStyle = (IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D);
-            FlatStyle FStyle = (IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard);
+            BorderStyle BStyle = IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
+            FlatStyle FStyle = IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard;
 
             //Change the Colors only if its the default ones, this allows the user to set own colors:
             if (control.BackColor == SystemColors.Control || control.BackColor == SystemColors.Window) {
@@ -289,24 +290,24 @@ namespace KindleMate2.DarkModeForms {
             }
             if (control is TabControl tab) {
                 tab.Appearance = TabAppearance.Normal;
-                tab.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
+                tab.DrawMode = TabDrawMode.OwnerDrawFixed;
                 tab.DrawItem += (object sender, DrawItemEventArgs e) => {
                     //Draw the background of the main control
-                    using (SolidBrush backColor = new SolidBrush(tab.Parent.BackColor)) {
+                    using (var backColor = new SolidBrush(tab.Parent.BackColor)) {
                         e.Graphics.FillRectangle(backColor, tab.ClientRectangle);
                     }
 
                     using (Brush tabBack = new SolidBrush(OScolors.Surface)) {
-                        for (int i = 0; i < tab.TabPages.Count; i++) {
+                        for (var i = 0; i < tab.TabPages.Count; i++) {
                             TabPage tabPage = tab.TabPages[i];
                             tabPage.BackColor = OScolors.Surface;
                             tabPage.BorderStyle = BorderStyle.FixedSingle;
                             tabPage.ControlAdded += (object _s, ControlEventArgs _e) => { ThemeControl(_e.Control); };
 
-                            var tBounds = e.Bounds;
+                            Rectangle tBounds = e.Bounds;
                             //tBounds.Inflate(100, 100);
 
-                            bool IsSelected = (tab.SelectedIndex == i);
+                            var IsSelected = tab.SelectedIndex == i;
                             if (IsSelected) {
                                 e.Graphics.FillRectangle(tabBack, tBounds);
                                 TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, e.Bounds, OScolors.TextActive);
@@ -338,8 +339,8 @@ namespace KindleMate2.DarkModeForms {
                         //e.DrawBackground();
                         //e.DrawText();
 
-                        using (SolidBrush backBrush = new SolidBrush(OScolors.ControlLight)) {
-                            using (SolidBrush foreBrush = new SolidBrush(OScolors.TextActive)) {
+                        using (var backBrush = new SolidBrush(OScolors.ControlLight)) {
+                            using (var foreBrush = new SolidBrush(OScolors.TextActive)) {
                                 using (var sf = new StringFormat()) {
                                     sf.Alignment = StringAlignment.Center;
                                     e.Graphics.FillRectangle(backBrush, e.Bounds);
@@ -376,7 +377,7 @@ namespace KindleMate2.DarkModeForms {
                 button.FlatStyle = FStyle;
                 button.FlatAppearance.CheckedBackColor = OScolors.Accent;
                 button.BackColor = OScolors.Control;
-                button.FlatAppearance.BorderColor = (OwnerForm.AcceptButton == button) ? OScolors.Accent : OScolors.Control;
+                button.FlatAppearance.BorderColor = OwnerForm.AcceptButton == button ? OScolors.Accent : OScolors.Control;
                 //SetRoundBorders(button, 4, OScolors.SurfaceDark, 1);
             }
             if (control is Label label) {
@@ -474,8 +475,9 @@ namespace KindleMate2.DarkModeForms {
                 slider.BackColor = control.Parent.BackColor;
             }
 
-            if (control.ContextMenuStrip != null)
+            if (control.ContextMenuStrip != null) {
                 ThemeControl(control.ContextMenuStrip);
+            }
 
             foreach (Control childControl in control.Controls) {
                 // Recursively process its children
@@ -502,7 +504,7 @@ namespace KindleMate2.DarkModeForms {
         /// <summary>Returns the Accent Color used by Windows.</summary>
         /// <returns>a Color</returns>
         public static Color GetWindowsAccentColor() {
-            DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
+            var colors = new DWMCOLORIZATIONcolors();
             DwmGetColorizationParameters(ref colors);
 
             //get the theme --> only if Windows 10 or newer
@@ -526,9 +528,9 @@ namespace KindleMate2.DarkModeForms {
         /// <param name="Window">[OPTIONAL] Applies DarkMode (if set) to this Window Title and Background.</param>
         /// <returns>List of Colors:  Background, OnBackground, Surface, OnSurface, Primary, OnPrimary, Secondary, OnSecondary</returns>
         public static OSThemeColors GetSystemColors(Form Window = null) {
-            OSThemeColors _ret = new OSThemeColors();
+            var _ret = new OSThemeColors();
 
-            bool IsDarkMode = (GetWindowsColorMode() <= 0); //<- O: DarkMode, 1: LightMode
+            var IsDarkMode = GetWindowsColorMode() <= 0; //<- O: DarkMode, 1: LightMode
             if (IsDarkMode) {
                 _ret.Background = Color.FromArgb(32, 32, 32); //<- Negro Claro
                 _ret.BackgroundDark = Color.FromArgb(18, 18, 18);
@@ -574,7 +576,7 @@ namespace KindleMate2.DarkModeForms {
 
                 if (_Control != null) {
                     _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
-                    _Control.Region = System.Drawing.Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
+                    _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
                     _Control.Paint += (object sender, PaintEventArgs e) => {
                         //base.OnPaint(e);
                         Graphics graph = e.Graphics;
@@ -582,14 +584,14 @@ namespace KindleMate2.DarkModeForms {
                         if (Radius > 1) //Rounded TextBox
                         {
                             //-Fields
-                            var rectBorderSmooth = _Control.ClientRectangle;
-                            var rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
-                            int smoothSize = borderSize > 0 ? borderSize : 1;
+                            Rectangle rectBorderSmooth = _Control.ClientRectangle;
+                            Rectangle rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
+                            var smoothSize = borderSize > 0 ? borderSize : 1;
 
-                            using (GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius))
-                                using (GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize))
-                                    using (Pen penBorderSmooth = new Pen(_Control.Parent.BackColor, smoothSize))
-                                        using (Pen penBorder = new Pen((Color)borderColor, borderSize)) {
+                            using (GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius)) {
+                                using (GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize)) {
+                                    using (var penBorderSmooth = new Pen(_Control.Parent.BackColor, smoothSize)) {
+                                        using (var penBorder = new Pen((Color)borderColor, borderSize)) {
                                             //-Drawing
                                             _Control.Region = new Region(pathBorderSmooth); //Set the rounded region of UserControl
                                             if (Radius > 15)                                //Set the rounded region of TextBox component
@@ -599,7 +601,7 @@ namespace KindleMate2.DarkModeForms {
                                                 }
                                             }
                                             graph.SmoothingMode = SmoothingMode.AntiAlias;
-                                            penBorder.Alignment = System.Drawing.Drawing2D.PenAlignment.Center;
+                                            penBorder.Alignment = PenAlignment.Center;
                                             //if (isFocused) penBorder.Color = borderFocusColor;
 
                                             if (underlinedStyle) //Line Style
@@ -617,6 +619,9 @@ namespace KindleMate2.DarkModeForms {
                                                 graph.DrawPath(penBorder, pathBorder);
                                             }
                                         }
+                                    }
+                                }
+                            }
                         }
                     };
                 }
@@ -630,17 +635,17 @@ namespace KindleMate2.DarkModeForms {
         /// <param name="bmp">Imagen a Colorear</param>
         /// <param name="c">Color a Utilizar</param>
         public static Bitmap ChangeToColor(Bitmap bmp, Color c) {
-            Bitmap bmp2 = new Bitmap(bmp.Width, bmp.Height);
+            var bmp2 = new Bitmap(bmp.Width, bmp.Height);
             using (Graphics g = Graphics.FromImage(bmp2)) {
                 g.InterpolationMode = InterpolationMode.HighQualityBilinear;
                 g.CompositingQuality = CompositingQuality.HighQuality;
                 g.SmoothingMode = SmoothingMode.HighQuality;
 
-                float tR = c.R / 255f;
-                float tG = c.G / 255f;
-                float tB = c.B / 255f;
+                var tR = c.R / 255f;
+                var tG = c.G / 255f;
+                var tB = c.B / 255f;
 
-                System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][] {
+                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][] {
                     new float[] {
                         0, 0, 0, 0, 0
                     },
@@ -658,7 +663,7 @@ namespace KindleMate2.DarkModeForms {
                     }
                 });
 
-                System.Drawing.Imaging.ImageAttributes attributes = new System.Drawing.Imaging.ImageAttributes();
+                var attributes = new System.Drawing.Imaging.ImageAttributes();
                 attributes.SetColorMatrix(colorMatrix);
 
                 g.DrawImage(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel, attributes);
@@ -666,7 +671,9 @@ namespace KindleMate2.DarkModeForms {
             return bmp2;
         }
 
-        public static Image ChangeToColor(Image bmp, Color c) => (Image)ChangeToColor((Bitmap)bmp, c);
+        public static Image ChangeToColor(Image bmp, Color c) {
+            return (Image)ChangeToColor((Bitmap)bmp, c);
+        }
 
         #endregion
 
@@ -687,32 +694,35 @@ namespace KindleMate2.DarkModeForms {
                 SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
                 Causes a window to use a different set of visual style information than its class normally uses.
              */
-            int[] DarkModeOn = new[] {
+            var DarkModeOn = new[] {
                 0x01
             }; //<- 1=True, 0=False
 
             SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
 
-            if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0)
+            if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0) {
                 DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
+            }
 
             foreach (Control child in control.Controls) {
-                if (child.Controls.Count != 0)
+                if (child.Controls.Count != 0) {
                     ApplySystemDarkTheme(child);
+                }
             }
         }
 
         private static bool IsWindows10orGreater() {
-            if (WindowsVersion() >= 10)
+            if (WindowsVersion() >= 10) {
                 return true;
-            else
+            } else {
                 return false;
+            }
         }
 
         private static int WindowsVersion() {
             //for .Net4.8 and Minor
-            int result = 10;
-            var reg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+            var result = 10;
+            RegistryKey? reg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
             string[] productName = reg.GetValue("ProductName").ToString().Split((char)32);
             int.TryParse(productName[1], out result);
             return result;
@@ -724,10 +734,10 @@ namespace KindleMate2.DarkModeForms {
         private static Color GetReadableColor(Color backgroundColor) {
             // Calculate the relative luminance of the background color.
             // Normalize values to 0-1 range first.
-            double normalizedR = backgroundColor.R / 255.0;
-            double normalizedG = backgroundColor.G / 255.0;
-            double normalizedB = backgroundColor.B / 255.0;
-            double luminance = 0.299 * normalizedR + 0.587 * normalizedG + 0.114 * normalizedB;
+            var normalizedR = backgroundColor.R / 255.0;
+            var normalizedG = backgroundColor.G / 255.0;
+            var normalizedB = backgroundColor.B / 255.0;
+            var luminance = 0.299 * normalizedR + 0.587 * normalizedG + 0.114 * normalizedB;
 
             // Choose a contrasting foreground color based on the luminance,
             // with a slight bias towards lighter colors for better readability.
@@ -736,8 +746,8 @@ namespace KindleMate2.DarkModeForms {
 
         // For Rounded Corners:
         private static GraphicsPath GetFigurePath(Rectangle rect, int radius) {
-            GraphicsPath path = new GraphicsPath();
-            float curveSize = radius * 2F;
+            var path = new GraphicsPath();
+            var curveSize = radius * 2F;
 
             path.StartFigure();
             path.AddArc(rect.X, rect.Y, curveSize, curveSize, 180, 90);
@@ -756,84 +766,72 @@ namespace KindleMate2.DarkModeForms {
         public OSThemeColors() { }
 
         /// <summary>For the very back of the Window</summary>
-        public System.Drawing.Color Background { get; set; } = SystemColors.Control;
+        public Color Background { get; set; } = SystemColors.Control;
 
         /// <summary>For Borders around the Background</summary>
-        public System.Drawing.Color BackgroundDark { get; set; } = SystemColors.ControlDark;
+        public Color BackgroundDark { get; set; } = SystemColors.ControlDark;
 
         /// <summary>For hightlights over the Background</summary>
-        public System.Drawing.Color BackgroundLight { get; set; } = SystemColors.ControlLight;
+        public Color BackgroundLight { get; set; } = SystemColors.ControlLight;
 
         /// <summary>For Container above the Background</summary>
-        public System.Drawing.Color Surface { get; set; } = SystemColors.ControlLightLight;
+        public Color Surface { get; set; } = SystemColors.ControlLightLight;
 
         /// <summary>For Borders around the Surface</summary>
-        public System.Drawing.Color SurfaceDark { get; set; } = SystemColors.ControlLight;
+        public Color SurfaceDark { get; set; } = SystemColors.ControlLight;
 
         /// <summary>For Highligh over the Surface</summary>
-        public System.Drawing.Color SurfaceLight { get; set; } = Color.White;
+        public Color SurfaceLight { get; set; } = Color.White;
 
         /// <summary>For Main Texts</summary>
-        public System.Drawing.Color TextActive { get; set; } = SystemColors.ControlText;
+        public Color TextActive { get; set; } = SystemColors.ControlText;
 
         /// <summary>For Inactive Texts</summary>
-        public System.Drawing.Color TextInactive { get; set; } = SystemColors.GrayText;
+        public Color TextInactive { get; set; } = SystemColors.GrayText;
 
         /// <summary>For Hightligh Texts</summary>
-        public System.Drawing.Color TextInAccent { get; set; } = SystemColors.HighlightText;
+        public Color TextInAccent { get; set; } = SystemColors.HighlightText;
 
         /// <summary>For the background of any Control</summary>
-        public System.Drawing.Color Control { get; set; } = SystemColors.ButtonFace;
+        public Color Control { get; set; } = SystemColors.ButtonFace;
 
         /// <summary>For Bordes of any Control</summary>
-        public System.Drawing.Color ControlDark { get; set; } = SystemColors.ButtonShadow;
+        public Color ControlDark { get; set; } = SystemColors.ButtonShadow;
 
         /// <summary>For Highlight elements in a Control</summary>
-        public System.Drawing.Color ControlLight { get; set; } = SystemColors.ButtonHighlight;
+        public Color ControlLight { get; set; } = SystemColors.ButtonHighlight;
 
         /// <summary>Windows 10+ Chosen Accent Color</summary>
-        public System.Drawing.Color Accent { get; set; } = DarkModeCS.GetWindowsAccentColor();
+        public Color Accent { get; set; } = DarkModeCS.GetWindowsAccentColor();
 
-        public System.Drawing.Color AccentDark {
-            get {
-                return ControlPaint.Dark(Accent);
-            }
+        public Color AccentDark {
+            get => ControlPaint.Dark(Accent);
         }
 
-        public System.Drawing.Color AccentLight {
-            get {
-                return ControlPaint.Light(Accent);
-            }
+        public Color AccentLight {
+            get => ControlPaint.Light(Accent);
         }
 
         /// <summary>the color displayed most frequently across your app's screens and components.</summary>
-        public System.Drawing.Color Primary { get; set; } = SystemColors.Highlight;
+        public Color Primary { get; set; } = SystemColors.Highlight;
 
-        public System.Drawing.Color PrimaryDark {
-            get {
-                return ControlPaint.Dark(Primary);
-            }
+        public Color PrimaryDark {
+            get => ControlPaint.Dark(Primary);
         }
 
-        public System.Drawing.Color PrimaryLight {
-            get {
-                return ControlPaint.Light(Primary);
-            }
+        public Color PrimaryLight {
+            get => ControlPaint.Light(Primary);
         }
 
         /// <summary>to accent select parts of your UI.</summary>
-        public System.Drawing.Color Secondary { get; set; } = SystemColors.HotTrack;
+        public Color Secondary { get; set; } = SystemColors.HotTrack;
 
-        public System.Drawing.Color SecondaryDark {
-            get {
-                return ControlPaint.Dark(Secondary);
-            }
+        public Color SecondaryDark {
+            get => ControlPaint.Dark(Secondary);
         }
 
-        public System.Drawing.Color SecondaryLight {
-            get {
-                return ControlPaint.Light(Secondary);
-            }
+        public Color SecondaryLight {
+            get => ControlPaint.Light(Secondary);
         }
     }
 
@@ -886,14 +884,14 @@ namespace KindleMate2.DarkModeForms {
         // For Normal Buttons on a ToolBar:
         protected override void OnRenderButtonBackground(ToolStripItemRenderEventArgs e) {
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
             Color gradientBegin = MyColors.Background; // Color.FromArgb(203, 225, 252);
             Color gradientEnd = MyColors.Background;
 
-            Pen BordersPencil = new Pen(MyColors.Background);
+            var BordersPencil = new Pen(MyColors.Background);
 
-            ToolStripButton button = e.Item as ToolStripButton;
+            var button = e.Item as ToolStripButton;
             if (button.Pressed || button.Checked) {
                 gradientBegin = MyColors.Control;
                 gradientEnd = MyColors.Control;
@@ -922,11 +920,11 @@ namespace KindleMate2.DarkModeForms {
         // For DropDown Buttons on a ToolBar:
         protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e) {
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
             Color gradientBegin = MyColors.Background; // Color.FromArgb(203, 225, 252);
             Color gradientEnd = MyColors.Background;
 
-            Pen BordersPencil = new Pen(MyColors.Background);
+            var BordersPencil = new Pen(MyColors.Background);
 
             //1. Determine the colors to use:
             if (e.Item.Pressed) {
@@ -961,7 +959,7 @@ namespace KindleMate2.DarkModeForms {
 
         // For SplitButtons on a ToolBar:
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e) {
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
             Color gradientBegin = MyColors.Background; // Color.FromArgb(203, 225, 252);
             Color gradientEnd = MyColors.Background;
 
@@ -983,12 +981,12 @@ namespace KindleMate2.DarkModeForms {
 
             #region Chevron
 
-            int Padding = 2;                                    //<- From the right side
-            Size cSize = new Size(8, 4);                        //<- Size of the Chevron: 8x4 px
-            Pen ChevronPen = new Pen(MyColors.TextInactive, 2); //<- Color and Border Width
-            Point P1 = new Point(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
-            Point P2 = new Point(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
-            Point P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
+            var Padding = 2;                                    //<- From the right side
+            var cSize = new Size(8, 4);                         //<- Size of the Chevron: 8x4 px
+            var ChevronPen = new Pen(MyColors.TextInactive, 2); //<- Color and Border Width
+            var P1 = new Point(bounds.Width - (cSize.Width + Padding), bounds.Height / 2 - cSize.Height / 2);
+            var P2 = new Point(bounds.Width - Padding, bounds.Height / 2 - cSize.Height / 2);
+            var P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), bounds.Height / 2 + cSize.Height / 2);
 
             e.Graphics.DrawLine(ChevronPen, P1, P3);
             e.Graphics.DrawLine(ChevronPen, P2, P3);
@@ -1011,7 +1009,7 @@ namespace KindleMate2.DarkModeForms {
 
             // Only draw border for ComboBox items
             if (e.Item is ComboBox) {
-                Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
+                var rect = new Rectangle(Point.Empty, e.Item.Size);
                 e.Graphics.DrawRectangle(new Pen(MyColors.ControlLight, 1), rect);
             }
         }
@@ -1019,12 +1017,12 @@ namespace KindleMate2.DarkModeForms {
         // For Menu Items BackColor:
         protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e) {
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
             Color gradientBegin = MyColors.Background; // Color.FromArgb(203, 225, 252);
             Color gradientEnd = MyColors.Background;   // Color.FromArgb(125, 165, 224);
 
-            bool DrawIt = false;
+            var DrawIt = false;
             var _menu = e.Item as ToolStripItem;
             if (_menu.Pressed) {
                 gradientBegin = MyColors.Control; // Color.FromArgb(254, 128, 62);
@@ -1069,25 +1067,19 @@ namespace KindleMate2.DarkModeForms {
 
         public CustomColorTable(OSThemeColors _Colors) {
             Colors = _Colors;
-            base.UseSystemColors = false;
+            UseSystemColors = false;
         }
 
         public override Color ImageMarginGradientBegin {
-            get {
-                return Colors.Control;
-            }
+            get => Colors.Control;
         }
 
         public override Color ImageMarginGradientMiddle {
-            get {
-                return Colors.Control;
-            }
+            get => Colors.Control;
         }
 
         public override Color ImageMarginGradientEnd {
-            get {
-                return Colors.Control;
-            }
+            get => Colors.Control;
         }
     }
 }

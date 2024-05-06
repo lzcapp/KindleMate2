@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DarkModeForms {
+namespace KindleMate2.DarkModeForms {
     // *** CREDITS:  https://github.com/r-aghaei/FlatComboExample/tree/master
 
     public class FlatComboBox : ComboBox {
@@ -14,9 +9,7 @@ namespace DarkModeForms {
 
         [DefaultValue(typeof(Color), "Gray")]
         public Color BorderColor {
-            get {
-                return borderColor;
-            }
+            get => borderColor;
             set {
                 if (borderColor != value) {
                     borderColor = value;
@@ -29,9 +22,7 @@ namespace DarkModeForms {
 
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor {
-            get {
-                return buttonColor;
-            }
+            get => buttonColor;
             set {
                 if (buttonColor != value) {
                     buttonColor = value;
@@ -42,7 +33,7 @@ namespace DarkModeForms {
 
         protected override void WndProc(ref Message m) {
             if (m.Msg == WM_PAINT && DropDownStyle != ComboBoxStyle.Simple) {
-                var clientRect = ClientRectangle;
+                Rectangle clientRect = ClientRectangle;
                 var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
                 var outerBorder = new Rectangle(clientRect.Location, new Size(clientRect.Width - 1, clientRect.Height - 1));
                 var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1, outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
@@ -54,15 +45,15 @@ namespace DarkModeForms {
                     dropDownRect.X = clientRect.Width - dropDownRect.Right;
                     dropDownRect.Width += 1;
                 }
-                var innerBorderColor = Enabled ? BackColor : SystemColors.Control;
-                var outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
-                var buttonColor = Enabled ? ButtonColor : SystemColors.Control;
+                Color innerBorderColor = Enabled ? BackColor : SystemColors.Control;
+                Color outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
+                Color buttonColor = Enabled ? ButtonColor : SystemColors.Control;
                 var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
                 var arrow = new Point[] {
-                    new Point(middle.X - 3, middle.Y - 2), new Point(middle.X + 4, middle.Y - 2), new Point(middle.X, middle.Y + 2)
+                    new(middle.X - 3, middle.Y - 2), new(middle.X + 4, middle.Y - 2), new(middle.X, middle.Y + 2)
                 };
                 var ps = new PAINTSTRUCT();
-                bool shoulEndPaint = false;
+                var shoulEndPaint = false;
                 IntPtr dc;
                 if (m.WParam == IntPtr.Zero) {
                     dc = BeginPaint(Handle, ref ps);
@@ -78,7 +69,7 @@ namespace DarkModeForms {
                 rgn = CreateRectRgn(clientRect.Left, clientRect.Top, clientRect.Right, clientRect.Bottom);
                 SelectClipRgn(dc, rgn);
 
-                using (var g = Graphics.FromHdc(dc)) {
+                using (Graphics g = Graphics.FromHdc(dc)) {
                     g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
                     g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -99,9 +90,9 @@ namespace DarkModeForms {
                     //	g.FillPolygon(b, arrow);
                     //}
 
-                    Size cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
+                    var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
                     var chevron = new Point[] {
-                        new Point(middle.X - (cSize.Width / 2), middle.Y - (cSize.Height / 2)), new Point(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)), new Point(middle.X, middle.Y + (cSize.Height / 2))
+                        new(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X, middle.Y + cSize.Height / 2)
                     };
                     using (var chevronPen = new Pen(BorderColor, 2.5f)) //<- Color and Border Width
                     {
@@ -123,11 +114,13 @@ namespace DarkModeForms {
 
                     #endregion
                 }
-                if (shoulEndPaint)
+                if (shoulEndPaint) {
                     EndPaint(Handle, ref ps);
+                }
                 DeleteObject(rgn);
-            } else
+            } else {
                 base.WndProc(ref m);
+            }
         }
 
         private const int WM_PAINT = 0xF;
@@ -140,40 +133,25 @@ namespace DarkModeForms {
         [StructLayout(LayoutKind.Sequential)]
         public struct PAINTSTRUCT {
             public IntPtr hdc;
-
             public bool fErase;
-
             public int rcPaint_left;
-
             public int rcPaint_top;
-
             public int rcPaint_right;
-
             public int rcPaint_bottom;
-
             public bool fRestore;
-
             public bool fIncUpdate;
-
             public int reserved1;
-
             public int reserved2;
-
             public int reserved3;
-
             public int reserved4;
-
             public int reserved5;
-
             public int reserved6;
-
             public int reserved7;
-
             public int reserved8;
         }
 
         [DllImport("user32.dll")]
-        private static extern IntPtr BeginPaint(IntPtr hWnd, [In, Out] ref PAINTSTRUCT lpPaint);
+        private static extern IntPtr BeginPaint(IntPtr hWnd, [In] [Out] ref PAINTSTRUCT lpPaint);
 
         [DllImport("user32.dll")]
         private static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT lpPaint);
@@ -186,12 +164,9 @@ namespace DarkModeForms {
 
         public enum RegionFlags {
             ERROR = 0,
-
             NULLREGION = 1,
-
             SIMPLEREGION = 2,
-
-            COMPLEXREGION = 3,
+            COMPLEXREGION = 3
         }
 
         [DllImport("gdi32.dll")]

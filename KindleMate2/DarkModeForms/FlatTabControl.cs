@@ -1,35 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.ComponentModel;
 
-namespace BlueMystic {
+namespace KindleMate2.DarkModeForms {
     public class FlatTabControl : TabControl {
         #region Public Properties
 
-        [Description("Color for a decorative line"), Category("Appearance")]
+        [Description("Color for a decorative line")]
+        [Category("Appearance")]
         public Color LineColor { get; set; } = SystemColors.Highlight;
 
-        [Description("Color for all Borders"), Category("Appearance")]
+        [Description("Color for all Borders")]
+        [Category("Appearance")]
         public Color BorderColor { get; set; } = SystemColors.ControlDark;
 
-        [Description("Back color for selected Tab"), Category("Appearance")]
+        [Description("Back color for selected Tab")]
+        [Category("Appearance")]
         public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
 
-        [Description("Fore Color for Selected Tab"), Category("Appearance")]
+        [Description("Fore Color for Selected Tab")]
+        [Category("Appearance")]
         public Color SelectedForeColor { get; set; } = SystemColors.HighlightText;
 
-        [Description("Back Color for un-selected tabs"), Category("Appearance")]
+        [Description("Back Color for un-selected tabs")]
+        [Category("Appearance")]
         public Color TabColor { get; set; } = SystemColors.ControlLight;
 
-        [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]
+        [Description("Background color for the whole control")]
+        [Category("Appearance")]
+        [Browsable(true)]
         public override Color BackColor { get; set; } = SystemColors.Control;
 
-        [Description("Fore Color for all Texts"), Category("Appearance")]
+        [Description("Fore Color for all Texts")]
+        [Category("Appearance")]
         public override Color ForeColor { get; set; } = SystemColors.ControlText;
 
         #endregion
@@ -73,14 +74,14 @@ namespace BlueMystic {
 
                 Region region = g.Clip;
 
-                for (int i = 0; i < TabCount; i++) {
+                for (var i = 0; i < TabCount; i++) {
                     DrawTab(g, TabPages[i], i);
                     TabPages[i].BackColor = TabColor;
                 }
 
                 g.Clip = region;
 
-                using (Pen border = new Pen(BorderColor)) {
+                using (var border = new Pen(BorderColor)) {
                     g.DrawRectangle(border, clientRectangle);
 
                     if (SelectedTab != null) {
@@ -112,7 +113,7 @@ namespace BlueMystic {
         internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex) {
             Rectangle tabRect = GetTabRect(nIndex);
             Rectangle tabTextRect = GetTabRect(nIndex);
-            bool isSelected = (SelectedIndex == nIndex);
+            var isSelected = SelectedIndex == nIndex;
             Point[] points;
 
             if (Alignment == TabAlignment.Top) {
