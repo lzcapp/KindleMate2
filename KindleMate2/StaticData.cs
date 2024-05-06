@@ -569,7 +569,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public string GetSettings(string name) {
+        private string GetSettings(string name) {
             if (name == string.Empty) {
                 return string.Empty;
             }
@@ -588,7 +588,7 @@ namespace KindleMate2 {
             return string.Empty;
         }
 
-        public void SetSettings(string name, string value) {
+        private void SetSettings(string name, string value) {
             if (string.IsNullOrEmpty(name)) {
                 return;
             }
@@ -601,8 +601,24 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
+        public string GetTheme() {
+            return GetSettings("theme");
+        }
+
+        public void SetTheme(string value) {
+            SetSettings("theme", value);
+        }
+
+        public string GetLanguage() {
+            return GetSettings("lang");
+        }
+
+        public void SetLanguage(string value) {
+            SetSettings("lang", value);
+        }
+
         public bool IsDarkTheme() {
-            return GetSettings("theme").Equals("dark", StringComparison.OrdinalIgnoreCase);
+            return GetTheme().Equals("dark", StringComparison.OrdinalIgnoreCase);
         }
 
         public void VacuumDatabase() {

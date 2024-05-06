@@ -369,4 +369,7 @@
   <data name="Open_Folder" xml:space="preserve">
     <value>需要打開備份文件夾嗎？</value>
   </data>
+  <data name="AutomaticDetection" xml:space="preserve">
+    <value>Automatic Detection</value>
+  </data>
 </root>

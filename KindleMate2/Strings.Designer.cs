@@ -88,6 +88,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 自動檢測 Automatic Detection 的本地化字符串。
+        /// </summary>
+        internal static string AutomaticDetection {
+            get {
+                return ResourceManager.GetString("AutomaticDetection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 备份 的本地化字符串。
         /// </summary>
         internal static string Backup {
@@ -471,6 +480,15 @@ namespace KindleMate2 {
         internal static string Empty_Lookups_Data {
             get {
                 return ResourceManager.GetString("Empty_Lookups_Data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 English 的本地化字符串。
+        /// </summary>
+        internal static string English {
+            get {
+                return ResourceManager.GetString("English", resourceCulture);
             }
         }
         
@@ -889,6 +907,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 簡體中文 Simplified Chinese 的本地化字符串。
+        /// </summary>
+        internal static string SC {
+            get {
+                return ResourceManager.GetString("SC", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 全部 的本地化字符串。
         /// </summary>
         internal static string Select_All {
@@ -966,6 +993,15 @@ namespace KindleMate2 {
         internal static string Symbol_Comma {
             get {
                 return ResourceManager.GetString("Symbol_Comma", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 繁體中文 Traditional Chinese 的本地化字符串。
+        /// </summary>
+        internal static string TC {
+            get {
+                return ResourceManager.GetString("TC", resourceCulture);
             }
         }
         

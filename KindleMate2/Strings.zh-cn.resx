@@ -474,4 +474,16 @@
   <data name="Open_Folder" xml:space="preserve">
     <value>需要打开备份文件夹吗？</value>
   </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="SC" xml:space="preserve">
+    <value>簡體中文 Simplified Chinese</value>
+  </data>
+  <data name="TC" xml:space="preserve">
+    <value>繁體中文 Traditional Chinese</value>
+  </data>
+  <data name="AutomaticDetection" xml:space="preserve">
+    <value>自動檢測 Automatic Detection</value>
+  </data>
 </root>

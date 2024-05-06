@@ -11,9 +11,9 @@ using Markdig;
 namespace KindleMate2 {
     public partial class FrmMain : Form {
         // ReSharper disable once NotAccessedField.Local
-#pragma warning disable IDE0052 // 删除未读的私有成员
+        #pragma warning disable IDE0052 // 删除未读的私有成员
         private readonly DarkModeCS _dm = null!;
-#pragma warning restore IDE0052 // 删除未读的私有成员
+        #pragma warning restore IDE0052 // 删除未读的私有成员
 
         private DataTable _clippingsDataTable = new();
 
@@ -49,10 +49,37 @@ namespace KindleMate2 {
             if (_staticData.IsDarkTheme()) {
                 _dm = new DarkModeCS(this);
                 menuTheme.Image = Properties.Resources.sun;
-                menuTheme.ToolTipText = "切换到亮色模式";
             } else {
+                _staticData.SetTheme("light");
                 menuTheme.Image = Properties.Resources.new_moon;
-                menuTheme.ToolTipText = "切换到暗色模式";
+            }
+
+            var name = _staticData.GetLanguage();
+            if (!string.IsNullOrWhiteSpace(name)) {
+                var culture = new CultureInfo(name);
+                Thread.CurrentThread.CurrentUICulture = culture;
+
+                switch (name.ToLowerInvariant()) {
+                    case "en":
+                        menuLangEN.Visible = false;
+                        break;
+                    case "zh-hans":
+                        menuLangSC.Visible = false;
+                        break;
+                    case "zh-hant":
+                        menuLangTC.Visible = false;
+                        break;
+                }
+            } else {
+                menuLangAuto.Visible = false;
+                CultureInfo currentCulture = CultureInfo.CurrentCulture;
+                if (currentCulture.EnglishName.Contains("English")) {
+                    menuLangEN.Visible = false;
+                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
+                    menuLangSC.Visible = false;
+                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
+                    menuLangTC.Visible = false;
+                }
             }
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
@@ -88,6 +115,11 @@ namespace KindleMate2 {
             menuHelp.Text = Strings.Help + @"(&H)";
             menuAbout.Text = Strings.About;
             menuRepo.Text = Strings.GitHub_Repo;
+            menuLang.Text = Strings.Language + @"(&L)";
+            menuLangEN.Text = Strings.English;
+            menuLangSC.Text = Strings.SC;
+            menuLangTC.Text = Strings.TC;
+            menuLangAuto.Text = Strings.AutomaticDetection;
 
             tabPageBooks.Text = Strings.Clippings;
             tabPageWords.Text = Strings.Vocabulary_List;
@@ -1676,13 +1708,6 @@ namespace KindleMate2 {
             Restart();
         }
 
-        private void MenuLang_Click(object sender, EventArgs e) {
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
-            Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-US");
-
-            RefreshData();
-        }
-
         private void MenuClean_Click(object sender, EventArgs e) {
             _clippingsDataTable = _staticData.GetClipingsDataTable();
 
@@ -1918,11 +1943,7 @@ namespace KindleMate2 {
         }
 
         private void MenuTheme_Click(object sender, EventArgs e) {
-            if (_staticData.IsDarkTheme()) {
-                _staticData.SetSettings("theme", "light");
-            } else {
-                _staticData.SetSettings("theme", "dark");
-            }
+            _staticData.SetTheme(_staticData.IsDarkTheme() ? "light" : "dark");
             Restart();
         }
 
@@ -1932,6 +1953,26 @@ namespace KindleMate2 {
 
         private void MenuTheme_MouseLeave(object sender, EventArgs e) {
             Cursor = Cursors.Default;
+        }
+
+        private void MenuLangEN_Click(object sender, EventArgs e) {
+            _staticData.SetLanguage("en");
+            Restart();
+        }
+
+        private void MenuLangSC_Click(object sender, EventArgs e) {
+            _staticData.SetLanguage("zh-Hans");
+            Restart();
+        }
+
+        private void MenuLangTC_Click(object sender, EventArgs e) {
+            _staticData.SetLanguage("zh-Hant");
+            Restart();
+        }
+
+        private void MenuLangAuto_Click(object sender, EventArgs e) {
+            _staticData.SetLanguage("");
+            Restart();
         }
     }
 }
