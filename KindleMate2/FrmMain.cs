@@ -73,7 +73,7 @@ namespace KindleMate2 {
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English")) {
+                if (currentCulture.EnglishName.Contains("English") || currentCulture.Name.StartsWith("en", StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
                 } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
                     menuLangSC.Visible = false;
