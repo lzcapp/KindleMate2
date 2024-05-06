@@ -14,7 +14,9 @@ namespace DarkModeForms {
 
         [DefaultValue(typeof(Color), "Gray")]
         public Color BorderColor {
-            get { return borderColor; }
+            get {
+                return borderColor;
+            }
             set {
                 if (borderColor != value) {
                     borderColor = value;
@@ -27,7 +29,9 @@ namespace DarkModeForms {
 
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor {
-            get { return buttonColor; }
+            get {
+                return buttonColor;
+            }
             set {
                 if (buttonColor != value) {
                     buttonColor = value;

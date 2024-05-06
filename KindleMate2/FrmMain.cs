@@ -73,7 +73,7 @@ namespace KindleMate2 {
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English") || currentCulture.Name.StartsWith("en", StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains("English") || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase)) {
                     menuLangEN.Visible = false;
                 } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
                     menuLangSC.Visible = false;
@@ -147,7 +147,7 @@ namespace KindleMate2 {
 
                     var fileSize = new FileInfo(filePath).Length / 1024;
                     if (File.Exists(filePath) && fileSize >= 20) {
-                        DialogResult resultRestore = MessageBox.Show(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        DialogResult resultRestore = Dialog(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (resultRestore == DialogResult.Yes) {
                             File.Copy(filePath, _filePath, true);
                             RefreshData();
@@ -156,7 +156,7 @@ namespace KindleMate2 {
                     }
                 }
 
-                DialogResult result = MessageBox.Show(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult result = Dialog(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (result) {
@@ -168,7 +168,7 @@ namespace KindleMate2 {
                     case DialogResult.No:
                     default:
                         if (!string.IsNullOrEmpty(_kindleDrive)) {
-                            DialogResult resultKindle = MessageBox.Show(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            DialogResult resultKindle = Dialog(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultKindle == DialogResult.Yes) {
                                 ImportFromKindle();
                                 return;
@@ -182,6 +182,10 @@ namespace KindleMate2 {
             RefreshData();
 
             treeViewBooks.Focus();
+        }
+
+        private DialogResult Dialog(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
+            return _staticData.IsDarkTheme() ? Messenger.MessageBox(message, title, buttons, icon) : MessageBox.Show(message, title, buttons, icon);
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
@@ -204,7 +208,7 @@ namespace KindleMate2 {
 
         private string ImportKindleWords(string kindleWordsPath) {
             if (!File.Exists(kindleWordsPath)) {
-                MessageBox.Show(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Dialog(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return string.Empty;
             }
 
@@ -716,7 +720,7 @@ namespace KindleMate2 {
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
-            MessageBox.Show(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Dialog(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             RefreshData();
         }
@@ -1014,11 +1018,11 @@ namespace KindleMate2 {
             }
 
             if (!_staticData.UpdateClippings(key, dialog.TxtContent)) {
-                MessageBox.Show(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Dialog(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            MessageBox.Show(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Dialog(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             RefreshData();
         }
 
@@ -1093,7 +1097,7 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    DialogResult resultClippings = MessageBox.Show(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultClippings = Dialog(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultClippings != DialogResult.Yes) {
                         return;
@@ -1106,7 +1110,7 @@ namespace KindleMate2 {
                             if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
-                                MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
 
@@ -1117,7 +1121,7 @@ namespace KindleMate2 {
 
                     break;
                 case 1:
-                    DialogResult resultWords = MessageBox.Show(Strings.Confirm_Delete_Lookups, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultWords = Dialog(Strings.Confirm_Delete_Lookups, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultWords != DialogResult.Yes) {
                         return;
@@ -1130,7 +1134,7 @@ namespace KindleMate2 {
                             if (_staticData.DeleteLookupsByTimeStamp(row.Cells["timestamp"].Value.ToString() ?? string.Empty)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
-                                MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
 
@@ -1181,7 +1185,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    DialogResult resultBooks = MessageBox.Show(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultBooks = Dialog(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultBooks != DialogResult.Yes) {
                         return;
@@ -1189,7 +1193,7 @@ namespace KindleMate2 {
 
                     var bookname = treeViewBooks.SelectedNode.Text;
                     if (!_staticData.DeleteClippingsByBook(bookname)) {
-                        MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
                     break;
@@ -1198,7 +1202,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    DialogResult resultWords = MessageBox.Show(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultWords = Dialog(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultWords != DialogResult.Yes) {
                         return;
@@ -1216,7 +1220,7 @@ namespace KindleMate2 {
                     }
 
                     if (!_staticData.DeleteVocab(word) && !_staticData.DeleteLookupsByWordKey(word_key)) {
-                        MessageBox.Show(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
                     break;
@@ -1253,7 +1257,7 @@ namespace KindleMate2 {
 
             var result = ImportKindleClippings(fileDialog.FileName);
             if (string.IsNullOrWhiteSpace(result)) {
-                MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             RefreshData();
@@ -1277,7 +1281,7 @@ namespace KindleMate2 {
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
-                MessageBox.Show(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -1317,7 +1321,7 @@ namespace KindleMate2 {
             var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
             var importResult = Import(kindleClippingsPath, kindleWordsPath);
             if (!string.IsNullOrWhiteSpace(importResult)) {
-                MessageBox.Show(importResult, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(importResult, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             SetProgressBar(false);
@@ -1376,12 +1380,12 @@ namespace KindleMate2 {
             }
 
             if (bookname == dialogBook && authorname == dialogAuthor) {
-                MessageBox.Show(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             if (_clippingsDataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
-                DialogResult result = MessageBox.Show(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult result = Dialog(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result != DialogResult.Yes) {
                     return;
                 }
@@ -1393,11 +1397,11 @@ namespace KindleMate2 {
             _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
 
             if (!_staticData.UpdateClippings(bookname, dialogBook, dialogAuthor)) {
-                MessageBox.Show(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Dialog(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            MessageBox.Show(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Dialog(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             _selectedBook = dialogBook;
 
@@ -1522,12 +1526,12 @@ namespace KindleMate2 {
             BackupDatabase();
 
             if (_clippingsDataTable.Rows.Count <= 0) {
-                MessageBox.Show(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 if (!BackupOriginClippings()) {
-                    MessageBox.Show(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Dialog(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 } else {
-                    DialogResult result = MessageBox.Show(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult result = Dialog(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
                     }
@@ -1562,19 +1566,19 @@ namespace KindleMate2 {
 
         private void MenuClear_Click(object sender, EventArgs e) {
             if (_staticData.IsDatabaseEmpty()) {
-                MessageBox.Show(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            DialogResult result = MessageBox.Show(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+            DialogResult result = Dialog(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
             if (result != DialogResult.Yes) {
                 return;
             }
 
             if (_staticData.EmptyTables()) {
-                MessageBox.Show(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                MessageBox.Show(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Dialog(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             Restart();
@@ -1608,7 +1612,7 @@ namespace KindleMate2 {
 
             var result = ImportKindleWords(fileDialog.FileName);
             if (string.IsNullOrWhiteSpace(result)) {
-                MessageBox.Show(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             RefreshData();
@@ -1712,7 +1716,7 @@ namespace KindleMate2 {
             _clippingsDataTable = _staticData.GetClipingsDataTable();
 
             if (_clippingsDataTable.Rows.Count <= 0) {
-                MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialog(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 _staticData.BeginTransaction();
 
@@ -1765,9 +1769,9 @@ namespace KindleMate2 {
                     var fileSizeDelta = originFileSize - newFileSize;
 
                     if (countEmpty > 0 || countTrimmed > 0 || fileSizeDelta > 0) {
-                        MessageBox.Show(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(fileSizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Dialog(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(fileSizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
-                        MessageBox.Show(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Dialog(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 } catch (Exception) {
                     _staticData.RollbackTransaction();
@@ -1918,7 +1922,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox.Show(Strings.Export_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = Dialog(Strings.Export_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) {
                 return;
             }

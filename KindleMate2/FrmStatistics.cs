@@ -1,5 +1,6 @@
 ﻿using KindleMate2.DarkModeForms;
 using System.Data;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 
@@ -21,6 +22,18 @@ namespace KindleMate2 {
 
             if (_staticData.IsDarkTheme()) {
                 _dm = new DarkModeCS(this);
+                chartBooksTime.BackColor = ColorTranslator.FromHtml("#202020");
+                chartBooksTime.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                chartBooksWeek.BackColor = ColorTranslator.FromHtml("#202020");
+                chartBooksWeek.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                chartBooksHistory.BackColor = ColorTranslator.FromHtml("#202020");
+                chartBooksHistory.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                chartVocabsTime.BackColor = ColorTranslator.FromHtml("#202020");
+                chartVocabsTime.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                chartVocabsWeek.BackColor = ColorTranslator.FromHtml("#202020");
+                chartVocabsWeek.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                chartVocabsHistory.BackColor = ColorTranslator.FromHtml("#202020");
+                chartVocabsHistory.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
             }
         }
 

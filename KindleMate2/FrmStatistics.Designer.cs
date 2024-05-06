@@ -134,6 +134,7 @@
             chartArea1.AxisY.LineWidth = 0;
             chartArea1.AxisY.MajorGrid.Enabled = false;
             chartArea1.AxisY.MajorTickMark.Enabled = false;
+            chartArea1.BackColor = Color.Transparent;
             chartArea1.Name = "ChartArea";
             chartBooksTime.ChartAreas.Add(chartArea1);
             chartBooksTime.Dock = DockStyle.Fill;
@@ -180,6 +181,7 @@
             chartArea2.AxisY.MajorGrid.Enabled = false;
             chartArea2.AxisY.MajorTickMark.Enabled = false;
             chartArea2.AxisY.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea2.BackColor = Color.Transparent;
             chartArea2.Name = "ChartArea";
             chartBooksWeek.ChartAreas.Add(chartArea2);
             chartBooksWeek.Dock = DockStyle.Fill;
@@ -228,6 +230,7 @@
             chartArea3.AxisY.LineWidth = 0;
             chartArea3.AxisY.MajorGrid.Enabled = false;
             chartArea3.AxisY.MajorTickMark.Enabled = false;
+            chartArea3.BackColor = Color.Transparent;
             chartArea3.Name = "ChartArea";
             chartBooksHistory.ChartAreas.Add(chartArea3);
             tableLayoutPanelBooks.SetColumnSpan(chartBooksHistory, 2);
@@ -304,6 +307,7 @@
             chartArea4.AxisY.LineWidth = 0;
             chartArea4.AxisY.MajorGrid.Enabled = false;
             chartArea4.AxisY.MajorTickMark.Enabled = false;
+            chartArea4.BackColor = Color.Transparent;
             chartArea4.Name = "ChartArea";
             chartVocabsTime.ChartAreas.Add(chartArea4);
             chartVocabsTime.Dock = DockStyle.Fill;
@@ -352,6 +356,7 @@
             chartArea5.AxisY.MajorGrid.Enabled = false;
             chartArea5.AxisY.MajorTickMark.Enabled = false;
             chartArea5.AxisY.TitleFont = new Font("Microsoft Sans Serif", 6F);
+            chartArea5.BackColor = Color.Transparent;
             chartArea5.IsSameFontSizeForAllAxes = true;
             chartArea5.Name = "ChartArea";
             chartVocabsWeek.ChartAreas.Add(chartArea5);
@@ -402,6 +407,7 @@
             chartArea6.AxisY.LineWidth = 0;
             chartArea6.AxisY.MajorGrid.Enabled = false;
             chartArea6.AxisY.MajorTickMark.Enabled = false;
+            chartArea6.BackColor = Color.Transparent;
             chartArea6.Name = "ChartArea";
             chartVocabsHistory.ChartAreas.Add(chartArea6);
             tableLayoutPanelVocabs.SetColumnSpan(chartVocabsHistory, 2);
