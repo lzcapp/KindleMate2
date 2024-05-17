@@ -1256,7 +1256,7 @@ namespace KindleMate2 {
             }
 
             var result = ImportKindleClippings(fileDialog.FileName);
-            if (string.IsNullOrWhiteSpace(result)) {
+            if (!string.IsNullOrWhiteSpace(result)) {
                 Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
@@ -1611,7 +1611,7 @@ namespace KindleMate2 {
             }
 
             var result = ImportKindleWords(fileDialog.FileName);
-            if (string.IsNullOrWhiteSpace(result)) {
+            if (!string.IsNullOrWhiteSpace(result)) {
                 Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
