@@ -1,6 +1,12 @@
 ﻿using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+
+// ReSharper disable IdentifierTypo
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
 
 //using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -135,7 +141,7 @@ namespace KindleMate2.DarkModeForms {
             /// <summary>
             /// The maximum recognized DWMWINDOWATTRIBUTE value, used for validation purposes.
             /// </summary>
-            DWMWA_LAST
+            DWMWA_LAST,
         }
 
         [Flags]
@@ -147,8 +153,7 @@ namespace KindleMate2.DarkModeForms {
         }
 
 
-        [Serializable]
-        [StructLayout(LayoutKind.Sequential)]
+        [Serializable, StructLayout(LayoutKind.Sequential)]
         public struct RECT {
             public int Left;
             public int Top;
@@ -163,7 +168,7 @@ namespace KindleMate2.DarkModeForms {
         public const int EM_SETCUEBANNER = 5377;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
+        public extern static IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
 
 
         [DllImport("DwmApi")]
@@ -173,7 +178,7 @@ namespace KindleMate2.DarkModeForms {
         public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
         [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
 
         [DllImport("dwmapi.dll", EntryPoint = "#127")]
         public static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
@@ -203,13 +208,13 @@ namespace KindleMate2.DarkModeForms {
         #region Public Members
 
         /// <summary>'true' if Dark Mode Color is set in Windows's Settings.</summary>
-        public bool IsDarkMode { get; set; } = false;
+        public bool IsDarkMode { get; set; }
 
         /// <summary>Option to re-colorize all Icons in Toolbars and Menus.</summary>
         public bool ColorizeIcons { get; set; } = true;
 
         /// <summary>Option to make all Panels Borders Rounded</summary>
-        public bool RoundedPanels { get; set; } = false;
+        public bool RoundedPanels { get; set; }
 
         /// <summary>The PArent form for them all.</summary>
         public Form OwnerForm { get; set; }
@@ -238,7 +243,7 @@ namespace KindleMate2.DarkModeForms {
                     foreach (Control _control in OwnerForm.Controls) {
                         ThemeControl(_control);
                     }
-                    OwnerForm.ControlAdded += (object sender, ControlEventArgs e) => { ThemeControl(e.Control); };
+                    OwnerForm.ControlAdded += (sender, e) => { ThemeControl(e.Control); };
                 }
             }
         }
@@ -250,8 +255,8 @@ namespace KindleMate2.DarkModeForms {
         /// <summary>Recursively apply the Colors from 'OScolors' to the Control and all its childs.</summary>
         /// <param name="control">Can be a Form or any Winforms Control.</param>
         public void ThemeControl(Control control) {
-            BorderStyle BStyle = IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
-            FlatStyle FStyle = IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard;
+            BorderStyle BStyle = (IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D);
+            FlatStyle FStyle = (IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard);
 
             //Change the Colors only if its the default ones, this allows the user to set own colors:
             if (control.BackColor == SystemColors.Control || control.BackColor == SystemColors.Window) {
@@ -262,8 +267,8 @@ namespace KindleMate2.DarkModeForms {
             }
             control.GetType().GetProperty("BorderStyle")?.SetValue(control, BStyle);
 
-            control.HandleCreated += (object sender, EventArgs e) => { ApplySystemDarkTheme(control); };
-            control.ControlAdded += (object sender, ControlEventArgs e) => { ThemeControl(e.Control); };
+            control.HandleCreated += (sender, e) => { ApplySystemDarkTheme(control); };
+            control.ControlAdded += (sender, e) => { ThemeControl(e.Control); };
 
             if (control is TextBox tb) {
                 //SetRoundBorders(tb, 4, OScolors.SurfaceDark, 1);
@@ -291,7 +296,7 @@ namespace KindleMate2.DarkModeForms {
             if (control is TabControl tab) {
                 tab.Appearance = TabAppearance.Normal;
                 tab.DrawMode = TabDrawMode.OwnerDrawFixed;
-                tab.DrawItem += (object sender, DrawItemEventArgs e) => {
+                tab.DrawItem += (sender, e) => {
                     //Draw the background of the main control
                     using (var backColor = new SolidBrush(tab.Parent.BackColor)) {
                         e.Graphics.FillRectangle(backColor, tab.ClientRectangle);
@@ -302,12 +307,12 @@ namespace KindleMate2.DarkModeForms {
                             TabPage tabPage = tab.TabPages[i];
                             tabPage.BackColor = OScolors.Surface;
                             tabPage.BorderStyle = BorderStyle.FixedSingle;
-                            tabPage.ControlAdded += (object _s, ControlEventArgs _e) => { ThemeControl(_e.Control); };
+                            tabPage.ControlAdded += (_s, _e) => { ThemeControl(_e.Control); };
 
-                            Rectangle tBounds = e.Bounds;
+                            var tBounds = e.Bounds;
                             //tBounds.Inflate(100, 100);
 
-                            var IsSelected = tab.SelectedIndex == i;
+                            var IsSelected = (tab.SelectedIndex == i);
                             if (IsSelected) {
                                 e.Graphics.FillRectangle(tabBack, tBounds);
                                 TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, e.Bounds, OScolors.TextActive);
@@ -334,20 +339,17 @@ namespace KindleMate2.DarkModeForms {
             if (control is ListView lView) {
                 if (lView.View == View.Details) {
                     lView.OwnerDraw = true;
-                    lView.DrawColumnHeader += (object? sender, DrawListViewColumnHeaderEventArgs e) => {
+                    lView.DrawColumnHeader += (sender, e) => {
                         //e.DrawDefault = true;
                         //e.DrawBackground();
                         //e.DrawText();
 
-                        using (var backBrush = new SolidBrush(OScolors.ControlLight)) {
-                            using (var foreBrush = new SolidBrush(OScolors.TextActive)) {
-                                using (var sf = new StringFormat()) {
-                                    sf.Alignment = StringAlignment.Center;
-                                    e.Graphics.FillRectangle(backBrush, e.Bounds);
-                                    e.Graphics.DrawString(e.Header.Text, lView.Font, foreBrush, e.Bounds, sf);
-                                }
-                            }
-                        }
+                        using var backBrush = new SolidBrush(OScolors.ControlLight);
+                        using var foreBrush = new SolidBrush(OScolors.TextActive);
+                        using var sf = new StringFormat();
+                        sf.Alignment = StringAlignment.Center;
+                        e.Graphics.FillRectangle(backBrush, e.Bounds);
+                        e.Graphics.DrawString(e.Header.Text, lView.Font, foreBrush, e.Bounds, sf);
                     };
                     lView.DrawItem += (sender, e) => { e.DrawDefault = true; };
                     lView.DrawSubItem += (sender, e) => {
@@ -377,7 +379,7 @@ namespace KindleMate2.DarkModeForms {
                 button.FlatStyle = FStyle;
                 button.FlatAppearance.CheckedBackColor = OScolors.Accent;
                 button.BackColor = OScolors.Control;
-                button.FlatAppearance.BorderColor = OwnerForm.AcceptButton == button ? OScolors.Accent : OScolors.Control;
+                button.FlatAppearance.BorderColor = (OwnerForm.AcceptButton == button) ? OScolors.Accent : OScolors.Control;
                 //SetRoundBorders(button, 4, OScolors.SurfaceDark, 1);
             }
             if (control is Label label) {
@@ -475,9 +477,8 @@ namespace KindleMate2.DarkModeForms {
                 slider.BackColor = control.Parent.BackColor;
             }
 
-            if (control.ContextMenuStrip != null) {
+            if (control.ContextMenuStrip != null)
                 ThemeControl(control.ContextMenuStrip);
-            }
 
             foreach (Control childControl in control.Controls) {
                 // Recursively process its children
@@ -495,7 +496,7 @@ namespace KindleMate2.DarkModeForms {
         /// </summary>
         public static int GetWindowsColorMode(bool GetSystemColorModeInstead = false) {
             try {
-                return (int)Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme", -1);
+                return (int)Registry.GetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme", -1);
             } catch {
                 return 1;
             }
@@ -511,7 +512,7 @@ namespace KindleMate2.DarkModeForms {
             if (IsWindows10orGreater()) {
                 var color = colors.ColorizationColor;
 
-                var colorValue = long.Parse(color.ToString(), System.Globalization.NumberStyles.HexNumber);
+                var colorValue = long.Parse(color.ToString(), NumberStyles.HexNumber);
 
                 var transparency = (colorValue & 0xFF000000) >> 24;
                 var red = (colorValue & 0x00FF0000) >> 16;
@@ -519,9 +520,8 @@ namespace KindleMate2.DarkModeForms {
                 var blue = colorValue & 0x000000FF;
 
                 return Color.FromArgb((int)transparency, (int)red, (int)green, (int)blue);
-            } else {
-                return Color.CadetBlue;
             }
+            return Color.CadetBlue;
         }
 
         /// <summary>Returns Windows's System Colors for UI components following Google Material Design concepts.</summary>
@@ -530,7 +530,7 @@ namespace KindleMate2.DarkModeForms {
         public static OSThemeColors GetSystemColors(Form Window = null) {
             var _ret = new OSThemeColors();
 
-            var IsDarkMode = GetWindowsColorMode() <= 0; //<- O: DarkMode, 1: LightMode
+            var IsDarkMode = (GetWindowsColorMode() <= 0); //<- O: DarkMode, 1: LightMode
             if (IsDarkMode) {
                 _ret.Background = Color.FromArgb(32, 32, 32); //<- Negro Claro
                 _ret.BackgroundDark = Color.FromArgb(18, 18, 18);
@@ -571,62 +571,55 @@ namespace KindleMate2.DarkModeForms {
         /// <param name="borderSize">Size in pixels of the border line</param>
         /// <param name="underlinedStyle"></param>
         public static void SetRoundBorders(Control _Control, int Radius = 10, Color? borderColor = null, int borderSize = 2, bool underlinedStyle = false) {
-            try {
-                borderColor = borderColor ?? Color.MediumSlateBlue;
+            borderColor = borderColor ?? Color.MediumSlateBlue;
 
-                if (_Control != null) {
-                    _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
-                    _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
-                    _Control.Paint += (object sender, PaintEventArgs e) => {
-                        //base.OnPaint(e);
-                        Graphics graph = e.Graphics;
+            if (_Control != null) {
+                _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
+                _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
+                _Control.Paint += (sender, e) => {
+                    //base.OnPaint(e);
+                    Graphics graph = e.Graphics;
 
-                        if (Radius > 1) //Rounded TextBox
-                        {
-                            //-Fields
-                            Rectangle rectBorderSmooth = _Control.ClientRectangle;
-                            Rectangle rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
-                            var smoothSize = borderSize > 0 ? borderSize : 1;
+                    if (Radius > 1) //Rounded TextBox
+                    {
+                        //-Fields
+                        var rectBorderSmooth = _Control.ClientRectangle;
+                        var rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
+                        var smoothSize = borderSize > 0 ? borderSize : 1;
 
-                            using (GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius)) {
-                                using (GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize)) {
-                                    using (var penBorderSmooth = new Pen(_Control.Parent.BackColor, smoothSize)) {
-                                        using (var penBorder = new Pen((Color)borderColor, borderSize)) {
-                                            //-Drawing
-                                            _Control.Region = new Region(pathBorderSmooth); //Set the rounded region of UserControl
-                                            if (Radius > 15)                                //Set the rounded region of TextBox component
-                                            {
-                                                using (GraphicsPath pathTxt = GetFigurePath(_Control.ClientRectangle, borderSize * 2)) {
-                                                    _Control.Region = new Region(pathTxt);
-                                                }
-                                            }
-                                            graph.SmoothingMode = SmoothingMode.AntiAlias;
-                                            penBorder.Alignment = PenAlignment.Center;
-                                            //if (isFocused) penBorder.Color = borderFocusColor;
-
-                                            if (underlinedStyle) //Line Style
-                                            {
-                                                //Draw border smoothing
-                                                graph.DrawPath(penBorderSmooth, pathBorderSmooth);
-                                                //Draw border
-                                                graph.SmoothingMode = SmoothingMode.None;
-                                                graph.DrawLine(penBorder, 0, _Control.Height - 1, _Control.Width, _Control.Height - 1);
-                                            } else //Normal Style
-                                            {
-                                                //Draw border smoothing
-                                                graph.DrawPath(penBorderSmooth, pathBorderSmooth);
-                                                //Draw border
-                                                graph.DrawPath(penBorder, pathBorder);
+                        using (GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius))
+                            using (GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize))
+                                using (var penBorderSmooth = new Pen(_Control.Parent.BackColor, smoothSize))
+                                    using (var penBorder = new Pen((Color)borderColor, borderSize)) {
+                                        //-Drawing
+                                        _Control.Region = new Region(pathBorderSmooth); //Set the rounded region of UserControl
+                                        if (Radius > 15)                                //Set the rounded region of TextBox component
+                                        {
+                                            using (GraphicsPath pathTxt = GetFigurePath(_Control.ClientRectangle, borderSize * 2)) {
+                                                _Control.Region = new Region(pathTxt);
                                             }
                                         }
+                                        graph.SmoothingMode = SmoothingMode.AntiAlias;
+                                        penBorder.Alignment = PenAlignment.Center;
+                                        //if (isFocused) penBorder.Color = borderFocusColor;
+
+                                        if (underlinedStyle) //Line Style
+                                        {
+                                            //Draw border smoothing
+                                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
+                                            //Draw border
+                                            graph.SmoothingMode = SmoothingMode.None;
+                                            graph.DrawLine(penBorder, 0, _Control.Height - 1, _Control.Width, _Control.Height - 1);
+                                        } else //Normal Style
+                                        {
+                                            //Draw border smoothing
+                                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
+                                            //Draw border
+                                            graph.DrawPath(penBorder, pathBorder);
+                                        }
                                     }
-                                }
-                            }
-                        }
-                    };
-                }
-            } catch {
-                throw;
+                    }
+                };
             }
         }
 
@@ -645,7 +638,7 @@ namespace KindleMate2.DarkModeForms {
                 var tG = c.G / 255f;
                 var tB = c.B / 255f;
 
-                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][] {
+                var colorMatrix = new ColorMatrix(new[] {
                     new float[] {
                         0, 0, 0, 0, 0
                     },
@@ -658,12 +651,12 @@ namespace KindleMate2.DarkModeForms {
                     new float[] {
                         0, 0, 0, 1, 0
                     }, //<- not changing alpha
-                    new float[] {
+                    new[] {
                         tR, tG, tB, 0, 1
                     }
                 });
 
-                var attributes = new System.Drawing.Imaging.ImageAttributes();
+                var attributes = new ImageAttributes();
                 attributes.SetColorMatrix(colorMatrix);
 
                 g.DrawImage(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel, attributes);
@@ -671,9 +664,7 @@ namespace KindleMate2.DarkModeForms {
             return bmp2;
         }
 
-        public static Image ChangeToColor(Image bmp, Color c) {
-            return (Image)ChangeToColor((Bitmap)bmp, c);
-        }
+        public static Image ChangeToColor(Image bmp, Color c) => ChangeToColor((Bitmap)bmp, c);
 
         #endregion
 
@@ -694,35 +685,31 @@ namespace KindleMate2.DarkModeForms {
                 SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
                 Causes a window to use a different set of visual style information than its class normally uses.
              */
-            var DarkModeOn = new[] {
+            int[] DarkModeOn = {
                 0x01
             }; //<- 1=True, 0=False
 
             SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
 
-            if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0) {
+            if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0)
                 DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
-            }
 
             foreach (Control child in control.Controls) {
-                if (child.Controls.Count != 0) {
+                if (child.Controls.Count != 0)
                     ApplySystemDarkTheme(child);
-                }
             }
         }
 
         private static bool IsWindows10orGreater() {
-            if (WindowsVersion() >= 10) {
+            if (WindowsVersion() >= 10)
                 return true;
-            } else {
-                return false;
-            }
+            return false;
         }
 
         private static int WindowsVersion() {
             //for .Net4.8 and Minor
             var result = 10;
-            RegistryKey? reg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+            var reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
             string[] productName = reg.GetValue("ProductName").ToString().Split((char)32);
             int.TryParse(productName[1], out result);
             return result;
@@ -763,8 +750,6 @@ namespace KindleMate2.DarkModeForms {
 
     /// <summary>Windows 10+ System Colors for Clear Color Mode.</summary>
     public class OSThemeColors {
-        public OSThemeColors() { }
-
         /// <summary>For the very back of the Window</summary>
         public Color Background { get; set; } = SystemColors.Control;
 
@@ -982,11 +967,11 @@ namespace KindleMate2.DarkModeForms {
             #region Chevron
 
             var Padding = 2;                                    //<- From the right side
-            var cSize = new Size(8, 4);                         //<- Size of the Chevron: 8x4 px
+            var cSize = new Size(8, 4);                        //<- Size of the Chevron: 8x4 px
             var ChevronPen = new Pen(MyColors.TextInactive, 2); //<- Color and Border Width
-            var P1 = new Point(bounds.Width - (cSize.Width + Padding), bounds.Height / 2 - cSize.Height / 2);
-            var P2 = new Point(bounds.Width - Padding, bounds.Height / 2 - cSize.Height / 2);
-            var P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), bounds.Height / 2 + cSize.Height / 2);
+            var P1 = new Point(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
+            var P2 = new Point(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
+            var P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
 
             e.Graphics.DrawLine(ChevronPen, P1, P3);
             e.Graphics.DrawLine(ChevronPen, P2, P3);
@@ -1023,7 +1008,7 @@ namespace KindleMate2.DarkModeForms {
             Color gradientEnd = MyColors.Background;   // Color.FromArgb(125, 165, 224);
 
             var DrawIt = false;
-            var _menu = e.Item as ToolStripItem;
+            var _menu = e.Item;
             if (_menu.Pressed) {
                 gradientBegin = MyColors.Control; // Color.FromArgb(254, 128, 62);
                 gradientEnd = MyColors.Control;   // Color.FromArgb(255, 223, 154);
@@ -1035,9 +1020,8 @@ namespace KindleMate2.DarkModeForms {
             }
 
             if (DrawIt) {
-                using (Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical)) {
-                    g.FillRectangle(b, bounds);
-                }
+                using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
+                g.FillRectangle(b, bounds);
             }
         }
 

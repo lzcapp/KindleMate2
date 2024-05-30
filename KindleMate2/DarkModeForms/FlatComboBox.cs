@@ -47,10 +47,12 @@ namespace KindleMate2.DarkModeForms {
                 }
                 Color innerBorderColor = Enabled ? BackColor : SystemColors.Control;
                 Color outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
-                Color buttonColor = Enabled ? ButtonColor : SystemColors.Control;
+                Color contrButtonColor = Enabled ? ButtonColor : SystemColors.Control;
                 var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
-                var arrow = new Point[] {
-                    new(middle.X - 3, middle.Y - 2), new(middle.X + 4, middle.Y - 2), new(middle.X, middle.Y + 2)
+                var arrow = new[] {
+                    new(middle.X - 3, middle.Y - 2), new(middle.X + 4, middle.Y - 2), middle with {
+                        Y = middle.Y + 2
+                    }
                 };
                 var ps = new PAINTSTRUCT();
                 var shoulEndPaint = false;
@@ -76,7 +78,7 @@ namespace KindleMate2.DarkModeForms {
 
                     #region DropDown Button
 
-                    using (var b = new SolidBrush(buttonColor)) {
+                    using (var b = new SolidBrush(contrButtonColor)) {
                         g.FillRectangle(b, dropDownRect);
                     }
 
@@ -91,8 +93,10 @@ namespace KindleMate2.DarkModeForms {
                     //}
 
                     var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
-                    var chevron = new Point[] {
-                        new(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X, middle.Y + cSize.Height / 2)
+                    var chevron = new[] {
+                        new(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2), middle with {
+                            Y = middle.Y + cSize.Height / 2
+                        }
                     };
                     using (var chevronPen = new Pen(BorderColor, 2.5f)) //<- Color and Border Width
                     {

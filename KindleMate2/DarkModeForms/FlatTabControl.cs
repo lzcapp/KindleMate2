@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 
 namespace KindleMate2.DarkModeForms {
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class FlatTabControl : TabControl {
         #region Public Properties
 
@@ -41,7 +42,9 @@ namespace KindleMate2.DarkModeForms {
                 DrawMode = TabDrawMode.Normal;
                 ItemSize = new Size(0, 0);
                 SizeMode = TabSizeMode.Fixed;
-            } catch { }
+            } catch {
+                // ignored
+            }
         }
 
         protected override void InitLayout() {
@@ -107,7 +110,9 @@ namespace KindleMate2.DarkModeForms {
                     rectangle.Y = 26;
                     g.FillRectangle(bLineColor, rectangle);
                 }
-            } catch { }
+            } catch {
+                // ignored
+            }
         }
 
         internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex) {
@@ -117,13 +122,13 @@ namespace KindleMate2.DarkModeForms {
             Point[] points;
 
             if (Alignment == TabAlignment.Top) {
-                points = new[] {
+                points = [
                     new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Left, tabRect.Top + 0), new Point(tabRect.Left + 0, tabRect.Top), new Point(tabRect.Right - 0, tabRect.Top), new Point(tabRect.Right, tabRect.Top + 0), new Point(tabRect.Right, tabRect.Bottom), new Point(tabRect.Left, tabRect.Bottom)
-                };
+                ];
             } else {
-                points = new[] {
+                points = [
                     new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Right, tabRect.Top), new Point(tabRect.Right, tabRect.Bottom - 0), new Point(tabRect.Right - 0, tabRect.Bottom), new Point(tabRect.Left + 0, tabRect.Bottom), new Point(tabRect.Left, tabRect.Bottom - 0), new Point(tabRect.Left, tabRect.Top)
-                };
+                ];
             }
 
             // Draws the Tab Header:
