@@ -40,14 +40,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="DarkModeForms1\**" />
 		<Compile Remove="DarkModeForms\Example\**" />
-		<Compile Remove="DarkModeForms\Screenshots\**" />
 		<Compile Remove="Resources\**" />
+		<EmbeddedResource Remove="DarkModeForms1\**" />
 		<EmbeddedResource Remove="DarkModeForms\Example\**" />
-		<EmbeddedResource Remove="DarkModeForms\Screenshots\**" />
 		<EmbeddedResource Remove="Resources\**" />
+		<None Remove="DarkModeForms1\**" />
 		<None Remove="DarkModeForms\Example\**" />
-		<None Remove="DarkModeForms\Screenshots\**" />
 		<None Remove="Resources\**" />
 	</ItemGroup>
 

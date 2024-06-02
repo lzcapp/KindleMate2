@@ -1,13 +1,5 @@
-﻿using KindleMate2.DarkModeForms;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
+﻿using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
 using static KindleMate2.DarkModeForms.KeyValue;
 
 namespace KindleMate2.DarkModeForms {

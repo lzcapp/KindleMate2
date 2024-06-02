@@ -10,11 +10,6 @@ using Markdig;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        // ReSharper disable once NotAccessedField.Local
-        #pragma warning disable IDE0052 // 删除未读的私有成员
-        private readonly DarkModeCS _dm = null!;
-        #pragma warning restore IDE0052 // 删除未读的私有成员
-
         private DataTable _clippingsDataTable = new();
 
         private DataTable _originClippingsDataTable = new();
@@ -47,7 +42,7 @@ namespace KindleMate2 {
             InitializeComponent();
 
             if (_staticData.IsDarkTheme()) {
-                _dm = new DarkModeCS(this, false, false);
+                _ = new DarkModeCS(this, false);
                 menuTheme.Image = Properties.Resources.sun;
             } else {
                 _staticData.SetTheme("light");
@@ -380,8 +375,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -419,8 +413,7 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2,
-                SelectedImageIndex = 2
+                ImageIndex = 2, SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -757,7 +750,7 @@ namespace KindleMate2 {
             var delimiterIndex = new List<int>();
 
             for (var i = 0; i < lines.Count; i++) {
-                if (lines[i].Trim() == "==========") {
+                if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
                     delimiterIndex.Add(i);
                 }
             }
@@ -768,102 +761,116 @@ namespace KindleMate2 {
 
             try {
                 for (var i = 0; i < delimiterIndex.Count; i++) {
-                    var lastDelimiter = i == 0 ? 0 : delimiterIndex[i - 1] + 1;
-                    var thisDelimiter = delimiterIndex[i];
-                    var line1 = lines[lastDelimiter].Trim();
-                    var line2 = lines[lastDelimiter + 1].Trim();
-                    var line3 = lines[lastDelimiter + 2].Trim(); // line3 is left empty
-                    var line4 = "";
-                    for (var j = lastDelimiter + 3; j < thisDelimiter; j++) {
-                        line4 += lines[j];
-                        if (j != thisDelimiter - 1) {
-                            line4 += "\n";
-                        }
-                    }
-
-                    var line5 = lines[thisDelimiter].Trim(); // line 5 is "=========="
-
-                    var brieftype = 0;
-                    if (line2.Contains("笔记") || line2.Contains("Note")) {
-                        brieftype = 1;
-                    }
-
-                    var time = "";
-                    var loctime = line2.Split('|');
-                    var location = "";
-                    var pagenumber = 0;
-                    var dashIndex = loctime[0].IndexOf('-');
-                    if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
-                        location = loctime[0][(dashIndex + 1)..].Trim();
-                        Match pageMatch = PageNumberRegex().Match(location);
-                        if (pageMatch.Success) {
-                            _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
-                        } else {
-                            var lastIndexOfSharp = location.LastIndexOf('#');
-                            var lastIndexOfDot = location.LastIndexOf('.');
-
-                            if (lastIndexOfSharp != -1) {
-                                var trim = location[(lastIndexOfSharp + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim();
-                                var lastIndexOfDash = trim.LastIndexOf('-');
-                                _ = lastIndexOfDash != -1 ? int.TryParse(trim[(lastIndexOfDash + 1)..], out pagenumber) : int.TryParse(trim, out pagenumber);
-                            } else if (lastIndexOfDot != -1) {
-                                _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
-                            } else {
-                                _ = int.TryParse(location.Replace("Your Highlight on page", "").Trim(), out pagenumber);
+                    try {
+                        var CeiliDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
+                        var FloorDelimiter = delimiterIndex[i];
+                        var line1 = lines[CeiliDelimiter + 1].Trim();
+                        var line2 = lines[CeiliDelimiter + 2].Trim();
+                        var line3 = lines[CeiliDelimiter + 3].Trim(); // line3 is empty
+                        var line4 = lines[CeiliDelimiter + 4].Trim();
+                        if (CeiliDelimiter + 5 == CeiliDelimiter) {
+                            for (var index = CeiliDelimiter + 3; index < FloorDelimiter; index++) {
+                                line4 += lines[index];
+                                if (index < FloorDelimiter - 1) {
+                                    line4 += "\n";
+                                }
                             }
                         }
-                    }
+                        var line5 = lines[FloorDelimiter].Trim(); // line 5 is "=========="
 
-                    if (loctime.Length >= 3) {
-                        var datetime = loctime[2].Replace("Added on", "").Trim();
-                        var indexOfComma = datetime.IndexOf(',');
-                        datetime = datetime[(indexOfComma + 1)..].Trim();
-                        if (DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate)) {
-                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                        }
-                    } else {
-                        var datetime = loctime[1].Replace("添加于", "").Trim();
-                        var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                        if (dayOfWeekIndex != -1) {
-                            datetime = datetime.Remove(dayOfWeekIndex, 3);
+                        var brieftype = 0;
+                        if (line2.Contains("笔记") || line2.Contains("Note")) {
+                            brieftype = 1;
+                        } else if (lines.Contains("书签") || line2.Contains("Bookmark")) {
+                            // brieftype = 2;
+                            continue;
+                        } else if (lines.Contains("文章剪切") || line2.Contains("Cut")) {
+                            brieftype = 3;
                         }
 
-                        if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
-                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                        if (line4.Contains("您已达到本内容的剪贴上限")) {
+                            continue;
                         }
-                    }
 
-                    var key = time + "|" + location;
-                    if (_staticData.IsExistOriginalClippings(key)) {
-                        continue;
-                    }
+                        var time = "";
+                        var loctime = line2.Split('|');
+                        var location = "";
+                        var pagenumber = 0;
+                        var dashIndex = loctime[0].IndexOf('-');
+                        if (dashIndex != -1 && dashIndex < loctime[0].Length - 1) {
+                            location = loctime[0][(dashIndex + 1)..].Trim();
+                            Match pageMatch = PageNumberRegex().Match(location);
+                            if (pageMatch.Success) {
+                                _ = int.TryParse(pageMatch.Value.Replace("第 ", "").Replace(" 页", "").Trim(), out pagenumber);
+                            } else {
+                                var lastIndexOfSharp = location.LastIndexOf('#');
+                                var lastIndexOfDot = location.LastIndexOf('.');
 
-                    if (_staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5) <= 0) {
-                        continue;
-                    }
+                                if (lastIndexOfSharp != -1) {
+                                    var trim = location[(lastIndexOfSharp + 1)..].Replace("的标注", "").Replace("的笔记", "").Trim();
+                                    var lastIndexOfDash = trim.LastIndexOf('-');
+                                    _ = lastIndexOfDash != -1 ? int.TryParse(trim[(lastIndexOfDash + 1)..], out pagenumber) : int.TryParse(trim, out pagenumber);
+                                } else if (lastIndexOfDot != -1) {
+                                    _ = int.TryParse(location[(lastIndexOfDot + 2)..].Trim(), out pagenumber);
+                                } else {
+                                    _ = int.TryParse(location.Replace("Your Highlight on page", "").Trim(), out pagenumber);
+                                }
+                            }
+                        }
 
-                    string bookname;
-                    var authorname = "";
-                    var pattern = @"\(([^()]+)\)[^(]*$";
-                    Match match = Regex.Match(line1, pattern);
-                    if (match.Success) {
-                        authorname = match.Groups[1].Value.Trim();
-                        bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
-                    } else {
-                        bookname = line1;
-                    }
+                        if (loctime.Length >= 3) {
+                            var datetime = loctime[2].Replace("Added on", "").Trim();
+                            var indexOfComma = datetime.IndexOf(',');
+                            datetime = datetime[(indexOfComma + 1)..].Trim();
+                            if (DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate)) {
+                                time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                            }
+                        } else {
+                            var datetime = loctime[1].Replace("添加于", "").Trim();
+                            var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
+                            if (dayOfWeekIndex != -1) {
+                                datetime = datetime.Remove(dayOfWeekIndex, 3);
+                            }
 
-                    if (string.IsNullOrWhiteSpace(line4)) {
-                        continue;
-                    }
+                            if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
+                                time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                            }
+                        }
 
-                    if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
-                        continue;
-                    }
+                        var key = time + "|" + location;
+                        if (_staticData.IsExistOriginalClippings(key)) {
+                            continue;
+                        }
 
-                    var insertResult = _staticData.InsertClippings(key, line4, bookname, authorname, brieftype, location, time, pagenumber);
-                    if (insertResult > 0) {
-                        insertedCount += insertResult;
+                        if (_staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5) <= 0) {
+                            continue;
+                        }
+
+                        string bookname;
+                        var authorname = "";
+                        var pattern = @"\(([^()]+)\)[^(]*$";
+                        Match match = Regex.Match(line1, pattern);
+                        if (match.Success) {
+                            authorname = match.Groups[1].Value.Trim();
+                            bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
+                        } else {
+                            bookname = line1;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(line4)) {
+                            continue;
+                        }
+
+                        if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
+                            continue;
+                        }
+
+                        var insertResult = _staticData.InsertClippings(key, line4, bookname, authorname, brieftype, location, time, pagenumber);
+                        if (insertResult > 0) {
+                            insertedCount += insertResult;
+                        }
+                    } catch (Exception) {
+                        // ignored
                     }
                 }
 
@@ -889,11 +896,11 @@ namespace KindleMate2 {
                 var selectedIndex = tabControl.SelectedIndex;
                 switch (selectedIndex) {
                     case 0:
-                        var bookname = selectedRow.Cells["bookname"].Value.ToString();
-                        var authorname = selectedRow.Cells["authorname"].Value.ToString();
-                        var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
-                        var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString();
-                        var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n");
+                        var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
+                        var authorname = selectedRow.Cells["authorname"].Value.ToString() ?? string.Empty;
+                        var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString() ?? string.Empty;
+                        var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString() ?? string.Empty;
+                        var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
 
                         lblBook.Text = bookname;
                         if (authorname != string.Empty) {
@@ -1276,8 +1283,7 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
+                    FileName = repoUrl, UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1586,8 +1592,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
-                UseShellExecute = true
+                FileName = Application.ExecutablePath, UseShellExecute = true
             });
 
             Environment.Exit(0);
