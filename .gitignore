@@ -398,3 +398,5 @@ FodyWeavers.xsd
 *.sln.iml
 
 **/.idea/**
+/KindleMate2/DarkModeForms/Screenshots
+/KindleMate2/DarkModeForms/Example

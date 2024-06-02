@@ -47,7 +47,7 @@ namespace KindleMate2 {
             InitializeComponent();
 
             if (_staticData.IsDarkTheme()) {
-                _dm = new DarkModeCS(this);
+                _dm = new DarkModeCS(this, false, false);
                 menuTheme.Image = Properties.Resources.sun;
             } else {
                 _staticData.SetTheme("light");

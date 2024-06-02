@@ -1,15 +1,19 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace KindleMate2.DarkModeForms {
     // *** CREDITS:  https://github.com/r-aghaei/FlatComboExample/tree/master
 
     public class FlatComboBox : ComboBox {
         private Color borderColor = Color.Gray;
-
         [DefaultValue(typeof(Color), "Gray")]
         public Color BorderColor {
-            get => borderColor;
+            get { return borderColor; }
             set {
                 if (borderColor != value) {
                     borderColor = value;
@@ -19,10 +23,9 @@ namespace KindleMate2.DarkModeForms {
         }
 
         private Color buttonColor = Color.LightGray;
-
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor {
-            get => buttonColor;
+            get { return buttonColor; }
             set {
                 if (buttonColor != value) {
                     buttonColor = value;
@@ -33,52 +36,60 @@ namespace KindleMate2.DarkModeForms {
 
         protected override void WndProc(ref Message m) {
             if (m.Msg == WM_PAINT && DropDownStyle != ComboBoxStyle.Simple) {
-                Rectangle clientRect = ClientRectangle;
+                var clientRect = ClientRectangle;
                 var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
-                var outerBorder = new Rectangle(clientRect.Location, new Size(clientRect.Width - 1, clientRect.Height - 1));
-                var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1, outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
-                var innerInnerBorder = new Rectangle(innerBorder.X + 1, innerBorder.Y + 1, innerBorder.Width - 2, innerBorder.Height - 2);
-                var dropDownRect = new Rectangle(innerBorder.Right + 1, innerBorder.Y - 1, dropDownButtonWidth, innerBorder.Height + 2);
+                var outerBorder = new Rectangle(clientRect.Location,
+                    new Size(clientRect.Width - 1, clientRect.Height - 1));
+                var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1,
+                    outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
+                var innerInnerBorder = new Rectangle(innerBorder.X + 1, innerBorder.Y + 1,
+                    innerBorder.Width - 2, innerBorder.Height - 2);
+                var dropDownRect = new Rectangle(innerBorder.Right + 1, innerBorder.Y - 1,
+                    dropDownButtonWidth, innerBorder.Height + 2);
                 if (RightToLeft == RightToLeft.Yes) {
                     innerBorder.X = clientRect.Width - innerBorder.Right;
                     innerInnerBorder.X = clientRect.Width - innerInnerBorder.Right;
                     dropDownRect.X = clientRect.Width - dropDownRect.Right;
                     dropDownRect.Width += 1;
                 }
-                Color innerBorderColor = Enabled ? BackColor : SystemColors.Control;
-                Color outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
-                Color contrButtonColor = Enabled ? ButtonColor : SystemColors.Control;
-                var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
-                var arrow = new[] {
-                    new(middle.X - 3, middle.Y - 2), new(middle.X + 4, middle.Y - 2), middle with {
-                        Y = middle.Y + 2
-                    }
+                var innerBorderColor = Enabled ? BackColor : SystemColors.Control;
+                var outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
+                var buttonColor = Enabled ? ButtonColor : SystemColors.Control;
+                var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2,
+                    dropDownRect.Top + dropDownRect.Height / 2);
+                var arrow = new Point[]
+                {
+                    new Point(middle.X - 3, middle.Y - 2),
+                    new Point(middle.X + 4, middle.Y - 2),
+                    new Point(middle.X, middle.Y + 2)
                 };
                 var ps = new PAINTSTRUCT();
                 var shoulEndPaint = false;
-                IntPtr dc;
-                if (m.WParam == IntPtr.Zero) {
+                nint dc;
+                if (m.WParam == nint.Zero) {
                     dc = BeginPaint(Handle, ref ps);
                     m.WParam = dc;
                     shoulEndPaint = true;
                 } else {
                     dc = m.WParam;
                 }
-                var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top, innerInnerBorder.Right, innerInnerBorder.Bottom);
+                var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top,
+                    innerInnerBorder.Right, innerInnerBorder.Bottom);
                 SelectClipRgn(dc, rgn);
                 DefWndProc(ref m);
                 DeleteObject(rgn);
-                rgn = CreateRectRgn(clientRect.Left, clientRect.Top, clientRect.Right, clientRect.Bottom);
+                rgn = CreateRectRgn(clientRect.Left, clientRect.Top,
+                    clientRect.Right, clientRect.Bottom);
                 SelectClipRgn(dc, rgn);
 
-                using (Graphics g = Graphics.FromHdc(dc)) {
+                using (var g = Graphics.FromHdc(dc)) {
                     g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
                     g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
                     #region DropDown Button
 
-                    using (var b = new SolidBrush(contrButtonColor)) {
+                    using (var b = new SolidBrush(buttonColor)) {
                         g.FillRectangle(b, dropDownRect);
                     }
 
@@ -92,11 +103,12 @@ namespace KindleMate2.DarkModeForms {
                     //	g.FillPolygon(b, arrow);
                     //}
 
-                    var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
-                    var chevron = new[] {
-                        new(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2), new(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2), middle with {
-                            Y = middle.Y + cSize.Height / 2
-                        }
+                    Size cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
+                    var chevron = new Point[]
+                    {
+                        new Point(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2),
+                        new Point(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2),
+                        new Point(middle.X, middle.Y + cSize.Height / 2)
                     };
                     using (var chevronPen = new Pen(BorderColor, 2.5f)) //<- Color and Border Width
                     {
@@ -118,25 +130,21 @@ namespace KindleMate2.DarkModeForms {
 
                     #endregion
                 }
-                if (shoulEndPaint) {
+                if (shoulEndPaint)
                     EndPaint(Handle, ref ps);
-                }
                 DeleteObject(rgn);
-            } else {
+            } else
                 base.WndProc(ref m);
-            }
         }
 
         private const int WM_PAINT = 0xF;
-
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT {
             public int L, T, R, B;
         }
-
         [StructLayout(LayoutKind.Sequential)]
         public struct PAINTSTRUCT {
-            public IntPtr hdc;
+            public nint hdc;
             public bool fErase;
             public int rcPaint_left;
             public int rcPaint_top;
@@ -153,30 +161,28 @@ namespace KindleMate2.DarkModeForms {
             public int reserved7;
             public int reserved8;
         }
+        [DllImport("user32.dll")]
+        private static extern nint BeginPaint(nint hWnd,
+            [In, Out] ref PAINTSTRUCT lpPaint);
 
         [DllImport("user32.dll")]
-        private static extern IntPtr BeginPaint(IntPtr hWnd, [In] [Out] ref PAINTSTRUCT lpPaint);
-
-        [DllImport("user32.dll")]
-        private static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT lpPaint);
+        private static extern bool EndPaint(nint hWnd, ref PAINTSTRUCT lpPaint);
 
         [DllImport("gdi32.dll")]
-        public static extern int SelectClipRgn(IntPtr hDC, IntPtr hRgn);
+        public static extern int SelectClipRgn(nint hDC, nint hRgn);
 
         [DllImport("user32.dll")]
-        public static extern int GetUpdateRgn(IntPtr hwnd, IntPtr hrgn, bool fErase);
-
+        public static extern int GetUpdateRgn(nint hwnd, nint hrgn, bool fErase);
         public enum RegionFlags {
             ERROR = 0,
             NULLREGION = 1,
             SIMPLEREGION = 2,
-            COMPLEXREGION = 3
+            COMPLEXREGION = 3,
         }
+        [DllImport("gdi32.dll")]
+        internal static extern bool DeleteObject(nint hObject);
 
         [DllImport("gdi32.dll")]
-        internal static extern bool DeleteObject(IntPtr hObject);
-
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
+        private static extern nint CreateRectRgn(int x1, int y1, int x2, int y2);
     }
 }
