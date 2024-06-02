@@ -1,19 +1,12 @@
-﻿﻿using System;
-using System.Drawing;
+﻿using Microsoft.Win32;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using Microsoft.Win32;
-
 //using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-
-
-namespace DarkModeForms
-{
-	/// <summary>This tries to automatically apply Windows Dark Mode (if enabled) to a Form.
-	/// <para>Author: BlueMystic (bluemystic.play@gmail.com)  2024</para></summary>
-	public class DarkModeCS
+namespace KindleMate2.DarkModeForms {
+    /// <summary>This tries to automatically apply Windows Dark Mode (if enabled) to a Form.
+    /// <para>Author: BlueMystic (bluemystic.play@gmail.com)  2024</para></summary>
+    public class DarkModeCS
 	{
 		#region Win32 API Declarations
 
