@@ -11,9 +11,12 @@ namespace KindleMate2.DarkModeForms {
 
     public class FlatComboBox : ComboBox {
         private Color borderColor = Color.Gray;
+
         [DefaultValue(typeof(Color), "Gray")]
         public Color BorderColor {
-            get { return borderColor; }
+            get {
+                return borderColor;
+            }
             set {
                 if (borderColor != value) {
                     borderColor = value;
@@ -23,9 +26,12 @@ namespace KindleMate2.DarkModeForms {
         }
 
         private Color buttonColor = Color.LightGray;
+
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor {
-            get { return buttonColor; }
+            get {
+                return buttonColor;
+            }
             set {
                 if (buttonColor != value) {
                     buttonColor = value;
@@ -38,14 +44,10 @@ namespace KindleMate2.DarkModeForms {
             if (m.Msg == WM_PAINT && DropDownStyle != ComboBoxStyle.Simple) {
                 var clientRect = ClientRectangle;
                 var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
-                var outerBorder = new Rectangle(clientRect.Location,
-                    new Size(clientRect.Width - 1, clientRect.Height - 1));
-                var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1,
-                    outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
-                var innerInnerBorder = new Rectangle(innerBorder.X + 1, innerBorder.Y + 1,
-                    innerBorder.Width - 2, innerBorder.Height - 2);
-                var dropDownRect = new Rectangle(innerBorder.Right + 1, innerBorder.Y - 1,
-                    dropDownButtonWidth, innerBorder.Height + 2);
+                var outerBorder = new Rectangle(clientRect.Location, new Size(clientRect.Width - 1, clientRect.Height - 1));
+                var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1, outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
+                var innerInnerBorder = new Rectangle(innerBorder.X + 1, innerBorder.Y + 1, innerBorder.Width - 2, innerBorder.Height - 2);
+                var dropDownRect = new Rectangle(innerBorder.Right + 1, innerBorder.Y - 1, dropDownButtonWidth, innerBorder.Height + 2);
                 if (RightToLeft == RightToLeft.Yes) {
                     innerBorder.X = clientRect.Width - innerBorder.Right;
                     innerInnerBorder.X = clientRect.Width - innerInnerBorder.Right;
@@ -55,13 +57,9 @@ namespace KindleMate2.DarkModeForms {
                 var innerBorderColor = Enabled ? BackColor : SystemColors.Control;
                 var outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
                 var buttonColor = Enabled ? ButtonColor : SystemColors.Control;
-                var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2,
-                    dropDownRect.Top + dropDownRect.Height / 2);
-                var arrow = new Point[]
-                {
-                    new Point(middle.X - 3, middle.Y - 2),
-                    new Point(middle.X + 4, middle.Y - 2),
-                    new Point(middle.X, middle.Y + 2)
+                var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
+                var arrow = new Point[] {
+                    new Point(middle.X - 3, middle.Y - 2), new Point(middle.X + 4, middle.Y - 2), new Point(middle.X, middle.Y + 2)
                 };
                 var ps = new PAINTSTRUCT();
                 var shoulEndPaint = false;
@@ -73,13 +71,11 @@ namespace KindleMate2.DarkModeForms {
                 } else {
                     dc = m.WParam;
                 }
-                var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top,
-                    innerInnerBorder.Right, innerInnerBorder.Bottom);
+                var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top, innerInnerBorder.Right, innerInnerBorder.Bottom);
                 SelectClipRgn(dc, rgn);
                 DefWndProc(ref m);
                 DeleteObject(rgn);
-                rgn = CreateRectRgn(clientRect.Left, clientRect.Top,
-                    clientRect.Right, clientRect.Bottom);
+                rgn = CreateRectRgn(clientRect.Left, clientRect.Top, clientRect.Right, clientRect.Bottom);
                 SelectClipRgn(dc, rgn);
 
                 using (var g = Graphics.FromHdc(dc)) {
@@ -104,11 +100,8 @@ namespace KindleMate2.DarkModeForms {
                     //}
 
                     Size cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
-                    var chevron = new Point[]
-                    {
-                        new Point(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2),
-                        new Point(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2),
-                        new Point(middle.X, middle.Y + cSize.Height / 2)
+                    var chevron = new Point[] {
+                        new Point(middle.X - cSize.Width / 2, middle.Y - cSize.Height / 2), new Point(middle.X + cSize.Width / 2, middle.Y - cSize.Height / 2), new Point(middle.X, middle.Y + cSize.Height / 2)
                     };
                     using (var chevronPen = new Pen(BorderColor, 2.5f)) //<- Color and Border Width
                     {
@@ -138,10 +131,12 @@ namespace KindleMate2.DarkModeForms {
         }
 
         private const int WM_PAINT = 0xF;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT {
             public int L, T, R, B;
         }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct PAINTSTRUCT {
             public nint hdc;
@@ -161,9 +156,9 @@ namespace KindleMate2.DarkModeForms {
             public int reserved7;
             public int reserved8;
         }
+
         [DllImport("user32.dll")]
-        private static extern nint BeginPaint(nint hWnd,
-            [In, Out] ref PAINTSTRUCT lpPaint);
+        private static extern nint BeginPaint(nint hWnd, [In, Out] ref PAINTSTRUCT lpPaint);
 
         [DllImport("user32.dll")]
         private static extern bool EndPaint(nint hWnd, ref PAINTSTRUCT lpPaint);
@@ -173,12 +168,14 @@ namespace KindleMate2.DarkModeForms {
 
         [DllImport("user32.dll")]
         public static extern int GetUpdateRgn(nint hwnd, nint hrgn, bool fErase);
+
         public enum RegionFlags {
             ERROR = 0,
             NULLREGION = 1,
             SIMPLEREGION = 2,
             COMPLEXREGION = 3,
         }
+
         [DllImport("gdi32.dll")]
         internal static extern bool DeleteObject(nint hObject);
 

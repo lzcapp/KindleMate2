@@ -150,28 +150,6 @@ namespace KindleMate2 {
                         }
                     }
                 }
-
-                DialogResult result = Dialog(Strings.Confirm_Import_Kindle_Mate_Database_File, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                switch (result) {
-                    case DialogResult.Yes:
-                        SetProgressBar(true);
-                        ImportKMDatabase();
-                        SetProgressBar(false);
-                        return;
-                    case DialogResult.No:
-                    default:
-                        if (!string.IsNullOrEmpty(_kindleDrive)) {
-                            DialogResult resultKindle = Dialog(Strings.Kindle_Connected_Confirm_Import, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            if (resultKindle == DialogResult.Yes) {
-                                ImportFromKindle();
-                                return;
-                            }
-                        }
-
-                        break;
-                }
             }
 
             RefreshData();
@@ -593,25 +571,7 @@ namespace KindleMate2 {
         }
 
         // ReSharper disable once InconsistentNaming
-        private void ImportKMDatabase() {
-            var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = "dat",
-                Filter = Strings.Kindle_Mate_Database_File + Strings.Space + @"(*.dat)|*.dat",
-                FilterIndex = 2,
-                RestoreDirectory = true,
-                ReadOnlyChecked = true,
-                ShowReadOnly = true
-            };
-
-            if (fileDialog.ShowDialog() != DialogResult.OK) {
-                return;
-            }
-
-            var selectedFilePath = fileDialog.FileName;
-
+        private string ImportKMDatabase(string selectedFilePath) {
             SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";Version=3;");
 
             var clippingsDataTable = new DataTable();
@@ -713,9 +673,7 @@ namespace KindleMate2 {
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
-            Dialog(Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            RefreshData();
+            return Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private string ImportKindleClippings(string clippingsPath) {
@@ -776,6 +734,7 @@ namespace KindleMate2 {
                             }
                         }
                     }
+                    var content = line4;
                     var line5 = lines[florDelimiter].Trim();     // line 5 is "=========="
 
                     var brieftype = 0;
@@ -793,13 +752,14 @@ namespace KindleMate2 {
                     }
 
                     var split_b = line2.Split('|');
-                    var strLoc = "";
+
+                    var clippingtypelocation = "";
                     if (split_b.Length > 1) {
-                        strLoc = split_b[0][1..].Trim();
+                        clippingtypelocation = split_b[0][1..].Trim();
                     }
-                    var split_d = strLoc.Split('-');
+                    var split_d = clippingtypelocation.Split('-');
                     if (split_d.Length > 1) {
-                        strLoc = split_d[1].Trim().ToUpper();
+                        clippingtypelocation = split_d[1].Trim().ToUpper();
                     }
                     var pagenumber = -1;
                     /*
@@ -812,53 +772,51 @@ namespace KindleMate2 {
                         strLoc = strLoc.Split('-', '.', '#')[0].Trim();
                         */
                     var pagenPattern = @"#?\d+(?:-\d+)?";
-                    var isPagenIsMatch = Regex.IsMatch(strLoc, pagenPattern);
+                    var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                    var isRomanMatched = Regex.IsMatch(strLoc, romanPattern);
-                    var strMatched = "";
-                    var isParsed = false;
+                    var isRomanMatched = Regex.IsMatch(clippingtypelocation, romanPattern);
+                    string strMatched;
+                    var isPageParsed = false;
                     if (isPagenIsMatch) {
-                        var split = strLoc.Split("-");
+                        var split = clippingtypelocation.Split("-");
                         if (split.Length > 1) {
-                            strLoc = strLoc.Split("-")[1];
+                            clippingtypelocation = clippingtypelocation.Split("-")[1];
                         }
-                        strLoc = strLoc.Replace("#", "");
-                        strMatched = Regex.Match(strLoc, pagenPattern).Value;
-                        isParsed = int.TryParse(strMatched, out pagenumber);
+                        clippingtypelocation = clippingtypelocation.Replace("#", "");
+                        strMatched = Regex.Match(clippingtypelocation, pagenPattern).Value;
+                        isPageParsed = int.TryParse(strMatched, out pagenumber);
                     } else if (isRomanMatched) {
-                        strMatched = _staticData.RomanToInteger(strLoc).ToString();
-                        isParsed = int.TryParse(strMatched, out pagenumber);
+                        strMatched = _staticData.RomanToInteger(clippingtypelocation).ToString();
+                        isPageParsed = int.TryParse(strMatched, out pagenumber);
                     }
-                    if (isParsed == false || pagenumber == 0) {
+                    if (isPageParsed == false || pagenumber == 0) {
                         continue;
                     }
                         
-                    var time = "";
-                    if (split_b.Length >= 3) {
-                        var datetime = split_b[2].Replace("Added on", "").Trim();
-                        var indexOfComma = datetime.IndexOf(',');
-                        datetime = datetime[(indexOfComma + 1)..].Trim();
-                        if (DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate)) {
-                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                        }
-                    } else {
-                        var datetime = split_b[1].Replace("添加于", "").Trim();
+                    string clippingdate;
+                    var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
+                    datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
+                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
+                    if (!isDateParsed) {
                         var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                         if (dayOfWeekIndex != -1) {
                             datetime = datetime.Remove(dayOfWeekIndex, 3);
                         }
-
-                        if (DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out DateTime parsedDate)) {
-                            time = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                        }
+                        isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
+                    }
+                    if (isDateParsed && parsedDate != DateTime.MinValue) {
+                        clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    } else {
+                        continue;
                     }
 
-                    var key = time + "|" + strLoc;
+                    var key = clippingdate + "|" + clippingtypelocation;
                     if (_staticData.IsExistOriginalClippings(key)) {
                         continue;
                     }
 
-                    if (_staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5) <= 0) {
+                    var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
+                    if (!isOriginClippingsInserted) {
                         continue;
                     }
 
@@ -873,23 +831,18 @@ namespace KindleMate2 {
                         bookname = line1;
                     }
 
-                    if (string.IsNullOrWhiteSpace(line4)) {
-                        continue;
-                    }
-
                     if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
                         continue;
                     }
 
-                    var insertResult = _staticData.InsertClippings(key, line4, bookname, authorname, brieftype, strLoc, time, pagenumber);
-                    if (insertResult > 0) {
-                        insertedCount += insertResult;
+                    var insertResult = _staticData.InsertClippings(key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber);
+                    if (insertResult) {
+                        insertedCount += 1;
                     }
                 }
 
                 _staticData.CommitTransaction();
             } catch (Exception) {
-                throw;
                 _staticData.RollbackTransaction();
                 return string.Empty;
             }
@@ -1276,10 +1229,21 @@ namespace KindleMate2 {
                 return;
             }
 
-            var result = ImportKindleClippings(fileDialog.FileName);
-            if (!string.IsNullOrWhiteSpace(result)) {
-                Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            SetProgressBar(true);
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, workEventArgs) => {
+                workEventArgs.Result = ImportKindleClippings(fileDialog.FileName);
+            };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
+                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                SetProgressBar(false);
+                RefreshData();
+            };
 
             RefreshData();
         }
@@ -1287,10 +1251,41 @@ namespace KindleMate2 {
         private void SetProgressBar(bool isShow) {
             progressBar.Enabled = isShow;
             progressBar.Visible = isShow;
+            Enabled = !isShow;
         }
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
-            ImportKMDatabase();
+            var fileDialog = new OpenFileDialog {
+                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                DefaultExt = "dat",
+                Filter = Strings.Kindle_Mate_Database_File + Strings.Space + @"(*.dat)|*.dat",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+                ReadOnlyChecked = true,
+                ShowReadOnly = true
+            };
+
+            if (fileDialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
+
+            SetProgressBar(true);
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, workEventArgs) => {
+                workEventArgs.Result = ImportKMDatabase(fileDialog.FileName);
+            };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
+                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                SetProgressBar(false);
+                RefreshData();
+            };
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
@@ -1336,16 +1331,23 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
-            SetProgressBar(true);
             var kindleClippingsPath = Path.Combine(_kindleDrive, _kindleClippingsPath);
             var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
-            var importResult = Import(kindleClippingsPath, kindleWordsPath);
-            if (!string.IsNullOrWhiteSpace(importResult)) {
-                Dialog(importResult, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-
-            SetProgressBar(false);
-            RefreshData();
+            
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, e) => {
+                e.Result = Import(kindleClippingsPath, kindleWordsPath);
+            };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, e) => {
+                if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
+                    Dialog(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                SetProgressBar(false);
+                RefreshData();
+            };
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -1629,10 +1631,21 @@ namespace KindleMate2 {
                 return;
             }
 
-            var result = ImportKindleWords(fileDialog.FileName);
-            if (!string.IsNullOrWhiteSpace(result)) {
-                Dialog(result, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            SetProgressBar(true);
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, workEventArgs) => {
+                workEventArgs.Result = ImportKindleWords(fileDialog.FileName);
+            };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
+                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                SetProgressBar(false);
+                RefreshData();
+            };
 
             RefreshData();
         }

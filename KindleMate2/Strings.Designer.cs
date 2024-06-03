@@ -583,6 +583,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 导入失败 的本地化字符串。
+        /// </summary>
+        internal static string Import_Failed {
+            get {
+                return ResourceManager.GetString("Import_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入Kindle标注文件 的本地化字符串。
         /// </summary>
         internal static string Import_Kindle_Clipping_File {

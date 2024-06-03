@@ -107,7 +107,6 @@ namespace KindleMate2.DarkModeForms {
                 //	rectangle.Y = 26;
                 //	g.FillRectangle(bLineColor, rectangle);
                 //}
-
             } catch { }
         }
 
@@ -118,26 +117,12 @@ namespace KindleMate2.DarkModeForms {
             Point[] points;
 
             if (Alignment == TabAlignment.Top) {
-                points = new[]
-                {
-                    new Point(tabRect.Left+3, tabRect.Bottom),
-                    new Point(tabRect.Left+3, tabRect.Top + 0),
-                    new Point(tabRect.Left + 0, tabRect.Top),
-                    new Point(tabRect.Right - 0, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Top + 0),
-                    new Point(tabRect.Right, tabRect.Bottom),
-                    new Point(tabRect.Left+3, tabRect.Bottom)
+                points = new[] {
+                    new Point(tabRect.Left + 3, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Top + 0), new Point(tabRect.Left + 0, tabRect.Top), new Point(tabRect.Right - 0, tabRect.Top), new Point(tabRect.Right, tabRect.Top + 0), new Point(tabRect.Right, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Bottom)
                 };
             } else {
-                points = new[]
-                {
-                    new Point(tabRect.Left, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Bottom - 0),
-                    new Point(tabRect.Right - 0, tabRect.Bottom),
-                    new Point(tabRect.Left + 0, tabRect.Bottom),
-                    new Point(tabRect.Left, tabRect.Bottom - 0),
-                    new Point(tabRect.Left, tabRect.Top)
+                points = new[] {
+                    new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Right, tabRect.Top), new Point(tabRect.Right, tabRect.Bottom - 0), new Point(tabRect.Right - 0, tabRect.Bottom), new Point(tabRect.Left + 0, tabRect.Bottom), new Point(tabRect.Left, tabRect.Bottom - 0), new Point(tabRect.Left, tabRect.Top)
                 };
             }
 
@@ -148,18 +133,15 @@ namespace KindleMate2.DarkModeForms {
                 g.DrawPolygon(new Pen(HeaderColor), points);
 
                 if (isSelected) {
-                    g.DrawLine(new Pen(BackColor),
-                        new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left + 3, tabRect.Top));
-                    g.DrawLine(new Pen(Color.DodgerBlue),
-                        new Point(tabRect.Left + 3, tabRect.Top), new Point(tabRect.Left + tabRect.Width, tabRect.Top));
+                    g.DrawLine(new Pen(BackColor), new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left + 3, tabRect.Top));
+                    g.DrawLine(new Pen(Color.DodgerBlue), new Point(tabRect.Left + 3, tabRect.Top), new Point(tabRect.Left + tabRect.Width, tabRect.Top));
                 }
             }
 
             Rectangle rectangleF = tabTextRect;
             rectangleF.Y += 2;
 
-            TextRenderer.DrawText(g, customTabPage.Text, Font, rectangleF,
-                 isSelected ? SelectedForeColor : ForeColor);
+            TextRenderer.DrawText(g, customTabPage.Text, Font, rectangleF, isSelected ? SelectedForeColor : ForeColor);
         }
     }
 }

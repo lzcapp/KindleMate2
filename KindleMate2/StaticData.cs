@@ -123,9 +123,9 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public int InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
+        public bool InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
             if (key == string.Empty || line4 == string.Empty) {
-                return 0;
+                return false;
             }
 
             const string queryInsert = "INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)";
@@ -146,7 +146,7 @@ namespace KindleMate2 {
 
             var result = command.ExecuteNonQuery();
 
-            return result;
+            return result > 0;
         }
 
         public bool DeleteClippingsByKey(string key) {
@@ -177,9 +177,9 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int pagenumber) {
+        public bool InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int pagenumber) {
             if (key == string.Empty || content == string.Empty) {
-                return 0;
+                return false;
             }
 
             const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
@@ -205,7 +205,7 @@ namespace KindleMate2 {
 
             var result = command.ExecuteNonQuery();
 
-            return result;
+            return result > 0;
         }
 
         public int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {

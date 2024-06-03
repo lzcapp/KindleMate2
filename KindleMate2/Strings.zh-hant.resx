@@ -372,4 +372,7 @@
   <data name="AutomaticDetection" xml:space="preserve">
     <value>Automatic Detection</value>
   </data>
+  <data name="Import_Failed" xml:space="preserve">
+    <value>導入失敗</value>
+  </data>
 </root>
