@@ -352,7 +352,7 @@ namespace KindleMate2 {
             if (id == string.Empty || word == string.Empty) {
                 return false;
             }
-        
+
             const string queryInsert = "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)";
             using var command = new SQLiteCommand(queryInsert, _connection);
             command.Parameters.Add("@id", DbType.String);
@@ -627,22 +627,22 @@ namespace KindleMate2 {
 
                 using var vacuumConnection = new SQLiteConnection(ConnectionString);
                 vacuumConnection.Open();
-        
+
                 using (var command = new SQLiteCommand("VACUUM;", vacuumConnection)) {
                     command.ExecuteNonQuery();
                 }
-        
+
                 vacuumConnection.Close();
 
                 OpenConnection();
             } else {
                 using var vacuumConnection = new SQLiteConnection(ConnectionString);
                 vacuumConnection.Open();
-        
+
                 using (var command = new SQLiteCommand("VACUUM;", vacuumConnection)) {
                     command.ExecuteNonQuery();
                 }
-        
+
                 vacuumConnection.Close();
             }
         }
@@ -679,6 +679,53 @@ namespace KindleMate2 {
             }
 
             return result <= 0;
+        }
+
+        internal static string FormatFileSize(long fileSize) {
+            string[] sizes = [
+                "B", "KB", "MB", "GB", "TB"
+            ];
+
+            var order = 0;
+            double size = fileSize;
+
+            while (size >= 1024 && order < sizes.Length - 1) {
+                order++;
+                size /= 1024;
+            }
+
+            return $"{size:0.##} {sizes[order]}";
+        }
+
+        private static readonly Dictionary<char, int> romanMap = new() {
+            {'I', 1},
+            {'V', 5},
+            {'X', 10},
+            {'L', 50},
+            {'C', 100},
+            {'D', 500},
+            {'M', 1000}
+        };
+
+        public int RomanToInteger(string roman) {
+            var result = 0;
+            var prevValue = 0;
+
+            roman = roman.ToUpper();
+
+            for (var i = roman.Length - 1; i >= 0; i--) {
+                var value = romanMap[roman[i]];
+
+                if (value < prevValue) {
+                    result -= value;
+                } else {
+                    result += value;
+                }
+
+                prevValue = value;
+            }
+
+            return result;
         }
     }
 }

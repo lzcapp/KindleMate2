@@ -14,22 +14,6 @@ namespace KindleMate2 {
             }
         }
 
-        private static string FormatFileSize(long fileSize) {
-            string[] sizes = [
-                "B", "KB", "MB", "GB", "TB"
-            ];
-
-            var order = 0;
-            double size = fileSize;
-
-            while (size >= 1024 && order < sizes.Length - 1) {
-                order++;
-                size /= 1024;
-            }
-
-            return $"{size:0.##} {sizes[order]}";
-        }
-
         private static string AssemblyVersion {
             get => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
         }
@@ -76,7 +60,7 @@ namespace KindleMate2 {
             var filePath = Path.Combine(programsDirectory, "KM2.dat");
             var fileInfo = new FileInfo(filePath);
             var fileSize = fileInfo.Length;
-            lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + FormatFileSize(fileSize) + Strings.Right_Parenthesis;
+            lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + StaticData.FormatFileSize(fileSize) + Strings.Right_Parenthesis;
 
             lblVersionText.Text = Strings.Version;
             lblCopyrightText.Text = Strings.Copyright;
