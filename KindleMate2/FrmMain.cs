@@ -895,7 +895,10 @@ namespace KindleMate2 {
 
                         var usage_list = (from DataRow row in _lookupsDataTable.Rows where string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase) let str = row["word_key"].ToString() ?? string.Empty let strContent = row["usage"].ToString() ?? string.Empty where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent) select strContent).ToList();
                         var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
-                        var usage_clippings_list = _clippingsDataTable.Rows.Cast<DataRow>().Where(row => (row["content"].ToString() ?? string.Empty).Contains(word)).ToList();
+                        var usage_clippings_list = new List<DataRow>();
+                        if (word.Length > 1) {
+                            usage_clippings_list = _clippingsDataTable.Rows.Cast<DataRow>().Where(row => (row["content"].ToString() ?? string.Empty).Contains(word)).ToList();
+                        }
                         var usage_clippings = "";
                         foreach (DataRow? row in usage_clippings_list) {
                             var isContain = false;
@@ -903,7 +906,7 @@ namespace KindleMate2 {
                             if (string.IsNullOrWhiteSpace(strContent)) {
                                 continue;
                             }
-                            foreach (var str in usage_list.Where(str => str.Contains(strContent))) {
+                            foreach (var unused in usage_list.Where(strUsage => strUsage.Contains(strContent) || strContent.Contains(strUsage))) {
                                 isContain = true;
                             }
                             if (!isContain) {
