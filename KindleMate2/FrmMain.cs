@@ -884,6 +884,11 @@ namespace KindleMate2 {
 
                         break;
                     case 1:
+                        lblBook.Text = "";
+                        lblAuthor.Text = "";
+                        lblLocation.Text = "";
+                        lblContent.Text = "";
+
                         var word_key = selectedRow.Cells["word_key"].Value.ToString() ?? string.Empty;
                         var word = selectedRow.Cells["word"].Value.ToString() ?? string.Empty;
                         var stem = selectedRow.Cells["stem"].Value.ToString() ?? string.Empty;
@@ -923,7 +928,6 @@ namespace KindleMate2 {
 
                         lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
 
-                        lblContent.Text = "";
                         lblContent.SelectionBullet = true;
                         lblContent.AppendText(usage);
                         lblContent.SelectionBullet = false;
