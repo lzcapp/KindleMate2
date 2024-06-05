@@ -49,6 +49,9 @@ namespace KindleMate2 {
                 menuTheme.Image = Properties.Resources.new_moon;
             }
 
+            treeViewBooks.ContextMenuStrip = menu;
+            treeViewWords.ContextMenuStrip = menu;
+
             var name = _staticData.GetLanguage();
             if (!string.IsNullOrWhiteSpace(name)) {
                 var culture = new CultureInfo(name);
@@ -95,6 +98,7 @@ namespace KindleMate2 {
 
             menuFile.Text = Strings.Files + @"(&F)";
             menuRefresh.Text = Strings.Refresh;
+            menuListRefresh.Text = Strings.Refresh;
             menuStatistic.Text = Strings.Statistics;
             menuRestart.Text = Strings.Restart;
             menuExit.Text = Strings.Exit;
@@ -353,7 +357,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(book => book.BookName);
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewBooks.Nodes.Clear();
@@ -391,7 +396,8 @@ namespace KindleMate2 {
             }).Distinct().OrderBy(word => word.Word);
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
-                ImageIndex = 2, SelectedImageIndex = 2
+                ImageIndex = 2,
+                SelectedImageIndex = 2
             };
 
             treeViewWords.Nodes.Clear();
@@ -792,7 +798,7 @@ namespace KindleMate2 {
                     if (isPageParsed == false || pagenumber == 0) {
                         continue;
                     }
-                        
+
                     string clippingdate;
                     var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
                     datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
@@ -861,6 +867,12 @@ namespace KindleMate2 {
                 }
 
                 var selectedIndex = tabControl.SelectedIndex;
+
+                lblBook.Text = "";
+                lblAuthor.Text = "";
+                lblLocation.Text = "";
+                lblContent.Text = "";
+
                 switch (selectedIndex) {
                     case 0:
                         var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
@@ -884,11 +896,6 @@ namespace KindleMate2 {
 
                         break;
                     case 1:
-                        lblBook.Text = "";
-                        lblAuthor.Text = "";
-                        lblLocation.Text = "";
-                        lblContent.Text = "";
-
                         var word_key = selectedRow.Cells["word_key"].Value.ToString() ?? string.Empty;
                         var word = selectedRow.Cells["word"].Value.ToString() ?? string.Empty;
                         var stem = selectedRow.Cells["stem"].Value.ToString() ?? string.Empty;
@@ -1323,7 +1330,8 @@ namespace KindleMate2 {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl, UseShellExecute = true
+                    FileName = repoUrl,
+                    UseShellExecute = true
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
@@ -1364,7 +1372,7 @@ namespace KindleMate2 {
         private void ImportFromKindle() {
             var kindleClippingsPath = Path.Combine(_kindleDrive, _kindleClippingsPath);
             var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
-            
+
             var bw = new BackgroundWorker();
             bw.DoWork += (_, e) => {
                 e.Result = Import(kindleClippingsPath, kindleWordsPath);
@@ -1639,7 +1647,8 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath, UseShellExecute = true
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true
             });
 
             Environment.Exit(0);
@@ -2037,6 +2046,10 @@ namespace KindleMate2 {
         private void MenuLangAuto_Click(object sender, EventArgs e) {
             _staticData.SetLanguage("");
             Restart();
+        }
+
+        private void MenuListRefresh_Click(object sender, EventArgs e) {
+            RefreshData();
         }
     }
 }
