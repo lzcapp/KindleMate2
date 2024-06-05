@@ -143,18 +143,6 @@
 		<EmbeddedResource Update="FrmBookRename.zh-hant.resx">
 			<DependentUpon>FrmBookRename.resx</DependentUpon>
 		</EmbeddedResource>
-		<EmbeddedResource Update="FrmCombine.en.resx">
-			<DependentUpon>FrmCombine.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmCombine.zh-cn.resx">
-			<DependentUpon>FrmCombine.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmCombine.zh-hans.resx">
-			<DependentUpon>FrmCombine.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmCombine.zh-hant.resx">
-			<DependentUpon>FrmCombine.resx</DependentUpon>
-		</EmbeddedResource>
 		<EmbeddedResource Update="FrmEdit.en.resx">
 			<DependentUpon>FrmEdit.resx</DependentUpon>
 		</EmbeddedResource>
