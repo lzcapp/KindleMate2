@@ -29,6 +29,8 @@
 
 ## Screenshots
 
-![Screenshots 01](Screenshots/01.png)
-
-![Screenshots 02](Screenshots/02.png)
+<img src="Screenshots/01.png" width="100%">
+<img src="Screenshots/02.png" width="100%">
+<img src="Screenshots/03.png" width="100%">
+<img src="Screenshots/04.png" width="100%">
+<img src="Screenshots/05.png" width="100%">
