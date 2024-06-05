@@ -1,39 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.ComponentModel;
 
 namespace KindleMate2.DarkModeForms {
     public class FlatTabControl : TabControl {
-        #region Public Properties
-
-        [Description("Color for a decorative line"), Category("Appearance")]
-        public Color LineColor { get; set; } = SystemColors.Highlight;
-
-        [Description("Color for all Borders"), Category("Appearance")]
-        public Color BorderColor { get; set; } = SystemColors.ControlDark;
-
-        [Description("Back color for selected Tab"), Category("Appearance")]
-        public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
-
-        [Description("Fore Color for Selected Tab"), Category("Appearance")]
-        public Color SelectedForeColor { get; set; } = SystemColors.HighlightText;
-
-        [Description("Back Color for un-selected tabs"), Category("Appearance")]
-        public Color TabColor { get; set; } = SystemColors.ControlLight;
-
-        [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]
-        public override Color BackColor { get; set; } = SystemColors.Control;
-
-        [Description("Fore Color for all Texts"), Category("Appearance")]
-        public override Color ForeColor { get; set; } = SystemColors.ControlText;
-
-        #endregion
-
         public FlatTabControl() {
             try {
                 Appearance = TabAppearance.Buttons;
@@ -80,7 +48,7 @@ namespace KindleMate2.DarkModeForms {
 
                 g.Clip = region;
 
-                using (Pen border = new Pen(BorderColor)) {
+                using (var border = new Pen(BorderColor)) {
                     g.DrawRectangle(border, clientRectangle);
 
                     if (SelectedTab != null) {
@@ -97,15 +65,15 @@ namespace KindleMate2.DarkModeForms {
                 // a decorative line on top of pages:
                 //using (Brush bLineColor = new SolidBrush(LineColor))
                 //{
-                //	Rectangle rectangle = ClientRectangle;
-                //	rectangle.Height = 1;
-                //	rectangle.Y = 25;
-                //	g.FillRectangle(bLineColor, rectangle);
+                //  Rectangle rectangle = ClientRectangle;
+                //  rectangle.Height = 1;
+                //  rectangle.Y = 25;
+                //  g.FillRectangle(bLineColor, rectangle);
 
-                //	rectangle = ClientRectangle;
-                //	rectangle.Height = 1;
-                //	rectangle.Y = 26;
-                //	g.FillRectangle(bLineColor, rectangle);
+                //  rectangle = ClientRectangle;
+                //  rectangle.Height = 1;
+                //  rectangle.Y = 26;
+                //  g.FillRectangle(bLineColor, rectangle);
                 //}
             } catch { }
         }
@@ -118,11 +86,13 @@ namespace KindleMate2.DarkModeForms {
 
             if (Alignment == TabAlignment.Top) {
                 points = new[] {
-                    new Point(tabRect.Left + 3, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Top + 0), new Point(tabRect.Left + 0, tabRect.Top), new Point(tabRect.Right - 0, tabRect.Top), new Point(tabRect.Right, tabRect.Top + 0), new Point(tabRect.Right, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Bottom)
+                    new Point(tabRect.Left + 3, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Top + 0), new Point(tabRect.Left + 0, tabRect.Top), new Point(tabRect.Right - 0, tabRect.Top), new Point(tabRect.Right, tabRect.Top + 0),
+                    new Point(tabRect.Right, tabRect.Bottom), new Point(tabRect.Left + 3, tabRect.Bottom)
                 };
             } else {
                 points = new[] {
-                    new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Right, tabRect.Top), new Point(tabRect.Right, tabRect.Bottom - 0), new Point(tabRect.Right - 0, tabRect.Bottom), new Point(tabRect.Left + 0, tabRect.Bottom), new Point(tabRect.Left, tabRect.Bottom - 0), new Point(tabRect.Left, tabRect.Top)
+                    new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Right, tabRect.Top), new Point(tabRect.Right, tabRect.Bottom - 0), new Point(tabRect.Right - 0, tabRect.Bottom), new Point(tabRect.Left + 0, tabRect.Bottom),
+                    new Point(tabRect.Left, tabRect.Bottom - 0), new Point(tabRect.Left, tabRect.Top)
                 };
             }
 
@@ -143,5 +113,38 @@ namespace KindleMate2.DarkModeForms {
 
             TextRenderer.DrawText(g, customTabPage.Text, Font, rectangleF, isSelected ? SelectedForeColor : ForeColor);
         }
+
+        #region Public Properties
+
+        [Description("Color for a decorative line")]
+        [Category("Appearance")]
+        public Color LineColor { get; set; } = SystemColors.Highlight;
+
+        [Description("Color for all Borders")]
+        [Category("Appearance")]
+        public Color BorderColor { get; set; } = SystemColors.ControlDark;
+
+        [Description("Back color for selected Tab")]
+        [Category("Appearance")]
+        public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
+
+        [Description("Fore Color for Selected Tab")]
+        [Category("Appearance")]
+        public Color SelectedForeColor { get; set; } = SystemColors.HighlightText;
+
+        [Description("Back Color for un-selected tabs")]
+        [Category("Appearance")]
+        public Color TabColor { get; set; } = SystemColors.ControlLight;
+
+        [Description("Background color for the whole control")]
+        [Category("Appearance")]
+        [Browsable(true)]
+        public override Color BackColor { get; set; } = SystemColors.Control;
+
+        [Description("Fore Color for all Texts")]
+        [Category("Appearance")]
+        public override Color ForeColor { get; set; } = SystemColors.ControlText;
+
+        #endregion Public Properties
     }
 }
