@@ -763,14 +763,14 @@ namespace KindleMate2 {
                     }
                     var pagenumber = -1;
                     /*
-                        strLoc = strLoc.Replace("您在位置 #", "")
-                                       .Replace("的标注", "")
-                                       .Replace("的笔记", "")
-                                       .Replace("your note on location", "")
-                                       .Replace("your highlight on page", "")
-                                       .Trim();
-                        strLoc = strLoc.Split('-', '.', '#')[0].Trim();
-                        */
+                    strLoc = strLoc.Replace("您在位置 #", "")
+                                   .Replace("的标注", "")
+                                   .Replace("的笔记", "")
+                                   .Replace("your note on location", "")
+                                   .Replace("your highlight on page", "")
+                                   .Trim();
+                    strLoc = strLoc.Split('-', '.', '#')[0].Trim();
+                    */
                     var pagenPattern = @"#?\d+(?:-\d+)?";
                     var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
@@ -884,12 +884,32 @@ namespace KindleMate2 {
 
                         break;
                     case 1:
-                        var word_key = selectedRow.Cells["word_key"].Value.ToString();
-                        var word = selectedRow.Cells["word"].Value.ToString();
-                        var stem = selectedRow.Cells["stem"].Value.ToString();
-                        var frequency = selectedRow.Cells["frequency"].Value.ToString();
+                        var word_key = selectedRow.Cells["word_key"].Value.ToString() ?? string.Empty;
+                        var word = selectedRow.Cells["word"].Value.ToString() ?? string.Empty;
+                        var stem = selectedRow.Cells["stem"].Value.ToString() ?? string.Empty;
+                        var frequency = selectedRow.Cells["frequency"].Value.ToString() ?? string.Empty;
 
-                        var usage = _lookupsDataTable.Rows.Cast<DataRow>().Where(row => row["word_key"].ToString() == word_key).Aggregate("", (current, row) => current + (row["usage"] + "\n")).Replace(" 　　", "\n");
+                        if (string.IsNullOrWhiteSpace(word_key) || string.IsNullOrWhiteSpace(word) || string.IsNullOrWhiteSpace(stem) || string.IsNullOrWhiteSpace(frequency)) {
+                            break;
+                        }
+
+                        var usage_list = (from DataRow row in _lookupsDataTable.Rows where string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase) let str = row["word_key"].ToString() ?? string.Empty let strContent = row["usage"].ToString() ?? string.Empty where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent) select strContent).ToList();
+                        var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
+                        var usage_clippings_list = _clippingsDataTable.Rows.Cast<DataRow>().Where(row => (row["content"].ToString() ?? string.Empty).Contains(word)).ToList();
+                        var usage_clippings = "";
+                        foreach (DataRow? row in usage_clippings_list) {
+                            var isContain = false;
+                            var strContent = row["content"].ToString() ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(strContent)) {
+                                continue;
+                            }
+                            foreach (var str in usage_list.Where(str => str.Contains(strContent))) {
+                                isContain = true;
+                            }
+                            if (!isContain) {
+                                usage_clippings += strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n";
+                            }
+                        }
 
                         lblBook.Text = word;
                         if (stem != string.Empty && stem != word) {
@@ -903,6 +923,10 @@ namespace KindleMate2 {
                         lblContent.Text = "";
                         lblContent.SelectionBullet = true;
                         lblContent.AppendText(usage);
+                        lblContent.SelectionBullet = false;
+                        lblContent.AppendText("\n");
+                        lblContent.SelectionBullet = true;
+                        lblContent.AppendText(usage_clippings);
                         lblContent.SelectionBullet = false;
 
                         var index = 0;
