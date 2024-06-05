@@ -12,17 +12,15 @@ namespace KindleMate2.DarkModeForms {
         /// <example>
         ///     Modo de Uso del <see cref="InputBox" /> method.
         ///     <code>
-        ///  List<KeyValue>
-        ///             props = new List
-        ///             <KeyValue>
-        ///                 {
-        ///                 new KeyValue("[FieldName]", "[Default Value]", KeyValue.ValueTypes.String),
-        ///                 };
-        ///                 if (Util.InputBox("[WindowTitle]", "[Prompt]", ref props, Base64Icons.MsgIcon.Edit) == DialogResult.OK)
-        ///                 {
-        ///                 Console.WriteLine(props[0].Value);
-        ///                 }
-        /// </code>
+        ///     List&lt;KeyValue&gt;props = new List&lt;KeyValue&gt;
+        ///     {
+        ///         new KeyValue("[FieldName]", "[Default Value]", KeyValue.ValueTypes.String),
+        ///     };
+        ///     if (Util.InputBox("[WindowTitle]", "[Prompt]", ref props, Base64Icons.MsgIcon.Edit) == DialogResult.OK)
+        ///     {
+        ///         Console.WriteLine(props[0].Value);
+        ///     }
+        ///     </code>
         /// </example>
         /// <param name="title">Expresión de tipo String que se muestra en la barra de título del cuadro de diálogo.</param>
         /// <param name="promptText">Expresión de tipo String que se muestra como mensaje en el cuadro de diálogo.</param>
