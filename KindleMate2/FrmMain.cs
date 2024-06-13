@@ -877,7 +877,6 @@ namespace KindleMate2 {
                     case 0:
                         var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
                         var authorname = selectedRow.Cells["authorname"].Value.ToString() ?? string.Empty;
-                        var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString() ?? string.Empty;
                         var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString() ?? string.Empty;
                         var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
 
@@ -888,7 +887,7 @@ namespace KindleMate2 {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblLocation.Text = clippinglocation + Strings.Space + Strings.Left_Parenthesis + Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page + Strings.Right_Parenthesis;
+                        lblLocation.Text = Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page;
 
                         lblContent.Text = string.Empty;
                         lblContent.SelectionBullet = false;

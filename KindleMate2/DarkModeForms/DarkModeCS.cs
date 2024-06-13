@@ -322,7 +322,7 @@ namespace KindleMate2.DarkModeForms {
             }
             if (control is Panel panel) {
                 // Process the panel within the container
-                panel.BackColor = OScolors.Surface;
+                panel.BackColor = panel.Parent.BackColor;
                 panel.BorderStyle = BorderStyle.None;
 
                 if (!(panel.Parent is TabControl) || !(panel.Parent is TableLayoutPanel)) {
@@ -434,6 +434,13 @@ namespace KindleMate2.DarkModeForms {
             }
             if (control is Label label) {
                 label.BorderStyle = BorderStyle.None;
+                if (label.ForeColor == OScolors.TextInactive) {
+                    label.ForeColor = OScolors.TextActive;
+                }
+            }
+            if (control is RichTextBox richTextBox) {
+                richTextBox.BorderStyle = BorderStyle.None;
+                richTextBox.BackColor = richTextBox.Parent.BackColor;
             }
             if (control is LinkLabel link) {
                 link.LinkColor = OScolors.AccentLight;

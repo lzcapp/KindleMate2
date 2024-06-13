@@ -200,19 +200,19 @@
             flowLayoutPanel.Location = new Point(149, 18);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Size = new Size(233, 32);
+            flowLayoutPanel.Size = new Size(268, 32);
             flowLayoutPanel.TabIndex = 33;
             // 
             // lblProductName
             // 
             lblProductName.AutoSize = true;
             lblProductName.BackColor = Color.Transparent;
-            lblProductName.Font = new Font("微软雅黑", 10.125F, FontStyle.Bold);
-            lblProductName.Location = new Point(20, 0);
-            lblProductName.Margin = new Padding(20, 0, 0, 0);
+            lblProductName.Font = new Font("微软雅黑", 12F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblProductName.Location = new Point(18, 0);
+            lblProductName.Margin = new Padding(18, 0, 0, 0);
             lblProductName.MaximumSize = new Size(0, 37);
             lblProductName.Name = "lblProductName";
-            lblProductName.Size = new Size(181, 36);
+            lblProductName.Size = new Size(212, 37);
             lblProductName.TabIndex = 19;
             lblProductName.Text = "Kindle Mate";
             lblProductName.TextAlign = ContentAlignment.MiddleLeft;
@@ -220,12 +220,12 @@
             // lblGen
             // 
             lblGen.AutoSize = true;
-            lblGen.Font = new Font("微软雅黑", 10.125F, FontStyle.Bold);
+            lblGen.Font = new Font("微软雅黑", 12F, FontStyle.Bold, GraphicsUnit.Point, 134);
             lblGen.ForeColor = Color.Red;
-            lblGen.Location = new Point(201, 0);
+            lblGen.Location = new Point(230, 0);
             lblGen.Margin = new Padding(0);
             lblGen.Name = "lblGen";
-            lblGen.Size = new Size(32, 36);
+            lblGen.Size = new Size(38, 42);
             lblGen.TabIndex = 20;
             lblGen.Text = "2";
             lblGen.TextAlign = ContentAlignment.MiddleLeft;

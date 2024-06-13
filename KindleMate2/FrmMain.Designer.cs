@@ -25,7 +25,7 @@
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -54,10 +54,6 @@
             toolStripMenuItem1 = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
             tabControl = new TabControl();
-            menuBooks = new ContextMenuStrip(components);
-            menuBookRefresh = new ToolStripMenuItem();
-            menuBooksDelete = new ToolStripMenuItem();
-            menuRename = new ToolStripMenuItem();
             tabPageBooks = new TabPage();
             treeViewBooks = new TreeView();
             menuClippings = new ContextMenuStrip(components);
@@ -67,11 +63,15 @@
             imageListBooks = new ImageList(components);
             tabPageWords = new TabPage();
             treeViewWords = new TreeView();
-            menu = new ContextMenuStrip(components);
-            menuListRefresh = new ToolStripMenuItem();
+            menuBooks = new ContextMenuStrip(components);
+            menuBookRefresh = new ToolStripMenuItem();
+            menuBooksDelete = new ToolStripMenuItem();
+            menuRename = new ToolStripMenuItem();
             imageListWords = new ImageList(components);
             splitContainerDetail = new SplitContainer();
             dataGridView = new DataGridView();
+            menu = new ContextMenuStrip(components);
+            menuListRefresh = new ToolStripMenuItem();
             tableLayoutPanel = new TableLayoutPanel();
             lblLocation = new Label();
             flowLayoutPanel = new FlowLayoutPanel();
@@ -90,16 +90,16 @@
             splitContainerMain.Panel2.SuspendLayout();
             splitContainerMain.SuspendLayout();
             tabControl.SuspendLayout();
-            menuBooks.SuspendLayout();
             tabPageBooks.SuspendLayout();
             menuClippings.SuspendLayout();
             tabPageWords.SuspendLayout();
-            menu.SuspendLayout();
+            menuBooks.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainerDetail).BeginInit();
             splitContainerDetail.Panel1.SuspendLayout();
             splitContainerDetail.Panel2.SuspendLayout();
             splitContainerDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView).BeginInit();
+            menu.SuspendLayout();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel.SuspendLayout();
             statusStrip.SuspendLayout();
@@ -366,40 +366,6 @@
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
-            // menuBooks
-            // 
-            menuBooks.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menuBooks.ImageScalingSize = new Size(28, 28);
-            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksDelete, menuRename });
-            menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(161, 118);
-            // 
-            // menuBookRefresh
-            // 
-            menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBookRefresh.Name = "menuBookRefresh";
-            menuBookRefresh.ShortcutKeyDisplayString = "";
-            menuBookRefresh.Size = new Size(160, 38);
-            menuBookRefresh.Text = Strings.Refresh;
-            menuBookRefresh.Click += MenuBookRefresh_Click;
-            // 
-            // menuBooksDelete
-            // 
-            menuBooksDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBooksDelete.Name = "menuBooksDelete";
-            menuBooksDelete.ShortcutKeyDisplayString = "";
-            menuBooksDelete.Size = new Size(160, 38);
-            menuBooksDelete.Text = Strings.Delete;
-            menuBooksDelete.Click += BooksMenuDelete_Click;
-            // 
-            // menuRename
-            // 
-            menuRename.Name = "menuRename";
-            menuRename.ShortcutKeyDisplayString = "";
-            menuRename.Size = new Size(160, 38);
-            menuRename.Text = Strings.Rename;
-            menuRename.Click += MenuRename_Click;
-            // 
             // tabPageBooks
             // 
             tabPageBooks.Controls.Add(treeViewBooks);
@@ -509,21 +475,39 @@
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
             // 
-            // menu
+            // menuBooks
             // 
-            menu.BackColor = Color.Transparent;
-            menu.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menu.ImageScalingSize = new Size(32, 32);
-            menu.Items.AddRange(new ToolStripItem[] { menuListRefresh });
-            menu.Name = "menu";
-            menu.Size = new Size(137, 42);
+            menuBooks.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            menuBooks.ImageScalingSize = new Size(28, 28);
+            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksDelete, menuRename });
+            menuBooks.Name = "contextMenuStrip1";
+            menuBooks.Size = new Size(161, 118);
             // 
-            // menuListRefresh
+            // menuBookRefresh
             // 
-            menuListRefresh.Name = "menuListRefresh";
-            menuListRefresh.Size = new Size(136, 38);
-            menuListRefresh.Text = "刷新";
-            menuListRefresh.Click += MenuListRefresh_Click;
+            menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            menuBookRefresh.Name = "menuBookRefresh";
+            menuBookRefresh.ShortcutKeyDisplayString = "";
+            menuBookRefresh.Size = new Size(160, 38);
+            menuBookRefresh.Text = Strings.Refresh;
+            menuBookRefresh.Click += MenuBookRefresh_Click;
+            // 
+            // menuBooksDelete
+            // 
+            menuBooksDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            menuBooksDelete.Name = "menuBooksDelete";
+            menuBooksDelete.ShortcutKeyDisplayString = "";
+            menuBooksDelete.Size = new Size(160, 38);
+            menuBooksDelete.Text = Strings.Delete;
+            menuBooksDelete.Click += BooksMenuDelete_Click;
+            // 
+            // menuRename
+            // 
+            menuRename.Name = "menuRename";
+            menuRename.ShortcutKeyDisplayString = "";
+            menuRename.Size = new Size(160, 38);
+            menuRename.Text = Strings.Rename;
+            menuRename.Click += MenuRename_Click;
             // 
             // imageListWords
             // 
@@ -564,14 +548,14 @@
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.Window;
-            dataGridViewCellStyle2.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Window;
+            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.ContextMenuStrip = menu;
@@ -596,6 +580,22 @@
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
             dataGridView.SelectionChanged += DataGridView_SelectionChanged;
             dataGridView.KeyDown += DataGridView_KeyDown;
+            // 
+            // menu
+            // 
+            menu.BackColor = Color.Transparent;
+            menu.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            menu.ImageScalingSize = new Size(32, 32);
+            menu.Items.AddRange(new ToolStripItem[] { menuListRefresh });
+            menu.Name = "menu";
+            menu.Size = new Size(137, 42);
+            // 
+            // menuListRefresh
+            // 
+            menuListRefresh.Name = "menuListRefresh";
+            menuListRefresh.Size = new Size(136, 38);
+            menuListRefresh.Text = "刷新";
+            menuListRefresh.Click += MenuListRefresh_Click;
             // 
             // tableLayoutPanel
             // 
@@ -651,7 +651,7 @@
             // lblBook
             // 
             lblBook.AutoSize = true;
-            lblBook.Font = new Font("微软雅黑", 9.857143F, FontStyle.Bold, GraphicsUnit.Point, 134);
+            lblBook.Font = new Font("Microsoft YaHei UI", 10.125F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblBook.Location = new Point(2, 0);
             lblBook.Margin = new Padding(2, 0, 0, 0);
             lblBook.Name = "lblBook";
@@ -767,17 +767,17 @@
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).EndInit();
             splitContainerMain.ResumeLayout(false);
             tabControl.ResumeLayout(false);
-            menuBooks.ResumeLayout(false);
             tabPageBooks.ResumeLayout(false);
             menuClippings.ResumeLayout(false);
             tabPageWords.ResumeLayout(false);
-            menu.ResumeLayout(false);
+            menuBooks.ResumeLayout(false);
             splitContainerDetail.Panel1.ResumeLayout(false);
             splitContainerDetail.Panel2.ResumeLayout(false);
             splitContainerDetail.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainerDetail).EndInit();
             splitContainerDetail.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView).EndInit();
+            menu.ResumeLayout(false);
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();
             flowLayoutPanel.ResumeLayout(false);
