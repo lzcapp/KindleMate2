@@ -130,6 +130,7 @@ namespace KindleMate2 {
         private void BtnSave_Click(object sender, EventArgs e) {
             try {
                 btnSave.Visible = false;
+                WindowState = FormWindowState.Maximized;
 
                 var bitmap = new Bitmap(Width, Height);
                 DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
@@ -143,11 +144,16 @@ namespace KindleMate2 {
                 bitmap.Save(filePath, ImageFormat.Png);
                 bitmap.Dispose();
 
+                btnSave.Visible = true;
+                WindowState = FormWindowState.Normal;
+
                 MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                System.Diagnostics.Process.Start("Explorer.exe", "/select," + filePath);
             } catch (Exception) {
                 MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } finally {
                 btnSave.Visible = true;
+                WindowState = FormWindowState.Normal;
             }
         }
 
