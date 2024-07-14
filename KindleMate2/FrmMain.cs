@@ -307,6 +307,8 @@ namespace KindleMate2 {
 
         private void RefreshData() {
             try {
+                _staticData.CommitTransaction();
+
                 if (dataGridView.CurrentRow is not null) {
                     _selectedIndex = dataGridView.CurrentRow.Index;
                 }
@@ -1205,6 +1207,7 @@ namespace KindleMate2 {
                     var bookname = treeViewBooks.SelectedNode.Text;
                     if (!_staticData.DeleteClippingsByBook(bookname)) {
                         Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        _selectedBook = string.Empty;
                     }
 
                     break;
@@ -1233,6 +1236,8 @@ namespace KindleMate2 {
                     if (!_staticData.DeleteVocab(word) && !_staticData.DeleteLookupsByWordKey(word_key)) {
                         Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+
+                    _selectedWord = string.Empty;
 
                     break;
             }
@@ -2049,6 +2054,10 @@ namespace KindleMate2 {
 
         private void MenuListRefresh_Click(object sender, EventArgs e) {
             RefreshData();
+        }
+
+        private void FrmMain_FormClosing(object sender, FormClosingEventArgs e) {
+            _staticData.CommitTransaction();
         }
     }
 }

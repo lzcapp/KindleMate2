@@ -47,9 +47,9 @@
             menuKindle = new ToolStripMenuItem();
             menuTheme = new ToolStripMenuItem();
             menuLang = new ToolStripMenuItem();
-            menuLangEN = new ToolStripMenuItem();
             menuLangSC = new ToolStripMenuItem();
             menuLangTC = new ToolStripMenuItem();
+            menuLangEN = new ToolStripMenuItem();
             menuLangAuto = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
@@ -295,13 +295,6 @@
             menuLang.Size = new Size(50, 36);
             menuLang.Text = Strings.Language;
             // 
-            // menuLangEN
-            // 
-            menuLangEN.Name = "menuLangEN";
-            menuLangEN.Size = new Size(213, 40);
-            menuLangEN.Text = "英文";
-            menuLangEN.Click += MenuLangEN_Click;
-            // 
             // menuLangSC
             // 
             menuLangSC.Name = "menuLangSC";
@@ -315,6 +308,13 @@
             menuLangTC.Size = new Size(213, 40);
             menuLangTC.Text = "繁体中文";
             menuLangTC.Click += MenuLangTC_Click;
+            // 
+            // menuLangEN
+            // 
+            menuLangEN.Name = "menuLangEN";
+            menuLangEN.Size = new Size(213, 40);
+            menuLangEN.Text = "英文";
+            menuLangEN.Click += MenuLangEN_Click;
             // 
             // menuLangAuto
             // 
@@ -409,13 +409,13 @@
             menuClippings.ImageScalingSize = new Size(28, 28);
             menuClippings.Items.AddRange(new ToolStripItem[] { menuClippingsRefresh, menuClippingsCopy, menuClippingsDelete });
             menuClippings.Name = "menuClippings";
-            menuClippings.Size = new Size(127, 106);
+            menuClippings.Size = new Size(271, 144);
             // 
             // menuClippingsRefresh
             // 
             menuClippingsRefresh.Name = "menuClippingsRefresh";
             menuClippingsRefresh.ShortcutKeyDisplayString = "";
-            menuClippingsRefresh.Size = new Size(126, 34);
+            menuClippingsRefresh.Size = new Size(270, 34);
             menuClippingsRefresh.Text = Strings.Refresh;
             menuClippingsRefresh.Click += MenuClippingsRefresh_Click;
             // 
@@ -423,7 +423,7 @@
             // 
             menuClippingsCopy.Name = "menuClippingsCopy";
             menuClippingsCopy.ShortcutKeyDisplayString = "";
-            menuClippingsCopy.Size = new Size(126, 34);
+            menuClippingsCopy.Size = new Size(270, 34);
             menuClippingsCopy.Text = Strings.Copy;
             menuClippingsCopy.Click += ClippingMenuCopy_Click;
             // 
@@ -431,7 +431,7 @@
             // 
             menuClippingsDelete.Name = "menuClippingsDelete";
             menuClippingsDelete.ShortcutKeyDisplayString = "";
-            menuClippingsDelete.Size = new Size(126, 34);
+            menuClippingsDelete.Size = new Size(270, 34);
             menuClippingsDelete.Text = Strings.Delete;
             menuClippingsDelete.Click += ClippingMenuDelete_Click;
             // 
@@ -759,6 +759,7 @@
             SizeGripStyle = SizeGripStyle.Show;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Kindle Mate 2";
+            FormClosing += FrmMain_FormClosing;
             Load += FrmMain_Load;
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();
