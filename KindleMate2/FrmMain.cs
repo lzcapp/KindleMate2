@@ -38,6 +38,8 @@ namespace KindleMate2 {
 
         private int _selectedIndex;
 
+        private Form _frmProgress = new frmProgress();
+
         public FrmMain() {
             InitializeComponent();
 
@@ -1294,7 +1296,7 @@ namespace KindleMate2 {
             progressBar.Enabled = isShow;
             progressBar.Visible = isShow;
             Enabled = !isShow;
-        }
+}
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
@@ -2057,7 +2059,9 @@ namespace KindleMate2 {
         }
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e) {
-            _staticData.CommitTransaction();
+            try {
+                _staticData.CommitTransaction();
+            } catch { }
         }
     }
 }

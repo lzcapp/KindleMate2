@@ -124,7 +124,7 @@
             txtAuthor.Dock = DockStyle.Fill;
             txtAuthor.Location = new Point(3, 115);
             txtAuthor.Name = "txtAuthor";
-            txtAuthor.Size = new Size(526, 27);
+            txtAuthor.Size = new Size(526, 35);
             txtAuthor.TabIndex = 6;
             txtAuthor.TextChanged += TxtAuthor_TextChanged;
             // 
@@ -133,7 +133,7 @@
             txtBook.Dock = DockStyle.Fill;
             txtBook.Location = new Point(3, 35);
             txtBook.Name = "txtBook";
-            txtBook.Size = new Size(526, 27);
+            txtBook.Size = new Size(526, 35);
             txtBook.TabIndex = 7;
             txtBook.TextChanged += TxtBook_TextChanged;
             // 

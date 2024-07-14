@@ -11,6 +11,7 @@ namespace KindleMate2 {
 
             if (_staticData.IsDarkTheme()) {
                 _ = new DarkModeCS(this, false);
+                lblPath.LinkColor = Color.White;
             }
         }
 
