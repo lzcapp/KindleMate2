@@ -415,7 +415,7 @@
     <value>条词汇</value>
   </data>
   <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
-	  <value>您需要导入Kindle Mate的数据库文件吗？</value>
+    <value>您需要导入Kindle Mate的数据库文件吗？</value>
   </data>
   <data name="No_Data_To_Clear" xml:space="preserve">
     <value>数据库为空</value>
@@ -457,7 +457,7 @@
     <value>在</value>
   </data>
   <data name="Analyzed" xml:space="preserve">
-	  <value>解析：</value>
+    <value>解析：</value>
   </data>
   <data name="Statistics_Screenshot_Successful" xml:space="preserve">
     <value>统计截图成功</value>
@@ -478,10 +478,10 @@
     <value>English</value>
   </data>
   <data name="SC" xml:space="preserve">
-    <value>简体中文 Simplified Chinese</value>
+    <value>简体中文</value>
   </data>
   <data name="TC" xml:space="preserve">
-    <value>繁体中文 Traditional Chinese</value>
+    <value>繁体中文</value>
   </data>
   <data name="AutomaticDetection" xml:space="preserve">
     <value>自动检测 Automatic Detection</value>
