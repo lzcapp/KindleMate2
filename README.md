@@ -34,3 +34,13 @@
 <img src="Screenshots/03.png" width="100%">
 <img src="Screenshots/04.png" width="100%">
 <img src="Screenshots/05.png" width="100%">
+
+## Star History
+
+<a href="https://star-history.com/#lzcapp/KindleMate2&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date" />
+ </picture>
+</a>
