@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using KindleMate2.DarkModeForms;
+using DarkModeForms;
 using Markdig;
 
 namespace KindleMate2 {
@@ -43,44 +43,12 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
-            if (_staticData.IsDarkTheme()) {
-                _ = new DarkModeCS(this, false);
-                menuTheme.Image = Properties.Resources.sun;
-            } else {
-                _staticData.SetTheme("light");
-                menuTheme.Image = Properties.Resources.new_moon;
-            }
+            SetTheme();
 
             treeViewBooks.ContextMenuStrip = menu;
             treeViewWords.ContextMenuStrip = menu;
 
-            var name = _staticData.GetLanguage();
-            if (!string.IsNullOrWhiteSpace(name)) {
-                var culture = new CultureInfo(name);
-                Thread.CurrentThread.CurrentUICulture = culture;
-
-                switch (name.ToLowerInvariant()) {
-                    case "en":
-                        menuLangEN.Visible = false;
-                        break;
-                    case "zh-hans":
-                        menuLangSC.Visible = false;
-                        break;
-                    case "zh-hant":
-                        menuLangTC.Visible = false;
-                        break;
-                }
-            } else {
-                menuLangAuto.Visible = false;
-                CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English") || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase)) {
-                    menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
-                    menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
-                    menuLangTC.Visible = false;
-                }
-            }
+            SetLang();
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 BackupDatabase();
@@ -134,6 +102,60 @@ namespace KindleMate2 {
             menuClippingsDelete.Text = Strings.Delete;
 
             dataGridView.ColumnHeadersHeight = 23;
+        }
+
+        private void SetLang() {
+
+            var name = _staticData.GetLanguage();
+            if (!string.IsNullOrWhiteSpace(name)) {
+                var culture = new CultureInfo(name);
+                Thread.CurrentThread.CurrentUICulture = culture;
+
+                switch (name.ToLowerInvariant()) {
+                    case "en":
+                        menuLangEN.Visible = false;
+                        break;
+                    case "zh-hans":
+                        menuLangSC.Visible = false;
+                        break;
+                    case "zh-hant":
+                        menuLangTC.Visible = false;
+                        break;
+                }
+            } else {
+                menuLangAuto.Visible = false;
+                CultureInfo currentCulture = CultureInfo.CurrentCulture;
+                if (currentCulture.EnglishName.Contains("English") || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase)) {
+                    menuLangEN.Visible = false;
+                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
+                    menuLangSC.Visible = false;
+                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
+                    menuLangTC.Visible = false;
+                }
+            }
+        }
+
+        private void SetTheme() {
+
+            var theme = _staticData.GetTheme();
+            if (!string.IsNullOrWhiteSpace(theme)) {
+                if (theme.Equals("dark", StringComparison.OrdinalIgnoreCase)) {
+                    _ = new DarkModeCS(this, false);
+                    menuTheme.Image = Properties.Resources.sun;
+                } else {
+                    _staticData.SetTheme("light");
+                    menuTheme.Image = Properties.Resources.new_moon;
+                }
+            } else {
+                if (DarkModeCS.GetWindowsColorMode() <= 0) {
+                    _staticData.SetTheme("dark");
+                    _ = new DarkModeCS(this, false);
+                    menuTheme.Image = Properties.Resources.sun;
+                } else {
+                    _staticData.SetTheme("light");
+                    menuTheme.Image = Properties.Resources.new_moon;
+                }
+            }
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {

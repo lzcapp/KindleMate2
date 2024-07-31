@@ -60,7 +60,7 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines WHERE key = @key";
+            const string queryCount = "SELECT COUNT(*) FROM original_clipping_lines WHERE key = @key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
 
@@ -76,7 +76,7 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE key = @key";
+            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE key = @key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@key", key);
 
@@ -92,7 +92,7 @@ namespace KindleMate2 {
                     return true;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM clippings WHERE content = @content";
+            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content = @content";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@content", content);
 
@@ -150,7 +150,7 @@ namespace KindleMate2 {
         }
 
         public bool DeleteClippingsByKey(string key) {
-            if (key == string.Empty) {
+            if (string.IsNullOrWhiteSpace(key)) {
                 return false;
             }
 
@@ -178,7 +178,7 @@ namespace KindleMate2 {
         }
 
         public bool InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int pagenumber) {
-            if (key == string.Empty || content == string.Empty) {
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
                 return false;
             }
 
@@ -209,7 +209,7 @@ namespace KindleMate2 {
         }
 
         public int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {
-            if (key == string.Empty || content == string.Empty) {
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
                 return 0;
             }
 
@@ -280,7 +280,7 @@ namespace KindleMate2 {
         }
 
         public bool UpdateClippings(string key, string content) {
-            if (key == string.Empty || content == string.Empty) {
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
                 return false;
             }
 
@@ -299,7 +299,7 @@ namespace KindleMate2 {
         }
 
         public int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
-            if (word_key == string.Empty || timestamp == string.Empty) {
+            if (string.IsNullOrWhiteSpace(word_key) || string.IsNullOrWhiteSpace(timestamp)) {
                 return 0;
             }
 
@@ -323,7 +323,7 @@ namespace KindleMate2 {
         }
 
         public void UpdateLookups(string origintitle, string title, string authors) {
-            if (origintitle == string.Empty || title == string.Empty) {
+            if (string.IsNullOrWhiteSpace(origintitle) || string.IsNullOrWhiteSpace(title)) {
                 return;
             }
 
@@ -490,7 +490,7 @@ namespace KindleMate2 {
                 return false;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM vocab WHERE word_key = @word_key";
+            const string queryCount = "SELECT COUNT(*) FROM vocab WHERE word_key = @word_key";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@word_key", word_key);
 
@@ -504,7 +504,7 @@ namespace KindleMate2 {
                 return false;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM vocab WHERE id = @id";
+            const string queryCount = "SELECT COUNT(*) FROM vocab WHERE id = @id";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@id", id);
 
@@ -518,7 +518,7 @@ namespace KindleMate2 {
                 return true;
             }
 
-            const string queryCount = "SELECT COUNT(1) FROM lookups WHERE timestamp = @timestamp";
+            const string queryCount = "SELECT COUNT(*) FROM lookups WHERE timestamp = @timestamp";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             commandCount.Parameters.AddWithValue("@timestamp", timestamp);
 

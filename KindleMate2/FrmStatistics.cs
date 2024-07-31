@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using System.Drawing.Imaging;
 using System.Globalization;
-using KindleMate2.DarkModeForms;
+using DarkModeForms;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {

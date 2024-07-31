@@ -42,12 +42,21 @@
 	<ItemGroup>
 		<Compile Remove="DarkModeForms1\**" />
 		<Compile Remove="DarkModeForms\Example\**" />
+		<Compile Remove="DarkModeForms\Properties\**" />
+		<Compile Remove="DarkModeForms\Resources\**" />
+		<Compile Remove="DarkModeForms\Screenshots\**" />
 		<Compile Remove="Resources\**" />
 		<EmbeddedResource Remove="DarkModeForms1\**" />
 		<EmbeddedResource Remove="DarkModeForms\Example\**" />
+		<EmbeddedResource Remove="DarkModeForms\Properties\**" />
+		<EmbeddedResource Remove="DarkModeForms\Resources\**" />
+		<EmbeddedResource Remove="DarkModeForms\Screenshots\**" />
 		<EmbeddedResource Remove="Resources\**" />
 		<None Remove="DarkModeForms1\**" />
 		<None Remove="DarkModeForms\Example\**" />
+		<None Remove="DarkModeForms\Properties\**" />
+		<None Remove="DarkModeForms\Resources\**" />
+		<None Remove="DarkModeForms\Screenshots\**" />
 		<None Remove="Resources\**" />
 	</ItemGroup>
 
@@ -56,6 +65,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="DarkModeForms\Form1.cs" />
+	  <Compile Remove="DarkModeForms\Form1.Designer.cs" />
+	  <Compile Remove="DarkModeForms\Program.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Remove="DarkModeForms\Form1.resx" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="DarkModeForms\.editorconfig" />
+	  <None Remove="DarkModeForms\.gitignore" />
+	  <None Remove="DarkModeForms\App.config" />
 	  <None Remove="DarkModeForms\LICENSE" />
 	  <None Remove="DarkModeForms\README.md" />
 	</ItemGroup>
@@ -223,6 +245,14 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
 	</ItemGroup>
 
 </Project>

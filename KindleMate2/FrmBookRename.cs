@@ -1,4 +1,4 @@
-﻿using KindleMate2.DarkModeForms;
+﻿using DarkModeForms;
 
 namespace KindleMate2 {
     public partial class FrmBookRename : Form {

@@ -484,7 +484,7 @@
     <value>繁体中文</value>
   </data>
   <data name="AutomaticDetection" xml:space="preserve">
-    <value>自动检测 Automatic Detection</value>
+	  <value>自动 自動 Auto</value>
   </data>
   <data name="Import_Failed" xml:space="preserve">
     <value>导入失败</value>

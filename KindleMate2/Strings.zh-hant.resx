@@ -474,19 +474,16 @@
   <data name="Open_Folder" xml:space="preserve">
     <value>需要打開備份文件夾嗎？</value>
   </data>
-  <data name="AutomaticDetection" xml:space="preserve">
-    <value>Automatic Detection</value>
-  </data>
+	<data name="AutomaticDetection" xml:space="preserve">
+		<value>自动 自動 Auto</value>
+	</data>
   <data name="Import_Failed" xml:space="preserve">
     <value>導入失敗</value>
   </data>
-  <data name="English" xml:space="preserve">
-    <value>English</value>
-  </data>
-  <data name="SC" xml:space="preserve">
-    <value>简体中文</value>
-  </data>
-  <data name="TC" xml:space="preserve">
-    <value>繁体中文</value>
-  </data>
+	<data name="TC" xml:space="preserve">
+		<value>繁體中文</value>
+	</data>
+	<data name="SC" xml:space="preserve">
+		<value>简体中文</value>
+	</data>
 </root>

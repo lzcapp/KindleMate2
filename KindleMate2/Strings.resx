@@ -482,13 +482,13 @@
 	  <value>English</value>
   </data>
   <data name="SC" xml:space="preserve">
-	  <value>簡體中文 Simplified Chinese</value>
+	  <value>简体中文</value>
   </data>
   <data name="TC" xml:space="preserve">
-	  <value>繁體中文 Traditional Chinese</value>
+	  <value>繁體中文</value>
   </data>
   <data name="AutomaticDetection" xml:space="preserve">
-	  <value>自動檢測 Automatic Detection</value>
+	  <value>自动 自動 Auto</value>
   </data>
   <data name="Import_Failed" xml:space="preserve">
 	  <value>导入失败</value>
