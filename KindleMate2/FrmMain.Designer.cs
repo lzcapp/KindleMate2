@@ -1,4 +1,6 @@
-﻿namespace KindleMate2 {
+﻿using DarkModeForms;
+
+namespace KindleMate2 {
     partial class FrmMain {
         /// <summary>
         ///  Required designer variable.
@@ -25,7 +27,7 @@
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -53,7 +55,7 @@
             menuLangAuto = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
-            tabControl = new TabControl();
+            tabControl = new FlatTabControl();
             tabPageBooks = new TabPage();
             treeViewBooks = new TreeView();
             menuClippings = new ContextMenuStrip(components);
@@ -354,28 +356,37 @@
             // tabControl
             // 
             tabControl.Alignment = TabAlignment.Bottom;
+            tabControl.Appearance = TabAppearance.Buttons;
+            tabControl.BorderColor = SystemColors.ControlDark;
             tabControl.Controls.Add(tabPageBooks);
             tabControl.Controls.Add(tabPageWords);
             tabControl.Dock = DockStyle.Fill;
+            tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            tabControl.LineColor = SystemColors.Highlight;
             tabControl.Location = new Point(0, 0);
             tabControl.Margin = new Padding(0);
             tabControl.Name = "tabControl";
+            tabControl.SelectedForeColor = SystemColors.HighlightText;
             tabControl.SelectedIndex = 0;
+            tabControl.SelectTabColor = SystemColors.ControlLight;
+            tabControl.ShowTabCloseButton = true;
             tabControl.Size = new Size(286, 611);
             tabControl.SizeMode = TabSizeMode.FillToRight;
+            tabControl.TabCloseColor = SystemColors.ControlText;
+            tabControl.TabColor = SystemColors.ControlLight;
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
             // tabPageBooks
             // 
+            tabPageBooks.BackColor = SystemColors.ControlLight;
             tabPageBooks.Controls.Add(treeViewBooks);
             tabPageBooks.Location = new Point(4, 4);
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
-            tabPageBooks.Size = new Size(278, 570);
+            tabPageBooks.Size = new Size(278, 0);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
-            tabPageBooks.UseVisualStyleBackColor = true;
             // 
             // treeViewBooks
             // 
@@ -394,7 +405,7 @@
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(278, 570);
+            treeViewBooks.Size = new Size(278, 0);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -446,14 +457,14 @@
             // 
             // tabPageWords
             // 
+            tabPageWords.BackColor = SystemColors.ControlLight;
             tabPageWords.Controls.Add(treeViewWords);
             tabPageWords.Location = new Point(4, 4);
             tabPageWords.Margin = new Padding(0);
             tabPageWords.Name = "tabPageWords";
-            tabPageWords.Size = new Size(278, 570);
+            tabPageWords.Size = new Size(278, 0);
             tabPageWords.TabIndex = 1;
             tabPageWords.Text = Strings.Vocabulary_List;
-            tabPageWords.UseVisualStyleBackColor = true;
             // 
             // treeViewWords
             // 
@@ -470,7 +481,7 @@
             treeViewWords.ShowLines = false;
             treeViewWords.ShowPlusMinus = false;
             treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(278, 570);
+            treeViewWords.Size = new Size(278, 0);
             treeViewWords.TabIndex = 0;
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
@@ -548,14 +559,14 @@
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.Window;
-            dataGridViewCellStyle2.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Window;
+            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.ContextMenuStrip = menu;
@@ -571,6 +582,7 @@
             dataGridView.RowHeadersWidth = 82;
             dataGridView.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             dataGridView.RowTemplate.ReadOnly = true;
+            dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView.ShowCellErrors = false;
             dataGridView.ShowEditingIcon = false;
             dataGridView.ShowRowErrors = false;
@@ -830,7 +842,7 @@
         private ToolStripMenuItem menuImportKindle;
         private ToolStripMenuItem menuRefresh;
         private ToolStripMenuItem menuClear;
-        private TabControl tabControl;
+        private FlatTabControl tabControl;
         private TabPage tabPageBooks;
         private TabPage tabPageWords;
         private TreeView treeViewBooks;

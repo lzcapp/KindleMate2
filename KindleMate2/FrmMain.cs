@@ -38,8 +38,6 @@ namespace KindleMate2 {
 
         private int _selectedIndex;
 
-        private Form _frmProgress = new frmProgress();
-
         public FrmMain() {
             InitializeComponent();
 
@@ -136,7 +134,6 @@ namespace KindleMate2 {
         }
 
         private void SetTheme() {
-
             var theme = _staticData.GetTheme();
             if (!string.IsNullOrWhiteSpace(theme)) {
                 if (theme.Equals("dark", StringComparison.OrdinalIgnoreCase)) {
@@ -179,6 +176,8 @@ namespace KindleMate2 {
                     }
                 }
             }
+
+            tabControl.ShowTabCloseButton = false;
 
             RefreshData();
 
@@ -1736,13 +1735,18 @@ namespace KindleMate2 {
                 lblBookCount.Visible = false;
                 dataGridView.DataSource = _lookupsDataTable;
 
-                dataGridView.Columns["usage"]!.Visible = false;
-                dataGridView.Columns["title"]!.Visible = false;
-                dataGridView.Columns["authors"]!.Visible = false;
+                dataGridView.Columns["word"]!.Visible = true;
+                dataGridView.Columns["usage"]!.Visible = true;
+                dataGridView.Columns["title"]!.Visible = true;
+                dataGridView.Columns["authors"]!.Visible = true;
 
                 dataGridView.Columns["frequency"]!.Visible = true;
 
                 dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
+
+                dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
+                dataGridView.Columns["title"]!.HeaderText = Strings.Books;
+                dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
             } else {
                 var selectedWord = e.Node.Text;
                 _selectedWord = selectedWord;
@@ -1752,6 +1756,7 @@ namespace KindleMate2 {
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;
 
+                dataGridView.Columns["word"]!.Visible = false;
                 dataGridView.Columns["usage"]!.Visible = true;
                 dataGridView.Columns["title"]!.Visible = true;
                 dataGridView.Columns["authors"]!.Visible = true;
@@ -2083,7 +2088,9 @@ namespace KindleMate2 {
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e) {
             try {
                 _staticData.CommitTransaction();
-            } catch { }
+            } catch {
+                // ignored
+            }
         }
     }
 }
