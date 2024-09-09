@@ -866,6 +866,10 @@ namespace KindleMate2 {
                         continue;
                     }
 
+                    if (_staticData.IsExistClippingsContainingContent(line4)) {
+                        Console.WriteLine("E");
+                    }
+
                     var insertResult = _staticData.InsertClippings(key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber);
                     if (insertResult) {
                         insertedCount += 1;

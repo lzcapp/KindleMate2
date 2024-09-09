@@ -101,6 +101,24 @@ namespace KindleMate2 {
             return result > 0;
         }
 
+        public bool IsExistClippingsContainingContent(string? content) {
+            if (content != null) {
+                content = content.Trim();
+                if (string.IsNullOrWhiteSpace(content)) {
+                    return false;
+                }
+
+                const string queryCount = "SELECT COUNT(*) FROM clippings LIKE %@content%";
+                using var commandCount = new SQLiteCommand(queryCount, _connection);
+                commandCount.Parameters.AddWithValue("@content", content);
+
+                var result = Convert.ToInt32(commandCount.ExecuteScalar());
+
+                return result > 0;
+            }
+            return false;
+        }
+
         /*
         public int GetOriginClippingsCount() {
             const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
