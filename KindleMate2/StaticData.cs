@@ -102,19 +102,29 @@ namespace KindleMate2 {
         }
 
         public bool IsExistClippingsContainingContent(string? content) {
-            if (content != null) {
-                content = content.Trim();
-                if (string.IsNullOrWhiteSpace(content)) {
-                    return false;
+            if (content == null) {
+                return false;
+            }
+            content = content.Trim();
+            if (string.IsNullOrWhiteSpace(content)) {
+                return false;
+            }
+
+            //const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content LIKE '%'+@ProjectName+'%'";
+            //using var commandCount = new SQLiteCommand(queryCount, _connection);
+            //commandCount.Parameters.AddWithValue("@content", content);
+
+            //var result = Convert.ToInt32(commandCount.ExecuteScalar());
+
+            //return result > 0;
+
+            DataTable dt = GetClipingsDataTable();
+
+            foreach (DataRow row in dt.Rows) {
+                var s = row["content"].ToString();
+                if (!s.Equals(content) && s.Contains(content)) {
+                    return true;
                 }
-
-                const string queryCount = "SELECT COUNT(*) FROM clippings LIKE %@content%";
-                using var commandCount = new SQLiteCommand(queryCount, _connection);
-                commandCount.Parameters.AddWithValue("@content", content);
-
-                var result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-                return result > 0;
             }
             return false;
         }
