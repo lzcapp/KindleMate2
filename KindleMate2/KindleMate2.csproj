@@ -76,6 +76,7 @@
 
 	<ItemGroup>
 	  <None Remove="DarkModeForms\.editorconfig" />
+	  <None Remove="DarkModeForms\.git" />
 	  <None Remove="DarkModeForms\.gitignore" />
 	  <None Remove="DarkModeForms\App.config" />
 	  <None Remove="DarkModeForms\LICENSE" />
@@ -253,6 +254,14 @@
 
 	<ItemGroup>
 	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DarkModeForms\DarkModeForms.csproj" />
 	</ItemGroup>
 
 </Project>
