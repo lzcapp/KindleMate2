@@ -16,8 +16,8 @@
 
 ## Features
 
-- [x] 导入`My Clippings.txt`
-- [x] 导入`vocab.db`
+- [x] 导入标注（`My Clippings.txt`）
+- [x] 导入生词本（`vocab.db`）
 - [x] 同步已连接的Kindle设备
 - [x] 编辑标注
 - [x] 编辑生词本
