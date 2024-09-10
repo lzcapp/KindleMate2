@@ -100,5 +100,17 @@ namespace KindleMate2 {
             }
             return string.Join(".", parts);
         }
+
+        private void pictureBox1_Click(object sender, EventArgs e) {
+            const string repoUrl = "https://github.com/lzcapp/KindleMate2";
+            try {
+                Process.Start(new ProcessStartInfo {
+                    FileName = repoUrl,
+                    UseShellExecute = true
+                });
+            } catch (Exception) {
+                // ignored
+            }
+        }
     }
 }
