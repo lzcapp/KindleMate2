@@ -474,16 +474,22 @@
   <data name="Open_Folder" xml:space="preserve">
     <value>需要打開備份文件夾嗎？</value>
   </data>
-	<data name="AutomaticDetection" xml:space="preserve">
+  <data name="AutomaticDetection" xml:space="preserve">
 		<value>自动 自動 Auto</value>
 	</data>
   <data name="Import_Failed" xml:space="preserve">
     <value>導入失敗</value>
   </data>
-	<data name="TC" xml:space="preserve">
+  <data name="TC" xml:space="preserve">
 		<value>繁體中文</value>
 	</data>
-	<data name="SC" xml:space="preserve">
+  <data name="SC" xml:space="preserve">
 		<value>简体中文</value>
 	</data>
+  <data name="Duplicate_Content" xml:space="preserve">
+    <value>重複內容</value>
+  </data>
+  <data name="Clean_Failed" xml:space="preserve">
+    <value>清理資料庫失敗</value>
+  </data>
 </root>

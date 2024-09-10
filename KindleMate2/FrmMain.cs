@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using DarkModeForms;
+using KindleMate2.Entities;
 using Markdig;
 
 namespace KindleMate2 {
@@ -670,7 +671,26 @@ namespace KindleMate2 {
                     _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
                     _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
                     _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-                    insertedCount += _staticData.InsertClippings(row["key"].ToString()!, row["content"].ToString()!, row["bookname"].ToString()!, row["authorname"].ToString()!, brieftype, row["clippingtypelocation"].ToString()!, row["clippingdate"].ToString()!, read, row["clipping_importdate"].ToString()!, row["tag"].ToString()!, sync, row["newbookname"].ToString()!, colorRgb, pagenumber);
+
+                    var entityClipping = new Clipping {
+                        key = row["key"].ToString() ?? string.Empty,
+                        content = row["content"].ToString() ?? string.Empty,
+                        bookname = row["bookname"].ToString() ?? string.Empty,
+                        authorname = row["authorname"].ToString() ?? string.Empty,
+                        briefType = brieftype,
+                        clippingtypelocation = row["clippingtypelocation"].ToString() ?? string.Empty,
+                        read = read,
+                        clipping_importdate = row["clipping_importdate"].ToString() ?? string.Empty,
+                        tag = row["tag"].ToString() ?? string.Empty,
+                        sync = sync,
+                        newbookname = row["newbookname"].ToString() ?? string.Empty,
+                        colorRGB = colorRgb,
+                        pagenumber = pagenumber
+                    };
+
+                    if (_staticData.InsertClippings(entityClipping)) {
+                        insertedCount += 1;
+                    }
                 }
 
                 foreach (DataRow row in originClippingsDataTable.Rows) {
@@ -750,6 +770,8 @@ namespace KindleMate2 {
 
             try {
                 for (var i = 0; i < delimiterIndex.Count; i++) {
+                    var entityClipping = new Clipping();
+
                     var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
                     var florDelimiter = delimiterIndex[i];
 
@@ -765,7 +787,10 @@ namespace KindleMate2 {
                             }
                         }
                     }
+
                     var content = line4;
+                    entityClipping.content = content;
+
                     var line5 = lines[florDelimiter].Trim();     // line 5 is "=========="
 
                     var brieftype = 0;
@@ -777,6 +802,7 @@ namespace KindleMate2 {
                     } else if (lines.Contains("文章剪切") || line2.Contains("Cut")) {
                         brieftype = 3;
                     }
+                    entityClipping.briefType = brieftype;
 
                     if (line4.Contains("您已达到本内容的剪贴上限")) {
                         continue;
@@ -823,6 +849,8 @@ namespace KindleMate2 {
                     if (isPageParsed == false || pagenumber == 0) {
                         continue;
                     }
+                    entityClipping.clippingtypelocation = clippingtypelocation;
+                    entityClipping.pagenumber = pagenumber;
 
                     string clippingdate;
                     var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
@@ -840,37 +868,38 @@ namespace KindleMate2 {
                     } else {
                         continue;
                     }
+                    entityClipping.clippingdate = clippingdate;
 
                     var key = clippingdate + "|" + clippingtypelocation;
                     if (_staticData.IsExistOriginalClippings(key)) {
                         continue;
                     }
-
                     var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
                     if (!isOriginClippingsInserted) {
                         continue;
                     }
 
+                    entityClipping.key = key;
+
                     string bookname;
-                    var authorname = "";
+                    string authorname;
                     var pattern = @"\(([^()]+)\)[^(]*$";
                     Match match = Regex.Match(line1, pattern);
                     if (match.Success) {
                         authorname = match.Groups[1].Value.Trim();
                         bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
                     } else {
+                        authorname = string.Empty;
                         bookname = line1;
                     }
+                    entityClipping.bookname = bookname;
+                    entityClipping.authorname = authorname;
 
                     if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
                         continue;
                     }
 
-                    if (_staticData.IsExistClippingsContainingContent(line4)) {
-                        Console.WriteLine("E");
-                    }
-
-                    var insertResult = _staticData.InsertClippings(key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber);
+                    var insertResult = _staticData.InsertClippings(entityClipping);
                     if (insertResult) {
                         insertedCount += 1;
                     }
@@ -1119,7 +1148,6 @@ namespace KindleMate2 {
             if (e.Button != MouseButtons.Right) {
                 return;
             }
-
             if (e.RowIndex <= -1 || e.ColumnIndex <= -1) {
                 return;
             }
@@ -1355,6 +1383,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
+            RefreshData();
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
@@ -1418,6 +1447,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
+            RefreshData();
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -1717,7 +1747,6 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
-
             RefreshData();
         }
 
@@ -1827,64 +1856,89 @@ namespace KindleMate2 {
             if (_clippingsDataTable.Rows.Count <= 0) {
                 Dialog(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                _staticData.BeginTransaction();
+                SetProgressBar(true);
+                var bw = new BackgroundWorker();
+                bw.DoWork += (_, doWorkEventArgs) => {
+                    doWorkEventArgs.Result = CleanDatabase();
+                };
+                bw.RunWorkerAsync();
+                bw.RunWorkerCompleted += (_, runWorkerCompletedEventArgs) => {
+                    if (runWorkerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(runWorkerCompletedEventArgs.Result.ToString())) {
+                        Dialog(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    } else {
+                        Dialog(Strings.Clear_Failed, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    SetProgressBar(false);
+                    RefreshData();
+                };
+                RefreshData();
+            }
+        }
 
-                try {
-                    var countEmpty = 0;
-                    var countTrimmed = 0;
+        private string CleanDatabase() {
+            _clippingsDataTable = _staticData.GetClipingsDataTable();
 
-                    foreach (DataRow row in _clippingsDataTable.Rows) {
-                        var key = row["key"].ToString();
-                        var content = row["content"].ToString();
-                        if (string.IsNullOrWhiteSpace(key)) {
+            _staticData.BeginTransaction();
+
+            try {
+                var countEmpty = 0;
+                var countTrimmed = 0;
+                var countDuplicated = 0;
+
+                foreach (DataRow row in _clippingsDataTable.Rows) {
+                    var key = row["key"].ToString();
+                    var content = row["content"].ToString();
+                    if (string.IsNullOrWhiteSpace(key)) {
+                        continue;
+                    }
+                    if (string.IsNullOrWhiteSpace(content)) {
+                        if (_staticData.DeleteClippingsByKey(key)) {
+                            countEmpty++;
+                        }
+                        continue;
+                    }
+
+                    var contentTrimmed = TrimContent(content);
+                    if (string.IsNullOrWhiteSpace(contentTrimmed)) {
+                        if (_staticData.DeleteClippingsByKey(key)) {
+                            countEmpty++;
                             continue;
                         }
-
-                        if (string.IsNullOrWhiteSpace(content)) {
-                            if (_staticData.DeleteClippingsByKey(key)) {
-                                countEmpty++;
-                            }
-
-                            continue;
-                        }
-
-                        var contentTrimmed = TrimContent(content);
-                        if (string.IsNullOrWhiteSpace(contentTrimmed)) {
-                            if (_staticData.DeleteClippingsByKey(key)) {
-                                countEmpty++;
-                            }
-
-                            continue;
-                        }
-
-                        if (contentTrimmed.Equals(content)) {
-                            continue;
-                        }
-
+                    }
+                    if (!contentTrimmed.Equals(content)) {
                         if (_staticData.UpdateClippings(key, contentTrimmed)) {
                             countTrimmed++;
                         }
                     }
 
-                    var fileInfo = new FileInfo(_filePath);
-                    var originFileSize = fileInfo.Length;
-
-                    _staticData.CommitTransaction();
-
-                    _staticData.VacuumDatabase();
-
-                    var newFileSize = fileInfo.Length;
-
-                    var fileSizeDelta = originFileSize - newFileSize;
-
-                    if (countEmpty > 0 || countTrimmed > 0 || fileSizeDelta > 0) {
-                        Dialog(Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + FormatFileSize(fileSizeDelta), Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    } else {
-                        Dialog(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (_staticData.IsExistClippingsContainingContent(content)) {
+                        if (_staticData.DeleteClippingsByKey(key)) {
+                            countDuplicated++;
+                        }
                     }
-                } catch (Exception) {
-                    _staticData.RollbackTransaction();
                 }
+
+                var fileInfo = new FileInfo(_filePath);
+                var originFileSize = fileInfo.Length;
+
+                _staticData.CommitTransaction();
+
+                _staticData.VacuumDatabase();
+
+                var newFileSize = fileInfo.Length;
+
+                var fileSizeDelta = originFileSize - newFileSize;
+
+                if (countEmpty > 0 || countTrimmed > 0 || countDuplicated > 0 || fileSizeDelta > 0) {
+                    return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
+                           Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space +
+                           FormatFileSize(fileSizeDelta);
+                } else {
+                    return Strings.Database_No_Need_Clean;
+                }
+            } catch (Exception) {
+                _staticData.RollbackTransaction();
+                return string.Empty;
             }
         }
 

@@ -19,6 +19,7 @@ tab_width = 2
 csharp_indent_braces = false
 csharp_new_line_before_catch = false
 csharp_new_line_before_else = false
+csharp_new_line_before_members_in_object_initializers = true
 csharp_new_line_before_open_brace = none
 csharp_preferred_modifier_order = public, private, protected, internal, file, new, static, abstract, virtual, sealed, readonly, override, extern, unsafe, volatile, async, required:suggestion
 csharp_style_namespace_declarations = block_scoped:suggestion
@@ -50,10 +51,11 @@ resharper_instance_members_qualify_declared_in =
 resharper_keep_existing_initializer_arrangement = false
 resharper_keep_existing_linebreaks = false
 resharper_place_expr_accessor_on_single_line = true
-resharper_place_simple_initializer_on_single_line = false
+resharper_place_simple_initializer_on_single_line = true
 resharper_vb_keep_user_linebreaks = false
 resharper_vb_stick_comment = false
 resharper_vb_wrap_lines = false
+resharper_wrap_object_and_collection_initializer_style = chop_always
 
 # ReSharper inspection severities
 resharper_arrange_namespace_body_highlighting = hint

@@ -1,5 +1,7 @@
 ﻿using System.Data;
 using System.Data.SQLite;
+using System.Reflection;
+using KindleMate2.Entities;
 
 namespace KindleMate2 {
     public class StaticData {
@@ -110,23 +112,13 @@ namespace KindleMate2 {
                 return false;
             }
 
-            //const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content LIKE '%'+@ProjectName+'%'";
-            //using var commandCount = new SQLiteCommand(queryCount, _connection);
-            //commandCount.Parameters.AddWithValue("@content", content);
+            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content LIKE '%' || @content || '%'";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@content", content);
 
-            //var result = Convert.ToInt32(commandCount.ExecuteScalar());
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
-            //return result > 0;
-
-            DataTable dt = GetClipingsDataTable();
-
-            foreach (DataRow row in dt.Rows) {
-                var s = row["content"].ToString();
-                if (!s.Equals(content) && s.Contains(content)) {
-                    return true;
-                }
-            }
-            return false;
+            return result > 1;
         }
 
         /*
@@ -205,78 +197,9 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int pagenumber) {
-            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
-                return false;
-            }
-
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @pagenumber)";
-
-            using var command = new SQLiteCommand(queryInsert, _connection);
-            command.Parameters.Add("@key", DbType.String);
-            command.Parameters.Add("@content", DbType.String);
-            command.Parameters.Add("@bookname", DbType.String);
-            command.Parameters.Add("@authorname", DbType.String);
-            command.Parameters.Add("@brieftype", DbType.Int64);
-            command.Parameters.Add("@clippingtypelocation", DbType.String);
-            command.Parameters.Add("@clippingdate", DbType.String);
-            command.Parameters.Add("@pagenumber", DbType.Int64);
-
-            command.Parameters["@key"].Value = key;
-            command.Parameters["@content"].Value = content;
-            command.Parameters["@bookname"].Value = bookname;
-            command.Parameters["@authorname"].Value = authorname;
-            command.Parameters["@brieftype"].Value = brieftype;
-            command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-            command.Parameters["@clippingdate"].Value = clippingdate;
-            command.Parameters["@pagenumber"].Value = pagenumber;
-
-            var result = command.ExecuteNonQuery();
-
+        public bool InsertClippings(Clipping entityClipping) {
+            var result = Insert(entityClipping, "clippings", "key", true);
             return result > 0;
-        }
-
-        public int InsertClippings(string key, string content, string bookname, string authorname, int brieftype, string clippingtypelocation, string clippingdate, int read, string clipping_importdate, string tag, int sync, string newbookname, int colorRGB, int pagenumber) {
-            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
-                return 0;
-            }
-
-            const string queryInsert = "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)";
-
-            using var command = new SQLiteCommand(queryInsert, _connection);
-            command.Parameters.Add("@key", DbType.String);
-            command.Parameters.Add("@content", DbType.String);
-            command.Parameters.Add("@bookname", DbType.String);
-            command.Parameters.Add("@authorname", DbType.String);
-            command.Parameters.Add("@brieftype", DbType.Int64);
-            command.Parameters.Add("@clippingtypelocation", DbType.String);
-            command.Parameters.Add("@clippingdate", DbType.String);
-            command.Parameters.Add("@read", DbType.String);
-            command.Parameters.Add("@clipping_importdate", DbType.String);
-            command.Parameters.Add("@tag", DbType.String);
-            command.Parameters.Add("@sync", DbType.Int64);
-            command.Parameters.Add("@newbookname", DbType.String);
-            command.Parameters.Add("@colorRGB", DbType.Int64);
-            command.Parameters.Add("@pagenumber", DbType.Int64);
-
-            command.Parameters["@key"].Value = key;
-            command.Parameters["@content"].Value = content;
-            command.Parameters["@bookname"].Value = bookname;
-            command.Parameters["@authorname"].Value = authorname;
-            command.Parameters["@brieftype"].Value = brieftype;
-            command.Parameters["@clippingtypelocation"].Value = clippingtypelocation;
-            command.Parameters["@clippingdate"].Value = clippingdate;
-            command.Parameters["@read"].Value = read;
-            command.Parameters["@clipping_importdate"].Value = clipping_importdate;
-            command.Parameters["@tag"].Value = tag;
-            command.Parameters["@sync"].Value = sync;
-            command.Parameters["@newbookname"].Value = newbookname;
-            command.Parameters["@colorRGB"].Value = colorRGB;
-            command.Parameters["@pagenumber"].Value = pagenumber;
-
-            var result = command.ExecuteNonQuery();
-
-            return result;
         }
 
         public bool UpdateClippings(string originBookname, string bookname, string authorname) {
@@ -726,13 +649,13 @@ namespace KindleMate2 {
         }
 
         private static readonly Dictionary<char, int> romanMap = new() {
-            {'I', 1},
-            {'V', 5},
-            {'X', 10},
-            {'L', 50},
-            {'C', 100},
-            {'D', 500},
-            {'M', 1000}
+            { 'I', 1 }, 
+            { 'V', 5 }, 
+            { 'X', 10 }, 
+            { 'L', 50 }, 
+            { 'C', 100 }, 
+            { 'D', 500 }, 
+            { 'M', 1000 }
         };
 
         public int RomanToInteger(string roman) {
@@ -754,6 +677,56 @@ namespace KindleMate2 {
             }
 
             return result;
+        }
+
+        private int Insert<T>(T entity, string tableName, string primaryKey, bool isAddPrimaryKey) {
+            if (entity != null) {
+                var properties = entity.GetType().GetProperties();
+
+                var col = string.Empty;
+                var val = string.Empty;
+                var parameters = new List<SQLiteParameter>();
+                
+                foreach (PropertyInfo property in properties) {
+                    var parameterName = property.Name;
+                    if (parameterName.Equals("Ctypes", StringComparison.CurrentCultureIgnoreCase)) {
+                        parameterName = "Ctype";
+                    }
+
+                    var parameter = new SQLiteParameter();
+                    var obj = property.GetValue(entity, null);
+
+                    if (!isAddPrimaryKey && parameterName.Equals(primaryKey, StringComparison.CurrentCultureIgnoreCase)) {
+                        continue;
+                    }
+
+                    col += parameterName + ",";
+                    val += "@" + parameterName + ",";
+                    parameter.ParameterName = "@" + parameterName;
+
+                    switch (obj) {
+                        case null:
+                        case DateTime dateTime when dateTime < new DateTime(1753, 1, 1) || dateTime > new DateTime(9999, 12, 31):
+                            parameter.Value = null;
+                            break;
+                        default:
+                            parameter.Value = obj;
+                            break;
+                    }
+                    parameters.Add(parameter);
+                }
+
+                col = col.TrimEnd(',');
+                val = val.TrimEnd(',');
+                var sql = $"INSERT INTO {tableName} ({col}) VALUES ({val})";
+                using var command = new SQLiteCommand(sql, _connection);
+                foreach (SQLiteParameter parameter in parameters) {
+                    command.Parameters.Add(parameter);
+                }
+                var result = command.ExecuteNonQuery();
+                return result;
+            }
+            return 0;
         }
     }
 }

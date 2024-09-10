@@ -27,7 +27,7 @@ namespace KindleMate2 {
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -72,14 +72,14 @@ namespace KindleMate2 {
             imageListWords = new ImageList(components);
             splitContainerDetail = new SplitContainer();
             dataGridView = new DataGridView();
-            menu = new ContextMenuStrip(components);
-            menuListRefresh = new ToolStripMenuItem();
             tableLayoutPanel = new TableLayoutPanel();
             lblLocation = new Label();
             flowLayoutPanel = new FlowLayoutPanel();
             lblBook = new Label();
             lblAuthor = new Label();
             lblContent = new RichTextBox();
+            menu = new ContextMenuStrip(components);
+            menuListRefresh = new ToolStripMenuItem();
             openFileDialog = new OpenFileDialog();
             statusStrip = new StatusStrip();
             lblCount = new ToolStripStatusLabel();
@@ -101,9 +101,9 @@ namespace KindleMate2 {
             splitContainerDetail.Panel2.SuspendLayout();
             splitContainerDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView).BeginInit();
-            menu.SuspendLayout();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel.SuspendLayout();
+            menu.SuspendLayout();
             statusStrip.SuspendLayout();
             SuspendLayout();
             // 
@@ -559,14 +559,14 @@ namespace KindleMate2 {
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle4.BackColor = SystemColors.Window;
-            dataGridViewCellStyle4.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle4.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Window;
+            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.Dock = DockStyle.Fill;
@@ -591,22 +591,6 @@ namespace KindleMate2 {
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
             dataGridView.SelectionChanged += DataGridView_SelectionChanged;
             dataGridView.KeyDown += DataGridView_KeyDown;
-            // 
-            // menu
-            // 
-            menu.BackColor = Color.Transparent;
-            menu.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menu.ImageScalingSize = new Size(32, 32);
-            menu.Items.AddRange(new ToolStripItem[] { menuListRefresh });
-            menu.Name = "menu";
-            menu.Size = new Size(127, 38);
-            // 
-            // menuListRefresh
-            // 
-            menuListRefresh.Name = "menuListRefresh";
-            menuListRefresh.Size = new Size(126, 34);
-            menuListRefresh.Text = "刷新";
-            menuListRefresh.Click += MenuListRefresh_Click;
             // 
             // tableLayoutPanel
             // 
@@ -696,6 +680,22 @@ namespace KindleMate2 {
             lblContent.TabIndex = 4;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
+            // 
+            // menu
+            // 
+            menu.BackColor = Color.Transparent;
+            menu.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            menu.ImageScalingSize = new Size(32, 32);
+            menu.Items.AddRange(new ToolStripItem[] { menuListRefresh });
+            menu.Name = "menu";
+            menu.Size = new Size(127, 38);
+            // 
+            // menuListRefresh
+            // 
+            menuListRefresh.Name = "menuListRefresh";
+            menuListRefresh.Size = new Size(126, 34);
+            menuListRefresh.Text = "刷新";
+            menuListRefresh.Click += MenuListRefresh_Click;
             // 
             // openFileDialog
             // 
@@ -793,11 +793,11 @@ namespace KindleMate2 {
             ((System.ComponentModel.ISupportInitialize)splitContainerDetail).EndInit();
             splitContainerDetail.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView).EndInit();
-            menu.ResumeLayout(false);
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();
             flowLayoutPanel.ResumeLayout(false);
             flowLayoutPanel.PerformLayout();
+            menu.ResumeLayout(false);
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);

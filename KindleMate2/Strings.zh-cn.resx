@@ -489,4 +489,10 @@
   <data name="Import_Failed" xml:space="preserve">
     <value>导入失败</value>
   </data>
+  <data name="Duplicate_Content" xml:space="preserve">
+    <value>重复内容</value>
+  </data>
+  <data name="Clean_Failed" xml:space="preserve">
+    <value>清理数据库失败</value>
+  </data>
 </root>
