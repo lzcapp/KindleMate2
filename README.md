@@ -16,11 +16,12 @@
 
 ## Features
 
-- [x] 导入“My Clippings.txt”
-- [x] 导入“vocab.db”
+- [x] 导入`My Clippings.txt`
+- [x] 导入`vocab.db`
 - [x] 同步已连接的Kindle设备
 - [x] 编辑标注
 - [x] 编辑生词本
+- [x] 清理功能
 - [x] 导出功能
 - [x] 统计功能
 - [x] 夜间模式（深色模式）
