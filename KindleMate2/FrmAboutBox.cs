@@ -1,6 +1,9 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
+using KindleMate2.Entities;
+using Newtonsoft.Json;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {
@@ -68,6 +71,34 @@ namespace KindleMate2 {
             lblPathText.Text = Strings.Program_Path;
             lblDatabaseText.Text = Strings.Database;
             okButton.Text = Strings.Confirm_Button;
+
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = GetRepoInfo(); };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                if (workerCompletedEventArgs.Result != null) {
+                    var release = (GitHubRelease)workerCompletedEventArgs.Result;
+                    if (!string.IsNullOrWhiteSpace(AssemblyVersion)) {
+                        pictureBox1.Visible = !NormalizeVersion(AssemblyVersion).StartsWith(NormalizeVersion(release.tag_name));
+                    }
+                }
+            };
+        }
+
+        private static GitHubRelease GetRepoInfo() {
+            const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
+            var response = httpClient.GetStringAsync(url).Result;
+            return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
+        }
+
+        private static string NormalizeVersion(string version) {
+            var parts = version.Split('.');
+            for (var i = 0; i < parts.Length; i++) {
+                parts[i] = int.Parse(parts[i]).ToString();
+            }
+            return string.Join(".", parts);
         }
     }
 }

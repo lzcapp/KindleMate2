@@ -120,7 +120,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="Markdig" Version="0.37.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="WinForms.DataVisualization" Version="1.9.2" />
 	</ItemGroup>
 
