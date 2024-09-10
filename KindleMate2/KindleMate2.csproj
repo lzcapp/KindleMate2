@@ -23,10 +23,11 @@
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks></TargetFrameworks>
-		<Version>2024.06.05-release</Version>
+		<Version>2024.09.10-release</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
+		<Company>LZC.app</Company>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
