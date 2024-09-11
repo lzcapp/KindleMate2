@@ -495,4 +495,7 @@
   <data name="Clean_Failed" xml:space="preserve">
     <value>清理数据库失败</value>
   </data>
+  <data name="New_Version" xml:space="preserve">
+    <value>检测到新版本：</value>
+  </data>
 </root>

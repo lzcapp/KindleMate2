@@ -790,6 +790,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 检测到新版本： 的本地化字符串。
+        /// </summary>
+        internal static string New_Version {
+            get {
+                return ResourceManager.GetString("New_Version", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 没有数据可备份 的本地化字符串。
         /// </summary>
         internal static string No_Data_To_Backup {

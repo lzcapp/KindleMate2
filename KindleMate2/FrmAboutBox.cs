@@ -56,8 +56,10 @@ namespace KindleMate2 {
             Text = Strings.About + Strings.Space + AssemblyProduct;
 
             //lblProductName.Text = AssemblyTitle;
-            lblVersion.Text = AssemblyVersion;
-            lblCopyright.Text = AssemblyCopyright;
+            var assemblyVersion = string.IsNullOrWhiteSpace(AssemblyVersion) ? string.Empty : AssemblyVersion;
+            var assemblyCopyright = string.IsNullOrWhiteSpace(AssemblyCopyright) ? string.Empty : AssemblyCopyright;
+            lblVersion.Text = assemblyVersion;
+            lblCopyright.Text = assemblyCopyright;
 
             var programsDirectory = AppDomain.CurrentDomain.BaseDirectory;
             lblPath.Text = programsDirectory;
@@ -78,8 +80,11 @@ namespace KindleMate2 {
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null) {
                     var release = (GitHubRelease)workerCompletedEventArgs.Result;
-                    if (!string.IsNullOrWhiteSpace(AssemblyVersion)) {
-                        pictureBox1.Visible = !NormalizeVersion(AssemblyVersion).StartsWith(NormalizeVersion(release.tag_name));
+                    if (!string.IsNullOrWhiteSpace(assemblyVersion)) {
+                        var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
+                        pictureBox1.Visible = !NormalizeVersion(assemblyVersion).StartsWith(NormalizeVersion(tagName));
+                        var toolTip = new ToolTip();
+                        toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
                     }
                 }
             };

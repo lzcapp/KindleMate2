@@ -568,7 +568,7 @@ namespace KindleMate2 {
                         dataGridView.Columns["title"]!.Visible = false;
                         dataGridView.Columns["authors"]!.Visible = false;
                         dataGridView.Columns["timestamp"]!.Visible = true;
-                        
+
                         dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
@@ -581,7 +581,7 @@ namespace KindleMate2 {
                         lblBookCount.Visible = true;
 
                         dataGridView.DataSource = filteredWords;
-                        
+
                         dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
                         dataGridView.Columns["stem"]!.HeaderText = Strings.Stem;
                         dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
@@ -598,7 +598,7 @@ namespace KindleMate2 {
                         dataGridView.Columns["title"]!.Visible = false;
                         dataGridView.Columns["authors"]!.Visible = false;
                         dataGridView.Columns["timestamp"]!.Visible = true;
-                        
+
                         dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
@@ -848,15 +848,6 @@ namespace KindleMate2 {
                         clippingtypelocation = split_d[1].Trim().ToUpper();
                     }
                     var pagenumber = -1;
-                    /*
-                    strLoc = strLoc.Replace("您在位置 #", "")
-                                   .Replace("的标注", "")
-                                   .Replace("的笔记", "")
-                                   .Replace("your note on location", "")
-                                   .Replace("your highlight on page", "")
-                                   .Trim();
-                    strLoc = strLoc.Split('-', '.', '#')[0].Trim();
-                    */
                     var pagenPattern = @"#?\d+(?:-\d+)?";
                     var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
@@ -921,6 +912,7 @@ namespace KindleMate2 {
                         authorname = string.Empty;
                         bookname = line1;
                     }
+                    bookname = bookname.Trim();
                     entityClipping.bookname = bookname;
                     entityClipping.authorname = authorname;
 
@@ -1115,7 +1107,8 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (!_staticData.UpdateClippings(key, dialog.TxtContent)) {
+            var content = dialog.TxtContent;
+            if (!_staticData.UpdateClippings(key, content, string.Empty)) {
                 Dialog(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -1378,7 +1371,7 @@ namespace KindleMate2 {
             progressBar.Enabled = isShow;
             progressBar.Visible = isShow;
             Enabled = !isShow;
-}
+        }
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
@@ -1547,7 +1540,7 @@ namespace KindleMate2 {
 
             _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
 
-            if (!_staticData.UpdateClippings(bookname, dialogBook, dialogAuthor)) {
+            if (!_staticData.RenameBook(bookname, dialogBook, dialogAuthor)) {
                 Dialog(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -1915,29 +1908,44 @@ namespace KindleMate2 {
                 var countDuplicated = 0;
 
                 foreach (DataRow row in _clippingsDataTable.Rows) {
-                    var key = row["key"].ToString();
-                    var content = row["content"].ToString();
+                    var key = row["key"].ToString() ?? string.Empty;
+                    var content = row["content"].ToString() ?? string.Empty;
+                    var bookname = row["bookname"].ToString() ?? string.Empty;
+
+                    var contentTrimmed = TrimContent(content);
+                    var booknameTrimmed = TrimContent(bookname);
+
                     if (string.IsNullOrWhiteSpace(key)) {
                         continue;
                     }
-                    if (string.IsNullOrWhiteSpace(content)) {
+                    if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(bookname) || string.IsNullOrWhiteSpace(contentTrimmed) || string.IsNullOrWhiteSpace(booknameTrimmed)) {
                         if (_staticData.DeleteClippingsByKey(key)) {
                             countEmpty++;
                         }
                         continue;
                     }
 
-                    var contentTrimmed = TrimContent(content);
-                    if (string.IsNullOrWhiteSpace(contentTrimmed)) {
-                        if (_staticData.DeleteClippingsByKey(key)) {
-                            countEmpty++;
-                            continue;
-                        }
-                    }
-                    if (!contentTrimmed.Equals(content)) {
-                        if (_staticData.UpdateClippings(key, contentTrimmed)) {
-                            countTrimmed++;
-                        }
+                    switch (contentTrimmed.Equals(content)) {
+                        case false when !booknameTrimmed.Equals(bookname): {
+                                if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
+                                    countTrimmed++;
+                                }
+                                break;
+                            }
+                        case false: {
+                                if (_staticData.UpdateClippings(key, contentTrimmed, string.Empty)) {
+                                    countTrimmed++;
+                                }
+                                break;
+                            }
+                        default: {
+                                if (!booknameTrimmed.Equals(bookname)) {
+                                    if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
+                                        countTrimmed++;
+                                    }
+                                }
+                                break;
+                            }
                     }
 
                     if (_staticData.IsExistClippingsContainingContent(content)) {
@@ -1962,9 +1970,8 @@ namespace KindleMate2 {
                     return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
                            Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space +
                            FormatFileSize(fileSizeDelta);
-                } else {
-                    return Strings.Database_No_Need_Clean;
                 }
+                return Strings.Database_No_Need_Clean;
             } catch (Exception) {
                 _staticData.RollbackTransaction();
                 return string.Empty;
@@ -2178,6 +2185,10 @@ namespace KindleMate2 {
             } catch {
                 // ignored
             }
+        }
+
+        private void menuContentCopy_Click(object sender, EventArgs e) {
+            Clipboard.SetText(string.IsNullOrEmpty(lblContent.SelectedText) ? lblContent.Text : lblContent.SelectedText);
         }
     }
 }

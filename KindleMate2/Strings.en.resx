@@ -489,4 +489,7 @@
   <data name="Clean_Failed" xml:space="preserve">
     <value>Failed to clean up the database</value>
   </data>
+  <data name="New_Version" xml:space="preserve">
+    <value>New version detected: </value>
+  </data>
 </root>

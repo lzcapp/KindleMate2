@@ -492,4 +492,7 @@
   <data name="Clean_Failed" xml:space="preserve">
     <value>清理資料庫失敗</value>
   </data>
+  <data name="New_Version" xml:space="preserve">
+    <value>偵測到新版本：</value>
+  </data>
 </root>

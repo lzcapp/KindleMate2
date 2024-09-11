@@ -202,7 +202,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool UpdateClippings(string originBookname, string bookname, string authorname) {
+        public bool RenameBook(string originBookname, string bookname, string authorname) {
             if (string.IsNullOrWhiteSpace(originBookname) || string.IsNullOrWhiteSpace(bookname)) {
                 return false;
             }
@@ -230,19 +230,33 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool UpdateClippings(string key, string content) {
-            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(content)) {
+        public bool UpdateClippings(string key, string content, string bookname) {
+            if (string.IsNullOrWhiteSpace(key)) {
                 return false;
             }
 
-            const string queryUpdate = "UPDATE clippings SET content = @content WHERE key = @key";
+            string sql;
+            if (string.IsNullOrWhiteSpace(content) && string.IsNullOrWhiteSpace(bookname)) {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(content)) {
+                sql = "bookname = @bookname";
+            } else if (string.IsNullOrWhiteSpace(bookname)) {
+                sql = "content = @content";
+            } else {
+                sql = "content = @content, bookname = @bookname";
+            }
+
+            var queryUpdate = "UPDATE clippings SET " + sql + " WHERE key = @key";
 
             using var command = new SQLiteCommand(queryUpdate, _connection);
             command.Parameters.Add("@key", DbType.String);
             command.Parameters.Add("@content", DbType.String);
+            command.Parameters.Add("@bookname", DbType.String);
 
             command.Parameters["@key"].Value = key;
             command.Parameters["@content"].Value = content;
+            command.Parameters["@bookname"].Value = bookname;
 
             var result = command.ExecuteNonQuery();
 

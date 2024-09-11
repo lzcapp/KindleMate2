@@ -27,7 +27,7 @@ namespace KindleMate2 {
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -86,6 +86,8 @@ namespace KindleMate2 {
             lblBookCount = new ToolStripStatusLabel();
             progressBar = new ToolStripProgressBar();
             timer = new System.Windows.Forms.Timer(components);
+            menuContent = new ContextMenuStrip(components);
+            menuContentCopy = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).BeginInit();
             splitContainerMain.Panel1.SuspendLayout();
@@ -105,6 +107,7 @@ namespace KindleMate2 {
             flowLayoutPanel.SuspendLayout();
             menu.SuspendLayout();
             statusStrip.SuspendLayout();
+            menuContent.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip
@@ -488,6 +491,7 @@ namespace KindleMate2 {
             // 
             // menuBooks
             // 
+            menuBooks.BackColor = Color.Transparent;
             menuBooks.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             menuBooks.ImageScalingSize = new Size(28, 28);
             menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksDelete, menuRename });
@@ -559,14 +563,14 @@ namespace KindleMate2 {
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = SystemColors.Window;
-            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle5.BackColor = SystemColors.Window;
+            dataGridViewCellStyle5.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle5.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle5.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.Dock = DockStyle.Fill;
@@ -669,7 +673,7 @@ namespace KindleMate2 {
             lblContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblContent.BackColor = SystemColors.Window;
             lblContent.BorderStyle = BorderStyle.None;
-            lblContent.ContextMenuStrip = menuClippings;
+            lblContent.ContextMenuStrip = menuContent;
             lblContent.Font = new Font("微软雅黑", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblContent.Location = new Point(5, 97);
             lblContent.Margin = new Padding(5, 5, 5, 20);
@@ -758,6 +762,23 @@ namespace KindleMate2 {
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
             // 
+            // menuContent
+            // 
+            menuContent.BackColor = Color.Transparent;
+            menuContent.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            menuContent.ImageScalingSize = new Size(28, 28);
+            menuContent.Items.AddRange(new ToolStripItem[] { menuContentCopy });
+            menuContent.Name = "menuClippings";
+            menuContent.Size = new Size(127, 38);
+            // 
+            // menuContentCopy
+            // 
+            menuContentCopy.Name = "menuContentCopy";
+            menuContentCopy.ShortcutKeyDisplayString = "";
+            menuContentCopy.Size = new Size(270, 34);
+            menuContentCopy.Text = Strings.Copy;
+            menuContentCopy.Click += menuContentCopy_Click;
+            // 
             // FrmMain
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -800,6 +821,7 @@ namespace KindleMate2 {
             menu.ResumeLayout(false);
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
+            menuContent.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -863,5 +885,7 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuLangAuto;
         private ContextMenuStrip menu;
         private ToolStripMenuItem menuListRefresh;
+        private ContextMenuStrip menuContent;
+        private ToolStripMenuItem menuContentCopy;
     }
 }

@@ -265,7 +265,7 @@
     <value>导入Kindle标注</value>
   </data>
   <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
-    <value>从Kindle设备导入</value>
+	  <value>从Kindle设备导入标注</value>
   </data>
   <data name="Import_Kindle_Clipping_File" xml:space="preserve">
     <value>导入Kindle标注文件</value>
@@ -494,5 +494,8 @@
   </data>
   <data name="Clean_Failed" xml:space="preserve">
     <value>清理数据库失败</value>
+  </data>
+  <data name="New_Version" xml:space="preserve">
+    <value>检测到新版本：</value>
   </data>
 </root>
