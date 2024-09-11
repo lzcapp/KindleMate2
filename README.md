@@ -14,6 +14,21 @@
 
 [.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) required for runtime dependent version.
 
+### Building
+
+Visual Studio & C#
+
+#### Submodules
+
+Do `git submodule update --init --recursive` first after cloning this repo.
+
+- [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
+
+#### Projects
+
+- KindleMate2 (WinForm): Current version.
+- KindleMate2_WPF (WPF): Not yet done, much work to do.
+
 ## Features
 
 - [x] 导入标注（`My Clippings.txt`）
