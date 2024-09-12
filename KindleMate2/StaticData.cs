@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Data.SQLite;
 using System.Reflection;
+using DarkModeForms;
 using KindleMate2.Entities;
 
 namespace KindleMate2 {
@@ -570,8 +571,35 @@ namespace KindleMate2 {
             return GetSettings("theme");
         }
 
+        public bool IsDarkTheme() {
+            var theme = GetTheme();
+            bool isWindowsDarkTheme;
+            if (string.IsNullOrWhiteSpace(theme)) {
+                isWindowsDarkTheme = IsWindowsDarkTheme();
+                SetTheme(isWindowsDarkTheme);
+            }
+            if (theme.Equals("dark", StringComparison.OrdinalIgnoreCase)) {
+                return true;
+            }
+            if (theme.Equals("light", StringComparison.OrdinalIgnoreCase)) {
+                return false;
+            }
+            isWindowsDarkTheme = IsWindowsDarkTheme();
+            SetTheme(isWindowsDarkTheme);
+            return isWindowsDarkTheme;
+        }
+
+        public bool IsWindowsDarkTheme() {
+            var isWindowsDarkTheme = DarkModeCS.GetWindowsColorMode() <= 0;
+            return isWindowsDarkTheme;
+        }
+
         public void SetTheme(string value) {
             SetSettings("theme", value);
+        }
+
+        public void SetTheme(bool isDarkTheme) {
+            SetTheme(isDarkTheme ? "dark" : "light");
         }
 
         public string GetLanguage() {
@@ -580,10 +608,6 @@ namespace KindleMate2 {
 
         public void SetLanguage(string value) {
             SetSettings("lang", value);
-        }
-
-        public bool IsDarkTheme() {
-            return GetTheme().Equals("dark", StringComparison.OrdinalIgnoreCase);
         }
 
         public void VacuumDatabase() {
