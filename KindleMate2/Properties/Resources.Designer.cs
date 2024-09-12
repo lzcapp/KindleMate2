@@ -243,6 +243,16 @@ namespace KindleMate2.Properties {
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
+        internal static System.Drawing.Bitmap magnifying_glass_tilted_left {
+            get {
+                object obj = ResourceManager.GetObject("magnifying-glass-tilted-left", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
         internal static System.Drawing.Bitmap memo {
             get {
                 object obj = ResourceManager.GetObject("memo", resourceCulture);
