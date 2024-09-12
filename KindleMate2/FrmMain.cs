@@ -135,25 +135,13 @@ namespace KindleMate2 {
         }
 
         private void SetTheme() {
-            var theme = _staticData.GetTheme();
-            if (!string.IsNullOrWhiteSpace(theme)) {
-                if (theme.Equals("dark", StringComparison.OrdinalIgnoreCase)) {
-                    _ = new DarkModeCS(this, false);
-                    menuTheme.Image = Properties.Resources.sun;
-                } else {
-                    _staticData.SetTheme("light");
-                    menuTheme.Image = Properties.Resources.new_moon;
-                }
+            if (_staticData.IsDarkTheme()) {
+                _ = new DarkModeCS(this, false);
+                menuTheme.Image = Properties.Resources.sun;
             } else {
-                if (DarkModeCS.GetWindowsColorMode() <= 0) {
-                    _staticData.SetTheme("dark");
-                    _ = new DarkModeCS(this, false);
-                    menuTheme.Image = Properties.Resources.sun;
-                } else {
-                    _staticData.SetTheme("light");
-                    menuTheme.Image = Properties.Resources.new_moon;
-                }
+                menuTheme.Image = Properties.Resources.new_moon;
             }
+            
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -177,8 +165,6 @@ namespace KindleMate2 {
                     }
                 }
             }
-
-            tabControl.ShowTabCloseButton = false;
 
             RefreshData();
 
