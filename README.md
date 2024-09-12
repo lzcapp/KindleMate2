@@ -20,7 +20,8 @@ Visual Studio & C#
 
 ### Submodules
 
-Do `git submodule update --init --recursive` first after cloning this repo.
+1. Do `git submodule update --init --recursive` first after cloning this repo.
+2. Change project `Dark-Mode-Forms`'s type to "Library".
 
 - [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
 
