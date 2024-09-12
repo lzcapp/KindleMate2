@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Data.SQLite;
 using System.Reflection;
+using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 
@@ -49,6 +50,19 @@ namespace KindleMate2 {
 
             const string queryClippings = "SELECT * FROM clippings;";
             using var command = new SQLiteCommand(queryClippings, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
+
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        public DataTable GetClipingsDataTableFuzzySearch(string strSearch) {
+            var dataTable = new DataTable();
+
+            const string queryClippings = "SELECT DISTINCT * FROM clippings WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'";
+            using var command = new SQLiteCommand(queryClippings, _connection);
+            command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);
@@ -131,6 +145,19 @@ namespace KindleMate2 {
             return count;
         }
         */
+
+        public DataTable GetOriginClippingsDataTableFuzzySearch(string strSearch) {
+            var dataTable = new DataTable();
+
+            const string queryClippings = "SELECT DISTINCT * FROM original_clipping_lines WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'";
+            using var command = new SQLiteCommand(queryClippings, _connection);
+            command.Parameters.AddWithValue("@strSearch", strSearch);
+            using var adapter = new SQLiteDataAdapter(command);
+
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
 
         public DataTable GetOriginClippingsDataTable() {
             var dataTable = new DataTable();
@@ -439,11 +466,37 @@ namespace KindleMate2 {
             return dataTable;
         }
 
+        public DataTable GetVocabDataTableFuzzySearch(string strSearch) {
+            var dataTable = new DataTable();
+
+            const string query = "SELECT DISTINCT * FROM vocab WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'";
+            using var command = new SQLiteCommand(query, _connection);
+            command.Parameters.AddWithValue("@strSearch", strSearch);
+            using var adapter = new SQLiteDataAdapter(command);
+
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
         public DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
 
-            const string query = "SELECT * FROM lookups;";
+            const string query = "SELECT DISTINCT * FROM lookups";
             using var command = new SQLiteCommand(query, _connection);
+            using var adapter = new SQLiteDataAdapter(command);
+
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        public DataTable GetLookupsDataTableFuzzySearch(string strSearch) {
+            var dataTable = new DataTable();
+
+            const string query = "SELECT DISTINCT * FROM lookups WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+            using var command = new SQLiteCommand(query, _connection);
+            command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
 
             adapter.Fill(dataTable);

@@ -39,6 +39,8 @@ namespace KindleMate2 {
 
         private int _selectedIndex;
 
+        private string _searchText;
+
         public FrmMain() {
             InitializeComponent();
 
@@ -64,6 +66,7 @@ namespace KindleMate2 {
             _selectedBook = string.Empty;
             _selectedWord = string.Empty;
             _selectedIndex = 0;
+            _searchText = getSearchText();
 
             menuFile.Text = Strings.Files + @"(&F)";
             menuRefresh.Text = Strings.Refresh;
@@ -141,7 +144,7 @@ namespace KindleMate2 {
             } else {
                 menuTheme.Image = Properties.Resources.new_moon;
             }
-            
+
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -332,10 +335,17 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
-            _clippingsDataTable = _staticData.GetClipingsDataTable();
-            _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
-            _vocabDataTable = _staticData.GetVocabDataTable();
-            _lookupsDataTable = _staticData.GetLookupsDataTable();
+            if (!string.IsNullOrWhiteSpace(_searchText)) {
+                _clippingsDataTable = _staticData.GetClipingsDataTableFuzzySearch(_searchText);
+                _originClippingsDataTable = _staticData.GetOriginClippingsDataTableFuzzySearch(_searchText);
+                _vocabDataTable = _staticData.GetVocabDataTableFuzzySearch(_searchText);
+                _lookupsDataTable = _staticData.GetLookupsDataTableFuzzySearch(_searchText);
+            } else {
+                _clippingsDataTable = _staticData.GetClipingsDataTable();
+                _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
+                _vocabDataTable = _staticData.GetVocabDataTable();
+                _lookupsDataTable = _staticData.GetLookupsDataTable();
+            }
 
             _lookupsDataTable.Columns.Add("word", typeof(string));
             _lookupsDataTable.Columns.Add("stem", typeof(string));
@@ -2175,6 +2185,20 @@ namespace KindleMate2 {
 
         private void menuContentCopy_Click(object sender, EventArgs e) {
             Clipboard.SetText(string.IsNullOrEmpty(lblContent.SelectedText) ? lblContent.Text : lblContent.SelectedText);
+        }
+
+        private void picSearch_Click(object sender, EventArgs e) {
+            _searchText = getSearchText();
+            RefreshData();
+        }
+
+        private string getSearchText() {
+            var strSearch = txtSearch.Text;
+            if (!string.IsNullOrWhiteSpace(strSearch)) {
+            } else {
+                txtSearch.Text = "";
+            }
+            return txtSearch.Text;
         }
     }
 }
