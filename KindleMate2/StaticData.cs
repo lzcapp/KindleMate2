@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using System.Data.SQLite;
 using System.Reflection;
-using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 
@@ -20,7 +19,7 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
-        public void OpenConnection() {
+        private void OpenConnection() {
             _connection.Open();
         }
 
@@ -57,10 +56,20 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetClipingsDataTableFuzzySearch(string strSearch) {
+        public DataTable GetClipingsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
-            const string queryClippings = "SELECT DISTINCT * FROM clippings WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'";
+            var sql = string.Empty;
+            if (type.Equals(Strings.Book_Title)) {
+                sql = "WHERE bookname LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Author)) {
+                sql = "WHERE authorname LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Content)) {
+                sql = "WHERE content LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Select_All)) {
+                sql = "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'";
+            }
+            var queryClippings = "SELECT DISTINCT * FROM clippings " + sql;
             using var command = new SQLiteCommand(queryClippings, _connection);
             command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
@@ -68,6 +77,36 @@ namespace KindleMate2 {
             adapter.Fill(dataTable);
 
             return dataTable;
+        }
+
+        public List<string> GetClippingsBookTitleList() {
+            var list = new List<string>();
+            DataTable dt = GetClipingsDataTable();
+            if (dt.Rows.Count <= 0) {
+                return list;
+            }
+            foreach (DataRow row in dt.Rows) {
+                var bookTitle = row["bookname"].ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
+                    list.Add(bookTitle);
+                }
+            }
+            return list;
+        }
+
+        public List<string> GetClippingsAuthorList() {
+            var list = new List<string>();
+            DataTable dt = GetClipingsDataTable();
+            if (dt.Rows.Count <= 0) {
+                return list;
+            }
+            foreach (DataRow row in dt.Rows) {
+                var bookTitle = row["authorname"].ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
+                    list.Add(bookTitle);
+                }
+            }
+            return list;
         }
 
         public bool IsExistOriginalClippings(string? key) {
@@ -146,10 +185,18 @@ namespace KindleMate2 {
         }
         */
 
-        public DataTable GetOriginClippingsDataTableFuzzySearch(string strSearch) {
+        public DataTable GetOriginClippingsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
-            const string queryClippings = "SELECT DISTINCT * FROM original_clipping_lines WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'";
+            var sql = string.Empty;
+            if (type.Equals(Strings.Book_Title) || type.Equals(Strings.Author)) {
+                sql = "WHERE line1 LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Content)) {
+                sql = "WHERE line4 LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Select_All)) {
+                sql = "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'";
+            }
+            var queryClippings = "SELECT DISTINCT * FROM original_clipping_lines " + sql;
             using var command = new SQLiteCommand(queryClippings, _connection);
             command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
@@ -466,10 +513,18 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetVocabDataTableFuzzySearch(string strSearch) {
+        public DataTable GetVocabDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
-            const string query = "SELECT DISTINCT * FROM vocab WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'";
+            var sql = string.Empty;
+            if (type.Equals(Strings.Vocabulary)) {
+                sql = "WHERE word LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Stem)) {
+                sql = "WHERE stem LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Select_All)) {
+                sql = "WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'";
+            }
+            var query = "SELECT DISTINCT * FROM vocab " + sql;
             using var command = new SQLiteCommand(query, _connection);
             command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
@@ -477,6 +532,38 @@ namespace KindleMate2 {
             adapter.Fill(dataTable);
 
             return dataTable;
+        }
+
+
+
+        public List<string> GetVocabWordList() {
+            var list = new List<string>();
+            DataTable dt = GetVocabDataTable();
+            if (dt.Rows.Count <= 0) {
+                return list;
+            }
+            foreach (DataRow row in dt.Rows) {
+                var bookTitle = row["word"].ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
+                    list.Add(bookTitle);
+                }
+            }
+            return list;
+        }
+
+        public List<string> GetVocabStemList() {
+            var list = new List<string>();
+            DataTable dt = GetVocabDataTable();
+            if (dt.Rows.Count <= 0) {
+                return list;
+            }
+            foreach (DataRow row in dt.Rows) {
+                var bookTitle = row["stem"].ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
+                    list.Add(bookTitle);
+                }
+            }
+            return list;
         }
 
         public DataTable GetLookupsDataTable() {
@@ -491,10 +578,22 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetLookupsDataTableFuzzySearch(string strSearch) {
+        public DataTable GetLookupsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
-            const string query = "SELECT DISTINCT * FROM lookups WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+            var sql = string.Empty;
+            if (type.Equals(Strings.Book_Title)) {
+                sql = "WHERE title LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Author)) {
+                sql = "WHERE authors LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Content)) {
+                sql = "WHERE usage LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Vocabulary) || type.Equals(Strings.Stem)) {
+                sql = "WHERE word_key LIKE '%' || @strSearch || '%'";
+            } else if (type.Equals(Strings.Select_All)) {
+                sql = "WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+            }
+            var query = "SELECT DISTINCT * FROM lookups " + sql;
             using var command = new SQLiteCommand(query, _connection);
             command.Parameters.AddWithValue("@strSearch", strSearch);
             using var adapter = new SQLiteDataAdapter(command);
@@ -620,7 +719,7 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
-        public string GetTheme() {
+        private string GetTheme() {
             return GetSettings("theme");
         }
 
@@ -642,7 +741,7 @@ namespace KindleMate2 {
             return isWindowsDarkTheme;
         }
 
-        public bool IsWindowsDarkTheme() {
+        private bool IsWindowsDarkTheme() {
             var isWindowsDarkTheme = DarkModeCS.GetWindowsColorMode() <= 0;
             return isWindowsDarkTheme;
         }
@@ -651,7 +750,7 @@ namespace KindleMate2 {
             SetSettings("theme", value);
         }
 
-        public void SetTheme(bool isDarkTheme) {
+        private void SetTheme(bool isDarkTheme) {
             SetTheme(isDarkTheme ? "dark" : "light");
         }
 

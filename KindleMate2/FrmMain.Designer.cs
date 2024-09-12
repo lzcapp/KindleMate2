@@ -27,7 +27,7 @@ namespace KindleMate2 {
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -73,6 +73,7 @@ namespace KindleMate2 {
             imageListWords = new ImageList(components);
             panel = new Panel();
             txtSearch = new TextBox();
+            cmbSearch = new ComboBox();
             picSearch = new PictureBox();
             splitContainerDetail = new SplitContainer();
             dataGridView = new DataGridView();
@@ -374,7 +375,7 @@ namespace KindleMate2 {
             tableLeft.Margin = new Padding(0);
             tableLeft.Name = "tableLeft";
             tableLeft.RowCount = 2;
-            tableLeft.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLeft.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
             tableLeft.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLeft.Size = new Size(286, 611);
             tableLeft.TabIndex = 1;
@@ -385,11 +386,11 @@ namespace KindleMate2 {
             tabControl.Controls.Add(tabPageBooks);
             tabControl.Controls.Add(tabPageWords);
             tabControl.Dock = DockStyle.Fill;
-            tabControl.Location = new Point(0, 25);
+            tabControl.Location = new Point(0, 30);
             tabControl.Margin = new Padding(0);
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(286, 586);
+            tabControl.Size = new Size(286, 581);
             tabControl.SizeMode = TabSizeMode.FillToRight;
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
@@ -401,7 +402,7 @@ namespace KindleMate2 {
             tabPageBooks.Location = new Point(4, 4);
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
-            tabPageBooks.Size = new Size(278, 545);
+            tabPageBooks.Size = new Size(278, 540);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
             // 
@@ -422,7 +423,7 @@ namespace KindleMate2 {
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(278, 545);
+            treeViewBooks.Size = new Size(278, 540);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -479,7 +480,7 @@ namespace KindleMate2 {
             tabPageWords.Location = new Point(4, 4);
             tabPageWords.Margin = new Padding(0);
             tabPageWords.Name = "tabPageWords";
-            tabPageWords.Size = new Size(278, 545);
+            tabPageWords.Size = new Size(278, 540);
             tabPageWords.TabIndex = 1;
             tabPageWords.Text = Strings.Vocabulary_List;
             // 
@@ -498,7 +499,7 @@ namespace KindleMate2 {
             treeViewWords.ShowLines = false;
             treeViewWords.ShowPlusMinus = false;
             treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(278, 545);
+            treeViewWords.Size = new Size(278, 540);
             treeViewWords.TabIndex = 0;
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
@@ -550,24 +551,41 @@ namespace KindleMate2 {
             // panel
             // 
             panel.Controls.Add(txtSearch);
+            panel.Controls.Add(cmbSearch);
             panel.Controls.Add(picSearch);
             panel.Dock = DockStyle.Fill;
             panel.Location = new Point(0, 0);
             panel.Margin = new Padding(0);
             panel.Name = "panel";
-            panel.Padding = new Padding(0, 5, 0, 0);
-            panel.Size = new Size(286, 25);
+            panel.Padding = new Padding(5, 5, 0, 0);
+            panel.Size = new Size(286, 30);
             panel.TabIndex = 1;
             // 
             // txtSearch
             // 
+            txtSearch.AutoCompleteMode = AutoCompleteMode.Suggest;
             txtSearch.Dock = DockStyle.Fill;
-            txtSearch.Location = new Point(0, 5);
-            txtSearch.Margin = new Padding(0);
+            txtSearch.Location = new Point(65, 5);
+            txtSearch.Margin = new Padding(5, 0, 0, 0);
             txtSearch.Multiline = true;
             txtSearch.Name = "txtSearch";
-            txtSearch.Size = new Size(251, 20);
-            txtSearch.TabIndex = 1;
+            txtSearch.Size = new Size(186, 25);
+            txtSearch.TabIndex = 2;
+            txtSearch.WordWrap = false;
+            txtSearch.KeyPress += txtSearch_KeyPress;
+            // 
+            // cmbSearch
+            // 
+            cmbSearch.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            cmbSearch.Dock = DockStyle.Left;
+            cmbSearch.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbSearch.FormattingEnabled = true;
+            cmbSearch.Location = new Point(5, 5);
+            cmbSearch.Margin = new Padding(0);
+            cmbSearch.Name = "cmbSearch";
+            cmbSearch.Size = new Size(60, 36);
+            cmbSearch.TabIndex = 1;
+            cmbSearch.SelectedIndexChanged += cmbSearch_SelectedIndexChanged;
             // 
             // picSearch
             // 
@@ -578,7 +596,7 @@ namespace KindleMate2 {
             picSearch.Margin = new Padding(0);
             picSearch.Name = "picSearch";
             picSearch.Padding = new Padding(10, 0, 0, 0);
-            picSearch.Size = new Size(35, 20);
+            picSearch.Size = new Size(35, 25);
             picSearch.SizeMode = PictureBoxSizeMode.Zoom;
             picSearch.TabIndex = 0;
             picSearch.TabStop = false;
@@ -614,14 +632,14 @@ namespace KindleMate2 {
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.Window;
-            dataGridViewCellStyle2.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Window;
+            dataGridViewCellStyle1.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.Dock = DockStyle.Fill;
@@ -642,6 +660,7 @@ namespace KindleMate2 {
             dataGridView.ShowRowErrors = false;
             dataGridView.Size = new Size(806, 308);
             dataGridView.TabIndex = 0;
+            dataGridView.DataSourceChanged += DataGridView_SelectionChanged;
             dataGridView.CellDoubleClick += DataGridView_CellDoubleClick;
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
             dataGridView.SelectionChanged += DataGridView_SelectionChanged;
@@ -944,7 +963,8 @@ namespace KindleMate2 {
         private TableLayoutPanel tableContent;
         private TabControl tabControl;
         private Panel panel;
-        private TextBox txtSearch;
         private PictureBox picSearch;
+        private ComboBox cmbSearch;
+        private TextBox txtSearch;
     }
 }

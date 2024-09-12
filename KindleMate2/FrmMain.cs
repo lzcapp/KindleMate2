@@ -103,6 +103,14 @@ namespace KindleMate2 {
             menuClippingsCopy.Text = Strings.Copy;
             menuClippingsDelete.Text = Strings.Delete;
 
+            cmbSearch.Items.Add(Strings.Select_All);
+            cmbSearch.Items.Add(Strings.Book_Title);
+            cmbSearch.Items.Add(Strings.Author);
+            cmbSearch.Items.Add(Strings.Vocabulary);
+            cmbSearch.Items.Add(Strings.Stem);
+            cmbSearch.Items.Add(Strings.Content);
+            cmbSearch.SelectedIndex = 0;
+
             dataGridView.ColumnHeadersHeight = 23;
         }
 
@@ -172,6 +180,8 @@ namespace KindleMate2 {
             RefreshData();
 
             treeViewBooks.Focus();
+
+            cmbSearch_SelectedIndexChanged(this, e);
         }
 
         private DialogResult Dialog(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
@@ -322,8 +332,8 @@ namespace KindleMate2 {
             try {
                 _staticData.CommitTransaction();
 
-                if (dataGridView.CurrentRow is not null) {
-                    _selectedIndex = dataGridView.CurrentRow.Index;
+                if (dataGridView.SelectedRows.Count > 0) {
+                    _selectedIndex = dataGridView.SelectedRows[0].Index;
                 }
 
                 DisplayData();
@@ -335,11 +345,18 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
+            lblBook.Text = string.Empty;
+            lblAuthor.Text = string.Empty;
+            lblLocation.Text = string.Empty;
+            lblContent.Text = string.Empty;
+
+
             if (!string.IsNullOrWhiteSpace(_searchText)) {
-                _clippingsDataTable = _staticData.GetClipingsDataTableFuzzySearch(_searchText);
-                _originClippingsDataTable = _staticData.GetOriginClippingsDataTableFuzzySearch(_searchText);
-                _vocabDataTable = _staticData.GetVocabDataTableFuzzySearch(_searchText);
-                _lookupsDataTable = _staticData.GetLookupsDataTableFuzzySearch(_searchText);
+                var type = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
+                _clippingsDataTable = _staticData.GetClipingsDataTableFuzzySearch(_searchText, type);
+                _originClippingsDataTable = _staticData.GetOriginClippingsDataTableFuzzySearch(_searchText, type);
+                _vocabDataTable = _staticData.GetVocabDataTableFuzzySearch(_searchText, type);
+                _lookupsDataTable = _staticData.GetLookupsDataTableFuzzySearch(_searchText, type);
             } else {
                 _clippingsDataTable = _staticData.GetClipingsDataTable();
                 _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
@@ -616,13 +633,13 @@ namespace KindleMate2 {
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
+                    lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
 
                     break;
                 case 1:
                     var vocabCount = _vocabDataTable.Rows.Count;
                     var lookupsCount = _lookupsDataTable.Rows.Count;
-                    lblCount.Text = Strings.Totally + Strings.Space + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
+                    lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
                     break;
             }
         }
@@ -935,8 +952,8 @@ namespace KindleMate2 {
             try {
                 DataGridViewRow selectedRow;
 
-                if (dataGridView.CurrentRow is not null) {
-                    selectedRow = dataGridView.CurrentRow;
+                if (dataGridView.SelectedRows.Count > 0) {
+                    selectedRow = dataGridView.SelectedRows[0];
                 } else {
                     return;
                 }
@@ -1055,7 +1072,7 @@ namespace KindleMate2 {
                 var selectedBookName = e.Node.Text;
                 _selectedBook = selectedBookName;
                 DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == selectedBookName).CopyToDataTable();
-                lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
+                lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Properties.Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
@@ -1098,7 +1115,11 @@ namespace KindleMate2 {
                 return;
             }
 
-            var key = dataGridView.CurrentRow?.Cells["key"].Value.ToString() ?? string.Empty;
+            if (dataGridView.SelectedRows.Count <= 0) {
+                return;
+            }
+
+            var key = dataGridView.SelectedRows[0].Cells["key"].Value.ToString() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(key)) {
                 return;
             }
@@ -1236,18 +1257,18 @@ namespace KindleMate2 {
         }
 
         private void ClippingMenuCopy_Click(object sender, EventArgs e) {
-            if (dataGridView.CurrentRow is null) {
+            if (dataGridView.SelectedRows.Count <= 0) {
                 return;
             }
 
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    var content = dataGridView.CurrentRow.Cells["content"].Value.ToString() ?? string.Empty;
+                    var content = dataGridView.SelectedRows[0].Cells["content"].Value.ToString() ?? string.Empty;
                     Clipboard.SetText(content != string.Empty ? content : lblContent.Text);
                     break;
                 case 1:
-                    var usage = dataGridView.CurrentRow.Cells["usage"].Value.ToString() ?? string.Empty;
+                    var usage = dataGridView.SelectedRows[0].Cells["usage"].Value.ToString() ?? string.Empty;
                     Clipboard.SetText(usage != string.Empty ? usage : lblBook.Text);
                     break;
             }
@@ -1608,9 +1629,6 @@ namespace KindleMate2 {
                     } else {
                         lblAuthor.Text = "";
                     }
-
-                    lblLocation.Text = clippinglocation;
-                    lblContent.Text = content;
                     break;
                 case 1:
                     if (_selectedIndex < 0) {
@@ -2199,6 +2217,40 @@ namespace KindleMate2 {
                 txtSearch.Text = "";
             }
             return txtSearch.Text;
+        }
+
+        private void cmbSearch_SelectedIndexChanged(object sender, EventArgs e) {
+            var selected = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(selected)) {
+                return;
+            }
+            List<string> list = [];
+            if (selected.Equals(Strings.Book_Title)) {
+                list.AddRange(_staticData.GetClippingsBookTitleList());
+            } else if (selected.Equals(Strings.Author)) {
+                list.AddRange(_staticData.GetClippingsAuthorList());
+            } else if (selected.Equals(Strings.Vocabulary)) {
+                list.AddRange(_staticData.GetVocabWordList());
+            } else if (selected.Equals(Strings.Stem)) {
+                list.AddRange(_staticData.GetVocabStemList());
+            } else {
+                list.AddRange(_staticData.GetClippingsBookTitleList());
+                list.AddRange(_staticData.GetClippingsAuthorList());
+                list.AddRange(_staticData.GetVocabWordList());
+                list.AddRange(_staticData.GetVocabStemList());
+            }
+            var autoCompleteStringCollection = new AutoCompleteStringCollection();
+            autoCompleteStringCollection.AddRange(list.ToArray());
+            txtSearch.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            txtSearch.AutoCompleteCustomSource = autoCompleteStringCollection;
+        }
+
+        private void txtSearch_KeyPress(object sender, KeyPressEventArgs e) {
+            if (e.KeyChar != (char)Keys.Enter) {
+                return;
+            }
+            e.Handled = true;
+            picSearch_Click(this, e);
         }
     }
 }
