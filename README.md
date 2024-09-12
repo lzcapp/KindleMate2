@@ -42,6 +42,7 @@ Visual Studio & C#
 - [x] 统计功能
 - [x] 夜间模式（深色模式）
 - [x] 语言切换
+- [x] 搜索功能
 - [ ] 分享功能（？）
 
 ## Screenshots
