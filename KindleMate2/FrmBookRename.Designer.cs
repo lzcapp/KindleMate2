@@ -30,8 +30,8 @@
             btnOK = new Button();
             btnCancel = new Button();
             label1 = new Label();
-            txtAuthor = new TextBox();
-            txtBook = new TextBox();
+            txtBook = new ComboBox();
+            txtAuthor = new ComboBox();
             tableLayoutPanel.SuspendLayout();
             flowLayoutPanel.SuspendLayout();
             SuspendLayout();
@@ -43,19 +43,19 @@
             tableLayoutPanel.Controls.Add(lblBook, 0, 0);
             tableLayoutPanel.Controls.Add(flowLayoutPanel, 0, 4);
             tableLayoutPanel.Controls.Add(label1, 0, 2);
-            tableLayoutPanel.Controls.Add(txtAuthor, 0, 3);
             tableLayoutPanel.Controls.Add(txtBook, 0, 1);
+            tableLayoutPanel.Controls.Add(txtAuthor, 0, 3);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(10, 10);
             tableLayoutPanel.Margin = new Padding(10, 5, 10, 5);
             tableLayoutPanel.Name = "tableLayoutPanel";
             tableLayoutPanel.RowCount = 5;
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle());
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle());
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 51F));
-            tableLayoutPanel.Size = new Size(532, 213);
+            tableLayoutPanel.Size = new Size(409, 208);
             tableLayoutPanel.TabIndex = 1;
             // 
             // lblBook
@@ -66,7 +66,7 @@
             lblBook.Location = new Point(0, 0);
             lblBook.Margin = new Padding(0, 0, 0, 10);
             lblBook.Name = "lblBook";
-            lblBook.Size = new Size(532, 22);
+            lblBook.Size = new Size(409, 28);
             lblBook.TabIndex = 2;
             lblBook.Text = "书名：";
             lblBook.TextAlign = ContentAlignment.BottomLeft;
@@ -77,11 +77,11 @@
             flowLayoutPanel.Controls.Add(btnOK);
             flowLayoutPanel.Controls.Add(btnCancel);
             flowLayoutPanel.Dock = DockStyle.Right;
-            flowLayoutPanel.Location = new Point(290, 160);
+            flowLayoutPanel.Location = new Point(167, 156);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Padding = new Padding(0, 10, 0, 0);
-            flowLayoutPanel.Size = new Size(242, 53);
+            flowLayoutPanel.Size = new Size(242, 52);
             flowLayoutPanel.TabIndex = 4;
             flowLayoutPanel.WrapContents = false;
             // 
@@ -111,31 +111,39 @@
             // 
             label1.AutoSize = true;
             label1.Dock = DockStyle.Fill;
-            label1.Location = new Point(0, 80);
+            label1.Location = new Point(0, 78);
             label1.Margin = new Padding(0, 0, 0, 10);
             label1.Name = "label1";
-            label1.Size = new Size(532, 22);
+            label1.Size = new Size(409, 28);
             label1.TabIndex = 5;
             label1.Text = "作者：";
             label1.TextAlign = ContentAlignment.BottomLeft;
             // 
-            // txtAuthor
-            // 
-            txtAuthor.Dock = DockStyle.Fill;
-            txtAuthor.Location = new Point(3, 115);
-            txtAuthor.Name = "txtAuthor";
-            txtAuthor.Size = new Size(526, 35);
-            txtAuthor.TabIndex = 6;
-            txtAuthor.TextChanged += TxtAuthor_TextChanged;
-            // 
             // txtBook
             // 
+            txtBook.AutoCompleteMode = AutoCompleteMode.Suggest;
+            txtBook.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtBook.Dock = DockStyle.Fill;
-            txtBook.Location = new Point(3, 35);
+            txtBook.DropDownStyle = ComboBoxStyle.Simple;
+            txtBook.FlatStyle = FlatStyle.System;
+            txtBook.FormattingEnabled = true;
+            txtBook.Location = new Point(3, 41);
             txtBook.Name = "txtBook";
-            txtBook.Size = new Size(526, 35);
+            txtBook.Size = new Size(403, 34);
             txtBook.TabIndex = 7;
-            txtBook.TextChanged += TxtBook_TextChanged;
+            // 
+            // txtAuthor
+            // 
+            txtAuthor.AutoCompleteMode = AutoCompleteMode.Suggest;
+            txtAuthor.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            txtAuthor.Dock = DockStyle.Fill;
+            txtAuthor.DropDownStyle = ComboBoxStyle.Simple;
+            txtAuthor.FlatStyle = FlatStyle.System;
+            txtAuthor.FormattingEnabled = true;
+            txtAuthor.Location = new Point(3, 119);
+            txtAuthor.Name = "txtAuthor";
+            txtAuthor.Size = new Size(403, 34);
+            txtAuthor.TabIndex = 8;
             // 
             // FrmBookRename
             // 
@@ -143,7 +151,7 @@
             AutoScaleMode = AutoScaleMode.Inherit;
             AutoSize = true;
             CancelButton = btnCancel;
-            ClientSize = new Size(552, 233);
+            ClientSize = new Size(429, 228);
             Controls.Add(tableLayoutPanel);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -170,7 +178,7 @@
         private Button btnOK;
         private Button btnCancel;
         private Label label1;
-        private TextBox txtAuthor;
-        private TextBox txtBook;
+        private ComboBox txtBook;
+        private ComboBox txtAuthor;
     }
 }

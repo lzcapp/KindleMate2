@@ -72,7 +72,7 @@ namespace KindleMate2 {
             menuRename = new ToolStripMenuItem();
             imageListWords = new ImageList(components);
             panel = new Panel();
-            txtSearch = new TextBox();
+            txtSearch = new ComboBox();
             cmbSearch = new ComboBox();
             picSearch = new PictureBox();
             splitContainerDetail = new SplitContainer();
@@ -147,7 +147,7 @@ namespace KindleMate2 {
             // 
             menuRefresh.Image = Properties.Resources.counterclockwise_arrows_button;
             menuRefresh.Name = "menuRefresh";
-            menuRefresh.Size = new Size(175, 44);
+            menuRefresh.Size = new Size(319, 44);
             menuRefresh.Text = Strings.Refresh;
             menuRefresh.Click += MenuRefresh_Click;
             // 
@@ -155,7 +155,7 @@ namespace KindleMate2 {
             // 
             menuStatistic.Image = Properties.Resources.bar_chart;
             menuStatistic.Name = "menuStatistic";
-            menuStatistic.Size = new Size(175, 44);
+            menuStatistic.Size = new Size(319, 44);
             menuStatistic.Text = "统计";
             menuStatistic.Click += MenuStatistic_Click;
             // 
@@ -163,7 +163,7 @@ namespace KindleMate2 {
             // 
             menuRestart.Image = Properties.Resources.eight_spoked_asterisk;
             menuRestart.Name = "menuRestart";
-            menuRestart.Size = new Size(175, 44);
+            menuRestart.Size = new Size(319, 44);
             menuRestart.Text = Strings.Restart;
             menuRestart.Click += MenuRestart_Click;
             // 
@@ -171,7 +171,7 @@ namespace KindleMate2 {
             // 
             menuExit.Image = Properties.Resources.cross_mark_button;
             menuExit.Name = "menuExit";
-            menuExit.Size = new Size(175, 44);
+            menuExit.Size = new Size(319, 44);
             menuExit.Text = Strings.Exit;
             menuExit.Click += MenuExit_Click;
             // 
@@ -564,15 +564,18 @@ namespace KindleMate2 {
             // txtSearch
             // 
             txtSearch.AutoCompleteMode = AutoCompleteMode.Suggest;
+            txtSearch.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtSearch.Dock = DockStyle.Fill;
+            txtSearch.DropDownStyle = ComboBoxStyle.Simple;
+            txtSearch.FlatStyle = FlatStyle.System;
+            txtSearch.FormattingEnabled = true;
             txtSearch.Location = new Point(65, 5);
-            txtSearch.Margin = new Padding(5, 0, 0, 0);
-            txtSearch.Multiline = true;
+            txtSearch.Margin = new Padding(0);
             txtSearch.Name = "txtSearch";
             txtSearch.Size = new Size(186, 25);
             txtSearch.TabIndex = 2;
-            txtSearch.WordWrap = false;
             txtSearch.KeyPress += txtSearch_KeyPress;
+            txtSearch.Leave += txtSearch_Leave;
             // 
             // cmbSearch
             // 
@@ -880,7 +883,6 @@ namespace KindleMate2 {
             tabPageWords.ResumeLayout(false);
             menuBooks.ResumeLayout(false);
             panel.ResumeLayout(false);
-            panel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)picSearch).EndInit();
             splitContainerDetail.Panel1.ResumeLayout(false);
             splitContainerDetail.Panel2.ResumeLayout(false);
@@ -965,6 +967,6 @@ namespace KindleMate2 {
         private Panel panel;
         private PictureBox picSearch;
         private ComboBox cmbSearch;
-        private TextBox txtSearch;
+        private ComboBox txtSearch;
     }
 }

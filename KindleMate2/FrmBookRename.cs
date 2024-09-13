@@ -58,6 +58,9 @@ namespace KindleMate2 {
 
             txtBook.Focus();
             btnOK.Enabled = false;
+
+            txtBook.AutoCompleteCustomSource.AddRange(_staticData.GetClippingsBookTitleList().ToArray());
+            txtAuthor.AutoCompleteCustomSource.AddRange(_staticData.GetClippingsAuthorList().ToArray());
         }
 
         private bool IsRevised() {

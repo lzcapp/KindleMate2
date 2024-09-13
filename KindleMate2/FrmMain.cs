@@ -2206,8 +2206,11 @@ namespace KindleMate2 {
         }
 
         private void picSearch_Click(object sender, EventArgs e) {
-            _searchText = getSearchText();
-            RefreshData();
+            var searchText = getSearchText();
+            if (!_searchText.Equals(searchText)) {
+                _searchText = searchText;
+                RefreshData();
+            }
         }
 
         private string getSearchText() {
@@ -2250,6 +2253,10 @@ namespace KindleMate2 {
                 return;
             }
             e.Handled = true;
+            picSearch_Click(this, e);
+        }
+
+        private void txtSearch_Leave(object sender, EventArgs e) {
             picSearch_Click(this, e);
         }
     }
