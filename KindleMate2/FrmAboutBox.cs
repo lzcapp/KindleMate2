@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
@@ -78,15 +79,17 @@ namespace KindleMate2 {
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = GetRepoInfo(); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
-                if (workerCompletedEventArgs.Result != null) {
-                    var release = (GitHubRelease)workerCompletedEventArgs.Result;
-                    if (!string.IsNullOrWhiteSpace(assemblyVersion)) {
-                        var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
-                        pictureBox1.Visible = !NormalizeVersion(assemblyVersion).StartsWith(NormalizeVersion(tagName));
-                        var toolTip = new ToolTip();
-                        toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
-                    }
+                if (workerCompletedEventArgs.Result == null) {
+                    return;
                 }
+                var release = (GitHubRelease)workerCompletedEventArgs.Result;
+                if (string.IsNullOrWhiteSpace(assemblyVersion)) {
+                    return;
+                }
+                var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
+                var toolTip = new ToolTip();
+                toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
+                pictureBox1.Visible = IsUpdate(assemblyVersion, tagName);
             };
         }
 
@@ -98,12 +101,32 @@ namespace KindleMate2 {
             return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
         }
 
-        private static string NormalizeVersion(string version) {
-            var parts = version.Split('.');
-            for (var i = 0; i < parts.Length; i++) {
-                parts[i] = int.Parse(parts[i]).ToString();
+        private bool IsUpdate(string current, string tagname) {
+            DateTime normalizeVersion = NormalizeVersion(current);
+            DateTime normalizeTagName = NormalizeVersion(tagname);
+            if (normalizeVersion != DateTime.MinValue || normalizeTagName != DateTime.MinValue) {
+                return normalizeVersion < normalizeTagName;
             }
-            return string.Join(".", parts);
+            var splitVersion = current.Split('.');
+            var splitTagname = current.Split('.');
+            for (var i = 0; i < 3; i++) {
+                if (!int.TryParse(splitVersion[i], out var intVersion) || !int.TryParse(splitTagname[i], out var intTagname)) {
+                    continue;
+                }
+                if (intVersion < intTagname) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static DateTime NormalizeVersion(string version) {
+            var date = DateTime.MinValue;
+            var parts = version.Split('.');
+            if (int.TryParse(parts[0], out var year) && int.TryParse(parts[1], out var month) && int.TryParse(parts[2], out var day)) {
+                date = new DateTime(year, month, day);
+            }
+            return date;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {
