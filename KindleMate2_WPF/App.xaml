@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:KindleMate2_WPF"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+
     </Application.Resources>
 </Application>
