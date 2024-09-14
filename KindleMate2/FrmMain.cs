@@ -1359,6 +1359,7 @@ namespace KindleMate2 {
                     break;
             }
             RefreshData();
+            RefreshData();
         }
 
         private void MenuExit_Click(object sender, EventArgs e) {

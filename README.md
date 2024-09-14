@@ -51,7 +51,6 @@ Visual Studio & C#
 <img src="Screenshots/02.png" width="100%">
 <img src="Screenshots/03.png" width="100%">
 <img src="Screenshots/04.png" width="100%">
-<img src="Screenshots/05.png" width="100%">
 
 ## Star History
 
