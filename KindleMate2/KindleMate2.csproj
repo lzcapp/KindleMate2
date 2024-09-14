@@ -69,10 +69,18 @@
 	  <Compile Remove="DarkModeForms\Form1.cs" />
 	  <Compile Remove="DarkModeForms\Form1.Designer.cs" />
 	  <Compile Remove="DarkModeForms\Program.cs" />
+	  <Compile Remove="FrmBookRename.cs" />
+	  <Compile Remove="FrmBookRename.Designer.cs" />
+	  <Compile Remove="UI.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <EmbeddedResource Remove="DarkModeForms\Form1.resx" />
+	  <EmbeddedResource Remove="FrmBookRename.en.resx" />
+	  <EmbeddedResource Remove="FrmBookRename.resx" />
+	  <EmbeddedResource Remove="FrmBookRename.zh-cn.resx" />
+	  <EmbeddedResource Remove="FrmBookRename.zh-hans.resx" />
+	  <EmbeddedResource Remove="FrmBookRename.zh-hant.resx" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -156,18 +164,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Update="FrmAboutBox.zh-hant.resx">
 			<DependentUpon>FrmAboutBox.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmBookRename.en.resx">
-			<DependentUpon>FrmBookRename.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmBookRename.zh-cn.resx">
-			<DependentUpon>FrmBookRename.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmBookRename.zh-hans.resx">
-			<DependentUpon>FrmBookRename.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmBookRename.zh-hant.resx">
-			<DependentUpon>FrmBookRename.resx</DependentUpon>
 		</EmbeddedResource>
 		<EmbeddedResource Update="FrmEdit.en.resx">
 			<DependentUpon>FrmEdit.resx</DependentUpon>

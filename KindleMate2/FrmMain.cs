@@ -115,7 +115,6 @@ namespace KindleMate2 {
         }
 
         private void SetLang() {
-
             var name = _staticData.GetLanguage();
             if (!string.IsNullOrWhiteSpace(name)) {
                 var culture = new CultureInfo(name);
@@ -137,22 +136,25 @@ namespace KindleMate2 {
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
                 if (currentCulture.EnglishName.Contains("English") || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase)) {
                     menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
                     menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
         }
 
         private void SetTheme() {
+            var darkMode = new DarkModeCS(this, false);
             if (_staticData.IsDarkTheme()) {
-                _ = new DarkModeCS(this, false);
+                darkMode.ApplyTheme();
                 menuTheme.Image = Properties.Resources.sun;
             } else {
+                darkMode.ApplyTheme(false);
                 menuTheme.Image = Properties.Resources.new_moon;
             }
-
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -167,7 +169,7 @@ namespace KindleMate2 {
 
                     var fileSize = new FileInfo(filePath).Length / 1024;
                     if (File.Exists(filePath) && fileSize >= 20) {
-                        DialogResult resultRestore = Dialog(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (resultRestore == DialogResult.Yes) {
                             File.Copy(filePath, _filePath, true);
                             RefreshData();
@@ -184,8 +186,8 @@ namespace KindleMate2 {
             cmbSearch_SelectedIndexChanged(this, e);
         }
 
-        private DialogResult Dialog(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
-            return _staticData.IsDarkTheme() ? Messenger.MessageBox(message, title, buttons, icon) : MessageBox.Show(message, title, buttons, icon);
+        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
+            return _staticData.IsDarkTheme() ? Messenger.MessageBox(message, title, buttons, icon) : Messenger.MessageBox(message, title, buttons, icon, false);
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
@@ -208,7 +210,7 @@ namespace KindleMate2 {
 
         private string ImportKindleWords(string kindleWordsPath) {
             if (!File.Exists(kindleWordsPath)) {
-                Dialog(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return string.Empty;
             }
 
@@ -307,7 +309,8 @@ namespace KindleMate2 {
 
             UpdateFrequency();
 
-            return Strings.Parsed_X + Strings.Space + lookupsTable.Rows.Count + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + lookupsInsertedCount + Strings.Space + Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
+            return Strings.Parsed_X + Strings.Space + lookupsTable.Rows.Count + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + lookupsInsertedCount + Strings.Space +
+                   Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private void UpdateFrequency() {
@@ -349,7 +352,6 @@ namespace KindleMate2 {
             lblAuthor.Text = string.Empty;
             lblLocation.Text = string.Empty;
             lblContent.Text = string.Empty;
-
 
             if (!string.IsNullOrWhiteSpace(_searchText)) {
                 var type = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
@@ -633,7 +635,8 @@ namespace KindleMate2 {
                     var clippingsCount = _clippingsDataTable.Rows.Count;
                     var originClippingsCount = _originClippingsDataTable.Rows.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
-                    lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
+                    lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                                    Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
 
                     break;
                 case 1:
@@ -755,7 +758,10 @@ namespace KindleMate2 {
                     _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
                 }
 
-                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty) select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty, int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
+                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows
+                                      where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)
+                                      select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty,
+                                          int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
 
                 _staticData.CommitTransaction();
             } catch (Exception) {
@@ -766,7 +772,8 @@ namespace KindleMate2 {
 
             var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
 
-            return Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
+            return Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                   wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private string ImportKindleClippings(string clippingsPath) {
@@ -821,7 +828,8 @@ namespace KindleMate2 {
                     var line2 = lines[ceilDelimiter + 2].Trim();
                     var line3 = lines[ceilDelimiter + 3].Trim(); // line3 should be empty
                     var line4 = lines[ceilDelimiter + 4].Trim();
-                    if (ceilDelimiter + 5 == ceilDelimiter) {          // line4 is the rest
+                    if (ceilDelimiter + 5 == ceilDelimiter) {
+                        // line4 is the rest
                         for (var index = ceilDelimiter + 3; index < florDelimiter; index++) {
                             line4 += lines[index];
                             if (index < florDelimiter - 1) {
@@ -833,7 +841,7 @@ namespace KindleMate2 {
                     var content = line4;
                     entityClipping.content = content;
 
-                    var line5 = lines[florDelimiter].Trim();     // line 5 is "=========="
+                    var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
                     var brieftype = 0;
                     if (line2.Contains("笔记") || line2.Contains("Note")) {
@@ -996,7 +1004,12 @@ namespace KindleMate2 {
                             break;
                         }
 
-                        var usage_list = (from DataRow row in _lookupsDataTable.Rows where string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase) let str = row["word_key"].ToString() ?? string.Empty let strContent = row["usage"].ToString() ?? string.Empty where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent) select strContent).ToList();
+                        var usage_list = (from DataRow row in _lookupsDataTable.Rows
+                                          where string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase)
+                                          let str = row["word_key"].ToString() ?? string.Empty
+                                          let strContent = row["usage"].ToString() ?? string.Empty
+                                          where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)
+                                          select strContent).ToList();
                         var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
                         var usage_clippings_list = new List<DataRow>();
                         if (word.Length > 1) {
@@ -1126,11 +1139,11 @@ namespace KindleMate2 {
 
             var content = dialog.TxtContent;
             if (!_staticData.UpdateClippings(key, content, string.Empty)) {
-                Dialog(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            Dialog(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             RefreshData();
         }
 
@@ -1204,7 +1217,7 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    DialogResult resultClippings = Dialog(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultClippings = MessageBox(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultClippings != DialogResult.Yes) {
                         return;
@@ -1217,7 +1230,7 @@ namespace KindleMate2 {
                             if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
-                                Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
 
@@ -1228,7 +1241,7 @@ namespace KindleMate2 {
 
                     break;
                 case 1:
-                    DialogResult resultWords = Dialog(Strings.Confirm_Delete_Lookups, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultWords = MessageBox(Strings.Confirm_Delete_Lookups, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultWords != DialogResult.Yes) {
                         return;
@@ -1241,7 +1254,7 @@ namespace KindleMate2 {
                             if (_staticData.DeleteLookupsByTimeStamp(row.Cells["timestamp"].Value.ToString() ?? string.Empty)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
-                                Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
 
@@ -1292,7 +1305,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    DialogResult resultBooks = Dialog(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultBooks = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultBooks != DialogResult.Yes) {
                         return;
@@ -1300,7 +1313,7 @@ namespace KindleMate2 {
 
                     var bookname = treeViewBooks.SelectedNode.Text;
                     if (!_staticData.DeleteClippingsByBook(bookname)) {
-                        Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         _selectedBook = string.Empty;
                     }
 
@@ -1310,7 +1323,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    DialogResult resultWords = Dialog(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult resultWords = MessageBox(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (resultWords != DialogResult.Yes) {
                         return;
@@ -1328,7 +1341,7 @@ namespace KindleMate2 {
                     }
 
                     if (!_staticData.DeleteVocab(word) && !_staticData.DeleteLookupsByWordKey(word_key)) {
-                        Dialog(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
                     _selectedWord = string.Empty;
@@ -1367,15 +1380,13 @@ namespace KindleMate2 {
 
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => {
-                workEventArgs.Result = ImportKindleClippings(fileDialog.FileName);
-            };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKindleClippings(fileDialog.FileName); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
-                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
-                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 SetProgressBar(false);
                 RefreshData();
@@ -1409,15 +1420,13 @@ namespace KindleMate2 {
 
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => {
-                workEventArgs.Result = ImportKMDatabase(fileDialog.FileName);
-            };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKMDatabase(fileDialog.FileName); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
-                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
-                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 SetProgressBar(false);
                 RefreshData();
@@ -1434,7 +1443,7 @@ namespace KindleMate2 {
                 });
             } catch (Exception) {
                 Clipboard.SetText(repoUrl);
-                Dialog(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -1473,15 +1482,13 @@ namespace KindleMate2 {
             var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
 
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, e) => {
-                e.Result = Import(kindleClippingsPath, kindleWordsPath);
-            };
+            bw.DoWork += (_, e) => { e.Result = Import(kindleClippingsPath, kindleWordsPath); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, e) => {
                 if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
-                    Dialog(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
-                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 SetProgressBar(false);
                 RefreshData();
@@ -1520,53 +1527,62 @@ namespace KindleMate2 {
         }
 
         private void ShowBookRenameDialog() {
-            using var dialog = new FrmBookRename();
             var bookname = GetBookname();
             var authorname = GetAuthorname();
 
-            dialog.TxtBook = bookname;
-            dialog.TxtAuthor = authorname;
-            if (dialog.ShowDialog() != DialogResult.OK) {
-                return;
-            }
+            var fields = new List<KeyValue> {
+                new(Strings.Book_Title, bookname),
+                new(Strings.Author, authorname)
+            };
 
-            var dialogBook = dialog.TxtBook.Trim();
-            var dialogAuthor = dialog.TxtAuthor.Trim();
-            if (string.IsNullOrWhiteSpace(dialogBook)) {
-                return;
-            }
+            Messenger.ValidateControls += (_, e) => {
+                if (fields != null) {
+                    var dialogBook = fields[0].Value;
+                    var dialogAuthor = fields[1].Value;
+                    if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
+                        e.Cancel = true;
+                    }
+                }
+            };
 
-            if (!string.IsNullOrWhiteSpace(authorname) && string.IsNullOrWhiteSpace(dialogAuthor)) {
-                dialogAuthor = authorname;
-            }
-
-            if (bookname == dialogBook && authorname == dialogAuthor) {
-                Dialog(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (_clippingsDataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
-                DialogResult result = Dialog(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (result != DialogResult.Yes) {
+            if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel) == DialogResult.OK) {
+                var dialogBook = fields[0].Value.Trim();
+                var dialogAuthor = fields[1].Value.Trim();
+                
+                if (string.IsNullOrWhiteSpace(dialogBook)) {
+                    return;
+                }
+                if (!string.IsNullOrWhiteSpace(authorname) && string.IsNullOrWhiteSpace(dialogAuthor)) {
+                    dialogAuthor = authorname;
+                }
+                if (bookname == dialogBook && authorname == dialogAuthor) {
+                    MessageBox(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-                dialogAuthor = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
+                if (_clippingsDataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
+                    DialogResult result = MessageBox(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (result != DialogResult.Yes) {
+                        return;
+                    }
+
+                    var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
+                    dialogAuthor = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
+                }
+
+                _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
+
+                if (!_staticData.RenameBook(bookname, dialogBook, dialogAuthor)) {
+                    MessageBox(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                MessageBox(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                _selectedBook = dialogBook;
+
+                RefreshData();
             }
-
-            _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
-
-            if (!_staticData.RenameBook(bookname, dialogBook, dialogAuthor)) {
-                Dialog(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            Dialog(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            _selectedBook = dialogBook;
-
-            RefreshData();
         }
 
         private string GetBookname() {
@@ -1684,12 +1700,12 @@ namespace KindleMate2 {
             BackupDatabase();
 
             if (_clippingsDataTable.Rows.Count <= 0) {
-                Dialog(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 if (!BackupOriginClippings()) {
-                    Dialog(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 } else {
-                    DialogResult result = Dialog(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
                     }
@@ -1724,19 +1740,19 @@ namespace KindleMate2 {
 
         private void MenuClear_Click(object sender, EventArgs e) {
             if (_staticData.IsDatabaseEmpty()) {
-                Dialog(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            DialogResult result = Dialog(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+            DialogResult result = MessageBox(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
             if (result != DialogResult.Yes) {
                 return;
             }
 
             if (_staticData.EmptyTables()) {
-                Dialog(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                Dialog(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             Restart();
@@ -1770,15 +1786,13 @@ namespace KindleMate2 {
 
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => {
-                workEventArgs.Result = ImportKindleWords(fileDialog.FileName);
-            };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKindleWords(fileDialog.FileName); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
-                    Dialog(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
-                    Dialog(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 SetProgressBar(false);
                 RefreshData();
@@ -1890,19 +1904,17 @@ namespace KindleMate2 {
             _clippingsDataTable = _staticData.GetClipingsDataTable();
 
             if (_clippingsDataTable.Rows.Count <= 0) {
-                Dialog(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 SetProgressBar(true);
                 var bw = new BackgroundWorker();
-                bw.DoWork += (_, doWorkEventArgs) => {
-                    doWorkEventArgs.Result = CleanDatabase();
-                };
+                bw.DoWork += (_, doWorkEventArgs) => { doWorkEventArgs.Result = CleanDatabase(); };
                 bw.RunWorkerAsync();
                 bw.RunWorkerCompleted += (_, runWorkerCompletedEventArgs) => {
                     if (runWorkerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(runWorkerCompletedEventArgs.Result.ToString())) {
-                        Dialog(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     } else {
-                        Dialog(Strings.Clear_Failed, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox(Strings.Clear_Failed, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     SetProgressBar(false);
                     RefreshData();
@@ -1941,25 +1953,25 @@ namespace KindleMate2 {
 
                     switch (contentTrimmed.Equals(content)) {
                         case false when !booknameTrimmed.Equals(bookname): {
-                                if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
-                                    countTrimmed++;
-                                }
-                                break;
+                            if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
+                                countTrimmed++;
                             }
+                            break;
+                        }
                         case false: {
-                                if (_staticData.UpdateClippings(key, contentTrimmed, string.Empty)) {
+                            if (_staticData.UpdateClippings(key, contentTrimmed, string.Empty)) {
+                                countTrimmed++;
+                            }
+                            break;
+                        }
+                        default: {
+                            if (!booknameTrimmed.Equals(bookname)) {
+                                if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
                                     countTrimmed++;
                                 }
-                                break;
                             }
-                        default: {
-                                if (!booknameTrimmed.Equals(bookname)) {
-                                    if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
-                                        countTrimmed++;
-                                    }
-                                }
-                                break;
-                            }
+                            break;
+                        }
                     }
 
                     if (_staticData.IsExistClippingsContainingContent(content)) {
@@ -2127,7 +2139,8 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
             }
 
-            const string css = "@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap');\r\n\r\n* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", \"Noto Emoji\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin: 20px auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin: 20px auto;\r\n}\r\n\r\ncode {\r\n    background-color: antiquewhite;\r\n    border-radius: 10px;\r\n    padding: 2px 6px;\r\n}";
+            const string css =
+                "@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap');\r\n\r\n* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", \"Noto Emoji\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin: 20px auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin: 20px auto;\r\n}\r\n\r\ncode {\r\n    background-color: antiquewhite;\r\n    border-radius: 10px;\r\n    padding: 2px 6px;\r\n}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
@@ -2135,7 +2148,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = Dialog(Strings.Export_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox(Strings.Export_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) {
                 return;
             }
@@ -2215,8 +2228,7 @@ namespace KindleMate2 {
 
         private string getSearchText() {
             var strSearch = txtSearch.Text;
-            if (!string.IsNullOrWhiteSpace(strSearch)) {
-            } else {
+            if (!string.IsNullOrWhiteSpace(strSearch)) { } else {
                 txtSearch.Text = "";
             }
             return txtSearch.Text;
