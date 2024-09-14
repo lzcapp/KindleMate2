@@ -165,18 +165,6 @@
 		<EmbeddedResource Update="FrmAboutBox.zh-hant.resx">
 			<DependentUpon>FrmAboutBox.resx</DependentUpon>
 		</EmbeddedResource>
-		<EmbeddedResource Update="FrmEdit.en.resx">
-			<DependentUpon>FrmEdit.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmEdit.zh-cn.resx">
-			<DependentUpon>FrmEdit.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmEdit.zh-hans.resx">
-			<DependentUpon>FrmEdit.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="FrmEdit.zh-hant.resx">
-			<DependentUpon>FrmEdit.resx</DependentUpon>
-		</EmbeddedResource>
 		<EmbeddedResource Update="FrmMain.en.resx">
 			<DependentUpon>FrmMain.resx</DependentUpon>
 		</EmbeddedResource>

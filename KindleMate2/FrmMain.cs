@@ -41,6 +41,8 @@ namespace KindleMate2 {
 
         private string _searchText;
 
+        private bool _isDarkTheme;
+
         public FrmMain() {
             InitializeComponent();
 
@@ -119,6 +121,7 @@ namespace KindleMate2 {
             if (!string.IsNullOrWhiteSpace(name)) {
                 var culture = new CultureInfo(name);
                 Thread.CurrentThread.CurrentUICulture = culture;
+                Thread.CurrentThread.CurrentCulture = culture;
 
                 switch (name.ToLowerInvariant()) {
                     case "en":
@@ -148,13 +151,9 @@ namespace KindleMate2 {
 
         private void SetTheme() {
             var darkMode = new DarkModeCS(this, false);
-            if (_staticData.IsDarkTheme()) {
-                darkMode.ApplyTheme();
-                menuTheme.Image = Properties.Resources.sun;
-            } else {
-                darkMode.ApplyTheme(false);
-                menuTheme.Image = Properties.Resources.new_moon;
-            }
+            _isDarkTheme = _staticData.IsDarkTheme();
+            menuTheme.Image = _isDarkTheme ? Properties.Resources.sun : Properties.Resources.new_moon;
+            darkMode.ApplyTheme(_isDarkTheme);
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -187,7 +186,7 @@ namespace KindleMate2 {
         }
 
         private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
-            return _staticData.IsDarkTheme() ? Messenger.MessageBox(message, title, buttons, icon) : Messenger.MessageBox(message, title, buttons, icon, false);
+            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
@@ -1120,12 +1119,21 @@ namespace KindleMate2 {
         }
 
         private void ShowContentEditDialog() {
-            using var dialog = new FrmEdit();
-            dialog.LblBook = lblBook.Text;
-            dialog.TxtContent = lblContent.Text;
-            if (dialog.ShowDialog() != DialogResult.OK) {
-                return;
-            }
+            var bookName = lblBook.Text;
+            var content = lblContent.Text;
+
+            var fields = new List<KeyValue> {
+                new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
+            };
+
+            Messenger.ValidateControls += (_, e) => {
+                if (fields != null) {
+                    var fValue = fields[0].Value;
+                    if (string.IsNullOrWhiteSpace(fValue)) {
+                        e.Cancel = true;
+                    }
+                }
+            };
 
             if (dataGridView.SelectedRows.Count <= 0) {
                 return;
@@ -1136,14 +1144,21 @@ namespace KindleMate2 {
                 return;
             }
 
-            var content = dialog.TxtContent;
-            if (!_staticData.UpdateClippings(key, content, string.Empty)) {
-                MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) == DialogResult.OK) {
+                var dialogContent = fields[0].Value.Trim();
+                if (string.IsNullOrWhiteSpace(dialogContent)) {
+                    return;
+                }
+                if (dialogContent.Equals(content)) {
+                    return;
+                }
+                if (!_staticData.UpdateClippings(key, dialogContent, string.Empty)) {
+                    MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                RefreshData();
             }
-
-            MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            RefreshData();
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
@@ -1539,7 +1554,7 @@ namespace KindleMate2 {
                 }
             };
 
-            if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel) == DialogResult.OK) {
+            if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) == DialogResult.OK) {
                 var dialogBook = fields[0].Value.Trim();
                 var dialogAuthor = fields[1].Value.Trim();
 
@@ -2160,7 +2175,7 @@ namespace KindleMate2 {
         }
 
         private void MenuTheme_Click(object sender, EventArgs e) {
-            _staticData.SetTheme(_staticData.IsDarkTheme() ? "light" : "dark");
+            _staticData.SetTheme(_isDarkTheme ? "light" : "dark");
             Restart();
         }
 
