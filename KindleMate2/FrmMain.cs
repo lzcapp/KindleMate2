@@ -637,7 +637,6 @@ namespace KindleMate2 {
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
                     lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
                                     Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
-
                     break;
                 case 1:
                     var vocabCount = _vocabDataTable.Rows.Count;
@@ -1173,7 +1172,6 @@ namespace KindleMate2 {
                     } else {
                         ShowContentEditDialog();
                     }
-
                     break;
                 case 1:
                     if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
@@ -1203,7 +1201,6 @@ namespace KindleMate2 {
             if (e.RowIndex <= -1 || e.ColumnIndex <= -1) {
                 return;
             }
-
             dataGridView.CurrentCell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
             Point location = dataGridView.PointToClient(Cursor.Position);
             menuClippings.Show(dataGridView, location);
@@ -1233,7 +1230,6 @@ namespace KindleMate2 {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
-
                         _staticData.CommitTransaction();
                     } catch (Exception) {
                         _staticData.RollbackTransaction();
@@ -1257,7 +1253,6 @@ namespace KindleMate2 {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
-
                         _staticData.CommitTransaction();
                     } catch (Exception) {
                         _staticData.RollbackTransaction();
@@ -1348,7 +1343,6 @@ namespace KindleMate2 {
 
                     break;
             }
-
             RefreshData();
         }
 
@@ -1548,7 +1542,7 @@ namespace KindleMate2 {
             if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel) == DialogResult.OK) {
                 var dialogBook = fields[0].Value.Trim();
                 var dialogAuthor = fields[1].Value.Trim();
-                
+
                 if (string.IsNullOrWhiteSpace(dialogBook)) {
                     return;
                 }
@@ -1592,7 +1586,6 @@ namespace KindleMate2 {
             } else {
                 bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
             }
-
             return bookname;
         }
 
@@ -1606,7 +1599,6 @@ namespace KindleMate2 {
             } else {
                 authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
             }
-
             return authorname;
         }
 
@@ -1763,7 +1755,6 @@ namespace KindleMate2 {
                 FileName = Application.ExecutablePath,
                 UseShellExecute = true
             });
-
             Environment.Exit(0);
         }
 
@@ -1871,7 +1862,6 @@ namespace KindleMate2 {
             if (e.Node.Text is "全选" or "Select All") {
                 return;
             }
-
             ShowBookRenameDialog();
         }
 
