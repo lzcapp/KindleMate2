@@ -10,53 +10,53 @@
 )](README.md) &ensp; [![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge
 )](README.en.md)
 
-## 系统要求
+## System Requirements
 
-- **最低**: `Windows 7` 或更高版本
-- **推荐**: `Windows 11`
-- **架构**: `x86` 或 `x64`.
+- **Minimum**: `Windows 7` or later
+- **Recommended**: `Windows 11`
+- **Architecture**: `x86` or `x64`.
 
-依赖运行时（runtime）的版本需要安装 [.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) 。
+[.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) required for runtime dependent version.
 
-## 构建
+## Building
 
-`Visual Studio` 和 `C#`
+`Visual Studio` & `C#`
 
-### Submodules 子模块
+### Submodules
 
 1. Do `git submodule update --init --recursive` first after cloning this repo.
 2. Change project `Dark-Mode-Forms`'s type to "Library".
 
 - [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
 
-### 项目
+### Projects
 
-- KindleMate2 (WinForm): 当前的版本
-- KindleMate2_WPF (WPF): 还未完工，需要重构为WPF的UI
+- KindleMate2 (WinForm): Current version.
+- KindleMate2_WPF (WPF): Not yet done, much work to do.
 
-## 特性
+## Features
 
-- [x] 导入标注（`My Clippings.txt`）
-- [x] 导入生词本（`vocab.db`）
-- [x] 同步已连接的Kindle设备
-- [x] 编辑标注
-- [x] 编辑生词本
-- [x] 清理功能
-- [x] 导出功能
-- [x] 统计功能
-- [x] 夜间模式（深色模式）
-- [x] 语言切换
-- [x] 搜索功能
-- [ ] 分享功能（？）
+- [x] Import Highlights (`My Clippings.txt`)
+- [x] Import Vocabulary List (`vocab.db`)
+- [x] Sync Connected Kindle Devices
+- [x] Edit Highlights
+- [x] Edit Vocabulary List
+- [x] Cleaning Function
+- [x] Export Function
+- [x] Statistics Function
+- [x] Night Mode (Dark Mode)
+- [x] Language Switch
+- [x] Search Function
+- [ ] Share Function (?)
 
-## 截图
+## Screenshots
 
 <img src="Screenshots/01.png" width="100%">
 <img src="Screenshots/02.png" width="100%">
 <img src="Screenshots/03.png" width="100%">
 <img src="Screenshots/04.png" width="100%">
 
-## 小星星⭐历史
+## Star ⭐ History
 
 <a href="https://star-history.com/#lzcapp/KindleMate2&Date">
  <picture>
