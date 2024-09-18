@@ -19,7 +19,7 @@ namespace KindleMate2 {
 
         private DataTable _lookupsDataTable = new();
 
-        private readonly StaticData _staticData = new();
+        private readonly StaticData _staticData;
 
         private readonly string _programsDirectory;
 
@@ -45,6 +45,18 @@ namespace KindleMate2 {
 
         public FrmMain() {
             InitializeComponent();
+
+            try {
+                if (File.Exists(Path.Combine(Environment.CurrentDirectory, "KM2.dat"))) {
+                    File.Delete(Path.Combine(Environment.CurrentDirectory, "KM.dat"));
+                } else {
+                    File.Copy(Path.Combine(Environment.CurrentDirectory, "KM.dat"), Path.Combine(Environment.CurrentDirectory, "KM2.dat"));
+                }
+            } catch (Exception e) {
+                Messenger.MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+            }
+            _staticData = new StaticData();
 
             SetTheme();
 
