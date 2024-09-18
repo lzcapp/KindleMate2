@@ -56,7 +56,7 @@ namespace KindleMate2 {
             toolStripMenuItem1 = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
             tableLeft = new TableLayoutPanel();
-            tabControl = new TabControl();
+            tabControl = new FlatTabControl();
             tabPageBooks = new TabPage();
             treeViewBooks = new TreeView();
             menuClippings = new ContextMenuStrip(components);
@@ -963,7 +963,7 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuContentCopy;
         private TableLayoutPanel tableLeft;
         private TableLayoutPanel tableContent;
-        private TabControl tabControl;
+        private FlatTabControl tabControl;
         private Panel panel;
         private PictureBox picSearch;
         private ComboBox cmbSearch;
