@@ -492,4 +492,7 @@
   <data name="New_Version" xml:space="preserve">
     <value>New version detected: </value>
   </data>
+  <data name="Confirm_Delete_Backup" xml:space="preserve">
+	  <value>Are you sure you want to delete the backup files?</value>
+  </data>
 </root>

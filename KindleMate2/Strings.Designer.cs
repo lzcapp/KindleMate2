@@ -295,6 +295,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 确认要删除备份文件吗? 的本地化字符串。
+        /// </summary>
+        internal static string Confirm_Delete_Backup {
+            get {
+                return ResourceManager.GetString("Confirm_Delete_Backup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 确认要删除这本书中的所有标注吗？ 的本地化字符串。
         /// </summary>
         internal static string Confirm_Delete_Clippings_Book {

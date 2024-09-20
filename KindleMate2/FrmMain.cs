@@ -58,6 +58,8 @@ namespace KindleMate2 {
             }
             _staticData = new StaticData();
 
+            tabControl.ShowTabCloseButton = false;
+
             SetTheme();
 
             treeViewBooks.ContextMenuStrip = menu;
@@ -185,6 +187,11 @@ namespace KindleMate2 {
                             File.Copy(filePath, _filePath, true);
                             RefreshData();
                             return;
+                        } else {
+                            DialogResult resultDeleteBackup = MessageBox(Strings.Confirm_Delete_Backup, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (resultDeleteBackup == DialogResult.Yes) {
+                                File.Delete(filePath);
+                            }
                         }
                     }
                 }

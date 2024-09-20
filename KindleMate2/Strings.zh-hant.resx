@@ -495,4 +495,7 @@
   <data name="New_Version" xml:space="preserve">
     <value>偵測到新版本：</value>
   </data>
+  <data name="Confirm_Delete_Backup" xml:space="preserve">
+	  <value>確認要刪除備份檔嗎？</value>
+  </data>
 </root>
