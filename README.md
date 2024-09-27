@@ -33,8 +33,8 @@
 
 ### 项目
 
-- KindleMate2 (WinForm): 当前的版本
-- KindleMate2_WPF (WPF): 还未完工，需要重构为WPF的UI
+- `KindleMate2` (WinForm): 当前的版本
+- `KindleMate2_WPF` (WPF): 还未完工，需要重构为WPF的UI
 
 ## 特性
 
