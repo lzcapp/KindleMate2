@@ -24,10 +24,10 @@
 
 `Visual Studio` 和 `C#`
 
-### Submodules 子模块
+### 子模块
 
-1. Do `git submodule update --init --recursive` first after cloning this repo.
-2. Change project `Dark-Mode-Forms`'s type to "Library".
+1. 克隆项目后在项目目录下执行：`git submodule update --init --recursive`
+2. 将项目`Dark-Mode-Forms`的输出类型更改为`类库`
 
 - [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
 
