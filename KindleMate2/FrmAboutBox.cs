@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
@@ -76,7 +75,7 @@ namespace KindleMate2 {
             okButton.Text = Strings.Confirm_Button;
 
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = GetRepoInfo(); };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
             bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result == null) {
@@ -89,44 +88,8 @@ namespace KindleMate2 {
                 var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
                 var toolTip = new ToolTip();
                 toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
-                pictureBox1.Visible = IsUpdate(assemblyVersion, tagName);
+                pictureBox1.Visible = _staticData.IsUpdate(assemblyVersion, tagName);
             };
-        }
-
-        private static GitHubRelease GetRepoInfo() {
-            const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
-            var response = httpClient.GetStringAsync(url).Result;
-            return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
-        }
-
-        private bool IsUpdate(string current, string tagname) {
-            DateTime normalizeVersion = NormalizeVersion(current);
-            DateTime normalizeTagName = NormalizeVersion(tagname);
-            if (normalizeVersion != DateTime.MinValue || normalizeTagName != DateTime.MinValue) {
-                return normalizeVersion < normalizeTagName;
-            }
-            var splitVersion = current.Split('.');
-            var splitTagname = current.Split('.');
-            for (var i = 0; i < 3; i++) {
-                if (!int.TryParse(splitVersion[i], out var intVersion) || !int.TryParse(splitTagname[i], out var intTagname)) {
-                    continue;
-                }
-                if (intVersion < intTagname) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static DateTime NormalizeVersion(string version) {
-            var date = DateTime.MinValue;
-            var parts = version.Split('.');
-            if (int.TryParse(parts[0], out var year) && int.TryParse(parts[1], out var month) && int.TryParse(parts[2], out var day)) {
-                date = new DateTime(year, month, day);
-            }
-            return date;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {

@@ -3,8 +3,10 @@ using System.Data;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 using Markdig;
@@ -71,6 +73,29 @@ namespace KindleMate2 {
                 BackupDatabase();
                 _staticData.CloseConnection();
                 _staticData.DisposeConnection();
+            };
+
+            var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+            var bw = new BackgroundWorker();
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
+            bw.RunWorkerAsync();
+            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                if (workerCompletedEventArgs.Result == null) {
+                    return;
+                }
+                var release = (GitHubRelease)workerCompletedEventArgs.Result;
+                if (string.IsNullOrWhiteSpace(assemblyVersion)) {
+                    return;
+                }
+                var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
+                var toolTip = new ToolTip();
+                var isUpdate = _staticData.IsUpdate(assemblyVersion, tagName);
+                if (isUpdate) {
+                    DialogResult resultUpdate = Messenger.MessageBox(Strings.New_Version + tagName, Strings.New_Version, MessageBoxButtons.OKCancel);
+                    if (resultUpdate == DialogResult.OK) {
+                        OpenUrl("https://github.com/lzcapp/KindleMate2/releases/latest");
+                    }
+                }
             };
 
             _programsDirectory = Environment.CurrentDirectory;
@@ -1464,13 +1489,17 @@ namespace KindleMate2 {
 
         private void MenuRepo_Click(object sender, EventArgs e) {
             const string repoUrl = "https://github.com/lzcapp/KindleMate2";
+            OpenUrl(repoUrl);
+        }
+
+        private void OpenUrl(string url) {
             try {
                 Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
+                    FileName = url,
                     UseShellExecute = true
                 });
             } catch (Exception) {
-                Clipboard.SetText(repoUrl);
+                Clipboard.SetText(url);
                 MessageBox(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }

@@ -427,7 +427,7 @@
     <value>检测到备份，需要从备份恢复吗？</value>
   </data>
   <data name="Repo_URL_Copied" xml:space="preserve">
-    <value>仓库URL已经复制到剪贴板</value>
+	  <value>URL已经复制到剪贴板</value>
   </data>
   <data name="Cleaned" xml:space="preserve">
     <value>清理</value>

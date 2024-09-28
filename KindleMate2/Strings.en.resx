@@ -421,7 +421,7 @@
     <value>A backup has been detected. Do you want to restore from the backup?</value>
   </data>
   <data name="Repo_URL_Copied" xml:space="preserve">
-    <value>Repo URL copied to clipboard</value>
+	  <value>URL copied to clipboard</value>
   </data>
   <data name="Cleaned" xml:space="preserve">
     <value>Cleaned</value>

@@ -3,16 +3,17 @@ using System.Data.SQLite;
 using System.Reflection;
 using DarkModeForms;
 using KindleMate2.Entities;
+using Newtonsoft.Json;
 
 namespace KindleMate2 {
-    public class StaticData {
+    internal class StaticData {
         private const string ConnectionString = "Data Source=KM2.dat;Version=3;";
 
         private readonly SQLiteConnection _connection = new(ConnectionString);
 
         private SQLiteTransaction? _trans;
 
-        public StaticData() {
+        internal StaticData() {
             _connection.Open();
 
             using var command = new SQLiteCommand("PRAGMA synchronous=OFF", _connection);
@@ -23,28 +24,28 @@ namespace KindleMate2 {
             _connection.Open();
         }
 
-        public void CloseConnection() {
+        internal void CloseConnection() {
             _connection.Close();
         }
 
-        public void DisposeConnection() {
+        internal void DisposeConnection() {
             _connection.Dispose();
         }
 
-        public void BeginTransaction() {
+        internal void BeginTransaction() {
             _trans = _connection.BeginTransaction();
         }
 
-        public void CommitTransaction() {
+        internal void CommitTransaction() {
             _trans?.Commit();
         }
 
-        public void RollbackTransaction() {
+        internal void RollbackTransaction() {
             _trans?.Rollback();
         }
 
         // ReSharper disable once IdentifierTypo
-        public DataTable GetClipingsDataTable() {
+        internal DataTable GetClipingsDataTable() {
             var dataTable = new DataTable();
 
             const string queryClippings = "SELECT * FROM clippings;";
@@ -56,7 +57,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetClipingsDataTableFuzzySearch(string strSearch, string type) {
+        internal DataTable GetClipingsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
             var sql = string.Empty;
@@ -79,7 +80,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public List<string> GetClippingsBookTitleList() {
+        internal List<string> GetClippingsBookTitleList() {
             var list = new List<string>();
             DataTable dt = GetClipingsDataTable();
             if (dt.Rows.Count <= 0) {
@@ -94,7 +95,7 @@ namespace KindleMate2 {
             return list;
         }
 
-        public List<string> GetClippingsAuthorList() {
+        internal List<string> GetClippingsAuthorList() {
             var list = new List<string>();
             DataTable dt = GetClipingsDataTable();
             if (dt.Rows.Count <= 0) {
@@ -109,7 +110,7 @@ namespace KindleMate2 {
             return list;
         }
 
-        public bool IsExistOriginalClippings(string? key) {
+        internal bool IsExistOriginalClippings(string? key) {
             switch (key) {
                 case null:
                 case "":
@@ -125,7 +126,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsExistClippings(string? key) {
+        internal bool IsExistClippings(string? key) {
             switch (key) {
                 case null:
                 case "":
@@ -141,7 +142,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsExistClippingsOfContent(string? content) {
+        internal bool IsExistClippingsOfContent(string? content) {
             switch (content) {
                 case null:
                 case "":
@@ -157,7 +158,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsExistClippingsContainingContent(string? content) {
+        internal bool IsExistClippingsContainingContent(string? content) {
             if (content == null) {
                 return false;
             }
@@ -176,7 +177,7 @@ namespace KindleMate2 {
         }
 
         /*
-        public int GetOriginClippingsCount() {
+        internal int GetOriginClippingsCount() {
             const string queryCount = "SELECT COUNT(1) FROM original_clipping_lines";
             using var commandCount = new SQLiteCommand(queryCount, _connection);
             var count = Convert.ToInt32(commandCount.ExecuteScalar());
@@ -185,7 +186,7 @@ namespace KindleMate2 {
         }
         */
 
-        public DataTable GetOriginClippingsDataTableFuzzySearch(string strSearch, string type) {
+        internal DataTable GetOriginClippingsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
             var sql = string.Empty;
@@ -206,7 +207,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetOriginClippingsDataTable() {
+        internal DataTable GetOriginClippingsDataTable() {
             var dataTable = new DataTable();
 
             const string queryClippings = "SELECT * FROM original_clipping_lines;";
@@ -218,7 +219,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public bool InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
+        internal bool InsertOriginClippings(string key, string line1, string line2, string line3, string line4, string line5) {
             if (key == string.Empty || line4 == string.Empty) {
                 return false;
             }
@@ -244,7 +245,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool DeleteClippingsByKey(string key) {
+        internal bool DeleteClippingsByKey(string key) {
             if (string.IsNullOrWhiteSpace(key)) {
                 return false;
             }
@@ -258,7 +259,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool DeleteClippingsByBook(string bookname) {
+        internal bool DeleteClippingsByBook(string bookname) {
             if (bookname == string.Empty) {
                 return false;
             }
@@ -272,12 +273,12 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool InsertClippings(Clipping entityClipping) {
+        internal bool InsertClippings(Clipping entityClipping) {
             var result = Insert(entityClipping, "clippings", "key", true);
             return result > 0;
         }
 
-        public bool RenameBook(string originBookname, string bookname, string authorname) {
+        internal bool RenameBook(string originBookname, string bookname, string authorname) {
             if (string.IsNullOrWhiteSpace(originBookname) || string.IsNullOrWhiteSpace(bookname)) {
                 return false;
             }
@@ -305,7 +306,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool UpdateClippings(string key, string content, string bookname) {
+        internal bool UpdateClippings(string key, string content, string bookname) {
             if (string.IsNullOrWhiteSpace(key)) {
                 return false;
             }
@@ -338,7 +339,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
+        internal int InsertLookups(string word_key, string usage, string title, string authors, string timestamp) {
             if (string.IsNullOrWhiteSpace(word_key) || string.IsNullOrWhiteSpace(timestamp)) {
                 return 0;
             }
@@ -362,7 +363,7 @@ namespace KindleMate2 {
             return result;
         }
 
-        public void UpdateLookups(string origintitle, string title, string authors) {
+        internal void UpdateLookups(string origintitle, string title, string authors) {
             if (string.IsNullOrWhiteSpace(origintitle) || string.IsNullOrWhiteSpace(title)) {
                 return;
             }
@@ -388,7 +389,7 @@ namespace KindleMate2 {
         }
 
         /*
-        public bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
+        internal bool InsertVocab(string id, string word_key, string word, string stem, int category, string translation, string timestamp, int frequency, int sync, int colorRGB) {
             if (id == string.Empty || word == string.Empty) {
                 return false;
             }
@@ -425,7 +426,7 @@ namespace KindleMate2 {
         }
         */
 
-        public int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
+        internal int InsertVocab(string id, string word_key, string word, string stem, int category, string timestamp, int frequency) {
             if (id == string.Empty || word == string.Empty) {
                 return 0;
             }
@@ -454,7 +455,7 @@ namespace KindleMate2 {
         }
 
         /*
-                public bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
+                internal bool UpdateVocab(string word_key, string word, string stem, int category, string timestamp, int frequency) {
                     if (word == string.Empty) {
                         return false;
                     }
@@ -485,7 +486,7 @@ namespace KindleMate2 {
                 }
         */
 
-        public void UpdateVocab(string word_key, int frequency) {
+        internal void UpdateVocab(string word_key, int frequency) {
             if (word_key == string.Empty) {
                 return;
             }
@@ -501,7 +502,7 @@ namespace KindleMate2 {
             command.ExecuteNonQuery();
         }
 
-        public DataTable GetVocabDataTable() {
+        internal DataTable GetVocabDataTable() {
             var dataTable = new DataTable();
 
             const string query = "SELECT * FROM vocab;";
@@ -513,7 +514,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetVocabDataTableFuzzySearch(string strSearch, string type) {
+        internal DataTable GetVocabDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
             var sql = string.Empty;
@@ -536,7 +537,7 @@ namespace KindleMate2 {
 
 
 
-        public List<string> GetVocabWordList() {
+        internal List<string> GetVocabWordList() {
             var list = new List<string>();
             DataTable dt = GetVocabDataTable();
             if (dt.Rows.Count <= 0) {
@@ -551,7 +552,7 @@ namespace KindleMate2 {
             return list;
         }
 
-        public List<string> GetVocabStemList() {
+        internal List<string> GetVocabStemList() {
             var list = new List<string>();
             DataTable dt = GetVocabDataTable();
             if (dt.Rows.Count <= 0) {
@@ -566,7 +567,7 @@ namespace KindleMate2 {
             return list;
         }
 
-        public DataTable GetLookupsDataTable() {
+        internal DataTable GetLookupsDataTable() {
             var dataTable = new DataTable();
 
             const string query = "SELECT DISTINCT * FROM lookups";
@@ -578,7 +579,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public DataTable GetLookupsDataTableFuzzySearch(string strSearch, string type) {
+        internal DataTable GetLookupsDataTableFuzzySearch(string strSearch, string type) {
             var dataTable = new DataTable();
 
             var sql = string.Empty;
@@ -603,7 +604,7 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-        public bool IsExistVocab(string word_key) {
+        internal bool IsExistVocab(string word_key) {
             if (word_key == string.Empty) {
                 return false;
             }
@@ -617,7 +618,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsExistVocabById(string id) {
+        internal bool IsExistVocabById(string id) {
             if (id == string.Empty) {
                 return false;
             }
@@ -631,7 +632,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsExistLookups(string timestamp) {
+        internal bool IsExistLookups(string timestamp) {
             if (timestamp == string.Empty) {
                 return true;
             }
@@ -645,7 +646,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool DeleteVocab(string word) {
+        internal bool DeleteVocab(string word) {
             if (word == string.Empty) {
                 return false;
             }
@@ -659,7 +660,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool DeleteLookupsByTimeStamp(string timestamp) {
+        internal bool DeleteLookupsByTimeStamp(string timestamp) {
             if (timestamp == string.Empty) {
                 return false;
             }
@@ -673,7 +674,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool DeleteLookupsByWordKey(string word_key) {
+        internal bool DeleteLookupsByWordKey(string word_key) {
             if (word_key == string.Empty) {
                 return false;
             }
@@ -723,7 +724,7 @@ namespace KindleMate2 {
             return GetSettings("theme");
         }
 
-        public bool IsDarkTheme() {
+        internal bool IsDarkTheme() {
             var theme = GetTheme();
             bool isWindowsDarkTheme;
             if (string.IsNullOrWhiteSpace(theme)) {
@@ -746,7 +747,7 @@ namespace KindleMate2 {
             return isWindowsDarkTheme;
         }
 
-        public void SetTheme(string value) {
+        internal void SetTheme(string value) {
             SetSettings("theme", value);
         }
 
@@ -754,15 +755,15 @@ namespace KindleMate2 {
             SetTheme(isDarkTheme ? "dark" : "light");
         }
 
-        public string GetLanguage() {
+        internal string GetLanguage() {
             return GetSettings("lang");
         }
 
-        public void SetLanguage(string value) {
+        internal void SetLanguage(string value) {
             SetSettings("lang", value);
         }
 
-        public void VacuumDatabase() {
+        internal void VacuumDatabase() {
             if (IsConnectionOpen()) {
                 CloseConnection();
 
@@ -792,7 +793,7 @@ namespace KindleMate2 {
             return _connection.State == ConnectionState.Open;
         }
 
-        public bool EmptyTables() {
+        internal bool EmptyTables() {
             var result = 0;
 
             var tableNames = new List<string>() {
@@ -807,7 +808,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        public bool IsDatabaseEmpty() {
+        internal bool IsDatabaseEmpty() {
             var result = 0;
 
             var tableNames = new List<string>() {
@@ -848,7 +849,7 @@ namespace KindleMate2 {
             { 'M', 1000 }
         };
 
-        public int RomanToInteger(string roman) {
+        internal int RomanToInteger(string roman) {
             var result = 0;
             var prevValue = 0;
 
@@ -917,6 +918,42 @@ namespace KindleMate2 {
                 return result;
             }
             return 0;
+        }
+
+        internal bool IsUpdate(string current, string tagname) {
+            DateTime normalizeVersion = NormalizeVersion(current);
+            DateTime normalizeTagName = NormalizeVersion(tagname);
+            if (normalizeVersion != DateTime.MinValue || normalizeTagName != DateTime.MinValue) {
+                return normalizeVersion < normalizeTagName;
+            }
+            var splitVersion = current.Split('.');
+            var splitTagname = current.Split('.');
+            for (var i = 0; i < 3; i++) {
+                if (!int.TryParse(splitVersion[i], out var intVersion) || !int.TryParse(splitTagname[i], out var intTagname)) {
+                    continue;
+                }
+                if (intVersion < intTagname) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static DateTime NormalizeVersion(string version) {
+            var date = DateTime.MinValue;
+            var parts = version.Split('.');
+            if (int.TryParse(parts[0], out var year) && int.TryParse(parts[1], out var month) && int.TryParse(parts[2], out var day)) {
+                date = new DateTime(year, month, day);
+            }
+            return date;
+        }
+
+        internal static GitHubRelease GetRepoInfo() {
+            const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
+            var response = httpClient.GetStringAsync(url).Result;
+            return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
         }
     }
 }
