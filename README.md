@@ -1,6 +1,7 @@
 # Kindle Mate `2`
 
-<img src="https://github.com/user-attachments/assets/49183156-b07a-432b-b30d-db281fac204d" width="100%"><br/>
+[](Screenshots/banner.png#gh-light-mode-only)
+[](Screenshots/banner_dark.png#gh-dark-mode-only)
 
 [![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest)
 
