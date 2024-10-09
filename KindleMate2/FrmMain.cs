@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 using Markdig;
@@ -78,7 +77,6 @@ namespace KindleMate2 {
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
             var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
-            bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result == null) {
                     return;
@@ -97,6 +95,7 @@ namespace KindleMate2 {
                     }
                 }
             };
+            bw.RunWorkerAsync();
 
             _programsDirectory = Environment.CurrentDirectory;
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
@@ -376,12 +375,6 @@ namespace KindleMate2 {
 
         private void RefreshData() {
             try {
-                _staticData.CommitTransaction();
-
-                if (dataGridView.SelectedRows.Count > 0) {
-                    _selectedIndex = dataGridView.SelectedRows[0].Index;
-                }
-
                 DisplayData();
                 CountRows();
                 SelectRow();
@@ -764,7 +757,7 @@ namespace KindleMate2 {
                         content = row["content"].ToString() ?? string.Empty,
                         bookname = row["bookname"].ToString() ?? string.Empty,
                         authorname = row["authorname"].ToString() ?? string.Empty,
-                        briefType = brieftype,
+                        briefType = (BriefType)brieftype,
                         clippingtypelocation = row["clippingtypelocation"].ToString() ?? string.Empty,
                         read = read,
                         clipping_importdate = row["clipping_importdate"].ToString() ?? string.Empty,
@@ -885,14 +878,14 @@ namespace KindleMate2 {
 
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
-                    var brieftype = 0;
+                    var brieftype = BriefType.Clipping;
                     if (line2.Contains("笔记") || line2.Contains("Note")) {
-                        brieftype = 1;
+                        brieftype = BriefType.Note;
                     } else if (lines.Contains("书签") || line2.Contains("Bookmark")) {
-                        // brieftype = 2;
+                        brieftype = BriefType.Bookmark;
                         continue;
                     } else if (lines.Contains("文章剪切") || line2.Contains("Cut")) {
-                        brieftype = 3;
+                        brieftype = BriefType.Cut;
                     }
                     entityClipping.briefType = brieftype;
 
@@ -906,27 +899,24 @@ namespace KindleMate2 {
                     if (split_b.Length > 1) {
                         clippingtypelocation = split_b[0][1..].Trim();
                     }
-                    var split_d = clippingtypelocation.Split('-');
-                    if (split_d.Length > 1) {
-                        clippingtypelocation = split_d[1].Trim().ToUpper();
-                    }
                     var pagenumber = -1;
-                    var pagenPattern = @"#?\d+(?:-\d+)?";
+                    var pagenPattern = @"#\d+(-\d+)?";
                     var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
                     var isRomanMatched = Regex.IsMatch(clippingtypelocation, romanPattern);
-                    string strMatched;
                     var isPageParsed = false;
                     if (isPagenIsMatch) {
-                        var split = clippingtypelocation.Split("-");
+                        var regex = new Regex(pagenPattern);
+                        var strMatched = regex.Matches(clippingtypelocation)[0].Value;
+                        var split = strMatched.Split("-");
                         if (split.Length > 1) {
-                            clippingtypelocation = clippingtypelocation.Split("-")[1];
+                            strMatched = strMatched.Split("-")[1];
                         }
-                        clippingtypelocation = clippingtypelocation.Replace("#", "");
-                        strMatched = Regex.Match(clippingtypelocation, pagenPattern).Value;
+                        strMatched = strMatched.Replace("#", "");
+                        strMatched = strMatched.Split("）")[0];
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     } else if (isRomanMatched) {
-                        strMatched = _staticData.RomanToInteger(clippingtypelocation).ToString();
+                        var strMatched = _staticData.RomanToInteger(clippingtypelocation).ToString();
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     }
                     if (isPageParsed == false || pagenumber == 0) {
@@ -979,6 +969,10 @@ namespace KindleMate2 {
                     entityClipping.bookname = bookname;
                     entityClipping.authorname = authorname;
 
+                    if (brieftype == BriefType.Note) {
+                        _staticData.SetClippingsBriefTypeHide(clippingdate, bookname);
+                    }
+
                     if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
                         continue;
                     }
@@ -1017,10 +1011,12 @@ namespace KindleMate2 {
 
                 switch (selectedIndex) {
                     case 0:
+                        var clippingdate = selectedRow.Cells["clippingdate"].Value.ToString() ?? string.Empty;
                         var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
                         var authorname = selectedRow.Cells["authorname"].Value.ToString() ?? string.Empty;
                         var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString() ?? string.Empty;
                         var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
+                        var brieftype = selectedRow.Cells["brieftype"].Value.ToString() ?? string.Empty;
 
                         lblBook.Text = bookname;
                         if (authorname != string.Empty) {
@@ -1032,8 +1028,27 @@ namespace KindleMate2 {
                         lblLocation.Text = Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page;
 
                         lblContent.Text = string.Empty;
+                        if (brieftype.Equals("1")) {
+                            lblContent.SelectionBullet = true;
+                            lblContent.AppendText("笔记：");
+                            lblContent.SelectionBullet = false;
+                            lblContent.AppendText("\n");
+                        } else {
+                            lblContent.SelectionBullet = true;
+                            lblContent.AppendText("标注：");
+                            lblContent.SelectionBullet = false;
+                            lblContent.AppendText("\n");
+                        }
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
+                        if (brieftype.Equals("1")) {
+                            lblContent.AppendText("\n");
+                            lblContent.SelectionBullet = true;
+                            lblContent.AppendText("笔记：");
+                            lblContent.SelectionBullet = false;
+                            lblContent.AppendText("\n");
+                            lblContent.AppendText(_staticData.GetClippingsBriefTypeHide(clippingdate, bookname));
+                        }
 
                         break;
                     case 1:
@@ -1434,7 +1449,6 @@ namespace KindleMate2 {
             SetProgressBar(true);
             var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKindleClippings(fileDialog.FileName); };
-            bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
                     MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1444,8 +1458,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
-
-            RefreshData();
+            bw.RunWorkerAsync();
         }
 
         private void SetProgressBar(bool isShow) {
@@ -1474,7 +1487,6 @@ namespace KindleMate2 {
             SetProgressBar(true);
             var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKMDatabase(fileDialog.FileName); };
-            bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
                     MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1484,7 +1496,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
-            RefreshData();
+            bw.RunWorkerAsync();
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
@@ -1540,7 +1552,6 @@ namespace KindleMate2 {
 
             var bw = new BackgroundWorker();
             bw.DoWork += (_, e) => { e.Result = Import(kindleClippingsPath, kindleWordsPath); };
-            bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, e) => {
                 if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
                     MessageBox(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1550,7 +1561,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
-            RefreshData();
+            bw.RunWorkerAsync();
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -1841,7 +1852,6 @@ namespace KindleMate2 {
             SetProgressBar(true);
             var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKindleWords(fileDialog.FileName); };
-            bw.RunWorkerAsync();
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
                     MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1851,7 +1861,7 @@ namespace KindleMate2 {
                 SetProgressBar(false);
                 RefreshData();
             };
-            RefreshData();
+            bw.RunWorkerAsync();
         }
 
         private void TabControl_SelectedIndexChanged(object sender, EventArgs e) {
@@ -1962,7 +1972,6 @@ namespace KindleMate2 {
                 SetProgressBar(true);
                 var bw = new BackgroundWorker();
                 bw.DoWork += (_, doWorkEventArgs) => { doWorkEventArgs.Result = CleanDatabase(); };
-                bw.RunWorkerAsync();
                 bw.RunWorkerCompleted += (_, runWorkerCompletedEventArgs) => {
                     if (runWorkerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(runWorkerCompletedEventArgs.Result.ToString())) {
                         MessageBox(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Clean_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1972,7 +1981,7 @@ namespace KindleMate2 {
                     SetProgressBar(false);
                     RefreshData();
                 };
-                RefreshData();
+                bw.RunWorkerAsync();
             }
         }
 

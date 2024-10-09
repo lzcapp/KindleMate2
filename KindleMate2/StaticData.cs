@@ -37,11 +37,15 @@ namespace KindleMate2 {
         }
 
         internal void CommitTransaction() {
-            _trans?.Commit();
+            if (_trans != null) {
+                _trans.Commit();
+            }
         }
 
         internal void RollbackTransaction() {
-            _trans?.Rollback();
+            if (_trans != null) {
+                _trans.Rollback();
+            }
         }
 
         // ReSharper disable once IdentifierTypo
@@ -108,6 +112,56 @@ namespace KindleMate2 {
                 }
             }
             return list;
+        }
+
+        internal bool SetClippingsBriefTypeHide(string? clippingdate, string? bookname) {
+            switch (clippingdate) {
+                case null:
+                case "":
+                    return true;
+            }
+            switch (bookname) {
+                case null:
+                case "":
+                    return true;
+            }
+
+            const string queryCount = "UPDATE clippings SET brieftype = -1 WHERE clippingdate = @clippingdate AND bookname = @bookname AND brieftype = 0";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@clippingdate", clippingdate);
+            commandCount.Parameters.AddWithValue("@bookname", bookname);
+
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
+
+            return result > 0;
+        }
+
+        internal string GetClippingsBriefTypeHide(string? clippingdate, string? bookname) {
+            switch (clippingdate) {
+                case null:
+                case "":
+                    return string.Empty;
+            }
+            switch (bookname) {
+                case null:
+                case "":
+                    return string.Empty;
+            }
+
+            const string queryCount = "SELECT content FROM clippings WHERE brieftype = -1 AND clippingdate = @clippingdate AND bookname = @bookname";
+            using var command = new SQLiteCommand(queryCount, _connection);
+            command.Parameters.AddWithValue("@clippingdate", clippingdate);
+            command.Parameters.AddWithValue("@bookname", bookname);
+
+            using var adapter = new SQLiteDataAdapter(command);
+            
+            var dataTable = new DataTable();
+            adapter.Fill(dataTable);
+
+            if (dataTable.Rows.Count > 0) {
+                return dataTable.Rows[0]["content"].ToString() ?? string.Empty;
+            }
+            return string.Empty;
         }
 
         internal bool IsExistOriginalClippings(string? key) {
