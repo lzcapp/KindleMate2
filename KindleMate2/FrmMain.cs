@@ -53,12 +53,10 @@ namespace KindleMate2 {
                     StaticData.CreateDatabase();
                 }
             } catch (Exception e) {
-                Messenger.MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Close();
             }
             _staticData = new StaticData();
-
-            tabControl.ShowTabCloseButton = false;
 
             SetTheme();
 
@@ -1200,21 +1198,22 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) == DialogResult.OK) {
-                var dialogContent = fields[0].Value.Trim();
-                if (string.IsNullOrWhiteSpace(dialogContent)) {
-                    return;
-                }
-                if (dialogContent.Equals(content)) {
-                    return;
-                }
-                if (!_staticData.UpdateClippings(key, dialogContent, string.Empty)) {
-                    MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                RefreshData();
+            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
+                return;
             }
+            var dialogContent = fields[0].Value.Trim();
+            if (string.IsNullOrWhiteSpace(dialogContent)) {
+                return;
+            }
+            if (dialogContent.Equals(content)) {
+                return;
+            }
+            if (!_staticData.UpdateClippings(key, dialogContent, string.Empty)) {
+                MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            RefreshData();
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
@@ -1807,7 +1806,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            DialogResult result = MessageBox(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MsgIcon.Warning);
+            DialogResult result = MessageBox(Strings.Confirm_Clear_All_Data, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) {
                 return;
             }
@@ -1961,6 +1960,10 @@ namespace KindleMate2 {
         }
 
         private void MenuRebuild_Click(object sender, EventArgs e) {
+            DialogResult result = MessageBox(Strings.Confirm_Rebuild_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes) {
+                return;
+            }
             SetProgressBar(true);
             var bw = new BackgroundWorker();
             bw.DoWork += (_, doWorkEventArgs) => {
@@ -1970,7 +1973,7 @@ namespace KindleMate2 {
                 if (runWorkerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(runWorkerCompletedEventArgs.Result.ToString())) {
                     MessageBox(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Rebuild_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
-                    MessageBox(Strings.Failed, Strings.Rebuild_Database, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox(Strings.Rebuild_Database + Strings.Failed, Strings.Rebuild_Database, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 SetProgressBar(false);
                 RefreshData();
@@ -1980,8 +1983,12 @@ namespace KindleMate2 {
         }
 
         private string RebuildDatabase() {
-            _staticData.EmptyTables("clippings");
             DataTable origin = _staticData.GetOriginClippingsDataTable();
+            if (origin.Rows.Count <= 0) {
+                return Strings.No_Data_To_Clear;
+            }
+
+            _staticData.EmptyTables("clippings");
             var insertedCount = 0;
             foreach (DataRow row in origin.Rows) {
                 var entityClipping = new Clipping();
@@ -2351,6 +2358,10 @@ namespace KindleMate2 {
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
+            if (_clippingsDataTable.Rows.Count <= 0) {
+                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             using var dialog = new FrmStatistics();
             dialog.ShowDialog();
         }

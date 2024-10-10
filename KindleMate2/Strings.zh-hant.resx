@@ -504,10 +504,13 @@
   <data name="Notes" xml:space="preserve">
     <value>筆記</value>
   </data>
-  <data name="Notes1" xml:space="preserve">
+  <data name="Note" xml:space="preserve">
     <value>筆記</value>
   </data>
   <data name="Rebuild_Database" xml:space="preserve">
     <value>重建資料庫</value>
+  </data>
+  <data name="Confirm_Rebuild_Database" xml:space="preserve">
+    <value>確認要重建資料庫嗎?</value>
   </data>
 </root>

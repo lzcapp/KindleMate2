@@ -513,4 +513,7 @@
   <data name="Rebuild_Database" xml:space="preserve">
     <value>重建数据库</value>
   </data>
+  <data name="Confirm_Rebuild_Database" xml:space="preserve">
+    <value>确认要重建数据库吗?</value>
+  </data>
 </root>

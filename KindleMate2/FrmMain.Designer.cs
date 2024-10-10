@@ -412,6 +412,7 @@ namespace KindleMate2 {
             // 
             // tabControl
             // 
+            tabControl.ShowTabCloseButton = false;
             tabControl.Alignment = TabAlignment.Bottom;
             tabControl.Controls.Add(tabPageBooks);
             tabControl.Controls.Add(tabPageWords);

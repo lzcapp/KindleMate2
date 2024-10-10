@@ -1,4 +1,6 @@
-﻿namespace KindleMate2 {
+﻿using DarkModeForms;
+
+namespace KindleMate2 {
     partial class FrmStatistics {
         /// <summary>
         /// Required designer variable.
@@ -42,7 +44,7 @@
             System.Windows.Forms.DataVisualization.Charting.Legend legend6 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmStatistics));
-            tabControl = new TabControl();
+            tabControl = new FlatTabControl();
             tabPageBooks = new TabPage();
             tableLayoutPanelBooks = new TableLayoutPanel();
             chartBooksTime = new System.Windows.Forms.DataVisualization.Charting.Chart();
@@ -72,6 +74,7 @@
             // 
             // tabControl
             // 
+            tabControl.ShowTabCloseButton = false;
             tabControl.Alignment = TabAlignment.Bottom;
             tabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             tabControl.Controls.Add(tabPageBooks);
@@ -500,7 +503,7 @@
 
         #endregion
 
-        private TabControl tabControl;
+        private FlatTabControl tabControl;
         private TabPage tabPageVocabs;
         private TabPage tabPageBooks;
         private TableLayoutPanel tableLayoutPanelBooks;

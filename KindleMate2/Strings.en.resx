@@ -507,4 +507,7 @@
   <data name="Rebuild_Database" xml:space="preserve">
     <value>Rebuild Database</value>
   </data>
+  <data name="Confirm_Rebuild_Database" xml:space="preserve">
+    <value>Are you sure you want to rebuild database?</value>
+  </data>
 </root>
