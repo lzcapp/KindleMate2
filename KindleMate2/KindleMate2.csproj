@@ -90,6 +90,7 @@
 	  <None Remove="DarkModeForms\App.config" />
 	  <None Remove="DarkModeForms\LICENSE" />
 	  <None Remove="DarkModeForms\README.md" />
+	  <None Remove="KM.dat" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -212,9 +213,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="KM.dat">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 		<None Update="KM2.db">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

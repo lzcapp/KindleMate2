@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
 using KindleMate2.Entities;
-using Newtonsoft.Json;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {

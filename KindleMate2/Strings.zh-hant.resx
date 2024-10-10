@@ -123,287 +123,95 @@
   <data name="Confirm" xml:space="preserve">
     <value>確認</value>
   </data>
-  <data name="About" xml:space="preserve">
-    <value>關於</value>
-  </data>
-  <data name="Author" xml:space="preserve">
-    <value>作者</value>
-  </data>
-  <data name="Backup" xml:space="preserve">
-    <value>備份</value>
-  </data>
-  <data name="Backup_Clippings_Failed" xml:space="preserve">
-    <value>備份標註失敗</value>
-  </data>
-  <data name="Backup_Failed" xml:space="preserve">
-    <value>備份失敗</value>
-  </data>
-  <data name="Backup_Successful" xml:space="preserve">
-    <value>備份完成！</value>
-  </data>
-  <data name="Backup_Vocabs_Failed" xml:space="preserve">
-    <value>生詞本備份失敗</value>
-  </data>
-  <data name="Books" xml:space="preserve">
-    <value>書籍</value>
-  </data>
-  <data name="Books_Renamed" xml:space="preserve">
-    <value>書籍重命名成功</value>
-  </data>
-  <data name="Books_Title_Not_Changed" xml:space="preserve">
-    <value>書籍名稱未改變</value>
-  </data>
-  <data name="Book_Renamed_Failed" xml:space="preserve">
-    <value>書籍重命名失敗</value>
-  </data>
-  <data name="Book_Title" xml:space="preserve">
-    <value>書名</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
-  </data>
-  <data name="Clean_Database" xml:space="preserve">
-    <value>清理數據庫</value>
-  </data>
-  <data name="Clear_Data" xml:space="preserve">
-    <value>清空數據</value>
-  </data>
-  <data name="Clear_Failed" xml:space="preserve">
-    <value>清空失敗</value>
-  </data>
-  <data name="Clippings" xml:space="preserve">
-    <value>標註</value>
-  </data>
-  <data name="Clippings_Revised" xml:space="preserve">
-    <value>標註已修改</value>
-  </data>
-  <data name="Clippings_Revised_Failed" xml:space="preserve">
-    <value>標註修改失敗</value>
-  </data>
-  <data name="Confirm_Button" xml:space="preserve">
-    <value>確定</value>
-  </data>
-  <data name="Confirm_Clear_All_Data" xml:space="preserve">
-    <value>確認要清空全部數據嗎？</value>
-  </data>
-  <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
-    <value>確認要刪除這本書中的所有標註嗎？</value>
-  </data>
-  <data name="Confirm_Delete_Lookups" xml:space="preserve">
-    <value>確認要刪除選中的查詢嗎？</value>
-  </data>
-  <data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
-    <value>確認要刪除這個詞匯中的所有查詢嗎？</value>
-  </data>
-  <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
-    <value>確認要刪除選中的標註嗎？</value>
-  </data>
-  <data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
-    <value>您需要導入Kindle Mate2的數據庫文件嗎？</value>
-  </data>
-  <data name="Confirm_Same_Title_Combine" xml:space="preserve">
-    <value>同名書籍已存在，確認要合並嗎？</value>
-  </data>
-  <data name="Content" xml:space="preserve">
-    <value>內容</value>
-  </data>
-  <data name="Copy" xml:space="preserve">
-    <value>復製</value>
-  </data>
-  <data name="Copyright" xml:space="preserve">
-    <value>版權</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>數據庫</value>
-  </data>
-  <data name="Database_Cleaned" xml:space="preserve">
-    <value>數據庫已清理</value>
-  </data>
-  <data name="Database_No_Need_Clean" xml:space="preserve">
-    <value>數據庫無需清理</value>
-  </data>
-  <data name="Data_Cleared" xml:space="preserve">
-    <value>數據已清空</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>刪除</value>
-  </data>
-  <data name="Deleted_X" xml:space="preserve">
-    <value>已刪除</value>
-  </data>
-  <data name="Delete_Failed" xml:space="preserve">
-    <value>刪除失敗</value>
-  </data>
-  <data name="Edit_Clippings" xml:space="preserve">
-    <value>編輯標註</value>
-  </data>
-  <data name="Empty_Clippings_Data" xml:space="preserve">
-    <value>標註數據為空</value>
+  <data name="Prompt" xml:space="preserve">
+    <value>提示</value>
   </data>
   <data name="Error" xml:space="preserve">
     <value>錯誤</value>
   </data>
-  <data name="Exit" xml:space="preserve">
-    <value>退出</value>
-  </data>
-  <data name="Files" xml:space="preserve">
-    <value>文件</value>
-  </data>
-  <data name="Frequency" xml:space="preserve">
-    <value>詞頻</value>
-  </data>
-  <data name="GitHub_Repo" xml:space="preserve">
-    <value>GitHub倉庫</value>
-  </data>
-  <data name="Help" xml:space="preserve">
-    <value>幫助</value>
-  </data>
-  <data name="Imported_X" xml:space="preserve">
-    <value>導入</value>
-  </data>
-  <data name="Import_Kindle_Clippings" xml:space="preserve">
-    <value>導入Kindle標註</value>
-  </data>
-  <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
-    <value>從Kindle設備導入標註</value>
-  </data>
-  <data name="Import_Kindle_Clipping_File" xml:space="preserve">
-    <value>導入Kindle標註文件</value>
-  </data>
-  <data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
-    <value>導入Kindle Mate 2數據庫文件</value>
-  </data>
-  <data name="Import_Kindle_Mate_Database" xml:space="preserve">
-    <value>導入Kindle Mate數據庫</value>
-  </data>
-  <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
-    <value>導入Kindle Mate數據庫文件</value>
-  </data>
-  <data name="Import_Kindle_Vocabs" xml:space="preserve">
-    <value>導入Kindle生詞本</value>
-  </data>
-  <data name="Import_Kindle_Vocab_File" xml:space="preserve">
-    <value>導入Kindle生詞本文件</value>
-  </data>
-  <data name="Kindle_Clipping_File" xml:space="preserve">
-    <value>Kindle標註文件</value>
-  </data>
-  <data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
-    <value>您連接了Kindle設備，需要從Kindle中導入數據嗎？</value>
-  </data>
-  <data name="Kindle_Device_Connected" xml:space="preserve">
-    <value>Kindle設備已連接</value>
+  <data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
+    <value>您需要導入Kindle Mate2的數據庫文件嗎？</value>
   </data>
   <data name="Kindle_Mate_2_Database_File" xml:space="preserve">
     <value>Kindle Mate 2數據庫文件</value>
   </data>
-  <data name="Kindle_Mate_Database_File" xml:space="preserve">
-    <value>Kindle Mate數據庫文件</value>
+  <data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
+    <value>導入Kindle Mate 2數據庫文件</value>
   </data>
-  <data name="Kindle_Vocab_File" xml:space="preserve">
-    <value>Kindle生詞本文件</value>
+  <data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
+    <value>您連接了Kindle設備，需要從Kindle中導入數據嗎？</value>
   </data>
   <data name="Kindle_Vocab_Not_Exist" xml:space="preserve">
     <value>Kindle生詞本文件不存在</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>語言</value>
-  </data>
-  <data name="Left_Parenthesis" xml:space="preserve">
-    <value>（</value>
-  </data>
-  <data name="Management" xml:space="preserve">
-    <value>管理</value>
-  </data>
-  <data name="No_Data_To_Backup" xml:space="preserve">
-    <value>沒有數據可備份</value>
-  </data>
   <data name="Page" xml:space="preserve">
     <value>頁數</value>
-  </data>
-  <data name="Page_" xml:space="preserve">
-    <value>第</value>
-  </data>
-  <data name="Parsed_X" xml:space="preserve">
-    <value>共解析</value>
-  </data>
-  <data name="Program_Path" xml:space="preserve">
-    <value>程序路徑</value>
-  </data>
-  <data name="Prompt" xml:space="preserve">
-    <value>提示</value>
-  </data>
-  <data name="Quried_X" xml:space="preserve">
-    <value>共查詢</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
-    <value>重命名</value>
-  </data>
-  <data name="Rename_Book" xml:space="preserve">
-    <value>重命名書籍</value>
-  </data>
-  <data name="Restart" xml:space="preserve">
-    <value>重啟</value>
-  </data>
-  <data name="Right_Parenthesis" xml:space="preserve">
-    <value>）</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Select_All" xml:space="preserve">
-    <value>全部</value>
-  </data>
-  <data name="Space" xml:space="preserve">
-    <value> </value>
-  </data>
-  <data name="Stem" xml:space="preserve">
-    <value>詞幹</value>
-  </data>
-  <data name="Symbol_Colon" xml:space="preserve">
-    <value>：</value>
-  </data>
-  <data name="Symbol_Comma" xml:space="preserve">
-    <value>，</value>
   </data>
   <data name="Time" xml:space="preserve">
     <value>時間</value>
   </data>
-  <data name="Totally" xml:space="preserve">
-    <value>共</value>
-  </data>
-  <data name="Totally_Vocabs" xml:space="preserve">
-    <value>本詞共有</value>
+  <data name="Author" xml:space="preserve">
+    <value>作者</value>
   </data>
   <data name="Total_Clippings" xml:space="preserve">
     <value>本書中有</value>
   </data>
-  <data name="Version" xml:space="preserve">
-    <value>版本</value>
+  <data name="X_Clippings" xml:space="preserve">
+    <value>條標註</value>
   </data>
-  <data name="Vocabulary" xml:space="preserve">
-    <value>單詞</value>
+  <data name="Content" xml:space="preserve">
+    <value>內容</value>
   </data>
-  <data name="Vocabulary_List" xml:space="preserve">
-    <value>生詞本</value>
+  <data name="Totally" xml:space="preserve">
+    <value>共</value>
   </data>
   <data name="X_Books" xml:space="preserve">
     <value>本書</value>
   </data>
-  <data name="X_Clippings" xml:space="preserve">
-    <value>條標註</value>
+  <data name="Symbol_Comma" xml:space="preserve">
+    <value>，</value>
+  </data>
+  <data name="Delete_Failed" xml:space="preserve">
+    <value>刪除失敗</value>
+  </data>
+  <data name="Space" xml:space="preserve">
+    <value> </value>
+  </data>
+  <data name="Book_Renamed_Failed" xml:space="preserve">
+    <value>書籍重命名失敗</value>
+  </data>
+  <data name="Totally_Vocabs" xml:space="preserve">
+    <value>本詞共有</value>
   </data>
   <data name="X_Lookups" xml:space="preserve">
     <value>次查詢</value>
   </data>
-  <data name="X_Page" xml:space="preserve">
-    <value>頁</value>
+  <data name="Confirm_Clear_All_Data" xml:space="preserve">
+    <value>確認要清空全部數據嗎？</value>
   </data>
-  <data name="X_Records" xml:space="preserve">
-    <value>條記錄</value>
+  <data name="Clear_Failed" xml:space="preserve">
+    <value>清空失敗</value>
+  </data>
+  <data name="Data_Cleared" xml:space="preserve">
+    <value>數據已清空</value>
+  </data>
+  <data name="Left_Parenthesis" xml:space="preserve">
+    <value>（</value>
+  </data>
+  <data name="Right_Parenthesis" xml:space="preserve">
+    <value>）</value>
+  </data>
+  <data name="Books" xml:space="preserve">
+    <value>書籍</value>
+  </data>
+  <data name="Vocabulary" xml:space="preserve">
+    <value>單詞</value>
+  </data>
+  <data name="X_Vocabs" xml:space="preserve">
+    <value>條詞匯</value>
+  </data>
+  <data name="Deleted_X" xml:space="preserve">
+    <value>已刪除</value>
   </data>
   <data name="X_Rows" xml:space="preserve">
     <value>條</value>
@@ -411,14 +219,212 @@
   <data name="X_Times" xml:space="preserve">
     <value>次</value>
   </data>
-  <data name="X_Vocabs" xml:space="preserve">
-    <value>條詞匯</value>
+  <data name="Quried_X" xml:space="preserve">
+    <value>共查詢</value>
+  </data>
+  <data name="Stem" xml:space="preserve">
+    <value>詞幹</value>
+  </data>
+  <data name="Kindle_Vocab_File" xml:space="preserve">
+    <value>Kindle生詞本文件</value>
+  </data>
+  <data name="Import_Kindle_Vocab_File" xml:space="preserve">
+    <value>導入Kindle生詞本文件</value>
+  </data>
+  <data name="Books_Renamed" xml:space="preserve">
+    <value>書籍重命名成功</value>
+  </data>
+  <data name="Books_Title_Not_Changed" xml:space="preserve">
+    <value>書籍名稱未改變</value>
+  </data>
+  <data name="Kindle_Device_Connected" xml:space="preserve">
+    <value>Kindle設備已連接</value>
+  </data>
+  <data name="Kindle_Clipping_File" xml:space="preserve">
+    <value>Kindle標註文件</value>
+  </data>
+  <data name="Import_Kindle_Clipping_File" xml:space="preserve">
+    <value>導入Kindle標註文件</value>
+  </data>
+  <data name="Clippings_Revised" xml:space="preserve">
+    <value>標註已修改</value>
+  </data>
+  <data name="Clippings_Revised_Failed" xml:space="preserve">
+    <value>標註修改失敗</value>
+  </data>
+  <data name="Frequency" xml:space="preserve">
+    <value>詞頻</value>
+  </data>
+  <data name="Symbol_Colon" xml:space="preserve">
+    <value>：</value>
+  </data>
+  <data name="Confirm_Same_Title_Combine" xml:space="preserve">
+    <value>同名書籍已存在，確認要合並嗎？</value>
+  </data>
+  <data name="No_Data_To_Backup" xml:space="preserve">
+    <value>沒有數據可備份</value>
+  </data>
+  <data name="Kindle_Mate_Database_File" xml:space="preserve">
+    <value>Kindle Mate數據庫文件</value>
+  </data>
+  <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
+    <value>導入Kindle Mate數據庫文件</value>
+  </data>
+  <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
+    <value>確認要刪除選中的標註嗎？</value>
+  </data>
+  <data name="Page_" xml:space="preserve">
+    <value>第</value>
+  </data>
+  <data name="X_Page" xml:space="preserve">
+    <value>頁</value>
+  </data>
+  <data name="Select_All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="Confirm_Delete_Lookups" xml:space="preserve">
+    <value>確認要刪除選中的查詢嗎？</value>
+  </data>
+  <data name="Parsed_X" xml:space="preserve">
+    <value>共解析</value>
+  </data>
+  <data name="X_Records" xml:space="preserve">
+    <value>條記錄</value>
+  </data>
+  <data name="Imported_X" xml:space="preserve">
+    <value>導入</value>
+  </data>
+  <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
+    <value>確認要刪除這本書中的所有標註嗎？</value>
+  </data>
+  <data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
+    <value>確認要刪除這個詞匯中的所有查詢嗎？</value>
+  </data>
+  <data name="Backup_Failed" xml:space="preserve">
+    <value>備份失敗</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>刪除</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>復製</value>
+  </data>
+  <data name="Vocabulary_List" xml:space="preserve">
+    <value>生詞本</value>
+  </data>
+  <data name="Clippings" xml:space="preserve">
+    <value>標註</value>
+  </data>
+  <data name="Clipping" xml:space="preserve">
+    <value>標註</value>
+  </data>
+  <data name="GitHub_Repo" xml:space="preserve">
+    <value>GitHub倉庫</value>
+  </data>
+  <data name="Management" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="Import_Kindle_Clippings" xml:space="preserve">
+    <value>導入Kindle標註</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Restart" xml:space="preserve">
+    <value>重啟</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Import_Kindle_Vocabs" xml:space="preserve">
+    <value>導入Kindle生詞本</value>
+  </data>
+  <data name="Import_Kindle_Mate_Database" xml:space="preserve">
+    <value>導入Kindle Mate數據庫</value>
+  </data>
+  <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
+    <value>從Kindle設備導入標註</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>備份</value>
+  </data>
+  <data name="Clear_Data" xml:space="preserve">
+    <value>清空數據</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>幫助</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>關於</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>語言</value>
+  </data>
+  <data name="Book_Title" xml:space="preserve">
+    <value>書名</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Edit_Clippings" xml:space="preserve">
+    <value>編輯標註</value>
+  </data>
+  <data name="Rename_Book" xml:space="preserve">
+    <value>重命名書籍</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Copyright" xml:space="preserve">
+    <value>版權</value>
+  </data>
+  <data name="Program_Path" xml:space="preserve">
+    <value>程序路徑</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>數據庫</value>
+  </data>
+  <data name="Confirm_Button" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Clean_Database" xml:space="preserve">
+    <value>清理數據庫</value>
+  </data>
+  <data name="Database_Cleaned" xml:space="preserve">
+    <value>數據庫已清理</value>
+  </data>
+  <data name="Database_No_Need_Clean" xml:space="preserve">
+    <value>數據庫無需清理</value>
+  </data>
+  <data name="Empty_Clippings_Data" xml:space="preserve">
+    <value>標註數據為空</value>
+  </data>
+  <data name="Backup_Clippings_Failed" xml:space="preserve">
+    <value>備份標註失敗</value>
+  </data>
+  <data name="Backup_Vocabs_Failed" xml:space="preserve">
+    <value>生詞本備份失敗</value>
+  </data>
+  <data name="Backup_Successful" xml:space="preserve">
+    <value>備份完成！</value>
   </data>
   <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
     <value>您需要導入Kindle Mate的數據庫文件嗎？</value>
   </data>
   <data name="No_Data_To_Clear" xml:space="preserve">
     <value>數據庫為空</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>文件</value>
   </data>
   <data name="Empty_Lookups_Data" xml:space="preserve">
     <value>生詞本數據為空</value>
@@ -427,13 +433,16 @@
     <value>檢測到備份，需要從備份恢復嗎？</value>
   </data>
   <data name="Repo_URL_Copied" xml:space="preserve">
-	  <value>URL已經復製到剪貼板</value>
+    <value>URL已經復製到剪貼板</value>
   </data>
   <data name="Cleaned" xml:space="preserve">
     <value>清理</value>
   </data>
   <data name="Empty_Content" xml:space="preserve">
     <value>空內容</value>
+  </data>
+  <data name="Trimmed" xml:space="preserve">
+    <value>修剪</value>
   </data>
   <data name="Export_Successful" xml:space="preserve">
     <value>導出成功！</value>
@@ -465,27 +474,21 @@
   <data name="Statistics_Screenshot_Failed" xml:space="preserve">
     <value>統計截圖失敗</value>
   </data>
-  <data name="File" xml:space="preserve">
-    <value>文件</value>
-  </data>
-  <data name="Trimmed" xml:space="preserve">
-    <value>修剪</value>
-  </data>
   <data name="Open_Folder" xml:space="preserve">
     <value>需要打開備份文件夾嗎？</value>
   </data>
+  <data name="SC" xml:space="preserve">
+    <value>简体中文</value>
+  </data>
+  <data name="TC" xml:space="preserve">
+    <value>繁體中文</value>
+  </data>
   <data name="AutomaticDetection" xml:space="preserve">
-		<value>自动 自動 Auto</value>
-	</data>
+    <value>自动 自動 Auto</value>
+  </data>
   <data name="Import_Failed" xml:space="preserve">
     <value>導入失敗</value>
   </data>
-  <data name="TC" xml:space="preserve">
-		<value>繁體中文</value>
-	</data>
-  <data name="SC" xml:space="preserve">
-		<value>简体中文</value>
-	</data>
   <data name="Duplicate_Content" xml:space="preserve">
     <value>重複內容</value>
   </data>
@@ -496,6 +499,15 @@
     <value>偵測到新版本：</value>
   </data>
   <data name="Confirm_Delete_Backup" xml:space="preserve">
-	  <value>確認要刪除備份檔嗎？</value>
+    <value>確認要刪除備份檔嗎？</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>筆記</value>
+  </data>
+  <data name="Notes1" xml:space="preserve">
+    <value>筆記</value>
+  </data>
+  <data name="Rebuild_Database" xml:space="preserve">
+    <value>重建資料庫</value>
   </data>
 </root>
