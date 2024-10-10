@@ -11,7 +11,7 @@
 
 <img src="https://github.com/user-attachments/assets/cfaeb54e-f237-4803-af61-23beb77a65f8" width="35px">**README** &ensp; [![中文](https://img.shields.io/badge/README-%E4%B8%AD%E6%96%87-red?style=for-the-badge
 )](README.md) &ensp; [![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge
-)](README.en.md)
+)](#)
 
 ## System Requirements
 
@@ -27,10 +27,9 @@
 
 ### Submodules
 
-1. Do `git submodule update --init --recursive` first after cloning this repo.
-2. Change project `Dark-Mode-Forms`'s output type to `Class Library`.
+- Do `git submodule update --init --recursive` first after cloning this repo.
 
-- [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
+> [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
 
 ### Projects
 
