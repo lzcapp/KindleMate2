@@ -19,7 +19,6 @@
 		<Authors>RainySummer</Authors>
 		<Copyright>Copyright © RainySummer 2024</Copyright>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks></TargetFrameworks>
@@ -243,10 +242,6 @@
 
 	<ItemGroup>
 	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\DarkModeForms\DarkModeForms.csproj" />
 	</ItemGroup>
 
 </Project>
