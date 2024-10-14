@@ -49,7 +49,6 @@
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch
 - [x] Search Function
-- [ ] Share Function (?)
 
 ## Screenshots
 
