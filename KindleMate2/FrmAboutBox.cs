@@ -86,7 +86,7 @@ namespace KindleMate2 {
                 var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
                 var toolTip = new ToolTip();
                 toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
-                pictureBox1.Visible = _staticData.IsUpdate(assemblyVersion, tagName);
+                pictureBox1.Visible = StaticData.IsUpdate(assemblyVersion, tagName);
             };
             bw.RunWorkerAsync();
         }

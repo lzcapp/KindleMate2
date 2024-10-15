@@ -1,12 +1,13 @@
 ﻿using System.Data;
 using System.Data.SQLite;
+using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
 using KindleMate2.Entities;
 using Newtonsoft.Json;
 
 namespace KindleMate2 {
-    internal class StaticData {
+    public class StaticData {
         private const string ConnectionString = "Data Source=KM2.dat;Version=3;";
 
         private readonly SQLiteConnection _connection = new(ConnectionString);
@@ -1015,7 +1016,12 @@ namespace KindleMate2 {
             return 0;
         }
 
-        internal bool IsUpdate(string current, string tagname) {
+        public static bool IsUpdate(string tagname) {
+            var assemblyVersion = GetAssemblyName();
+            return IsUpdate(assemblyVersion, tagname);
+        }
+
+        public static bool IsUpdate(string current, string tagname) {
             DateTime normalizeVersion = NormalizeVersion(current);
             DateTime normalizeTagName = NormalizeVersion(tagname);
             if (normalizeVersion != DateTime.MinValue || normalizeTagName != DateTime.MinValue) {
@@ -1043,12 +1049,36 @@ namespace KindleMate2 {
             return date;
         }
 
-        internal static GitHubRelease GetRepoInfo() {
-            const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
-            var response = httpClient.GetStringAsync(url).Result;
-            return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
+        public static GitHubRelease GetRepoInfo() {
+            try {
+                const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
+                var response = httpClient.GetStringAsync(url).Result;
+                return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return new GitHubRelease();
+            }
+        }
+
+        private static string GetAssemblyName() {
+            return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+        }
+
+        public static string GetVersionName() {
+            var name = string.Empty;
+            if (Environment.Is64BitProcess) {
+                name += "_x64";
+            } else {
+                name += "_x86";
+            }
+            var exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var coreClrPath = Path.Combine(exeDirectory, "coreclr.dll");
+            if (File.Exists(coreClrPath)) {
+                name += "_runtime";
+            }
+            return name;
         }
     }
 }

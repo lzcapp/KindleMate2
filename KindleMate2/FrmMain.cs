@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 using Markdig;
@@ -71,28 +72,7 @@ namespace KindleMate2 {
                 _staticData.DisposeConnection();
             };
 
-            //var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
-            //var bw = new BackgroundWorker();
-            //bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
-            //bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
-            //    if (workerCompletedEventArgs.Result == null) {
-            //        return;
-            //    }
-            //    var release = (GitHubRelease)workerCompletedEventArgs.Result;
-            //    if (string.IsNullOrWhiteSpace(assemblyVersion)) {
-            //        return;
-            //    }
-            //    var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
-            //    var toolTip = new ToolTip();
-            //    var isUpdate = _staticData.IsUpdate(assemblyVersion, tagName);
-            //    if (isUpdate) {
-            //        DialogResult resultUpdate = Messenger.MessageBox(Strings.New_Version + tagName, Strings.New_Version, MessageBoxButtons.OKCancel);
-            //        if (resultUpdate == DialogResult.OK) {
-            //            OpenUrl("https://github.com/lzcapp/KindleMate2/releases/latest");
-            //        }
-            //    }
-            //};
-            //bw.RunWorkerAsync();
+            //CheckUpdate();
 
             _programsDirectory = Environment.CurrentDirectory;
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
@@ -150,6 +130,29 @@ namespace KindleMate2 {
             cmbSearch.SelectedIndex = 0;
 
             dataGridView.ColumnHeadersHeight = 23;
+        }
+
+        private static void CheckUpdate() {
+            try {
+                var bw = new BackgroundWorker();
+                bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
+                bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
+                    if (workerCompletedEventArgs.Result == null) {
+                        return;
+                    }
+                    var release = (GitHubRelease)workerCompletedEventArgs.Result;
+                    var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
+                    var isUpdate = StaticData.IsUpdate(tagName);
+                    if (isUpdate) {
+                        var updater = Path.Combine(Environment.CurrentDirectory, "Updater.exe");
+                        Process.Start(updater);
+                        Environment.Exit(0);
+                    }
+                };
+                bw.RunWorkerAsync();
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
         }
 
         private void SetLang() {
