@@ -475,7 +475,7 @@
     <value>统计截图失败</value>
   </data>
   <data name="Open_Folder" xml:space="preserve">
-    <value>需要打开备份文件夹吗？</value>
+    <value>需要打开文件夹吗？</value>
   </data>
   <data name="English" xml:space="preserve">
     <value>English</value>

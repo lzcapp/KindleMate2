@@ -26,8 +26,8 @@ namespace KindleMate2 {
         /// </summary>
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             menuStrip = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuRefresh = new ToolStripMenuItem();
@@ -41,6 +41,7 @@ namespace KindleMate2 {
             menuSyncFromKindle = new ToolStripMenuItem();
             menuExportMd = new ToolStripMenuItem();
             menuClean = new ToolStripMenuItem();
+            menuRebuild = new ToolStripMenuItem();
             menuBackup = new ToolStripMenuItem();
             menuClear = new ToolStripMenuItem();
             menuHelp = new ToolStripMenuItem();
@@ -53,24 +54,20 @@ namespace KindleMate2 {
             menuLangTC = new ToolStripMenuItem();
             menuLangEN = new ToolStripMenuItem();
             menuLangAuto = new ToolStripMenuItem();
-            menuRebuild = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
             splitContainerMain = new SplitContainer();
             tableLeft = new TableLayoutPanel();
             tabControl = new FlatTabControl();
             tabPageBooks = new TabPage();
             treeViewBooks = new TreeView();
-            menuClippings = new ContextMenuStrip(components);
-            menuClippingsRefresh = new ToolStripMenuItem();
-            menuClippingsCopy = new ToolStripMenuItem();
-            menuClippingsDelete = new ToolStripMenuItem();
+            menuBooks = new ContextMenuStrip(components);
+            menuBookRefresh = new ToolStripMenuItem();
+            menuBooksExport = new ToolStripMenuItem();
+            menuBooksDelete = new ToolStripMenuItem();
+            menuRename = new ToolStripMenuItem();
             imageListBooks = new ImageList(components);
             tabPageWords = new TabPage();
             treeViewWords = new TreeView();
-            menuBooks = new ContextMenuStrip(components);
-            menuBookRefresh = new ToolStripMenuItem();
-            menuBooksDelete = new ToolStripMenuItem();
-            menuRename = new ToolStripMenuItem();
             imageListWords = new ImageList(components);
             panel = new Panel();
             txtSearch = new ComboBox();
@@ -79,32 +76,20 @@ namespace KindleMate2 {
             splitContainerDetail = new SplitContainer();
             dataGridView = new DataGridView();
             tableContent = new TableLayoutPanel();
-            lblLocation = new Label();
             flowLayoutPanel = new FlowLayoutPanel();
             lblBook = new Label();
             lblAuthor = new Label();
+            lblLocation = new Label();
+            label2 = new Label();
+            label3 = new Label();
+            label1 = new Label();
             lblContent = new RichTextBox();
             menuContent = new ContextMenuStrip(components);
             menuContentCopy = new ToolStripMenuItem();
-            label1 = new Label();
-            label2 = new Label();
-            label3 = new Label();
-            tabPageBooks = new TabPage();
-            treeViewBooks = new TreeView();
             menuClippings = new ContextMenuStrip(components);
             menuClippingsRefresh = new ToolStripMenuItem();
             menuClippingsCopy = new ToolStripMenuItem();
             menuClippingsDelete = new ToolStripMenuItem();
-            imageListBooks = new ImageList(components);
-            tabPageWords = new TabPage();
-            treeViewWords = new TreeView();
-            menuBooks = new ContextMenuStrip(components);
-            menuBookRefresh = new ToolStripMenuItem();
-            menuBooksDelete = new ToolStripMenuItem();
-            menuRename = new ToolStripMenuItem();
-            imageListWords = new ImageList(components);
-            menu = new ContextMenuStrip(components);
-            menuListRefresh = new ToolStripMenuItem();
             openFileDialog = new OpenFileDialog();
             statusStrip = new StatusStrip();
             lblCount = new ToolStripStatusLabel();
@@ -119,9 +104,8 @@ namespace KindleMate2 {
             tableLeft.SuspendLayout();
             tabControl.SuspendLayout();
             tabPageBooks.SuspendLayout();
-            menuClippings.SuspendLayout();
-            tabPageWords.SuspendLayout();
             menuBooks.SuspendLayout();
+            tabPageWords.SuspendLayout();
             panel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picSearch).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainerDetail).BeginInit();
@@ -132,11 +116,7 @@ namespace KindleMate2 {
             tableContent.SuspendLayout();
             flowLayoutPanel.SuspendLayout();
             menuContent.SuspendLayout();
-            tabPageBooks.SuspendLayout();
             menuClippings.SuspendLayout();
-            tabPageWords.SuspendLayout();
-            menuBooks.SuspendLayout();
-            menu.SuspendLayout();
             statusStrip.SuspendLayout();
             SuspendLayout();
             // 
@@ -160,7 +140,7 @@ namespace KindleMate2 {
             menuFile.DisplayStyle = ToolStripItemDisplayStyle.Text;
             menuFile.DropDownItems.AddRange(new ToolStripItem[] { menuRefresh, menuStatistic, menuRestart, menuExit });
             menuFile.Name = "menuFile";
-            menuFile.ShortcutKeyDisplayString = string.Empty;
+            menuFile.ShortcutKeyDisplayString = "";
             menuFile.ShortcutKeys = Keys.Alt | Keys.F;
             menuFile.Size = new Size(97, 36);
             menuFile.Text = "文件(&F)";
@@ -412,17 +392,25 @@ namespace KindleMate2 {
             // 
             // tabControl
             // 
-            tabControl.ShowTabCloseButton = false;
             tabControl.Alignment = TabAlignment.Bottom;
+            tabControl.Appearance = TabAppearance.Buttons;
+            tabControl.BorderColor = SystemColors.ControlDark;
             tabControl.Controls.Add(tabPageBooks);
             tabControl.Controls.Add(tabPageWords);
             tabControl.Dock = DockStyle.Fill;
+            tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            tabControl.LineColor = SystemColors.Highlight;
             tabControl.Location = new Point(0, 30);
             tabControl.Margin = new Padding(0);
             tabControl.Name = "tabControl";
+            tabControl.SelectedForeColor = SystemColors.HighlightText;
             tabControl.SelectedIndex = 0;
+            tabControl.SelectTabColor = SystemColors.ControlLight;
+            tabControl.ShowTabCloseButton = false;
             tabControl.Size = new Size(286, 581);
             tabControl.SizeMode = TabSizeMode.FillToRight;
+            tabControl.TabCloseColor = SystemColors.ControlText;
+            tabControl.TabColor = SystemColors.ControlLight;
             tabControl.TabIndex = 0;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
@@ -433,14 +421,14 @@ namespace KindleMate2 {
             tabPageBooks.Location = new Point(4, 4);
             tabPageBooks.Margin = new Padding(0);
             tabPageBooks.Name = "tabPageBooks";
-            tabPageBooks.Size = new Size(278, 540);
+            tabPageBooks.Size = new Size(278, 0);
             tabPageBooks.TabIndex = 0;
             tabPageBooks.Text = Strings.Clippings;
             // 
             // treeViewBooks
             // 
             treeViewBooks.BorderStyle = BorderStyle.None;
-            treeViewBooks.ContextMenuStrip = menuClippings;
+            treeViewBooks.ContextMenuStrip = menuBooks;
             treeViewBooks.Dock = DockStyle.Fill;
             treeViewBooks.FullRowSelect = true;
             treeViewBooks.HideSelection = false;
@@ -454,7 +442,7 @@ namespace KindleMate2 {
             treeViewBooks.ShowNodeToolTips = true;
             treeViewBooks.ShowPlusMinus = false;
             treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(278, 540);
+            treeViewBooks.Size = new Size(278, 0);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
             treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
@@ -462,45 +450,54 @@ namespace KindleMate2 {
             treeViewBooks.KeyDown += TreeViewBooks_KeyDown;
             treeViewBooks.MouseDown += TreeViewBooks_MouseDown;
             // 
-            // menuClippings
+            // menuBooks
             // 
-            menuClippings.BackColor = Color.Transparent;
-            menuClippings.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menuClippings.ImageScalingSize = new Size(28, 28);
-            menuClippings.Items.AddRange(new ToolStripItem[] { menuClippingsRefresh, menuClippingsCopy, menuClippingsDelete });
-            menuClippings.Name = "menuClippings";
-            menuClippings.Size = new Size(127, 106);
+            menuBooks.BackColor = Color.Transparent;
+            menuBooks.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            menuBooks.ImageScalingSize = new Size(28, 28);
+            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksExport, menuBooksDelete, menuRename });
+            menuBooks.Name = "contextMenuStrip1";
+            menuBooks.Size = new Size(148, 140);
             // 
-            // menuClippingsRefresh
+            // menuBookRefresh
             // 
-            menuClippingsRefresh.Name = "menuClippingsRefresh";
-            menuClippingsRefresh.ShortcutKeyDisplayString = string.Empty;
-            menuClippingsRefresh.Size = new Size(126, 34);
-            menuClippingsRefresh.Text = Strings.Refresh;
-            menuClippingsRefresh.Click += MenuClippingsRefresh_Click;
+            menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            menuBookRefresh.Name = "menuBookRefresh";
+            menuBookRefresh.ShortcutKeyDisplayString = "";
+            menuBookRefresh.Size = new Size(147, 34);
+            menuBookRefresh.Text = Strings.Refresh;
+            menuBookRefresh.Click += MenuBookRefresh_Click;
             // 
-            // menuClippingsCopy
+            // menuBooksExport
             // 
-            menuClippingsCopy.Name = "menuClippingsCopy";
-            menuClippingsCopy.ShortcutKeyDisplayString = string.Empty;
-            menuClippingsCopy.Size = new Size(126, 34);
-            menuClippingsCopy.Text = Strings.Copy;
-            menuClippingsCopy.Click += ClippingMenuCopy_Click;
+            menuBooksExport.Name = "menuBooksExport";
+            menuBooksExport.Size = new Size(147, 34);
+            menuBooksExport.Text = "导出";
+            menuBooksExport.Click += menuBooksExport_Click;
             // 
-            // menuClippingsDelete
+            // menuBooksDelete
             // 
-            menuClippingsDelete.Name = "menuClippingsDelete";
-            menuClippingsDelete.ShortcutKeyDisplayString = string.Empty;
-            menuClippingsDelete.Size = new Size(126, 34);
-            menuClippingsDelete.Text = Strings.Delete;
-            menuClippingsDelete.Click += ClippingMenuDelete_Click;
+            menuBooksDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            menuBooksDelete.Name = "menuBooksDelete";
+            menuBooksDelete.ShortcutKeyDisplayString = "";
+            menuBooksDelete.Size = new Size(147, 34);
+            menuBooksDelete.Text = Strings.Delete;
+            menuBooksDelete.Click += BooksMenuDelete_Click;
+            // 
+            // menuRename
+            // 
+            menuRename.Name = "menuRename";
+            menuRename.ShortcutKeyDisplayString = "";
+            menuRename.Size = new Size(147, 34);
+            menuRename.Text = Strings.Rename;
+            menuRename.Click += MenuRename_Click;
             // 
             // imageListBooks
             // 
             imageListBooks.ColorDepth = ColorDepth.Depth32Bit;
             imageListBooks.ImageStream = (ImageListStreamer)resources.GetObject("imageListBooks.ImageStream");
             imageListBooks.TransparentColor = Color.Transparent;
-            imageListBooks.Images.SetKeyName(0, "closed-book.png");
+            imageListBooks.Images.SetKeyName(0, "blue-book.png");
             imageListBooks.Images.SetKeyName(1, "open-book.png");
             imageListBooks.Images.SetKeyName(2, "books.png");
             // 
@@ -511,7 +508,7 @@ namespace KindleMate2 {
             tabPageWords.Location = new Point(4, 4);
             tabPageWords.Margin = new Padding(0);
             tabPageWords.Name = "tabPageWords";
-            tabPageWords.Size = new Size(278, 540);
+            tabPageWords.Size = new Size(278, 0);
             tabPageWords.TabIndex = 1;
             tabPageWords.Text = Strings.Vocabulary_List;
             // 
@@ -530,45 +527,10 @@ namespace KindleMate2 {
             treeViewWords.ShowLines = false;
             treeViewWords.ShowPlusMinus = false;
             treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(278, 540);
+            treeViewWords.Size = new Size(278, 0);
             treeViewWords.TabIndex = 0;
             treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
-            // 
-            // menuBooks
-            // 
-            menuBooks.BackColor = Color.Transparent;
-            menuBooks.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menuBooks.ImageScalingSize = new Size(28, 28);
-            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksDelete, menuRename });
-            menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(148, 106);
-            // 
-            // menuBookRefresh
-            // 
-            menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBookRefresh.Name = "menuBookRefresh";
-            menuBookRefresh.ShortcutKeyDisplayString = string.Empty;
-            menuBookRefresh.Size = new Size(147, 34);
-            menuBookRefresh.Text = Strings.Refresh;
-            menuBookRefresh.Click += MenuBookRefresh_Click;
-            // 
-            // menuBooksDelete
-            // 
-            menuBooksDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBooksDelete.Name = "menuBooksDelete";
-            menuBooksDelete.ShortcutKeyDisplayString = string.Empty;
-            menuBooksDelete.Size = new Size(147, 34);
-            menuBooksDelete.Text = Strings.Delete;
-            menuBooksDelete.Click += BooksMenuDelete_Click;
-            // 
-            // menuRename
-            // 
-            menuRename.Name = "menuRename";
-            menuRename.ShortcutKeyDisplayString = string.Empty;
-            menuRename.Size = new Size(147, 34);
-            menuRename.Text = Strings.Rename;
-            menuRename.Click += MenuRename_Click;
             // 
             // imageListWords
             // 
@@ -666,14 +628,14 @@ namespace KindleMate2 {
             dataGridView.BorderStyle = BorderStyle.None;
             dataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.Window;
-            dataGridViewCellStyle2.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle3.BackColor = SystemColors.Window;
+            dataGridViewCellStyle3.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            dataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             dataGridView.ColumnHeadersHeight = 46;
             dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView.Dock = DockStyle.Fill;
@@ -728,18 +690,6 @@ namespace KindleMate2 {
             tableContent.TabIndex = 0;
             tableContent.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
-            // lblLocation
-            // 
-            lblLocation.AutoSize = true;
-            lblLocation.BackColor = Color.Transparent;
-            lblLocation.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            lblLocation.Location = new Point(2, 51);
-            lblLocation.Margin = new Padding(2, 10, 0, 10);
-            lblLocation.Name = "lblLocation";
-            lblLocation.Size = new Size(0, 31);
-            lblLocation.TabIndex = 1;
-            lblLocation.MouseDoubleClick += LblContent_MouseDoubleClick;
-            // 
             // flowLayoutPanel
             // 
             flowLayoutPanel.AutoSize = true;
@@ -777,6 +727,51 @@ namespace KindleMate2 {
             lblAuthor.TabIndex = 1;
             lblAuthor.MouseDoubleClick += LblAuthor_MouseDoubleClick;
             // 
+            // lblLocation
+            // 
+            lblLocation.AutoSize = true;
+            lblLocation.BackColor = Color.Transparent;
+            lblLocation.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            lblLocation.Location = new Point(2, 51);
+            lblLocation.Margin = new Padding(2, 10, 0, 10);
+            lblLocation.Name = "lblLocation";
+            lblLocation.Size = new Size(0, 31);
+            lblLocation.TabIndex = 1;
+            lblLocation.MouseDoubleClick += LblContent_MouseDoubleClick;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Dock = DockStyle.Fill;
+            label2.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label2.Location = new Point(2, 92);
+            label2.Margin = new Padding(2, 0, 0, 0);
+            label2.Name = "label2";
+            label2.Size = new Size(804, 31);
+            label2.TabIndex = 9;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Dock = DockStyle.Fill;
+            label3.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label3.Location = new Point(2, 133);
+            label3.Margin = new Padding(2, 10, 0, 10);
+            label3.Name = "label3";
+            label3.Size = new Size(804, 31);
+            label3.TabIndex = 10;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Dock = DockStyle.Fill;
+            label1.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label1.Location = new Point(2, 174);
+            label1.Margin = new Padding(2, 0, 0, 0);
+            label1.Name = "label1";
+            label1.Size = new Size(804, 31);
+            label1.TabIndex = 8;
+            // 
             // lblContent
             // 
             lblContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -784,14 +779,14 @@ namespace KindleMate2 {
             lblContent.BorderStyle = BorderStyle.None;
             lblContent.ContextMenuStrip = menuContent;
             lblContent.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            lblContent.Location = new Point(5, 97);
+            lblContent.Location = new Point(5, 210);
             lblContent.Margin = new Padding(5, 5, 5, 20);
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
             lblContent.Size = new Size(796, 212);
             lblContent.TabIndex = 4;
-            lblContent.Text = string.Empty;
+            lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
             // 
             // menuContent
@@ -800,88 +795,16 @@ namespace KindleMate2 {
             menuContent.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             menuContent.ImageScalingSize = new Size(28, 28);
             menuContent.Items.AddRange(new ToolStripItem[] { menuContentCopy });
-            menuContent.Name = "menuClippings";
+            menuContent.Name = "menuContent";
             menuContent.Size = new Size(127, 38);
             // 
             // menuContentCopy
             // 
             menuContentCopy.Name = "menuContentCopy";
-            menuContentCopy.ShortcutKeyDisplayString = string.Empty;
+            menuContentCopy.ShortcutKeyDisplayString = "";
             menuContentCopy.Size = new Size(126, 34);
             menuContentCopy.Text = Strings.Copy;
             menuContentCopy.Click += menuContentCopy_Click;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Dock = DockStyle.Fill;
-            label1.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label1.Location = new Point(3, 329);
-            label1.Margin = new Padding(2, 0, 0, 0);
-            label1.Name = "label1";
-            label1.Size = new Size(800, 28);
-            label1.TabIndex = 8;
-            label1.Text = string.Empty;
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Dock = DockStyle.Fill;
-            label2.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label2.Location = new Point(3, 357);
-            label2.Margin = new Padding(2, 0, 0, 0);
-            label2.Name = "label2";
-            label2.Size = new Size(800, 28);
-            label2.TabIndex = 9;
-            label2.Text = string.Empty;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Dock = DockStyle.Fill;
-            label3.Font = new Font("Microsoft YaHei", 9.857143F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label3.Location = new Point(3, 385);
-            label3.Margin = new Padding(2, 10, 0, 10);
-            label3.Name = "label3";
-            label3.Size = new Size(800, 28);
-            label3.TabIndex = 10;
-            label3.Text = string.Empty;
-            // 
-            // tabPageBooks
-            // 
-            tabPageBooks.BackColor = SystemColors.ControlLight;
-            tabPageBooks.Controls.Add(treeViewBooks);
-            tabPageBooks.Location = new Point(4, 4);
-            tabPageBooks.Margin = new Padding(0);
-            tabPageBooks.Name = "tabPageBooks";
-            tabPageBooks.Size = new Size(278, 540);
-            tabPageBooks.TabIndex = 0;
-            tabPageBooks.Text = Strings.Clippings;
-            // 
-            // treeViewBooks
-            // 
-            treeViewBooks.BorderStyle = BorderStyle.None;
-            treeViewBooks.ContextMenuStrip = menuClippings;
-            treeViewBooks.Dock = DockStyle.Fill;
-            treeViewBooks.FullRowSelect = true;
-            treeViewBooks.HideSelection = false;
-            treeViewBooks.ImageIndex = 0;
-            treeViewBooks.ImageList = imageListBooks;
-            treeViewBooks.Location = new Point(0, 0);
-            treeViewBooks.Margin = new Padding(0);
-            treeViewBooks.Name = "treeViewBooks";
-            treeViewBooks.SelectedImageIndex = 1;
-            treeViewBooks.ShowLines = false;
-            treeViewBooks.ShowNodeToolTips = true;
-            treeViewBooks.ShowPlusMinus = false;
-            treeViewBooks.ShowRootLines = false;
-            treeViewBooks.Size = new Size(278, 540);
-            treeViewBooks.StateImageList = imageListBooks;
-            treeViewBooks.TabIndex = 0;
-            treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
-            treeViewBooks.NodeMouseDoubleClick += TreeViewBooks_NodeMouseDoubleClick;
-            treeViewBooks.KeyDown += TreeViewBooks_KeyDown;
-            treeViewBooks.MouseDown += TreeViewBooks_MouseDown;
             // 
             // menuClippings
             // 
@@ -895,7 +818,7 @@ namespace KindleMate2 {
             // menuClippingsRefresh
             // 
             menuClippingsRefresh.Name = "menuClippingsRefresh";
-            menuClippingsRefresh.ShortcutKeyDisplayString = string.Empty;
+            menuClippingsRefresh.ShortcutKeyDisplayString = "";
             menuClippingsRefresh.Size = new Size(126, 34);
             menuClippingsRefresh.Text = Strings.Refresh;
             menuClippingsRefresh.Click += MenuClippingsRefresh_Click;
@@ -903,7 +826,7 @@ namespace KindleMate2 {
             // menuClippingsCopy
             // 
             menuClippingsCopy.Name = "menuClippingsCopy";
-            menuClippingsCopy.ShortcutKeyDisplayString = string.Empty;
+            menuClippingsCopy.ShortcutKeyDisplayString = "";
             menuClippingsCopy.Size = new Size(126, 34);
             menuClippingsCopy.Text = Strings.Copy;
             menuClippingsCopy.Click += ClippingMenuCopy_Click;
@@ -911,110 +834,10 @@ namespace KindleMate2 {
             // menuClippingsDelete
             // 
             menuClippingsDelete.Name = "menuClippingsDelete";
-            menuClippingsDelete.ShortcutKeyDisplayString = string.Empty;
+            menuClippingsDelete.ShortcutKeyDisplayString = "";
             menuClippingsDelete.Size = new Size(126, 34);
             menuClippingsDelete.Text = Strings.Delete;
             menuClippingsDelete.Click += ClippingMenuDelete_Click;
-            // 
-            // imageListBooks
-            // 
-            imageListBooks.ColorDepth = ColorDepth.Depth32Bit;
-            imageListBooks.ImageStream = (ImageListStreamer)resources.GetObject("imageListBooks.ImageStream");
-            imageListBooks.TransparentColor = Color.Transparent;
-            imageListBooks.Images.SetKeyName(0, "closed-book.png");
-            imageListBooks.Images.SetKeyName(1, "open-book.png");
-            imageListBooks.Images.SetKeyName(2, "books.png");
-            // 
-            // tabPageWords
-            // 
-            tabPageWords.BackColor = SystemColors.ControlLight;
-            tabPageWords.Controls.Add(treeViewWords);
-            tabPageWords.Location = new Point(4, 4);
-            tabPageWords.Margin = new Padding(0);
-            tabPageWords.Name = "tabPageWords";
-            tabPageWords.Size = new Size(278, 540);
-            tabPageWords.TabIndex = 1;
-            tabPageWords.Text = Strings.Vocabulary_List;
-            // 
-            // treeViewWords
-            // 
-            treeViewWords.BorderStyle = BorderStyle.None;
-            treeViewWords.ContextMenuStrip = menuBooks;
-            treeViewWords.Dock = DockStyle.Fill;
-            treeViewWords.FullRowSelect = true;
-            treeViewWords.HideSelection = false;
-            treeViewWords.ImageIndex = 1;
-            treeViewWords.ImageList = imageListWords;
-            treeViewWords.Location = new Point(0, 0);
-            treeViewWords.Name = "treeViewWords";
-            treeViewWords.SelectedImageIndex = 0;
-            treeViewWords.ShowLines = false;
-            treeViewWords.ShowPlusMinus = false;
-            treeViewWords.ShowRootLines = false;
-            treeViewWords.Size = new Size(278, 540);
-            treeViewWords.TabIndex = 0;
-            treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
-            treeViewWords.MouseDown += TreeViewWords_MouseDown;
-            // 
-            // menuBooks
-            // 
-            menuBooks.BackColor = Color.Transparent;
-            menuBooks.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menuBooks.ImageScalingSize = new Size(28, 28);
-            menuBooks.Items.AddRange(new ToolStripItem[] { menuBookRefresh, menuBooksDelete, menuRename });
-            menuBooks.Name = "contextMenuStrip1";
-            menuBooks.Size = new Size(148, 106);
-            // 
-            // menuBookRefresh
-            // 
-            menuBookRefresh.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBookRefresh.Name = "menuBookRefresh";
-            menuBookRefresh.ShortcutKeyDisplayString = string.Empty;
-            menuBookRefresh.Size = new Size(147, 34);
-            menuBookRefresh.Text = Strings.Refresh;
-            menuBookRefresh.Click += MenuBookRefresh_Click;
-            // 
-            // menuBooksDelete
-            // 
-            menuBooksDelete.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            menuBooksDelete.Name = "menuBooksDelete";
-            menuBooksDelete.ShortcutKeyDisplayString = string.Empty;
-            menuBooksDelete.Size = new Size(147, 34);
-            menuBooksDelete.Text = Strings.Delete;
-            menuBooksDelete.Click += BooksMenuDelete_Click;
-            // 
-            // menuRename
-            // 
-            menuRename.Name = "menuRename";
-            menuRename.ShortcutKeyDisplayString = string.Empty;
-            menuRename.Size = new Size(147, 34);
-            menuRename.Text = Strings.Rename;
-            menuRename.Click += MenuRename_Click;
-            // 
-            // imageListWords
-            // 
-            imageListWords.ColorDepth = ColorDepth.Depth32Bit;
-            imageListWords.ImageStream = (ImageListStreamer)resources.GetObject("imageListWords.ImageStream");
-            imageListWords.TransparentColor = Color.Transparent;
-            imageListWords.Images.SetKeyName(0, "input-latin-uppercase.png");
-            imageListWords.Images.SetKeyName(1, "input-latin-lowercase.png");
-            imageListWords.Images.SetKeyName(2, "books.png");
-            // 
-            // menu
-            // 
-            menu.BackColor = Color.Transparent;
-            menu.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            menu.ImageScalingSize = new Size(32, 32);
-            menu.Items.AddRange(new ToolStripItem[] { menuListRefresh });
-            menu.Name = "menu";
-            menu.Size = new Size(127, 38);
-            // 
-            // menuListRefresh
-            // 
-            menuListRefresh.Name = "menuListRefresh";
-            menuListRefresh.Size = new Size(126, 34);
-            menuListRefresh.Text = "刷新";
-            menuListRefresh.Click += MenuListRefresh_Click;
             // 
             // openFileDialog
             // 
@@ -1102,6 +925,10 @@ namespace KindleMate2 {
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).EndInit();
             splitContainerMain.ResumeLayout(false);
             tableLeft.ResumeLayout(false);
+            tabControl.ResumeLayout(false);
+            tabPageBooks.ResumeLayout(false);
+            menuBooks.ResumeLayout(false);
+            tabPageWords.ResumeLayout(false);
             panel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picSearch).EndInit();
             splitContainerDetail.Panel1.ResumeLayout(false);
@@ -1115,11 +942,7 @@ namespace KindleMate2 {
             flowLayoutPanel.ResumeLayout(false);
             flowLayoutPanel.PerformLayout();
             menuContent.ResumeLayout(false);
-            tabPageBooks.ResumeLayout(false);
             menuClippings.ResumeLayout(false);
-            tabPageWords.ResumeLayout(false);
-            menuBooks.ResumeLayout(false);
-            menu.ResumeLayout(false);
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);
@@ -1185,8 +1008,6 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuLangSC;
         private ToolStripMenuItem menuLangTC;
         private ToolStripMenuItem menuLangAuto;
-        private ContextMenuStrip menu;
-        private ToolStripMenuItem menuListRefresh;
         private ContextMenuStrip menuContent;
         private ToolStripMenuItem menuContentCopy;
         private TableLayoutPanel tableLeft;
@@ -1196,5 +1017,6 @@ namespace KindleMate2 {
         private PictureBox picSearch;
         private ComboBox cmbSearch;
         private ComboBox txtSearch;
+        private ToolStripMenuItem menuBooksExport;
     }
 }

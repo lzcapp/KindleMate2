@@ -475,7 +475,7 @@
     <value>統計截圖失敗</value>
   </data>
   <data name="Open_Folder" xml:space="preserve">
-    <value>需要打開備份文件夾嗎？</value>
+    <value>需要打開資料夾嗎？</value>
   </data>
   <data name="SC" xml:space="preserve">
     <value>简体中文</value>
