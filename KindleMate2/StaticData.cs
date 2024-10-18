@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using System.Data.SQLite;
-using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
 using KindleMate2.Entities;
@@ -149,44 +148,53 @@ namespace KindleMate2 {
             return list;
         }
 
-        internal bool SetClippingsBriefTypeHide(string? clippingdate, string? bookname) {
-            switch (clippingdate) {
-                case null:
-                case "":
-                    return true;
-            }
+        internal bool SetClippingsBriefTypeHide(string bookname, string pagenumber) {
             switch (bookname) {
                 case null:
                 case "":
                     return true;
             }
+            switch (pagenumber) {
+                case null:
+                case "":
+                    return true;
+            }
 
-            const string queryCount = "UPDATE clippings SET brieftype = -1 WHERE clippingdate = @clippingdate AND bookname = @bookname AND brieftype = 0";
-            using var commandCount = new SQLiteCommand(queryCount, _connection);
-            commandCount.Parameters.AddWithValue("@clippingdate", clippingdate);
-            commandCount.Parameters.AddWithValue("@bookname", bookname);
+            const string query = "SELECT * FROM clippings WHERE bookname = @bookname AND pagenumber = @pagenumber";
+            using var command = new SQLiteCommand(query, _connection);
+            command.Parameters.AddWithValue("@bookname", bookname);
+            command.Parameters.AddWithValue("@pagenumber", pagenumber);
+            using var adapter = new SQLiteDataAdapter(command);
+            
+            var dataTable = new DataTable();
+            adapter.Fill(dataTable);
 
-            var result = Convert.ToInt32(commandCount.ExecuteScalar());
-
-            return result > 0;
+            if (dataTable.Rows.Count > 0) {
+                DataRow row = dataTable.Rows[0];
+                var book = row["bookname"].ToString() ?? string.Empty;
+                var page = row["pagenumber"].ToString() ?? string.Empty;
+                if (bookname.Equals(book) && pagenumber.Equals(page) ) {
+                    const string queryCount = "UPDATE clippings SET brieftype = -1 WHERE key = @key";
+                    using var commandCount = new SQLiteCommand(queryCount, _connection);
+                    commandCount.Parameters.AddWithValue("@key", row["key"]);
+                    var result = Convert.ToInt32(commandCount.ExecuteScalar());
+                    return result > 0;
+                }
+            }
+            return false;
         }
 
-        internal string GetClippingsBriefTypeHide(string? clippingdate, string? bookname) {
-            switch (clippingdate) {
-                case null:
-                case "":
-                    return string.Empty;
-            }
+        internal string GetClippingsBriefTypeHide(string bookname, string pagenumber) {
             switch (bookname) {
                 case null:
                 case "":
                     return string.Empty;
             }
 
-            const string queryCount = "SELECT content FROM clippings WHERE brieftype = -1 AND clippingdate = @clippingdate AND bookname = @bookname";
+            const string queryCount = "SELECT * FROM clippings WHERE brieftype = -1 AND bookname = @bookname AND pagenumber = @pagenumber";
             using var command = new SQLiteCommand(queryCount, _connection);
-            command.Parameters.AddWithValue("@clippingdate", clippingdate);
             command.Parameters.AddWithValue("@bookname", bookname);
+            command.Parameters.AddWithValue("@pagenumber", pagenumber);
 
             using var adapter = new SQLiteDataAdapter(command);
             
@@ -624,8 +632,6 @@ namespace KindleMate2 {
             return dataTable;
         }
 
-
-
         internal List<string> GetVocabWordList() {
             var list = new List<string>();
             DataTable dt = GetVocabDataTable();
@@ -831,7 +837,7 @@ namespace KindleMate2 {
             return isWindowsDarkTheme;
         }
 
-        private bool IsWindowsDarkTheme() {
+        private static bool IsWindowsDarkTheme() {
             var isWindowsDarkTheme = DarkModeCS.GetWindowsColorMode() <= 0;
             return isWindowsDarkTheme;
         }
@@ -945,7 +951,7 @@ namespace KindleMate2 {
             { 'M', 1000 }
         };
 
-        internal int RomanToInteger(string roman) {
+        internal static int RomanToInteger(string roman) {
             var result = 0;
             var prevValue = 0;
 

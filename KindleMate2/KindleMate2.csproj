@@ -90,8 +90,10 @@
 	  <None Remove="DarkModeForms\.git" />
 	  <None Remove="DarkModeForms\.gitignore" />
 	  <None Remove="DarkModeForms\App.config" />
+	  <None Remove="DarkModeForms\app.manifest" />
 	  <None Remove="DarkModeForms\LICENSE" />
 	  <None Remove="DarkModeForms\README.md" />
+	  <None Remove="DarkModeForms\YinYan.ico" />
 	  <None Remove="KM.dat" />
 	</ItemGroup>
 
@@ -130,6 +132,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
 		<PackageReference Include="Markdig" Version="0.37.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />

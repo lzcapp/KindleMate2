@@ -2,10 +2,10 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SQLite;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 using Markdig;
@@ -920,7 +920,7 @@ namespace KindleMate2 {
                         strMatched = strMatched.Split("）")[0];
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     } else if (isRomanMatched) {
-                        var strMatched = _staticData.RomanToInteger(clippingtypelocation).ToString();
+                        var strMatched = StaticData.RomanToInteger(clippingtypelocation).ToString();
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     }
                     if (isPageParsed == false || pagenumber == 0) {
@@ -974,7 +974,7 @@ namespace KindleMate2 {
                     entityClipping.authorname = authorname;
 
                     if (brieftype == BriefType.Note) {
-                        _staticData.SetClippingsBriefTypeHide(clippingdate, bookname);
+                        _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
                     }
 
                     if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
@@ -1015,7 +1015,7 @@ namespace KindleMate2 {
 
                 switch (selectedIndex) {
                     case 0:
-                        var clippingdate = selectedRow.Cells["clippingdate"].Value.ToString() ?? string.Empty;
+                        //var clippingdate = selectedRow.Cells["clippingdate"].Value.ToString() ?? string.Empty;
                         var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
                         var authorname = selectedRow.Cells["authorname"].Value.ToString() ?? string.Empty;
                         var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString() ?? string.Empty;
@@ -1032,19 +1032,17 @@ namespace KindleMate2 {
                         lblLocation.Text = Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page;
 
                         lblContent.Text = string.Empty;
-                        if (brieftype.Equals("1")) {
-                            label1.Text = @"[" + Strings.Note + @"]";
-                        } else {
-                            label1.Text = @"[" + Strings.Clipping + @"]";
-                        }
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
                         if (brieftype.Equals("1")) {
+                            label1.Text = @"[" + Strings.Note + @"]";
+                            label2.Text = @"[" + Strings.Clipping + @"]";
+                            label3.Text = _staticData.GetClippingsBriefTypeHide(bookname, pagenumber);
+                            label1.Visible = true;
                             label2.Visible = true;
                             label3.Visible = true;
-                            label2.Text = @"[" + Strings.Clipping + @"]";
-                            label3.Text = _staticData.GetClippingsBriefTypeHide(clippingdate, bookname);
                         } else {
+                            label1.Visible = false;
                             label2.Visible = false;
                             label3.Visible = false;
                         }
@@ -1065,6 +1063,9 @@ namespace KindleMate2 {
                                           let strContent = row["usage"].ToString() ?? string.Empty
                                           where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)
                                           select strContent).ToList();
+
+                        var listUsage = new HashSet<string>();
+                        
                         var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
                         var usage_clippings_list = new List<DataRow>();
                         if (word.Length > 1) {
@@ -1082,6 +1083,7 @@ namespace KindleMate2 {
                             }
                             if (!isContain) {
                                 usage_clippings += strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n";
+                                listUsage.Add(" ——《" + row["bookname"] + "》");
                             }
                         }
 
@@ -1117,6 +1119,22 @@ namespace KindleMate2 {
                             lblContent.SelectionFont = new Font(lblContent.Font, FontStyle.Bold);
 
                             index = wordStartIndex + word.Length;
+                        }
+
+                        index = 0;
+
+                        foreach (var book in listUsage) {
+                            while (index < lblContent.TextLength) {
+                                var wordStartIndex = lblContent.Find(book, index, RichTextBoxFinds.None);
+                                if (wordStartIndex == -1) {
+                                    break;
+                                }
+                            
+                                lblContent.Select(wordStartIndex, book.Length);
+                                lblContent.SelectionFont = new Font(lblContent.Font, FontStyle.Italic);
+
+                                index = wordStartIndex + book.Length;
+                            }
                         }
 
                         break;
@@ -1183,7 +1201,7 @@ namespace KindleMate2 {
                 new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
             };
 
-            Messenger.ValidateControls += (_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
                 if (fields != null) {
                     var fValue = fields[0].Value;
                     if (string.IsNullOrWhiteSpace(fValue)) {
@@ -1602,7 +1620,7 @@ namespace KindleMate2 {
                 new(Strings.Author, authorname)
             };
 
-            Messenger.ValidateControls += (_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
                 if (fields != null) {
                     var dialogBook = fields[0].Value;
                     var dialogAuthor = fields[1].Value;
@@ -2042,7 +2060,7 @@ namespace KindleMate2 {
                     strMatched = strMatched.Split("）")[0];
                     isPageParsed = int.TryParse(strMatched, out pagenumber);
                 } else if (isRomanMatched) {
-                    var strMatched = _staticData.RomanToInteger(clippingtypelocation).ToString();
+                    var strMatched = StaticData.RomanToInteger(clippingtypelocation).ToString();
                     isPageParsed = int.TryParse(strMatched, out pagenumber);
                 }
                 if (isPageParsed == false || pagenumber == 0) {
@@ -2088,7 +2106,7 @@ namespace KindleMate2 {
                 entityClipping.authorname = authorname;
 
                 if (brieftype == BriefType.Note) {
-                    _staticData.SetClippingsBriefTypeHide(clippingdate, bookname);
+                    _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
                 }
 
                 if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
@@ -2234,6 +2252,10 @@ namespace KindleMate2 {
                 var markdown = new StringBuilder();
 
                 markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
+                
+                markdown.AppendLine();
+
+                markdown.AppendLine("[TOC]");
 
                 markdown.AppendLine();
 
@@ -2252,29 +2274,31 @@ namespace KindleMate2 {
 
                     foreach (DataRow row in filteredBooks.Rows) {
                         var clippinglocation = row["clippingtypelocation"].ToString();
-                        var clippingdate = row["clippingdate"].ToString();
-                        var pagenumber = row["pagenumber"].ToString();
                         var content = row["content"].ToString();
 
-                        markdown.AppendLine("**\ud83d\udccd " + clippinglocation + Strings.Left_Parenthesis + Strings.Page_ + pagenumber + Strings.X_Page + Strings.Right_Parenthesis + " `" + clippingdate + "`**");
+                        markdown.AppendLine("**" + clippinglocation + "**");
 
                         markdown.AppendLine();
 
-                        markdown.AppendLine("> " + content);
+                        markdown.AppendLine(content);
 
                         markdown.AppendLine();
                     }
                 }
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString());
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.md"), markdown.ToString(), Encoding.UTF8);
 
                 var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
 
-                htmlContent += Markdown.ToHtml(markdown.ToString());
+                MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
+                                            .UseAdvancedExtensions()
+                                            .UseTableOfContent()
+                                            .Build();
+                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
 
                 htmlContent += "\r\n</body>\r\n</html>";
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.html"), htmlContent);
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Clippings.html"), htmlContent, Encoding.UTF8);
 
                 return true;
             } catch (Exception) {
@@ -2290,6 +2314,10 @@ namespace KindleMate2 {
 
                 markdown.AppendLine();
 
+                markdown.AppendLine("[TOC]");
+
+                markdown.AppendLine();
+
                 foreach (TreeNode node in treeViewWords.Nodes) {
                     var word = node.Text;
 
@@ -2298,13 +2326,12 @@ namespace KindleMate2 {
                     }
 
                     DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == word).CopyToDataTable();
-
+                    
                     markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
 
                     markdown.AppendLine();
 
                     foreach (DataRow row in filteredBooks.Rows) {
-                        var timestamp = row["timestamp"].ToString();
                         var title = row["title"].ToString();
                         var usage = row["usage"].ToString();
 
@@ -2312,25 +2339,29 @@ namespace KindleMate2 {
                             continue;
                         }
 
-                        markdown.AppendLine("**\ud83d\udccd 《" + title + "》 `" + timestamp + "`**");
+                        markdown.AppendLine("**《" + title + "》**");
 
                         markdown.AppendLine();
 
-                        markdown.AppendLine("> " + usage.Replace(word, " **`" + word + "`** "));
+                        markdown.AppendLine(usage.Replace(word, " **`" + word + "`** "));
 
                         markdown.AppendLine();
                     }
                 }
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString());
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.md"), markdown.ToString(), Encoding.UTF8);
 
                 var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-                htmlContent += Markdown.ToHtml(markdown.ToString());
+                
+                MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
+                                            .UseAdvancedExtensions()
+                                            .UseTableOfContent()
+                                            .Build();
+                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
 
                 htmlContent += "\r\n</body>\r\n</html>";
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.html"), htmlContent);
+                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "Vocabs.html"), htmlContent, Encoding.UTF8);
 
                 return true;
             } catch (Exception) {
@@ -2339,12 +2370,12 @@ namespace KindleMate2 {
         }
 
         private void MenuExportMd_Click(object sender, EventArgs e) {
-            if (!Directory.Exists(Path.Combine(_programsDirectory, "Exports"))) {
-                Directory.CreateDirectory(Path.Combine(_programsDirectory, "Exports"));
+            var path = Path.Combine(_programsDirectory, "Exports");
+            if (!Directory.Exists(path)) {
+                Directory.CreateDirectory(path);
             }
 
-            const string css =
-                "@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap');\r\n\r\n* {\r\n    font-family: -apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", \"Noto Emoji\", sans-serif;\r\n}\r\n\r\nbody {\r\n    font-family: 'Arial', sans-serif;\r\n    background-color: #f9f9f9;\r\n    color: #333;\r\n    line-height: 1.6;\r\n    align-items: center;\r\n    width: 80vw;\r\n    margin: 20px auto;\r\n}\r\n\r\nh1 {\r\n    font-size: 30px;\r\n    text-align: center;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\nh2 {\r\n    font-size: 24px;\r\n    margin: 30px auto;\r\n    color: #333;\r\n}\r\n\r\np {\r\n    font-size: 16px;\r\n    margin: 20px auto;\r\n}\r\n\r\ncode {\r\n    background-color: antiquewhite;\r\n    border-radius: 10px;\r\n    padding: 2px 6px;\r\n}";
+            const string css = "@import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap);*{font-family:-apple-system,\"Noto Sans\",\"Helvetica Neue\",Helvetica,\"Nimbus Sans L\",Arial,\"Liberation Sans\",\"PingFang SC\",\"Hiragino Sans GB\",\"Noto Sans CJK SC\",\"Source Han Sans SC\",\"Source Han Sans CN\",\"Microsoft YaHei UI\",\"Microsoft YaHei\",\"Wenquanyi Micro Hei\",\"WenQuanYi Zen Hei\",\"ST Heiti\",SimHei,\"WenQuanYi Zen Hei Sharp\",\"Noto Emoji\",sans-serif}body{font-family:Arial,sans-serif;background-color:#f9f9f9;color:#333;line-height:1.6;align-items:center;width:80vw;margin:20px auto}h1{font-size:30px;text-align:center;margin:30px auto;color:#333}h2{font-size:24px;margin:30px auto;color:#333}p{font-size:16px;margin:20px auto}code{background-color:#faebd7;border-radius:10px;padding:2px 6px}";
 
             File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
 
