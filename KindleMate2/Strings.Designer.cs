@@ -421,6 +421,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 创建数据库失败.
+        /// </summary>
+        internal static string Create_Database_Failed {
+            get {
+                return ResourceManager.GetString("Create_Database_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 数据已清空.
         /// </summary>
         internal static string Data_Cleared {

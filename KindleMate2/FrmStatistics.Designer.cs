@@ -44,7 +44,7 @@ namespace KindleMate2 {
             System.Windows.Forms.DataVisualization.Charting.Legend legend6 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmStatistics));
-            tabControl = new FlatTabControl();
+            tabControl = new TabControl();
             tabPageBooks = new TabPage();
             tableLayoutPanelBooks = new TableLayoutPanel();
             chartBooksTime = new System.Windows.Forms.DataVisualization.Charting.Chart();
@@ -74,7 +74,6 @@ namespace KindleMate2 {
             // 
             // tabControl
             // 
-            tabControl.ShowTabCloseButton = false;
             tabControl.Alignment = TabAlignment.Bottom;
             tabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             tabControl.Controls.Add(tabPageBooks);
@@ -95,7 +94,7 @@ namespace KindleMate2 {
             tabPageBooks.Margin = new Padding(2);
             tabPageBooks.Name = "tabPageBooks";
             tabPageBooks.Padding = new Padding(2);
-            tabPageBooks.Size = new Size(674, 293);
+            tabPageBooks.Size = new Size(674, 285);
             tabPageBooks.TabIndex = 0;
             // 
             // tableLayoutPanelBooks
@@ -113,7 +112,7 @@ namespace KindleMate2 {
             tableLayoutPanelBooks.RowCount = 2;
             tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelBooks.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelBooks.Size = new Size(670, 289);
+            tableLayoutPanelBooks.Size = new Size(670, 281);
             tableLayoutPanelBooks.TabIndex = 0;
             // 
             // chartBooksTime
@@ -144,7 +143,7 @@ namespace KindleMate2 {
             legend1.Enabled = false;
             legend1.Name = "Legend";
             chartBooksTime.Legends.Add(legend1);
-            chartBooksTime.Location = new Point(0, 115);
+            chartBooksTime.Location = new Point(0, 112);
             chartBooksTime.Margin = new Padding(0);
             chartBooksTime.Name = "chartBooksTime";
             chartBooksTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -155,7 +154,7 @@ namespace KindleMate2 {
             series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series1.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartBooksTime.Series.Add(series1);
-            chartBooksTime.Size = new Size(469, 174);
+            chartBooksTime.Size = new Size(469, 169);
             chartBooksTime.TabIndex = 2;
             // 
             // chartBooksWeek
@@ -166,7 +165,7 @@ namespace KindleMate2 {
             chartArea2.AxisX.IsStartedFromZero = false;
             chartArea2.AxisX.LabelAutoFitMaxFontSize = 7;
             chartArea2.AxisX.LabelAutoFitMinFontSize = 7;
-            chartArea2.AxisX.LabelStyle.Font = new Font("微软雅黑", 7F);
+            chartArea2.AxisX.LabelStyle.Font = new Font("Microsoft YaHei", 7F);
             chartArea2.AxisX.LabelStyle.Interval = 0D;
             chartArea2.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea2.AxisX.LineWidth = 0;
@@ -191,7 +190,7 @@ namespace KindleMate2 {
             legend2.Enabled = false;
             legend2.Name = "Legend";
             chartBooksWeek.Legends.Add(legend2);
-            chartBooksWeek.Location = new Point(469, 115);
+            chartBooksWeek.Location = new Point(469, 112);
             chartBooksWeek.Margin = new Padding(0);
             chartBooksWeek.Name = "chartBooksWeek";
             chartBooksWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -205,7 +204,7 @@ namespace KindleMate2 {
             series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series2.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartBooksWeek.Series.Add(series2);
-            chartBooksWeek.Size = new Size(201, 174);
+            chartBooksWeek.Size = new Size(201, 169);
             chartBooksWeek.TabIndex = 3;
             // 
             // chartBooksHistory
@@ -255,7 +254,7 @@ namespace KindleMate2 {
             series3.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series3.YValuesPerPoint = 2;
             chartBooksHistory.Series.Add(series3);
-            chartBooksHistory.Size = new Size(670, 115);
+            chartBooksHistory.Size = new Size(670, 112);
             chartBooksHistory.TabIndex = 4;
             // 
             // tabPageVocabs
@@ -266,7 +265,7 @@ namespace KindleMate2 {
             tabPageVocabs.Margin = new Padding(2);
             tabPageVocabs.Name = "tabPageVocabs";
             tabPageVocabs.Padding = new Padding(2);
-            tabPageVocabs.Size = new Size(674, 293);
+            tabPageVocabs.Size = new Size(674, 285);
             tabPageVocabs.TabIndex = 1;
             // 
             // tableLayoutPanelVocabs
@@ -284,7 +283,7 @@ namespace KindleMate2 {
             tableLayoutPanelVocabs.RowCount = 2;
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             tableLayoutPanelVocabs.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-            tableLayoutPanelVocabs.Size = new Size(670, 289);
+            tableLayoutPanelVocabs.Size = new Size(670, 281);
             tableLayoutPanelVocabs.TabIndex = 1;
             // 
             // chartVocabsTime
@@ -317,7 +316,7 @@ namespace KindleMate2 {
             legend4.Enabled = false;
             legend4.Name = "Legend";
             chartVocabsTime.Legends.Add(legend4);
-            chartVocabsTime.Location = new Point(0, 115);
+            chartVocabsTime.Location = new Point(0, 112);
             chartVocabsTime.Margin = new Padding(0);
             chartVocabsTime.Name = "chartVocabsTime";
             chartVocabsTime.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -328,7 +327,7 @@ namespace KindleMate2 {
             series4.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             series4.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsTime.Series.Add(series4);
-            chartVocabsTime.Size = new Size(469, 174);
+            chartVocabsTime.Size = new Size(469, 169);
             chartVocabsTime.TabIndex = 2;
             // 
             // chartVocabsWeek
@@ -340,7 +339,7 @@ namespace KindleMate2 {
             chartArea5.AxisX.IsStartedFromZero = false;
             chartArea5.AxisX.LabelAutoFitMaxFontSize = 7;
             chartArea5.AxisX.LabelAutoFitMinFontSize = 7;
-            chartArea5.AxisX.LabelStyle.Font = new Font("微软雅黑", 7F);
+            chartArea5.AxisX.LabelStyle.Font = new Font("Microsoft YaHei", 7F);
             chartArea5.AxisX.LabelStyle.Interval = 0D;
             chartArea5.AxisX.LabelStyle.IntervalType = System.Windows.Forms.DataVisualization.Charting.DateTimeIntervalType.Auto;
             chartArea5.AxisX.LineWidth = 0;
@@ -367,7 +366,7 @@ namespace KindleMate2 {
             legend5.Enabled = false;
             legend5.Name = "Legend";
             chartVocabsWeek.Legends.Add(legend5);
-            chartVocabsWeek.Location = new Point(469, 115);
+            chartVocabsWeek.Location = new Point(469, 112);
             chartVocabsWeek.Margin = new Padding(0);
             chartVocabsWeek.Name = "chartVocabsWeek";
             chartVocabsWeek.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Pastel;
@@ -381,7 +380,7 @@ namespace KindleMate2 {
             series5.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.String;
             series5.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Int32;
             chartVocabsWeek.Series.Add(series5);
-            chartVocabsWeek.Size = new Size(201, 174);
+            chartVocabsWeek.Size = new Size(201, 169);
             chartVocabsWeek.TabIndex = 3;
             // 
             // chartVocabsHistory
@@ -432,12 +431,12 @@ namespace KindleMate2 {
             series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Date;
             series6.YValuesPerPoint = 2;
             chartVocabsHistory.Series.Add(series6);
-            chartVocabsHistory.Size = new Size(670, 115);
+            chartVocabsHistory.Size = new Size(670, 112);
             chartVocabsHistory.TabIndex = 4;
             // 
             // toolStrip
             // 
-            toolStrip.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            toolStrip.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             toolStrip.GripStyle = ToolStripGripStyle.Hidden;
             toolStrip.ImageScalingSize = new Size(20, 20);
             toolStrip.Items.AddRange(new ToolStripItem[] { btnSave, lblStatistics });
@@ -455,14 +454,14 @@ namespace KindleMate2 {
             btnSave.ImageTransparentColor = Color.Transparent;
             btnSave.Margin = new Padding(0, 1, 10, 2);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(29, 24);
+            btnSave.Size = new Size(40, 24);
             btnSave.Click += BtnSave_Click;
             btnSave.MouseEnter += BtnSave_MouseEnter;
             btnSave.MouseLeave += BtnSave_MouseLeave;
             // 
             // lblStatistics
             // 
-            lblStatistics.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            lblStatistics.Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             lblStatistics.Margin = new Padding(10, 1, 0, 2);
             lblStatistics.Name = "lblStatistics";
             lblStatistics.Size = new Size(0, 24);
@@ -474,7 +473,7 @@ namespace KindleMate2 {
             ClientSize = new Size(682, 353);
             Controls.Add(toolStrip);
             Controls.Add(tabControl);
-            Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            Font = new Font("Microsoft YaHei", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(2);
             MinimizeBox = false;
@@ -503,7 +502,7 @@ namespace KindleMate2 {
 
         #endregion
 
-        private FlatTabControl tabControl;
+        private TabControl tabControl;
         private TabPage tabPageVocabs;
         private TabPage tabPageBooks;
         private TableLayoutPanel tableLayoutPanelBooks;

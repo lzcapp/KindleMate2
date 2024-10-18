@@ -516,4 +516,7 @@
   <data name="Confirm_Rebuild_Database" xml:space="preserve">
     <value>确认要重建数据库吗?</value>
   </data>
+  <data name="Create_Database_Failed" xml:space="preserve">
+    <value>创建数据库失败</value>
+  </data>
 </root>

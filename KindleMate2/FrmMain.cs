@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using DarkModeForms;
 using KindleMate2.Entities;
+using KindleMate2.Properties;
 using Markdig;
 
 namespace KindleMate2 {
@@ -51,12 +52,16 @@ namespace KindleMate2 {
                 if (File.Exists(Path.Combine(Environment.CurrentDirectory, "KM2.dat"))) {
                     File.Delete(Path.Combine(Environment.CurrentDirectory, "KM.dat"));
                 } else {
-                    StaticData.CreateDatabase();
+                    if (!StaticData.CreateDatabase()) {
+                        MessageBox(Strings.Create_Database_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+                        Environment.Exit(0);
+                    }
                 }
             } catch (Exception e) {
                 MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Close();
+                Environment.Exit(0);
             }
+
             _staticData = new StaticData();
 
             SetTheme();
@@ -185,10 +190,11 @@ namespace KindleMate2 {
         }
 
         private void SetTheme() {
-            var darkMode = new DarkModeCS(this, false);
             _isDarkTheme = _staticData.IsDarkTheme();
-            menuTheme.Image = _isDarkTheme ? Properties.Resources.sun : Properties.Resources.new_moon;
-            darkMode.ApplyTheme(_isDarkTheme);
+            if (_isDarkTheme) {
+                _ = new DarkModeCS(this, false);
+            }
+            menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {

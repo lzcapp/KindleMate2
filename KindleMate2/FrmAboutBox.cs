@@ -88,7 +88,9 @@ namespace KindleMate2 {
                 toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
                 pictureBox1.Visible = StaticData.IsUpdate(assemblyVersion, tagName);
             };
-            bw.RunWorkerAsync();
+            if (StaticData.IsInternetAvailable()) {
+                bw.RunWorkerAsync();
+            }
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {

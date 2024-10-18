@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.SQLite;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using DarkModeForms;
 using KindleMate2.Entities;
@@ -1059,6 +1060,7 @@ namespace KindleMate2 {
             try {
                 const string url = "https://api.github.com/repos/lzcapp/KindleMate2/releases";
                 var httpClient = new HttpClient();
+                httpClient.Timeout = TimeSpan.FromMinutes(1);
                 httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("request");
                 var response = httpClient.GetStringAsync(url).Result;
                 return JsonConvert.DeserializeObject<GitHubRelease[]>(response)?[0] ?? new GitHubRelease();
@@ -1085,6 +1087,19 @@ namespace KindleMate2 {
                 name += "_runtime";
             }
             return name;
+        }
+
+        internal static bool IsInternetAvailable() {
+            try {
+                if (NetworkInterface.GetIsNetworkAvailable()) {
+                    if (NetworkInterface.GetAllNetworkInterfaces().Any(ni => ni.OperationalStatus == OperationalStatus.Up)) {
+                        return true;
+                    }
+                }
+            } catch (Exception ex) {
+                Console.WriteLine("Error checking internet connection: " + ex.Message);
+            }
+            return false;
         }
     }
 }
