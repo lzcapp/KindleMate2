@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using DarkModeForms;
 using KindleMate2.Entities;
 using KindleMate2.Properties;
