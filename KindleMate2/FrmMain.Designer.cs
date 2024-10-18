@@ -417,9 +417,9 @@ namespace KindleMate2 {
             // 
             // treeViewBooks
             // 
+            treeViewBooks.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             treeViewBooks.BorderStyle = BorderStyle.None;
             treeViewBooks.ContextMenuStrip = menuBooks;
-            treeViewBooks.Dock = DockStyle.Fill;
             treeViewBooks.FullRowSelect = true;
             treeViewBooks.HideSelection = false;
             treeViewBooks.HotTracking = true;
@@ -436,7 +436,7 @@ namespace KindleMate2 {
             treeViewBooks.Size = new Size(278, 540);
             treeViewBooks.StateImageList = imageListBooks;
             treeViewBooks.TabIndex = 0;
-            treeViewBooks.NodeMouseClick += TreeViewBooks_NodeMouseClick;
+            treeViewBooks.AfterSelect += TreeViewBooks_AfterSelect;
             treeViewBooks.NodeMouseDoubleClick += TreeViewBooks_NodeMouseDoubleClick;
             treeViewBooks.KeyDown += TreeViewBooks_KeyDown;
             treeViewBooks.MouseDown += TreeViewBooks_MouseDown;
@@ -464,7 +464,7 @@ namespace KindleMate2 {
             menuBooksExport.Name = "menuBooksExport";
             menuBooksExport.Size = new Size(147, 34);
             menuBooksExport.Text = "导出";
-            menuBooksExport.Click += menuBooksExport_Click;
+            menuBooksExport.Click += MenuBooksExport_Click;
             // 
             // menuBooksDelete
             // 
@@ -505,9 +505,9 @@ namespace KindleMate2 {
             // 
             // treeViewWords
             // 
+            treeViewWords.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             treeViewWords.BorderStyle = BorderStyle.None;
             treeViewWords.ContextMenuStrip = menuBooks;
-            treeViewWords.Dock = DockStyle.Fill;
             treeViewWords.FullRowSelect = true;
             treeViewWords.HideSelection = false;
             treeViewWords.HotTracking = true;
@@ -521,7 +521,8 @@ namespace KindleMate2 {
             treeViewWords.ShowRootLines = false;
             treeViewWords.Size = new Size(278, 540);
             treeViewWords.TabIndex = 0;
-            treeViewWords.NodeMouseClick += TreeViewWords_NodeMouseClick;
+            treeViewWords.AfterSelect += TreeViewWords_AfterSelect;
+            treeViewWords.KeyDown += TreeViewWords_KeyDown;
             treeViewWords.MouseDown += TreeViewWords_MouseDown;
             // 
             // imageListWords
@@ -559,8 +560,8 @@ namespace KindleMate2 {
             txtSearch.Name = "txtSearch";
             txtSearch.Size = new Size(186, 25);
             txtSearch.TabIndex = 2;
-            txtSearch.KeyPress += txtSearch_KeyPress;
-            txtSearch.Leave += txtSearch_Leave;
+            txtSearch.KeyPress += TxtSearch_KeyPress;
+            txtSearch.Leave += TxtSearch_Leave;
             // 
             // cmbSearch
             // 
@@ -573,7 +574,7 @@ namespace KindleMate2 {
             cmbSearch.Name = "cmbSearch";
             cmbSearch.Size = new Size(60, 36);
             cmbSearch.TabIndex = 1;
-            cmbSearch.SelectedIndexChanged += cmbSearch_SelectedIndexChanged;
+            cmbSearch.SelectedIndexChanged += CmbSearch_SelectedIndexChanged;
             // 
             // picSearch
             // 
@@ -588,7 +589,7 @@ namespace KindleMate2 {
             picSearch.SizeMode = PictureBoxSizeMode.Zoom;
             picSearch.TabIndex = 0;
             picSearch.TabStop = false;
-            picSearch.Click += picSearch_Click;
+            picSearch.Click += PicSearch_Click;
             // 
             // splitContainerDetail
             // 
@@ -796,7 +797,7 @@ namespace KindleMate2 {
             menuContentCopy.ShortcutKeyDisplayString = "";
             menuContentCopy.Size = new Size(126, 34);
             menuContentCopy.Text = Strings.Copy;
-            menuContentCopy.Click += menuContentCopy_Click;
+            menuContentCopy.Click += MenuContentCopy_Click;
             // 
             // menuClippings
             // 

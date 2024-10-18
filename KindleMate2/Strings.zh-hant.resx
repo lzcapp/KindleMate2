@@ -516,4 +516,13 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>建立資料庫失敗</value>
   </data>
+  <data name="English" xml:space="preserve">
+    <value>英文</value>
+  </data>
+  <data name="Totally_Other_Books" xml:space="preserve">
+    <value>在標註中共出現</value>
+  </data>
+  <data name="X_Other_Books" xml:space="preserve">
+    <value>次</value>
+  </data>
 </root>

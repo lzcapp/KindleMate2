@@ -513,4 +513,10 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>Failed to create database</value>
   </data>
+  <data name="Totally_Other_Books" xml:space="preserve">
+    <value>Totally</value>
+  </data>
+  <data name="X_Other_Books" xml:space="preserve">
+    <value>lookup(s) in clippings</value>
+  </data>
 </root>

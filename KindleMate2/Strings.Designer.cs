@@ -1132,6 +1132,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 在标注中共出现.
+        /// </summary>
+        internal static string Totally_Other_Books {
+            get {
+                return ResourceManager.GetString("Totally_Other_Books", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 本词共有.
         /// </summary>
         internal static string Totally_Vocabs {
@@ -1218,6 +1227,15 @@ namespace KindleMate2 {
         internal static string X_Lookups {
             get {
                 return ResourceManager.GetString("X_Lookups", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 次.
+        /// </summary>
+        internal static string X_Other_Books {
+            get {
+                return ResourceManager.GetString("X_Other_Books", resourceCulture);
             }
         }
         

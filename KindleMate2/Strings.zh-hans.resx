@@ -519,4 +519,10 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>创建数据库失败</value>
   </data>
+  <data name="Totally_Other_Books" xml:space="preserve">
+    <value>在标注中共出现</value>
+  </data>
+  <data name="X_Other_Books" xml:space="preserve">
+    <value>次</value>
+  </data>
 </root>
