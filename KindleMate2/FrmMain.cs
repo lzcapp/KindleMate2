@@ -1036,14 +1036,20 @@ namespace KindleMate2 {
                             break;
                         }
 
-                        var usage_list = (from DataRow row in _lookupsDataTable.Rows
-                                          where string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase)
-                                          let str = row["word_key"].ToString() ?? string.Empty
-                                          let strContent = row["usage"].ToString() ?? string.Empty
-                                          where !string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)
-                                          select strContent).ToList();
-
                         var listUsage = new HashSet<string>();
+
+                        var usage_list = new List<string>();
+                        foreach (DataRow row in _lookupsDataTable.Rows) {
+                            if (string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase)) {
+                                var str = row["word_key"].ToString() ?? string.Empty;
+                                var strContent = row["usage"].ToString() ?? string.Empty;
+                                if (!string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)) {
+                                    var title = " ——《" + row["title"] + "》";
+                                    listUsage.Add(title);
+                                    usage_list.Add(strContent + title);
+                                }
+                            }
+                        }
 
                         var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
                         var usage_clippings_list = new List<DataRow>();
@@ -1138,6 +1144,10 @@ namespace KindleMate2 {
                         }
                         lblBookCount.Image = Resources.input_latin_uppercase;
                         lblBookCount.Visible = true;
+
+                        label1.Visible = false;
+                        label2.Visible = false;
+                        label3.Visible = false;
 
                         break;
                 }
