@@ -473,7 +473,7 @@ namespace KindleMate2 {
             menuBooksDelete.ShortcutKeyDisplayString = "";
             menuBooksDelete.Size = new Size(147, 34);
             menuBooksDelete.Text = Strings.Delete;
-            menuBooksDelete.Click += BooksMenuDelete_Click;
+            menuBooksDelete.Click += MenuBooksDelete_Click;
             // 
             // menuRename
             // 
@@ -654,6 +654,7 @@ namespace KindleMate2 {
             dataGridView.CellMouseDown += DataGridView_CellMouseDown;
             dataGridView.SelectionChanged += DataGridView_SelectionChanged;
             dataGridView.KeyDown += DataGridView_KeyDown;
+            dataGridView.MouseDown += DataGridView_MouseDown;
             // 
             // tableContent
             // 
@@ -822,7 +823,7 @@ namespace KindleMate2 {
             menuClippingsCopy.ShortcutKeyDisplayString = "";
             menuClippingsCopy.Size = new Size(126, 34);
             menuClippingsCopy.Text = Strings.Copy;
-            menuClippingsCopy.Click += ClippingMenuCopy_Click;
+            menuClippingsCopy.Click += MenuClippingCopy_Click;
             // 
             // menuClippingsDelete
             // 
@@ -830,7 +831,7 @@ namespace KindleMate2 {
             menuClippingsDelete.ShortcutKeyDisplayString = "";
             menuClippingsDelete.Size = new Size(126, 34);
             menuClippingsDelete.Text = Strings.Delete;
-            menuClippingsDelete.Click += ClippingMenuDelete_Click;
+            menuClippingsDelete.Click += MenuClippingDelete_Click;
             // 
             // openFileDialog
             // 

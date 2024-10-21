@@ -4,6 +4,7 @@ using System.Data.SQLite;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using DarkModeForms;
@@ -13,6 +14,17 @@ using Markdig;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
+        [DllImport("user32.dll")]
+        static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
+        [DllImport("user32.dll")]
+        static extern bool ShowCaret(IntPtr hWnd);
+        [DllImport("User32.dll")]
+        static extern bool HideCaret(IntPtr hWnd);
+        [DllImport("User32.dll")]
+        static extern bool SetCaretPos(int x, int y);
+        [DllImport("user32.dll")]
+        static extern bool DestroyCaret();
+
         private DataTable _clippingsDataTable = new();
 
         private DataTable _originClippingsDataTable = new();
@@ -134,6 +146,9 @@ namespace KindleMate2 {
             cmbSearch.SelectedIndex = 0;
 
             dataGridView.ColumnHeadersHeight = 23;
+
+            lblContent.GotFocus += LblContent_GotFocus;
+            lblContent.LostFocus += LblContent_LostFocus;
         }
 
         private static void CheckUpdate() {
@@ -1207,6 +1222,16 @@ namespace KindleMate2 {
             ShowContentEditDialog();
         }
 
+        private void LblContent_LostFocus(object? sender, EventArgs e) {
+            HideCaret(lblContent.Handle);
+            DestroyCaret();
+        }
+
+        private void LblContent_GotFocus(object? sender, EventArgs e) {
+            HideCaret(lblContent.Handle);
+            DestroyCaret();
+        }
+
         private void ShowContentEditDialog() {
             if (tabControl.SelectedIndex == 0) {
                 var bookName = lblBook.Text;
@@ -1313,7 +1338,7 @@ namespace KindleMate2 {
             menuClippings.Show(dataGridView, location);
         }
 
-        private void ClippingMenuDelete_Click(object sender, EventArgs e) {
+        private void MenuClippingDelete_Click(object sender, EventArgs e) {
             if (dataGridView.SelectedRows.Count <= 0) {
                 return;
             }
@@ -1368,10 +1393,14 @@ namespace KindleMate2 {
                     break;
             }
 
+            if (_selectedDataGridIndex >= 1) {
+                _selectedDataGridIndex -= 1;
+            }
+
             RefreshData();
         }
 
-        private void ClippingMenuCopy_Click(object sender, EventArgs e) {
+        private void MenuClippingCopy_Click(object sender, EventArgs e) {
             if (dataGridView.SelectedRows.Count <= 0) {
                 return;
             }
@@ -1395,11 +1424,20 @@ namespace KindleMate2 {
                 ShowContentEditDialog();
                 e.Handled = true;
             } else if (e.KeyCode == Keys.Delete) {
-                ClippingMenuDelete_Click(sender, e);
+                MenuClippingDelete_Click(sender, e);
             }
         }
 
-        private void BooksMenuDelete_Click(object sender, EventArgs e) {
+        private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
+            DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
+            if (hitTestInfo.RowIndex >= 0) {
+                dataGridView.ClearSelection();
+                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+                _selectedDataGridIndex = hitTestInfo.RowIndex;
+            }
+        }
+
+        private void MenuBooksDelete_Click(object sender, EventArgs e) {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
@@ -1431,7 +1469,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    var word = treeViewBooks.SelectedNode.Text;
+                    var word = treeViewWords.SelectedNode.Text;
                     var word_key = string.Empty;
                     foreach (DataRow row in _vocabDataTable.Rows) {
                         if (row["word"].ToString() != word) {
@@ -1442,7 +1480,7 @@ namespace KindleMate2 {
                         break;
                     }
 
-                    if (!_staticData.DeleteVocab(word) && !_staticData.DeleteLookupsByWordKey(word_key)) {
+                    if (!_staticData.DeleteVocab(word_key) && !_staticData.DeleteLookupsByWordKey(word_key)) {
                         MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
@@ -1733,8 +1771,6 @@ namespace KindleMate2 {
                 return;
             }
 
-            dataGridView.ClearSelection();
-
             var index = tabControl.SelectedIndex;
 
             if (_selectedDataGridIndex < 0 || _selectedDataGridIndex >= dataGridView.Rows.Count) {
@@ -1746,6 +1782,7 @@ namespace KindleMate2 {
                     if (_selectedTreeIndex < 0 || _selectedTreeIndex >= treeViewBooks.Nodes.Count) {
                         _selectedTreeIndex = 0;
                     }
+
                     treeViewBooks.SelectedNode = treeViewBooks.Nodes[_selectedTreeIndex];
 
                     dataGridView.FirstDisplayedScrollingRowIndex = _selectedDataGridIndex;
@@ -1929,7 +1966,7 @@ namespace KindleMate2 {
         private void TreeViewWords_Select() {
             if (string.IsNullOrWhiteSpace(_selectedWord) || _selectedWord.Equals(Strings.Select_All)) {
                 _selectedWord = Strings.Select_All;
-                
+
                 splitContainerDetail.Panel1Collapsed = false;
 
                 lblBookCount.Text = string.Empty;
@@ -1976,7 +2013,7 @@ namespace KindleMate2 {
             if (currentNode == null) {
                 return;
             }
-            
+
             treeViewWords.SelectedNode = currentNode;
 
             if (currentNode.Text.Equals(Strings.Select_All)) {
@@ -1984,7 +2021,7 @@ namespace KindleMate2 {
             }
 
             currentNode.ContextMenuStrip = menuBooks;
-            treeViewBooks.SelectedNode = currentNode;
+            treeViewWords.SelectedNode = currentNode;
         }
 
         private void TreeViewBooks_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -2021,7 +2058,7 @@ namespace KindleMate2 {
         private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (e.KeyCode == Keys.Delete) {
-                BooksMenuDelete_Click(sender, e);
+                MenuBooksDelete_Click(sender, e);
             } else if (e.KeyCode == Keys.Enter) {
                 MenuRename_Click(sender, e);
             }
@@ -2676,7 +2713,7 @@ namespace KindleMate2 {
 
         private void TreeViewWords_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode == Keys.Delete) {
-                BooksMenuDelete_Click(sender, e);
+                MenuBooksDelete_Click(sender, e);
             }
         }
     }

@@ -742,14 +742,14 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        internal bool DeleteVocab(string word) {
-            if (word == string.Empty) {
+        internal bool DeleteVocab(string word_key) {
+            if (word_key == string.Empty) {
                 return false;
             }
 
-            const string queryDelete = "DELETE FROM vocab WHERE word = @word";
+            const string queryDelete = "DELETE FROM vocab WHERE word_key = @word_key";
             using var command = new SQLiteCommand(queryDelete, _connection);
-            command.Parameters.AddWithValue("@word", word);
+            command.Parameters.AddWithValue("@word_key", word_key);
 
             var result = command.ExecuteNonQuery();
 
