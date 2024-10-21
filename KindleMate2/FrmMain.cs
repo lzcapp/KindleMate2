@@ -1111,7 +1111,7 @@ namespace KindleMate2 {
                             }
 
                             lblContent.Select(wordStartIndex, word.Length);
-                            lblContent.SelectionFont = new Font(lblContent.Font, FontStyle.Bold);
+                            lblContent.SelectionFont = new Font(lblContent.Font, FontStyle.Bold | FontStyle.Underline);
 
                             index = wordStartIndex + word.Length;
                         }
