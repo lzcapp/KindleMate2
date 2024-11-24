@@ -11,6 +11,7 @@ using DarkModeForms;
 using KindleMate2.Entities;
 using KindleMate2.Properties;
 using Markdig;
+using Markdig.Helpers;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -840,6 +841,7 @@ namespace KindleMate2 {
             var delimiterIndex = new List<int>();
 
             for (var i = 0; i < lines.Count; i++) {
+                lines[i] = RemoveControlChar(lines[i]);
                 if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
                     delimiterIndex.Add(i);
                 }
@@ -897,7 +899,7 @@ namespace KindleMate2 {
                         clippingtypelocation = split_b[0][1..].Trim();
                     }
                     var pagenumber = -1;
-                    var pagenPattern = @"#\d+(-\d+)?";
+                    var pagenPattern = @"\d+(-\d+)?";
                     var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
                     var isRomanMatched = Regex.IsMatch(clippingtypelocation, romanPattern);
@@ -1535,7 +1537,6 @@ namespace KindleMate2 {
         private void SetProgressBar(bool isShow) {
             progressBar.Enabled = isShow;
             progressBar.Visible = isShow;
-            Enabled = !isShow;
         }
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
@@ -2715,6 +2716,14 @@ namespace KindleMate2 {
             if (e.KeyCode == Keys.Delete) {
                 MenuBooksDelete_Click(sender, e);
             }
+        }
+
+        private static string RemoveControlChar(string input) {
+            var output = new StringBuilder();
+            foreach (var c in input.Where(c => !c.IsControl() && !c.IsNewLineOrLineFeed() && c != 65279)) {
+                output.Append(c);
+            }
+            return output.ToString();
         }
     }
 }
