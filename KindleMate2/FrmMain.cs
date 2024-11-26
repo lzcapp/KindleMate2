@@ -15,14 +15,9 @@ using Markdig.Helpers;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        [DllImport("user32.dll")]
-        static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
-        [DllImport("user32.dll")]
-        static extern bool ShowCaret(IntPtr hWnd);
         [DllImport("User32.dll")]
         static extern bool HideCaret(IntPtr hWnd);
-        [DllImport("User32.dll")]
-        static extern bool SetCaretPos(int x, int y);
+
         [DllImport("user32.dll")]
         static extern bool DestroyCaret();
 
@@ -400,6 +395,10 @@ namespace KindleMate2 {
 
         private void RefreshData(bool isReQuery = true) {
             try {
+                lblBook.Text = string.Empty;
+                lblAuthor.Text = string.Empty;
+                lblLocation.Text = string.Empty;
+                lblContent.Text = string.Empty;
                 if (isReQuery) {
                     DisplayData();
                 }
@@ -412,11 +411,6 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
-            lblBook.Text = string.Empty;
-            lblAuthor.Text = string.Empty;
-            lblLocation.Text = string.Empty;
-            lblContent.Text = string.Empty;
-
             if (string.IsNullOrWhiteSpace(_searchText)) {
                 _clippingsDataTable = _staticData.GetClipingsDataTable();
                 _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
