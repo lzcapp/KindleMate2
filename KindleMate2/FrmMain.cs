@@ -141,7 +141,7 @@ namespace KindleMate2 {
             cmbSearch.Items.Add(Strings.Content);
             cmbSearch.SelectedIndex = 0;
 
-            dataGridView.ColumnHeadersHeight = 23;
+            dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
 
             lblContent.GotFocus += LblContent_GotFocus;
             lblContent.LostFocus += LblContent_LostFocus;
