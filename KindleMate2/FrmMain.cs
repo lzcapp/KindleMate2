@@ -2092,7 +2092,7 @@ namespace KindleMate2 {
                 return Strings.No_Data_To_Clear;
             }
 
-            _staticData.EmptyTables("clippings");
+            _ = _staticData.EmptyTable("clippings");
             var insertedCount = 0;
             foreach (DataRow row in origin.Rows) {
                 var entityClipping = new Clipping();

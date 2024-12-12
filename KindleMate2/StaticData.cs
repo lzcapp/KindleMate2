@@ -904,7 +904,7 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        internal bool EmptyTables(string tableName) {
+        internal bool EmptyTable(string tableName) {
             using var command = new SQLiteCommand("DELETE FROM " + tableName, _connection);
             var result = command.ExecuteNonQuery();
 
