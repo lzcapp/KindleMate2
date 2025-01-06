@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2_WPF", "KindleMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2_FW", "KindleMate2_FW\KindleMate2_FW.csproj", "{C8AB4849-8966-471C-AB30-C78A02BE0CAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{B196081E-96D2-4958-B2B1-0385963BDC69}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B196081E-96D2-4958-B2B1-0385963BDC69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B196081E-96D2-4958-B2B1-0385963BDC69}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B196081E-96D2-4958-B2B1-0385963BDC69}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B196081E-96D2-4958-B2B1-0385963BDC69}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

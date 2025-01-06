@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using AutoUpdaterDotNET;
 using DarkModeForms;
 using KindleMate2.Entities;
 using KindleMate2.Properties;
@@ -84,7 +85,11 @@ namespace KindleMate2 {
                 _staticData.DisposeConnection();
             };
 
-            //CheckUpdate();
+            if (Environment.Is64BitProcess) {
+                AutoUpdater.Start("https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml");
+            } else {
+                AutoUpdater.Start("https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
+            }
 
             _programsDirectory = Environment.CurrentDirectory;
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
@@ -145,29 +150,6 @@ namespace KindleMate2 {
 
             lblContent.GotFocus += LblContent_GotFocus;
             lblContent.LostFocus += LblContent_LostFocus;
-        }
-
-        private static void CheckUpdate() {
-            try {
-                var bw = new BackgroundWorker();
-                bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
-                bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
-                    if (workerCompletedEventArgs.Result == null) {
-                        return;
-                    }
-                    var release = (GitHubRelease)workerCompletedEventArgs.Result;
-                    var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
-                    var isUpdate = StaticData.IsUpdate(tagName);
-                    if (isUpdate) {
-                        var updater = Path.Combine(Environment.CurrentDirectory, "Updater.exe");
-                        Process.Start(updater);
-                        Environment.Exit(0);
-                    }
-                };
-                bw.RunWorkerAsync();
-            } catch (Exception e) {
-                Console.WriteLine(e);
-            }
         }
 
         private void SetLang() {
