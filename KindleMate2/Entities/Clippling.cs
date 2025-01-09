@@ -25,7 +25,6 @@ namespace KindleMate2.Entities {
         Hide = -1,
         Highlight = 0,
         Note = 1,
-        [Obsolete]
         Bookmark = 2,
         Cut = 3
     }

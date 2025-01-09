@@ -85,11 +85,7 @@ namespace KindleMate2 {
                 _staticData.DisposeConnection();
             };
 
-            if (Environment.Is64BitProcess) {
-                AutoUpdater.Start("https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml");
-            } else {
-                AutoUpdater.Start("https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
-            }
+            AutoUpdater.Start(Environment.Is64BitProcess ? "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml" : "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
 
             _programsDirectory = Environment.CurrentDirectory;
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
@@ -829,8 +825,6 @@ namespace KindleMate2 {
 
             try {
                 for (var i = 0; i < delimiterIndex.Count; i++) {
-                    var entityClipping = new Clipping();
-
                     var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
                     var florDelimiter = delimiterIndex[i];
 
@@ -847,124 +841,11 @@ namespace KindleMate2 {
                             }
                         }
                     }
-
-                    var content = line4;
-                    entityClipping.content = content;
-
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
-                    var brieftype = BriefType.Highlight;
-                    if (line2.Contains("笔记") || line2.Contains("Note")) {
-                        brieftype = BriefType.Note;
-                    } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
-                        brieftype = BriefType.Bookmark;
-                        continue;
-                    } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
-                        brieftype = BriefType.Cut;
-                    }
-                    entityClipping.briefType = brieftype;
-
-                    if (line4.Contains("您已达到本内容的剪贴上限")) {
-                        continue;
-                    }
-
-                    var split_b = line2.Split('|');
-
-                    var clippingtypelocation = string.Empty;
-                    line2 = line2[2..];
-                    var indexOf = line2.LastIndexOf('|');
-                    if (indexOf >= 0) {
-                        clippingtypelocation = line2[..(indexOf - 1)];
-                    }
-                    var pageStr = string.Empty;
-                    indexOf = clippingtypelocation.LastIndexOf('|');
-                    if (indexOf >= 0) {
-                        pageStr = clippingtypelocation[(indexOf)..];
-                    } else {
-                        pageStr = clippingtypelocation;
-                    }
-                    var pagenumber = -1;
-                    var pagenPattern = @"\d+(-\d+)?";
-                    var isPagenIsMatch = Regex.IsMatch(pageStr, pagenPattern);
-                    var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                    var isRomanMatched = Regex.IsMatch(pageStr, romanPattern);
-                    var isPageParsed = false;
-                    if (isPagenIsMatch) {
-                        var regex = new Regex(pagenPattern);
-                        var strMatched = regex.Matches(pageStr)[0].Value;
-                        var split = strMatched.Split("-");
-                        if (split.Length > 1) {
-                            strMatched = strMatched.Split("-")[1];
-                        }
-                        strMatched = strMatched.Replace("#", "");
-                        strMatched = strMatched.Split("）")[0];
-                        isPageParsed = int.TryParse(strMatched, out pagenumber);
-                    } else if (isRomanMatched) {
-                        var strMatched = StaticData.RomanToInteger(pageStr).ToString();
-                        isPageParsed = int.TryParse(strMatched, out pagenumber);
-                    }
-                    if (isPageParsed == false || pagenumber == -1 || pagenumber == 0) {
-                        continue;
-                    }
-                    entityClipping.clippingtypelocation = clippingtypelocation;
-                    entityClipping.pagenumber = pagenumber;
-
-                    string clippingdate;
-                    var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
-                    datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                    var parsedDate = DateTime.MinValue;
-                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
-                    if (!isDateParsed) {
-                        var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                        if (dayOfWeekIndex != -1) {
-                            datetime = datetime.Remove(dayOfWeekIndex, 3);
-                        }
-                        isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
-                    }
-                    if (isDateParsed && parsedDate != DateTime.MinValue) {
-                        clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                    } else {
-                        continue;
-                    }
-                    entityClipping.clippingdate = clippingdate;
-
-                    var key = clippingdate + "|" + clippingtypelocation;
-                    if (_staticData.IsExistOriginalClippings(key)) {
-                        continue;
-                    }
-                    var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
-                    if (!isOriginClippingsInserted) {
-                        continue;
-                    }
-
-                    entityClipping.key = key;
-
-                    string bookname;
-                    string authorname;
-                    var pattern = @"\(([^()]+)\)[^(]*$";
-                    Match match = Regex.Match(line1, pattern);
-                    if (match.Success) {
-                        authorname = match.Groups[1].Value.Trim();
-                        bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
-                    } else {
-                        authorname = string.Empty;
-                        bookname = line1;
-                    }
-                    bookname = bookname.Trim();
-                    entityClipping.bookname = bookname;
-                    entityClipping.authorname = authorname;
-
-                    if (brieftype == BriefType.Note) {
-                        _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
-                    }
-
-                    if (_staticData.IsExistClippings(key) && _staticData.IsExistClippingsOfContent(line4)) {
-                        continue;
-                    }
-
-                    var insertResult = _staticData.InsertClippings(entityClipping);
-                    if (insertResult) {
-                        insertedCount += 1;
+                    var result = HandleClipplings(line1, line2, line3, line4, line5);
+                    if (result) {
+                        insertedCount++;
                     }
                 }
 
@@ -975,6 +856,121 @@ namespace KindleMate2 {
             }
 
             return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+        }
+
+        private bool HandleClipplings(string line1, string line2, string line3, string line4, string line5) {
+            var entityClipping = new Clipping();
+
+            var content = line4;
+            entityClipping.content = content;
+
+            var brieftype = BriefType.Highlight;
+            if (line2.Contains("笔记") || line2.Contains("Note")) {
+                brieftype = BriefType.Note;
+            } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
+                brieftype = BriefType.Bookmark;
+                return false;
+            } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
+                brieftype = BriefType.Cut;
+            }
+            entityClipping.briefType = brieftype;
+
+            if (line4.Contains("您已达到本内容的剪贴上限")) {
+                return false;
+            }
+
+            var split_b = line2.Split('|');
+
+            var clippingtypelocation = string.Empty;
+            line2 = line2[2..];
+            var indexOf = line2.LastIndexOf('|');
+            if (indexOf >= 0) {
+                clippingtypelocation = line2[..(indexOf - 1)];
+            }
+            indexOf = clippingtypelocation.LastIndexOf('|');
+            var pageStr = indexOf >= 0 ? clippingtypelocation[(indexOf)..] : clippingtypelocation;
+            var pagenumber = -1;
+            var pagenPattern = @"\d+(-\d+)?";
+            var isPagenIsMatch = Regex.IsMatch(pageStr, pagenPattern);
+            var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+            var isRomanMatched = Regex.IsMatch(pageStr, romanPattern);
+            var isPageParsed = false;
+            if (isPagenIsMatch) {
+                var regex = new Regex(pagenPattern);
+                var strMatched = regex.Matches(pageStr)[0].Value;
+                var split = strMatched.Split("-");
+                if (split.Length > 1) {
+                    strMatched = strMatched.Split("-")[1];
+                }
+                strMatched = strMatched.Replace("#", "");
+                strMatched = strMatched.Split("）")[0];
+                isPageParsed = int.TryParse(strMatched, out pagenumber);
+            } else if (isRomanMatched) {
+                var strMatched = StaticData.RomanToInteger(pageStr).ToString();
+                isPageParsed = int.TryParse(strMatched, out pagenumber);
+            }
+            if (isPageParsed == false || pagenumber == -1 || pagenumber == 0) {
+                return false;
+            }
+            entityClipping.clippingtypelocation = clippingtypelocation;
+            entityClipping.pagenumber = pagenumber;
+
+            string clippingdate;
+            var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
+            datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
+            // ReSharper disable once InlineOutVariableDeclaration
+            DateTime parsedDate;
+            var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
+            if (!isDateParsed) {
+                var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
+                if (dayOfWeekIndex != -1) {
+                    datetime = datetime.Remove(dayOfWeekIndex, 3);
+                }
+                isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
+            }
+            if (isDateParsed && parsedDate != DateTime.MinValue) {
+                clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+            } else {
+                return false;
+            }
+            entityClipping.clippingdate = clippingdate;
+
+            var key = clippingdate + "|" + clippingtypelocation;
+            if (_staticData.IsExistOriginalClippings(key)) {
+                return false;
+            }
+            var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
+            if (!isOriginClippingsInserted) {
+                return false;
+            }
+
+            entityClipping.key = key;
+
+            string bookname;
+            string authorname;
+            var pattern = @"\(([^()]+)\)[^(]*$";
+            Match match = Regex.Match(line1, pattern);
+            if (match.Success) {
+                authorname = match.Groups[1].Value.Trim();
+                bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
+            } else {
+                authorname = string.Empty;
+                bookname = line1;
+            }
+            bookname = bookname.Trim();
+            entityClipping.bookname = bookname;
+            entityClipping.authorname = authorname;
+
+            if (brieftype == BriefType.Note) {
+                _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
+            }
+
+            if (_staticData.IsExistClippings(key, line4)) {
+                return false;
+            }
+
+            var insertResult = _staticData.InsertClippings(entityClipping);
+            return insertResult;
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
@@ -2083,116 +2079,8 @@ namespace KindleMate2 {
             if (origin.Rows.Count <= 0) {
                 return Strings.No_Data_To_Clear;
             }
-
             _ = _staticData.EmptyTable("clippings");
-            var insertedCount = 0;
-            foreach (DataRow row in origin.Rows) {
-                var entityClipping = new Clipping();
-
-                var line1 = row["line1"].ToString() ?? string.Empty;
-                var line2 = row["line2"].ToString() ?? string.Empty;
-                //var line3 = row["line3"].ToString() ?? string.Empty;
-                var line4 = row["line4"].ToString() ?? string.Empty;
-                //var line5 = row["line5"].ToString() ?? string.Empty;
-
-                entityClipping.content = line4;
-
-                var brieftype = BriefType.Highlight;
-                if (line2.Contains("笔记") || line2.Contains("Note")) {
-                    brieftype = BriefType.Note;
-                } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
-                    //brieftype = BriefType.Bookmark;
-                    continue;
-                } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
-                    brieftype = BriefType.Cut;
-                }
-                entityClipping.briefType = brieftype;
-
-                if (line4.Contains("您已达到本内容的剪贴上限")) {
-                    continue;
-                }
-
-                var split_b = line2.Split('|');
-
-                var clippingtypelocation = string.Empty;
-                if (split_b.Length > 1) {
-                    clippingtypelocation = split_b[0][1..].Trim();
-                }
-                var pagenumber = -1;
-                var pagenPattern = @"#\d+(-\d+)?";
-                var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
-                var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                var isRomanMatched = Regex.IsMatch(clippingtypelocation, romanPattern);
-                var isPageParsed = false;
-                if (isPagenIsMatch) {
-                    var regex = new Regex(pagenPattern);
-                    var strMatched = regex.Matches(clippingtypelocation)[0].Value;
-                    var split = strMatched.Split("-");
-                    if (split.Length > 1) {
-                        strMatched = strMatched.Split("-")[1];
-                    }
-                    strMatched = strMatched.Replace("#", "");
-                    strMatched = strMatched.Split("）")[0];
-                    isPageParsed = int.TryParse(strMatched, out pagenumber);
-                } else if (isRomanMatched) {
-                    var strMatched = StaticData.RomanToInteger(clippingtypelocation).ToString();
-                    isPageParsed = int.TryParse(strMatched, out pagenumber);
-                }
-                if (isPageParsed == false || pagenumber == 0) {
-                    continue;
-                }
-                entityClipping.clippingtypelocation = clippingtypelocation;
-                entityClipping.pagenumber = pagenumber;
-
-                string clippingdate;
-                var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
-                datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
-                if (!isDateParsed) {
-                    var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                    if (dayOfWeekIndex != -1) {
-                        datetime = datetime.Remove(dayOfWeekIndex, 3);
-                    }
-                    isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
-                }
-                if (isDateParsed && parsedDate != DateTime.MinValue) {
-                    clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                } else {
-                    continue;
-                }
-                entityClipping.clippingdate = clippingdate;
-
-                var key = clippingdate + "|" + clippingtypelocation;
-
-                entityClipping.key = key;
-                string bookname;
-                string authorname;
-                var pattern = @"\(([^()]+)\)[^(]*$";
-                Match match = Regex.Match(line1, pattern);
-                if (match.Success) {
-                    authorname = match.Groups[1].Value.Trim();
-                    bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
-                } else {
-                    authorname = string.Empty;
-                    bookname = line1;
-                }
-                bookname = bookname.Trim();
-                entityClipping.bookname = bookname;
-                entityClipping.authorname = authorname;
-
-                if (brieftype == BriefType.Note) {
-                    _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
-                }
-
-                if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
-                    continue;
-                }
-
-                var insertResult = _staticData.InsertClippings(entityClipping);
-                if (insertResult) {
-                    insertedCount += 1;
-                }
-            }
+            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClipplings(line1, line2, line3, line4, line5)).Count(result => result);
             _staticData.CommitTransaction();
             var clipping = Strings.Parsed_X + Strings.Space + origin.Rows.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
             return clipping;
@@ -2271,10 +2159,11 @@ namespace KindleMate2 {
                             }
                     }
 
-                    if (_staticData.IsExistClippingsContainingContent(content)) {
-                        if (_staticData.DeleteClippingsByKey(key)) {
-                            countDuplicated++;
-                        }
+                    if (!_staticData.IsExistClippings(key, content)) {
+                        continue;
+                    }
+                    if (_staticData.DeleteClippingsByKey(key)) {
+                        countDuplicated++;
                     }
                 }
 

@@ -240,6 +240,23 @@ namespace KindleMate2 {
             return result > 0;
         }
 
+        internal bool IsExistClippings(string key, string content) {
+            switch (key) {
+                case null:
+                case "":
+                    return true;
+            }
+
+            const string queryCount = "SELECT COUNT(*) FROM clippings WHERE key = @key AND content = @content";
+            using var commandCount = new SQLiteCommand(queryCount, _connection);
+            commandCount.Parameters.AddWithValue("@key", key);
+            commandCount.Parameters.AddWithValue("@content", content);
+
+            var result = Convert.ToInt32(commandCount.ExecuteScalar());
+
+            return result > 0;
+        }
+
         internal bool IsExistClippingsOfContent(string? content) {
             switch (content) {
                 case null:
