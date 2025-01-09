@@ -20,27 +20,27 @@ namespace KindleMate2 {
             using var connection = new SQLiteConnection(ConnectionString);
             connection.Open();
 
-            var createClippings = "CREATE TABLE [clippings] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [content] TEXT DEFAULT(''), [bookname] TEXT DEFAULT(''), [authorname] TEXT, [brieftype] INTEGER, [clippingtypelocation] TEXT, [clippingdate] TEXT, [read] INT DEFAULT(0), [clipping_importdate] TEXT, [tag] TEXT, [sync] INT DEFAULT(0), [newbookname] TEXT, [colorRGB] INTEGER DEFAULT(-1), pagenumber INT DEFAULT(0));";
+            const string createClippings = "CREATE TABLE [clippings] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [content] TEXT DEFAULT(''), [bookname] TEXT DEFAULT(''), [authorname] TEXT, [brieftype] INTEGER, [clippingtypelocation] TEXT, [clippingdate] TEXT, [read] INT DEFAULT(0), [clipping_importdate] TEXT, [tag] TEXT, [sync] INT DEFAULT(0), [newbookname] TEXT, [colorRGB] INTEGER DEFAULT(-1), pagenumber INT DEFAULT(0));";
             using (var command = new SQLiteCommand(createClippings, connection)) {
                 command.ExecuteNonQuery();
             }
 
-            var createLookups = "CREATE TABLE [lookups] ([word_key] TEXT, [usage] TEXT, [title] TEXT, [authors] TEXT, [timestamp] TEXT UNIQUE);";
+            const string createLookups = "CREATE TABLE [lookups] ([word_key] TEXT, [usage] TEXT, [title] TEXT, [authors] TEXT, [timestamp] TEXT UNIQUE);";
             using (var command = new SQLiteCommand(createLookups, connection)) {
                 command.ExecuteNonQuery();
             }
 
-            var createOriginalClippings = "CREATE TABLE [original_clipping_lines] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [line1] TEXT DEFAULT(''), [line2] TEXT DEFAULT(''), [line3] TEXT DEFAULT(''), [line4] TEXT DEFAULT(''), [line5] TEXT DEFAULT(''));";
+            const string createOriginalClippings = "CREATE TABLE [original_clipping_lines] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [line1] TEXT DEFAULT(''), [line2] TEXT DEFAULT(''), [line3] TEXT DEFAULT(''), [line4] TEXT DEFAULT(''), [line5] TEXT DEFAULT(''));";
             using (var command = new SQLiteCommand(createOriginalClippings, connection)) {
                 command.ExecuteNonQuery();
             }
 
-            var createSettings = "CREATE TABLE [settings] ([name] TEXT PRIMARY KEY UNIQUE, [value] TEXT);";
+            const string createSettings = "CREATE TABLE [settings] ([name] TEXT PRIMARY KEY UNIQUE, [value] TEXT);";
             using (var command = new SQLiteCommand(createSettings, connection)) {
                 command.ExecuteNonQuery();
             }
 
-            var createVocab = "CREATE TABLE [vocab] ([id] TEXT PRIMARY KEY NOT NULL UNIQUE, [word_key] TEXT, [word] TEXT NOT NULL, [stem] TEXT, [category] INTEGER DEFAULT '0', [translation] TEXT, [timestamp] TEXT, [frequency] INT DEFAULT(0), [sync] INT DEFAULT(0), [colorRGB] INTEGER DEFAULT(-1));";
+            const string createVocab = "CREATE TABLE [vocab] ([id] TEXT PRIMARY KEY NOT NULL UNIQUE, [word_key] TEXT, [word] TEXT NOT NULL, [stem] TEXT, [category] INTEGER DEFAULT '0', [translation] TEXT, [timestamp] TEXT, [frequency] INT DEFAULT(0), [sync] INT DEFAULT(0), [colorRGB] INTEGER DEFAULT(-1));";
             using (var command = new SQLiteCommand(createVocab, connection)) {
                 command.ExecuteNonQuery();
             }

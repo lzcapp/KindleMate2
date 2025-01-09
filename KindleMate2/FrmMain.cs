@@ -853,11 +853,11 @@ namespace KindleMate2 {
 
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
-                    var brieftype = BriefType.Clipping;
+                    var brieftype = BriefType.Highlight;
                     if (line2.Contains("笔记") || line2.Contains("Note")) {
                         brieftype = BriefType.Note;
                     } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
-                        //brieftype = BriefType.Bookmark;
+                        brieftype = BriefType.Bookmark;
                         continue;
                     } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
                         brieftype = BriefType.Cut;
@@ -871,18 +871,27 @@ namespace KindleMate2 {
                     var split_b = line2.Split('|');
 
                     var clippingtypelocation = string.Empty;
-                    if (split_b.Length > 1) {
-                        clippingtypelocation = split_b[0][1..].Trim();
+                    line2 = line2[2..];
+                    var indexOf = line2.LastIndexOf('|');
+                    if (indexOf >= 0) {
+                        clippingtypelocation = line2[..(indexOf - 1)];
+                    }
+                    var pageStr = string.Empty;
+                    indexOf = clippingtypelocation.LastIndexOf('|');
+                    if (indexOf >= 0) {
+                        pageStr = clippingtypelocation[(indexOf)..];
+                    } else {
+                        pageStr = clippingtypelocation;
                     }
                     var pagenumber = -1;
                     var pagenPattern = @"\d+(-\d+)?";
-                    var isPagenIsMatch = Regex.IsMatch(clippingtypelocation, pagenPattern);
+                    var isPagenIsMatch = Regex.IsMatch(pageStr, pagenPattern);
                     var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                    var isRomanMatched = Regex.IsMatch(clippingtypelocation, romanPattern);
+                    var isRomanMatched = Regex.IsMatch(pageStr, romanPattern);
                     var isPageParsed = false;
                     if (isPagenIsMatch) {
                         var regex = new Regex(pagenPattern);
-                        var strMatched = regex.Matches(clippingtypelocation)[0].Value;
+                        var strMatched = regex.Matches(pageStr)[0].Value;
                         var split = strMatched.Split("-");
                         if (split.Length > 1) {
                             strMatched = strMatched.Split("-")[1];
@@ -891,10 +900,10 @@ namespace KindleMate2 {
                         strMatched = strMatched.Split("）")[0];
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     } else if (isRomanMatched) {
-                        var strMatched = StaticData.RomanToInteger(clippingtypelocation).ToString();
+                        var strMatched = StaticData.RomanToInteger(pageStr).ToString();
                         isPageParsed = int.TryParse(strMatched, out pagenumber);
                     }
-                    if (isPageParsed == false || pagenumber == 0) {
+                    if (isPageParsed == false || pagenumber == -1 || pagenumber == 0) {
                         continue;
                     }
                     entityClipping.clippingtypelocation = clippingtypelocation;
@@ -903,7 +912,8 @@ namespace KindleMate2 {
                     string clippingdate;
                     var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
                     datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
+                    var parsedDate = DateTime.MinValue;
+                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
                     if (!isDateParsed) {
                         var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                         if (dayOfWeekIndex != -1) {
@@ -948,7 +958,7 @@ namespace KindleMate2 {
                         _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
                     }
 
-                    if (_staticData.IsExistClippings(key) || _staticData.IsExistClippingsOfContent(line4)) {
+                    if (_staticData.IsExistClippings(key) && _staticData.IsExistClippingsOfContent(line4)) {
                         continue;
                     }
 
@@ -2087,7 +2097,7 @@ namespace KindleMate2 {
 
                 entityClipping.content = line4;
 
-                var brieftype = BriefType.Clipping;
+                var brieftype = BriefType.Highlight;
                 if (line2.Contains("笔记") || line2.Contains("Note")) {
                     brieftype = BriefType.Note;
                 } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {

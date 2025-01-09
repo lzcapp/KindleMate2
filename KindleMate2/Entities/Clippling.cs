@@ -8,7 +8,7 @@ namespace KindleMate2.Entities {
         public string content { get; set; } = string.Empty;
         public string bookname { get; set; } = string.Empty;
         public string authorname { get; set; } = string.Empty;
-        public BriefType briefType { get; set; } = BriefType.Clipping;
+        public BriefType briefType { get; set; } = BriefType.Highlight;
         public string clippingtypelocation { get; set; } = string.Empty;
         public string clippingdate { get; set; } = string.Empty;
         public int read { get; set; }
@@ -23,7 +23,7 @@ namespace KindleMate2.Entities {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal enum BriefType {
         Hide = -1,
-        Clipping = 0,
+        Highlight = 0,
         Note = 1,
         [Obsolete]
         Bookmark = 2,
