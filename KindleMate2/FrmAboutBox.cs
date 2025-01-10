@@ -94,15 +94,7 @@ namespace KindleMate2 {
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {
-            const string repoUrl = "https://github.com/lzcapp/KindleMate2/releases/latest";
-            try {
-                Process.Start(new ProcessStartInfo {
-                    FileName = repoUrl,
-                    UseShellExecute = true
-                });
-            } catch (Exception) {
-                // ignored
-            }
+            StaticData.CheckUpdate();
         }
     }
 }

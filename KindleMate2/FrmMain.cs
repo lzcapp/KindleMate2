@@ -85,8 +85,6 @@ namespace KindleMate2 {
                 _staticData.DisposeConnection();
             };
 
-            AutoUpdater.Start(Environment.Is64BitProcess ? "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml" : "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
-
             _programsDirectory = Environment.CurrentDirectory;
             _filePath = Path.Combine(_programsDirectory, "KM2.dat");
             _kindleClippingsPath = Path.Combine("documents", "My Clippings.txt");
@@ -220,6 +218,8 @@ namespace KindleMate2 {
             treeViewBooks.Focus();
 
             CmbSearch_SelectedIndexChanged(this, e);
+
+            StaticData.CheckUpdate();
         }
 
         private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
@@ -858,7 +858,7 @@ namespace KindleMate2 {
             return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
         }
 
-        private bool HandleClipplings(string line1, string line2, string line3, string line4, string line5) {
+        private bool HandleClipplings(string line1, string line2, string line3, string line4, string line5, bool isRebuild = false) {
             var entityClipping = new Clipping();
 
             var content = line4;
@@ -936,12 +936,14 @@ namespace KindleMate2 {
             entityClipping.clippingdate = clippingdate;
 
             var key = clippingdate + "|" + clippingtypelocation;
-            if (_staticData.IsExistOriginalClippings(key)) {
-                return false;
-            }
-            var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
-            if (!isOriginClippingsInserted) {
-                return false;
+            if (!isRebuild) {
+                if (_staticData.IsExistOriginalClippings(key)) {
+                    return false;
+                }
+                var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
+                if (!isOriginClippingsInserted) {
+                    return false;
+                }
             }
 
             entityClipping.key = key;
@@ -1856,19 +1858,18 @@ namespace KindleMate2 {
                 return;
             }
 
-            var filePath = Path.Combine(_programsDirectory, "Backups", "KM2.dat");
-
-            if (!Directory.Exists(Path.Combine(_programsDirectory, "Backups"))) {
-                Directory.CreateDirectory(Path.Combine(_programsDirectory, "Backups"));
-            }
+            var filePath = Path.Combine(Environment.CurrentDirectory, "Backups", "KM2.dat");
 
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
 
-            File.Copy(_filePath, filePath);
-        }
+            if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "Backups"))) {
+                Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "Backups"));
+            }
 
+            File.Copy(Path.Combine(Environment.CurrentDirectory, "KM2.dat"), filePath);
+        }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
             RefreshData();
@@ -2080,7 +2081,7 @@ namespace KindleMate2 {
                 return Strings.No_Data_To_Clear;
             }
             _ = _staticData.EmptyTable("clippings");
-            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClipplings(line1, line2, line3, line4, line5)).Count(result => result);
+            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClipplings(line1, line2, line3, line4, line5, true)).Count(result => result);
             _staticData.CommitTransaction();
             var clipping = Strings.Parsed_X + Strings.Space + origin.Rows.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
             return clipping;

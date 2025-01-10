@@ -2,8 +2,10 @@
 using System.Data.SQLite;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using AutoUpdaterDotNET;
 using DarkModeForms;
 using KindleMate2.Entities;
+using KindleMate2.Properties;
 using Newtonsoft.Json;
 
 namespace KindleMate2 {
@@ -1117,6 +1119,17 @@ namespace KindleMate2 {
                 Console.WriteLine("Error checking internet connection: " + ex.Message);
             }
             return false;
+        }
+
+        internal static void CheckUpdate() {
+            AutoUpdater.Icon = Resources.bookmark;
+            AutoUpdater.ShowRemindLaterButton = false;
+            var currentDirectory = new DirectoryInfo(Application.StartupPath);
+            if (currentDirectory.Parent != null) {
+                AutoUpdater.InstallationPath = currentDirectory.Parent.FullName;
+            }
+            //AutoUpdater.ExecutablePath = "./KindleMate2.exe";
+            AutoUpdater.Start(Environment.Is64BitProcess ? "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml" : "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
         }
     }
 }
