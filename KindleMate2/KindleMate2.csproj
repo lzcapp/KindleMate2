@@ -7,7 +7,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationIcon>bookmark.ico</ApplicationIcon>
 		<StartupObject>KindleMate2.Program</StartupObject>
-		<PackageIcon>bookmark.png</PackageIcon>
+		<PackageIcon>bookmark.ico</PackageIcon>
 		<RepositoryUrl>https://github.com/lzcapp/KindleMate2.git</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/lzcapp/KindleMate2</PackageProjectUrl>
@@ -125,7 +125,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="Resources\bookmark.png">
+		<None Include="Resources\bookmark.ico">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

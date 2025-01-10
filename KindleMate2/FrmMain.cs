@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using AutoUpdaterDotNET;
 using DarkModeForms;
 using KindleMate2.Entities;
 using KindleMate2.Properties;
@@ -181,10 +180,16 @@ namespace KindleMate2 {
 
         private void SetTheme() {
             _isDarkTheme = _staticData.IsDarkTheme();
-            if (_isDarkTheme) {
-                _ = new DarkModeCS(this, false);
+            try {
+                if (_isDarkTheme) {
+                    _ = new DarkModeCS(this, false);
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
+            } finally {
+                menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
-            menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {

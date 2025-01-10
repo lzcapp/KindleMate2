@@ -1126,6 +1126,7 @@ namespace KindleMate2 {
             AutoUpdater.ShowRemindLaterButton = false;
             var currentDirectory = new DirectoryInfo(Application.StartupPath);
             if (currentDirectory.Parent != null) {
+                //AutoUpdater.DownloadPath = currentDirectory.Parent.FullName;
                 AutoUpdater.InstallationPath = currentDirectory.Parent.FullName;
             }
             //AutoUpdater.ExecutablePath = "./KindleMate2.exe";
