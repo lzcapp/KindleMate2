@@ -1057,24 +1057,37 @@ namespace KindleMate2 {
                             }
                         }
 
-                        var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
-                        var usage_clippings_list = new List<DataRow>();
-                        if (word.Length > 1) {
-                            usage_clippings_list = _clippingsDataTable.Rows.Cast<DataRow>().Where(row => (row["content"].ToString() ?? string.Empty).Contains(word)).ToList();
+                        var isChinese = false;
+                        var length = System.Text.Encoding.GetEncoding("UTF-8").GetBytes(word).Length;
+                        if (length > word.Length) {
+                            isChinese = true;
                         }
+
+                        var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
                         var usage_clippings = new List<string>();
-                        foreach (DataRow? row in usage_clippings_list) {
-                            var isContain = false;
-                            var strContent = row["content"].ToString() ?? string.Empty;
-                            if (string.IsNullOrWhiteSpace(strContent)) {
-                                continue;
-                            }
-                            foreach (var unused in usage_list.Where(strUsage => strUsage.Contains(strContent) || strContent.Contains(strUsage))) {
-                                isContain = true;
-                            }
-                            if (!isContain) {
-                                usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n");
-                                listUsage.Add(" ——《" + row["bookname"] + "》");
+                        if (word.Length > 1) {
+                            if (!isChinese) {
+                                foreach (DataRow row in _clippingsDataTable.Rows) {
+                                    var strContent = row["content"].ToString() ?? string.Empty;
+                                    if (string.IsNullOrWhiteSpace(strContent)) {
+                                        continue;
+                                    }
+                                    if (Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
+                                        usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n");
+                                        listUsage.Add(" ——《" + row["bookname"] + "》");
+                                    }
+                                }
+                            } else {
+                                foreach (DataRow row in _clippingsDataTable.Rows) {
+                                    var strContent = row["content"].ToString() ?? string.Empty;
+                                    if (string.IsNullOrWhiteSpace(strContent)) {
+                                        continue;
+                                    }
+                                    if (strContent.Contains(word)) {
+                                        usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n");
+                                        listUsage.Add(" ——《" + row["bookname"] + "》");
+                                    }
+                                }
                             }
                         }
 
@@ -1145,8 +1158,8 @@ namespace KindleMate2 {
                         }
 
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + usage_list.Count + Strings.Space + Strings.X_Lookups;
-                        if (usage_clippings_list.Count > 0) {
-                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + usage_clippings_list.Count + Strings.Space + Strings.X_Other_Books;
+                        if (usage_clippings.Count > 0) {
+                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + usage_clippings.Count + Strings.Space + Strings.X_Other_Books;
                         }
                         lblBookCount.Image = Resources.input_latin_uppercase;
                         lblBookCount.Visible = true;
@@ -1396,16 +1409,20 @@ namespace KindleMate2 {
                 return;
             }
 
-            var index = tabControl.SelectedIndex;
-            switch (index) {
-                case 0:
-                    var content = dataGridView.SelectedRows[0].Cells["content"].Value.ToString() ?? string.Empty;
-                    Clipboard.SetText(content != string.Empty ? content : lblContent.Text);
-                    break;
-                case 1:
-                    var usage = dataGridView.SelectedRows[0].Cells["usage"].Value.ToString() ?? string.Empty;
-                    Clipboard.SetText(usage != string.Empty ? usage : lblBook.Text);
-                    break;
+            try {
+                var index = tabControl.SelectedIndex;
+                switch (index) {
+                    case 0:
+                        var content = dataGridView.SelectedRows[0].Cells["content"].Value.ToString() ?? string.Empty;
+                        Clipboard.SetText(content != string.Empty ? content : lblContent.Text);
+                        break;
+                    case 1:
+                        var usage = dataGridView.SelectedRows[0].Cells["usage"].Value.ToString() ?? string.Empty;
+                        Clipboard.SetText(usage != string.Empty ? usage : lblBook.Text);
+                        break;
+                }
+            } catch (Exception exception) {
+                Console.WriteLine(exception);
             }
         }
 
