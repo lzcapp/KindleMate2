@@ -873,7 +873,7 @@ namespace KindleMate2 {
             if (line2.Contains("笔记") || line2.Contains("Note")) {
                 brieftype = BriefType.Note;
             } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
-                brieftype = BriefType.Bookmark;
+                //brieftype = BriefType.Bookmark;
                 return false;
             } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
                 brieftype = BriefType.Cut;
@@ -1058,7 +1058,7 @@ namespace KindleMate2 {
                         }
 
                         var isChinese = false;
-                        var length = System.Text.Encoding.GetEncoding("UTF-8").GetBytes(word).Length;
+                        var length = Encoding.GetEncoding("UTF-8").GetBytes(word).Length;
                         if (length > word.Length) {
                             isChinese = true;
                         }
