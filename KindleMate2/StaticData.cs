@@ -993,53 +993,53 @@ namespace KindleMate2 {
         }
 
         private int Insert<T>(T entity, string tableName, string primaryKey, bool isAddPrimaryKey) {
-            if (entity != null) {
-                var properties = entity.GetType().GetProperties();
-
-                var col = string.Empty;
-                var val = string.Empty;
-                var parameters = new List<SQLiteParameter>();
-                
-                foreach (PropertyInfo property in properties) {
-                    var parameterName = property.Name;
-                    if (parameterName.Equals("Ctypes", StringComparison.CurrentCultureIgnoreCase)) {
-                        parameterName = "Ctype";
-                    }
-
-                    var parameter = new SQLiteParameter();
-                    var obj = property.GetValue(entity, null);
-
-                    if (!isAddPrimaryKey && parameterName.Equals(primaryKey, StringComparison.CurrentCultureIgnoreCase)) {
-                        continue;
-                    }
-
-                    col += parameterName + ",";
-                    val += "@" + parameterName + ",";
-                    parameter.ParameterName = "@" + parameterName;
-
-                    switch (obj) {
-                        case null:
-                        case DateTime dateTime when dateTime < new DateTime(1753, 1, 1) || dateTime > new DateTime(9999, 12, 31):
-                            parameter.Value = null;
-                            break;
-                        default:
-                            parameter.Value = obj;
-                            break;
-                    }
-                    parameters.Add(parameter);
-                }
-
-                col = col.TrimEnd(',');
-                val = val.TrimEnd(',');
-                var sql = $"INSERT INTO {tableName} ({col}) VALUES ({val})";
-                using var command = new SQLiteCommand(sql, _connection);
-                foreach (SQLiteParameter parameter in parameters) {
-                    command.Parameters.Add(parameter);
-                }
-                var result = command.ExecuteNonQuery();
-                return result;
+            if (entity == null) {
+                return 0;
             }
-            return 0;
+            var properties = entity.GetType().GetProperties();
+
+            var col = string.Empty;
+            var val = string.Empty;
+            var parameters = new List<SQLiteParameter>();
+                
+            foreach (PropertyInfo property in properties) {
+                var parameterName = property.Name;
+                if (parameterName.Equals("Ctypes", StringComparison.CurrentCultureIgnoreCase)) {
+                    parameterName = "Ctype";
+                }
+
+                var parameter = new SQLiteParameter();
+                var obj = property.GetValue(entity, null);
+
+                if (!isAddPrimaryKey && parameterName.Equals(primaryKey, StringComparison.CurrentCultureIgnoreCase)) {
+                    continue;
+                }
+
+                col += parameterName + ",";
+                val += "@" + parameterName + ",";
+                parameter.ParameterName = "@" + parameterName;
+
+                switch (obj) {
+                    case null:
+                    case DateTime dateTime when dateTime < new DateTime(1753, 1, 1) || dateTime > new DateTime(9999, 12, 31):
+                        parameter.Value = null;
+                        break;
+                    default:
+                        parameter.Value = obj;
+                        break;
+                }
+                parameters.Add(parameter);
+            }
+
+            col = col.TrimEnd(',');
+            val = val.TrimEnd(',');
+            var sql = $"INSERT INTO {tableName} ({col}) VALUES ({val})";
+            using var command = new SQLiteCommand(sql, _connection);
+            foreach (SQLiteParameter parameter in parameters) {
+                command.Parameters.Add(parameter);
+            }
+            var result = command.ExecuteNonQuery();
+            return result;
         }
 
         public static bool IsUpdate(string tagname) {

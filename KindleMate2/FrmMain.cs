@@ -955,7 +955,7 @@ namespace KindleMate2 {
 
             string bookname;
             string authorname;
-            var pattern = @"\(([^()]+)\)[^(]*$";
+            const string pattern = @"\(([^()]+)\)[^(]*$";
             Match match = Regex.Match(line1, pattern);
             if (match.Success) {
                 authorname = match.Groups[1].Value.Trim();
