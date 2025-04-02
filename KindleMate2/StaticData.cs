@@ -259,11 +259,11 @@ namespace KindleMate2 {
             return result > 0;
         }
 
-        internal bool IsExistClippingsOfContent(string? content) {
+        internal int IsExistClippingsOfContent(string? content) {
             switch (content) {
                 case null:
                 case "":
-                    return true;
+                    return 0;
             }
 
             const string queryCount = "SELECT COUNT(*) FROM clippings WHERE content = @content";
@@ -272,7 +272,7 @@ namespace KindleMate2 {
 
             var result = Convert.ToInt32(commandCount.ExecuteScalar());
 
-            return result > 0;
+            return result;
         }
 
         internal bool IsExistClippingsContainingContent(string? content) {

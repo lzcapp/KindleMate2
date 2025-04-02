@@ -717,7 +717,7 @@ namespace KindleMate2 {
                         continue;
                     }
 
-                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
+                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString()) > 0) {
                         continue;
                     }
 
@@ -887,7 +887,7 @@ namespace KindleMate2 {
             var split_b = line2.Split('|');
 
             var clippingtypelocation = string.Empty;
-            line2 = line2[2..];
+            line2 = line2.Replace("- ", "", StringComparison.OrdinalIgnoreCase);
             var indexOf = line2.LastIndexOf('|');
             if (indexOf >= 0) {
                 clippingtypelocation = line2[..(indexOf - 1)];
@@ -2166,34 +2166,24 @@ namespace KindleMate2 {
                         continue;
                     }
 
-                    switch (contentTrimmed.Equals(content)) {
-                        case false when !booknameTrimmed.Equals(bookname): {
-                                if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
-                                    countTrimmed++;
-                                }
-                                break;
-                            }
-                        case false: {
-                                if (_staticData.UpdateClippings(key, contentTrimmed, string.Empty)) {
-                                    countTrimmed++;
-                                }
-                                break;
-                            }
-                        default: {
-                                if (!booknameTrimmed.Equals(bookname)) {
-                                    if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
-                                        countTrimmed++;
-                                    }
-                                }
-                                break;
-                            }
+                    if (!contentTrimmed.Equals(content) && !booknameTrimmed.Equals(bookname)) {
+                        if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
+                            countTrimmed++;
+                        }
+                    } else if (!contentTrimmed.Equals(content)) {
+                        if (_staticData.UpdateClippings(key, contentTrimmed, bookname)) {
+                            countTrimmed++;
+                        }
+                    } else if (!booknameTrimmed.Equals(bookname)) {
+                        if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
+                            countTrimmed++;
+                        }
                     }
 
-                    if (!_staticData.IsExistClippings(key, content)) {
-                        continue;
-                    }
-                    if (_staticData.DeleteClippingsByKey(key)) {
-                        countDuplicated++;
+                    if (_staticData.IsExistClippingsOfContent(content) > 1) {
+                        if (_staticData.DeleteClippingsByKey(key)) {
+                            countDuplicated++;
+                        }
                     }
                 }
 
