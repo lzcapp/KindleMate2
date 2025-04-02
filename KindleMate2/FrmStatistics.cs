@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Globalization;
 using DarkModeForms;
@@ -152,7 +153,7 @@ namespace KindleMate2 {
                 WindowState = FormWindowState.Normal;
 
                 MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                System.Diagnostics.Process.Start("Explorer.exe", "/select," + filePath);
+                Process.Start("Explorer.exe", "/select," + filePath);
             } catch (Exception) {
                 MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } finally {

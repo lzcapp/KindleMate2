@@ -911,7 +911,7 @@ namespace KindleMate2 {
         internal bool EmptyTables() {
             var result = 0;
 
-            var tableNames = new List<string>() {
+            var tableNames = new List<string> {
                 "clippings", "lookups", "original_clipping_lines", "vocab"
             };
 
@@ -933,7 +933,7 @@ namespace KindleMate2 {
         internal bool IsDatabaseEmpty() {
             var result = 0;
 
-            var tableNames = new List<string>() {
+            var tableNames = new List<string> {
                 "clippings", "lookups", "original_clipping_lines", "vocab"
             };
 
