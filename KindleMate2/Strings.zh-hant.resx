@@ -525,4 +525,10 @@
   <data name="X_Other_Books" xml:space="preserve">
     <value>次</value>
   </data>
+  <data name="Confirm_Clear_Clippings" xml:space="preserve">
+    <value>確認要刪除全部標註嗎？ </value>
+  </data>
+  <data name="Confirm_Clear_Vocabulary" xml:space="preserve">
+    <value>確認要清空生詞本嗎？ </value>
+  </data>
 </root>

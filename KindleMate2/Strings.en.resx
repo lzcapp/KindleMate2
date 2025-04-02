@@ -519,4 +519,10 @@
   <data name="X_Other_Books" xml:space="preserve">
     <value>lookup(s) in clippings</value>
   </data>
+  <data name="Confirm_Clear_Clippings" xml:space="preserve">
+    <value>Are you sure you want to clear all clippings? </value>
+  </data>
+  <data name="Confirm_Clear_Vocabulary" xml:space="preserve">
+    <value>Are you sure you want to clear the vocabulary list? </value>
+  </data>
 </root>

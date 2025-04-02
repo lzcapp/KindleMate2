@@ -304,6 +304,24 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 确认要删除全部标注吗？  的本地化字符串。
+        /// </summary>
+        internal static string Confirm_Clear_Clippings {
+            get {
+                return ResourceManager.GetString("Confirm_Clear_Clippings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认要清空生词本吗？  的本地化字符串。
+        /// </summary>
+        internal static string Confirm_Clear_Vocabulary {
+            get {
+                return ResourceManager.GetString("Confirm_Clear_Vocabulary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 确认要删除备份文件吗? 的本地化字符串。
         /// </summary>
         internal static string Confirm_Delete_Backup {

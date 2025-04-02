@@ -1132,5 +1132,35 @@ namespace KindleMate2 {
             //AutoUpdater.ExecutablePath = "./KindleMate2.exe";
             AutoUpdater.Start(Environment.Is64BitProcess ? "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml" : "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
         }
+
+        internal bool ClearClippings() {
+            var result = 0;
+
+            var tableNames = new List<string> {
+                "clippings", "original_clipping_lines"
+            };
+
+            foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
+                using var command = new SQLiteCommand(queryDelete, _connection);
+                result += command.ExecuteNonQuery();
+            }
+
+            return result > 0;
+        }
+
+        internal bool ClearVocabs() {
+            var result = 0;
+
+            var tableNames = new List<string> {
+                "lookups", "vocab"
+            };
+
+            foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
+                using var command = new SQLiteCommand(queryDelete, _connection);
+                result += command.ExecuteNonQuery();
+            }
+
+            return result > 0;
+        }
     }
 }

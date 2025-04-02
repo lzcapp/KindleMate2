@@ -1,11 +1,13 @@
-﻿namespace KindleMate2
+﻿using System.ComponentModel;
+
+namespace KindleMate2
 {
     partial class FrmAboutBox
     {
         /// <summary>
         /// 必需的设计器变量。
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// 清理所有正在使用的资源。
@@ -290,11 +292,11 @@
 
         #endregion
 
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
-        private System.Windows.Forms.Label lblProductName;
-        private System.Windows.Forms.Label lblVersion;
-        private System.Windows.Forms.Label lblCopyright;
-        private System.Windows.Forms.Button okButton;
+        private TableLayoutPanel tableLayoutPanel;
+        private Label lblProductName;
+        private Label lblVersion;
+        private Label lblCopyright;
+        private Button okButton;
         private Label lblPathText;
         private Label lblDatabaseText;
         private LinkLabel lblPath;

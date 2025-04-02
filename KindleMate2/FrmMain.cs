@@ -1447,53 +1447,60 @@ namespace KindleMate2 {
 
         private void MenuBooksDelete_Click(object sender, EventArgs e) {
             var index = tabControl.SelectedIndex;
+            DialogResult result;
             switch (index) {
                 case 0:
-                    if (treeViewBooks.SelectedNode is null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewBooks.SelectedNode is null) {
                         return;
                     }
-
-                    DialogResult resultBooks = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                    if (resultBooks != DialogResult.Yes) {
-                        return;
+                    if (treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                        result = MessageBox(Strings.Confirm_Clear_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (result == DialogResult.Yes) {
+                            _staticData.ClearClippings();
+                            RefreshData();
+                        }
+                    } else {
+                        result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (result == DialogResult.Yes) {
+                            var bookname = treeViewBooks.SelectedNode.Text;
+                            if (!_staticData.DeleteClippingsByBook(bookname)) {
+                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                _selectedBook = string.Empty;
+                            }
+                        }
                     }
-
-                    var bookname = treeViewBooks.SelectedNode.Text;
-                    if (!_staticData.DeleteClippingsByBook(bookname)) {
-                        MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        _selectedBook = string.Empty;
-                    }
-
                     break;
                 case 1:
-                    if (treeViewWords.SelectedNode is null || treeViewWords.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewWords.SelectedNode is null) {
                         return;
                     }
-
-                    DialogResult resultWords = MessageBox(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                    if (resultWords != DialogResult.Yes) {
-                        return;
-                    }
-
-                    var word = treeViewWords.SelectedNode.Text;
-                    var word_key = string.Empty;
-                    foreach (DataRow row in _vocabDataTable.Rows) {
-                        if (row["word"].ToString() != word) {
-                            continue;
+                    if (treeViewWords.SelectedNode.Text.Equals(Strings.Select_All)) {
+                        result = MessageBox(Strings.Confirm_Clear_Vocabulary, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (result == DialogResult.Yes) {
+                            _staticData.ClearVocabs();
+                            RefreshData();
                         }
+                    } else {
+                        result = MessageBox(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (result == DialogResult.Yes) {
+                            var word = treeViewWords.SelectedNode.Text;
+                            var word_key = string.Empty;
+                            foreach (DataRow row in _vocabDataTable.Rows) {
+                                if (row["word"].ToString() != word) {
+                                    continue;
+                                }
 
-                        word_key = row["word_key"].ToString() ?? string.Empty;
-                        break;
+                                word_key = row["word_key"].ToString() ?? string.Empty;
+                                break;
+                            }
+
+                            if (!_staticData.DeleteVocab(word_key) && !_staticData.DeleteLookupsByWordKey(word_key)) {
+                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+
+                            _selectedWord = string.Empty;
+                        }
                     }
-
-                    if (!_staticData.DeleteVocab(word_key) && !_staticData.DeleteLookupsByWordKey(word_key)) {
-                        MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-
-                    _selectedWord = string.Empty;
-
                     break;
             }
             RefreshData();
