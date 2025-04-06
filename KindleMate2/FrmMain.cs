@@ -378,16 +378,19 @@ namespace KindleMate2 {
 
         private void RefreshData(bool isReQuery = true) {
             try {
+                label1.Text  = string.Empty;
+                label2.Text  = string.Empty;
+                label3.Text  = string.Empty;
                 lblBook.Text = string.Empty;
                 lblAuthor.Text = string.Empty;
                 lblLocation.Text = string.Empty;
                 lblContent.Text = string.Empty;
-                if (isReQuery) {
-                    DisplayData();
-                }
                 SetDataGridView();
                 SetSelection();
                 CountRows();
+                if (isReQuery) {
+                    DisplayData();
+                }
             } catch (Exception) {
                 // ignored
             }
@@ -445,12 +448,14 @@ namespace KindleMate2 {
 
             treeViewBooks.Nodes.Add(rootNodeBooks);
 
-            foreach (var book in books) {
-                var bookNode = new TreeNode(book.BookName) {
-                    ToolTipText = book.BookName
-                };
+            if (books.Any()) {
+                foreach (var book in books) {
+                    var bookNode = new TreeNode(book.BookName) {
+                        ToolTipText = book.BookName
+                    };
 
-                treeViewBooks.Nodes.Add(bookNode);
+                    treeViewBooks.Nodes.Add(bookNode);
+                }
             }
 
             treeViewBooks.ExpandAll();
@@ -466,17 +471,19 @@ namespace KindleMate2 {
 
             treeViewWords.Nodes.Clear();
 
-            treeViewWords.Nodes.Add(rootNodeWords);
+            if (words.Any()) {
+                treeViewWords.Nodes.Add(rootNodeWords);
 
-            foreach (var word in words) {
-                var wordNode = new TreeNode(word.Word) {
-                    ToolTipText = word.Word
-                };
+                foreach (var word in words) {
+                    var wordNode = new TreeNode(word.Word) {
+                        ToolTipText = word.Word
+                    };
 
-                treeViewWords.Nodes.Add(wordNode);
+                    treeViewWords.Nodes.Add(wordNode);
+                }
+
+                treeViewWords.ExpandAll();
             }
-
-            treeViewWords.ExpandAll();
         }
 
         private void SetDataGridView() {
