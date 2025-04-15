@@ -16,10 +16,10 @@ using Markdig.Helpers;
 namespace KindleMate2 {
     public partial class FrmMain : Form {
         [DllImport("User32.dll")]
-        static extern bool HideCaret(IntPtr hWnd);
+        private static extern bool HideCaret(IntPtr hWnd);
 
         [DllImport("user32.dll")]
-        static extern bool DestroyCaret();
+        private static extern bool DestroyCaret();
 
         private DataTable _clippingsDataTable = new();
 
@@ -848,7 +848,7 @@ namespace KindleMate2 {
                     }
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
-                    var result = HandleClipplings(line1, line2, line3, line4, line5);
+                    var result = HandleClippings(line1, line2, line3, line4, line5);
                     if (result) {
                         insertedCount++;
                     }
@@ -863,7 +863,7 @@ namespace KindleMate2 {
             return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
         }
 
-        private bool HandleClipplings(string line1, string line2, string line3, string line4, string line5, bool isRebuild = false) {
+        private bool HandleClippings(string line1, string line2, string line3, string line4, string line5, bool isRebuild = false) {
             var entityClipping = new Clipping();
 
             var content = line4;
@@ -924,8 +924,7 @@ namespace KindleMate2 {
             var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
             datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
             // ReSharper disable once InlineOutVariableDeclaration
-            DateTime parsedDate;
-            var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
+            var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
             if (!isDateParsed) {
                 var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                 if (dayOfWeekIndex != -1) {
@@ -955,8 +954,7 @@ namespace KindleMate2 {
 
             string bookname;
             string authorname;
-            const string pattern = @"\(([^()]+)\)[^(]*$";
-            Match match = Regex.Match(line1, pattern);
+            Match match = BookNameRegex().Match(line1);
             if (match.Success) {
                 authorname = match.Groups[1].Value.Trim();
                 bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
@@ -2110,7 +2108,7 @@ namespace KindleMate2 {
                 return Strings.No_Data_To_Clear;
             }
             _ = _staticData.EmptyTable("clippings");
-            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClipplings(line1, line2, line3, line4, line5, true)).Count(result => result);
+            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClippings(line1, line2, line3, line4, line5, true)).Count(result => result);
             _staticData.CommitTransaction();
             var clipping = Strings.Parsed_X + Strings.Space + origin.Rows.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
             return clipping;
@@ -2166,18 +2164,24 @@ namespace KindleMate2 {
                         continue;
                     }
 
-                    if (!contentTrimmed.Equals(content) && !booknameTrimmed.Equals(bookname)) {
-                        if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
-                            countTrimmed++;
-                        }
-                    } else if (!contentTrimmed.Equals(content)) {
-                        if (_staticData.UpdateClippings(key, contentTrimmed, bookname)) {
-                            countTrimmed++;
-                        }
-                    } else if (!booknameTrimmed.Equals(bookname)) {
-                        if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
-                            countTrimmed++;
-                        }
+                    switch (contentTrimmed.Equals(content)) {
+                        case false when !booknameTrimmed.Equals(bookname): 
+                            if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
+                                countTrimmed++;
+                            }
+                            break;
+                        case false: 
+                            if (_staticData.UpdateClippings(key, contentTrimmed, bookname)) {
+                                countTrimmed++;
+                            }
+                            break;
+                        default: 
+                            if (!booknameTrimmed.Equals(bookname)) {
+                                if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
+                                    countTrimmed++;
+                                }
+                            }
+                            break;
                     }
 
                     if (_staticData.IsExistClippingsOfContent(content) > 1) {
@@ -2551,7 +2555,7 @@ namespace KindleMate2 {
                 list.AddRange(_staticData.GetVocabStemList());
             }
             var autoCompleteStringCollection = new AutoCompleteStringCollection();
-            autoCompleteStringCollection.AddRange(list.ToArray());
+            autoCompleteStringCollection.AddRange([.. list]);
             txtSearch.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtSearch.AutoCompleteCustomSource = autoCompleteStringCollection;
         }
@@ -2620,5 +2624,8 @@ namespace KindleMate2 {
             }
             return output.ToString();
         }
+
+        [GeneratedRegex(@"\(([^()]+)\)[^(]*$")]
+        private static partial Regex BookNameRegex();
     }
 }
