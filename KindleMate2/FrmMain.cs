@@ -437,7 +437,7 @@ namespace KindleMate2 {
 
             var books = _clippingsDataTable.AsEnumerable().Select(row => new {
                 BookName = row.Field<string>("bookname")
-            }).Distinct().OrderBy(book => book.BookName);
+            }).Distinct().OrderBy(book => book.BookName).ToList();
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
@@ -462,7 +462,7 @@ namespace KindleMate2 {
 
             var words = _vocabDataTable.AsEnumerable().Select(row => new {
                 Word = row.Field<string>("word")
-            }).Distinct().OrderBy(word => word.Word);
+            }).Distinct().OrderBy(word => word.Word).ToList();
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
