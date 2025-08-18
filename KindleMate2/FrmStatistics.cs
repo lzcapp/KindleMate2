@@ -178,19 +178,44 @@ namespace KindleMate2 {
             var selectedIndex = tabControl.SelectedIndex;
             switch (selectedIndex) {
                 case 0:
-                    var clippings = _clippingsDataTable.Rows.Count + Strings.Space + Strings.X_Clippings;
-                    var books = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct().Count() + Strings.Space + Strings.X_Books;
-                    var authors = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("authorname")).Distinct().Count() + Strings.Space + Strings.X_Authors;
-                    var bookTimes = _clippingsDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty));
-                    var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
-                    lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Symbol_Comma + books + Strings.Symbol_Comma + authors;
+                    var clippings = 0;
+                    var books = 0;
+                    var authors = 0;
+                    var bookDays = 0;
+                    try {
+                        if (_clippingsDataTable.Rows.Count > 0) {
+                            clippings = _clippingsDataTable.Rows.Count;
+                            books = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("bookname")).Distinct().Count();
+                            authors = _clippingsDataTable.AsEnumerable().Select(row => row.Field<string>("authorname")).Distinct().Count();
+                            var bookTimes = _clippingsDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty));
+                            bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
+                        } else {
+                            throw new Exception();
+                        }
+                    } catch {
+                        // ignored
+                    } finally {
+                        lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + books + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + authors + Strings.Space + Strings.X_Authors;
+                    }
                     break;
                 case 1:
-                    var lookups = _vocabDataTable.Rows.Cast<DataRow>().Sum(row => Convert.ToInt32(row["frequency"])) + Strings.Space + Strings.X_Lookups;
-                    var words = _vocabDataTable.AsEnumerable().Select(row => row.Field<string>("word")).Distinct().Count() + Strings.Space + Strings.X_Vocabs;
-                    var vocabTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
-                    var vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
-                    lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Symbol_Comma + words;
+                    var lookups = 0;
+                    var words = 0;
+                    var vocabDays = 0;
+                    try {
+                        if (_vocabDataTable.Rows.Count > 0) {
+                            lookups = _vocabDataTable.Rows.Cast<DataRow>().Sum(row => Convert.ToInt32(row["frequency"]));
+                            words = _vocabDataTable.AsEnumerable().Select(row => row.Field<string>("word")).Distinct().Count();
+                            var vocabTimes = _vocabDataTable.AsEnumerable().Select(row => DateTime.Parse(row.Field<string>("timestamp") ?? string.Empty));
+                            vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
+                        } else {
+                            throw new Exception();
+                        }
+                    } catch {
+                        // ignored
+                    } finally {
+                        lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Space + Strings.X_Lookups + Strings.Symbol_Comma + words + Strings.Space + Strings.X_Vocabs;
+                    }
                     break;
             }
         }

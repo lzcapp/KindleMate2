@@ -44,10 +44,10 @@ namespace KindleMate2
             lblVersion = new Label();
             pictureBox1 = new PictureBox();
             tableLayoutPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBox).BeginInit();
+            ((ISupportInitialize)pictureBox).BeginInit();
             flowLayoutPanel.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            ((ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
             // tableLayoutPanel
@@ -82,8 +82,8 @@ namespace KindleMate2
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 16F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20.0031986F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 19.9992F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-            tableLayoutPanel.Size = new Size(574, 263);
+            tableLayoutPanel.RowStyles.Add(new RowStyle());
+            tableLayoutPanel.Size = new Size(776, 423);
             tableLayoutPanel.TabIndex = 0;
             // 
             // lblPath
@@ -92,7 +92,7 @@ namespace KindleMate2
             lblPath.AutoSize = true;
             lblPath.LinkBehavior = LinkBehavior.AlwaysUnderline;
             lblPath.LinkColor = Color.Black;
-            lblPath.Location = new Point(253, 130);
+            lblPath.Location = new Point(304, 220);
             lblPath.MaximumSize = new Size(464, 0);
             lblPath.Name = "lblPath";
             lblPath.Size = new Size(0, 31);
@@ -102,7 +102,7 @@ namespace KindleMate2
             // lblVersionText
             // 
             lblVersionText.AutoSize = true;
-            lblVersionText.Location = new Point(169, 50);
+            lblVersionText.Location = new Point(169, 80);
             lblVersionText.Margin = new Padding(20, 0, 6, 0);
             lblVersionText.MaximumSize = new Size(0, 37);
             lblVersionText.Name = "lblVersionText";
@@ -114,7 +114,7 @@ namespace KindleMate2
             // lblCopyrightText
             // 
             lblCopyrightText.AutoSize = true;
-            lblCopyrightText.Location = new Point(169, 82);
+            lblCopyrightText.Location = new Point(169, 142);
             lblCopyrightText.Margin = new Padding(20, 0, 6, 0);
             lblCopyrightText.MaximumSize = new Size(0, 37);
             lblCopyrightText.Name = "lblCopyrightText";
@@ -126,7 +126,7 @@ namespace KindleMate2
             // lblCopyright
             // 
             lblCopyright.AutoSize = true;
-            lblCopyright.Location = new Point(253, 82);
+            lblCopyright.Location = new Point(304, 142);
             lblCopyright.Margin = new Padding(3, 0, 0, 0);
             lblCopyright.MaximumSize = new Size(0, 37);
             lblCopyright.Name = "lblCopyright";
@@ -137,20 +137,20 @@ namespace KindleMate2
             // lblPathText
             // 
             lblPathText.AutoSize = true;
-            lblPathText.Location = new Point(169, 130);
+            lblPathText.Location = new Point(169, 220);
             lblPathText.Margin = new Padding(20, 0, 6, 0);
             lblPathText.Name = "lblPathText";
-            lblPathText.Size = new Size(62, 32);
+            lblPathText.Size = new Size(110, 31);
             lblPathText.TabIndex = 25;
             lblPathText.Text = "程序路径";
             // 
             // lblDatabaseText
             // 
             lblDatabaseText.AutoSize = true;
-            lblDatabaseText.Location = new Point(169, 162);
+            lblDatabaseText.Location = new Point(169, 282);
             lblDatabaseText.Margin = new Padding(20, 0, 6, 0);
             lblDatabaseText.Name = "lblDatabaseText";
-            lblDatabaseText.Size = new Size(62, 32);
+            lblDatabaseText.Size = new Size(86, 31);
             lblDatabaseText.TabIndex = 26;
             lblDatabaseText.Text = "数据库";
             // 
@@ -159,10 +159,10 @@ namespace KindleMate2
             okButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             okButton.DialogResult = DialogResult.Cancel;
             okButton.Dock = DockStyle.Right;
-            okButton.Location = new Point(444, 204);
+            okButton.Location = new Point(646, 354);
             okButton.Margin = new Padding(15, 10, 15, 10);
             okButton.Name = "okButton";
-            okButton.Size = new Size(96, 31);
+            okButton.Size = new Size(96, 41);
             okButton.TabIndex = 24;
             okButton.Text = Strings.Confirm_Button;
             // 
@@ -173,7 +173,7 @@ namespace KindleMate2
             pictureBox.Location = new Point(22, 21);
             pictureBox.Name = "pictureBox";
             tableLayoutPanel.SetRowSpan(pictureBox, 4);
-            pictureBox.Size = new Size(124, 106);
+            pictureBox.Size = new Size(124, 196);
             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox.TabIndex = 1;
             pictureBox.TabStop = false;
@@ -181,7 +181,7 @@ namespace KindleMate2
             // lblDatabase
             // 
             lblDatabase.AutoSize = true;
-            lblDatabase.Location = new Point(253, 162);
+            lblDatabase.Location = new Point(304, 282);
             lblDatabase.Name = "lblDatabase";
             lblDatabase.Size = new Size(0, 31);
             lblDatabase.TabIndex = 32;
@@ -196,7 +196,7 @@ namespace KindleMate2
             flowLayoutPanel.Location = new Point(149, 18);
             flowLayoutPanel.Margin = new Padding(0);
             flowLayoutPanel.Name = "flowLayoutPanel";
-            flowLayoutPanel.Size = new Size(268, 32);
+            flowLayoutPanel.Size = new Size(268, 42);
             flowLayoutPanel.TabIndex = 33;
             // 
             // lblProductName
@@ -231,10 +231,10 @@ namespace KindleMate2
             flowLayoutPanel1.Controls.Add(lblVersion);
             flowLayoutPanel1.Controls.Add(pictureBox1);
             flowLayoutPanel1.Dock = DockStyle.Fill;
-            flowLayoutPanel1.Location = new Point(250, 50);
+            flowLayoutPanel1.Location = new Point(301, 80);
             flowLayoutPanel1.Margin = new Padding(0);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(305, 32);
+            flowLayoutPanel1.Size = new Size(456, 62);
             flowLayoutPanel1.TabIndex = 34;
             // 
             // lblVersion
@@ -266,7 +266,7 @@ namespace KindleMate2
             // 
             AcceptButton = okButton;
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(574, 263);
+            ClientSize = new Size(776, 423);
             Controls.Add(tableLayoutPanel);
             Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -280,12 +280,12 @@ namespace KindleMate2
             Load += FrmAboutBox_Load;
             tableLayoutPanel.ResumeLayout(false);
             tableLayoutPanel.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBox).EndInit();
+            ((ISupportInitialize)pictureBox).EndInit();
             flowLayoutPanel.ResumeLayout(false);
             flowLayoutPanel.PerformLayout();
             flowLayoutPanel1.ResumeLayout(false);
             flowLayoutPanel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
