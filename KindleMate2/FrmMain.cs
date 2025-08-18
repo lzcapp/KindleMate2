@@ -385,12 +385,12 @@ namespace KindleMate2 {
                 lblAuthor.Text = string.Empty;
                 lblLocation.Text = string.Empty;
                 lblContent.Text = string.Empty;
-                SetDataGridView();
-                SetSelection();
-                CountRows();
                 if (isReQuery) {
                     DisplayData();
                 }
+                SetDataGridView();
+                SetSelection();
+                CountRows();
             } catch (Exception) {
                 // ignored
             }
@@ -448,12 +448,10 @@ namespace KindleMate2 {
 
             treeViewBooks.Nodes.Add(rootNodeBooks);
 
-            if (books.Any()) {
-                foreach (var book in books) {
-                    var bookNode = new TreeNode(book.BookName) {
-                        ToolTipText = book.BookName
-                    };
-
+            if (books.Count != 0) {
+                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
+                             ToolTipText = book.BookName
+                         })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
             }
@@ -471,19 +469,18 @@ namespace KindleMate2 {
 
             treeViewWords.Nodes.Clear();
 
-            if (words.Any()) {
-                treeViewWords.Nodes.Add(rootNodeWords);
-
-                foreach (var word in words) {
-                    var wordNode = new TreeNode(word.Word) {
-                        ToolTipText = word.Word
-                    };
-
-                    treeViewWords.Nodes.Add(wordNode);
-                }
-
-                treeViewWords.ExpandAll();
+            if (words.Count == 0) {
+                return;
             }
+            treeViewWords.Nodes.Add(rootNodeWords);
+
+            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
+                         ToolTipText = word.Word
+                     })) {
+                treeViewWords.Nodes.Add(wordNode);
+            }
+
+            treeViewWords.ExpandAll();
         }
 
         private void SetDataGridView() {
@@ -526,7 +523,7 @@ namespace KindleMate2 {
                         dataGridView.Columns["pagenumber"]!.Visible = true;
 
                         dataGridView.Columns["bookname"]!.Width = 100;
-                        dataGridView.Columns["authorname"]!.Width = 50;
+                        dataGridView.Columns["authorname"]!.Width = 100;
                         dataGridView.Columns["clippingdate"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns["pagenumber"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
