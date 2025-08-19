@@ -916,7 +916,8 @@ namespace KindleMate2 {
             // 
             // FrmMain
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(192F, 192F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = SystemColors.Window;
             ClientSize = new Size(1641, 1002);
