@@ -48,7 +48,7 @@ namespace KindleMate2 {
 
                 var enumBooks = _clippingsDataTable.AsEnumerable()
                     .GroupBy(row => {
-                        DateTime date = DateTime.Parse(row.Field<string>("clippingdate") ?? string.Empty);
+                        DateTime date = ParseDateTime(row.Field<string>("clippingdate") ?? "");
                         return new {
                             date.Year, date.Month, date.Day
                         };
@@ -129,6 +129,19 @@ namespace KindleMate2 {
                 SetLblStatistics();
             } catch (Exception exception) {
                 Messenger.MessageBox(exception.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static DateTime ParseDateTime(string field) {
+            try {
+                if (!string.IsNullOrWhiteSpace(field)) {
+                    DateTime date = DateTime.Parse(field);
+                    return date;
+                } else {
+                    return DateTime.MinValue;
+                }
+            } catch (Exception e) {
+                return DateTime.MinValue;
             }
         }
 

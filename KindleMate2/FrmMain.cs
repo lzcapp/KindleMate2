@@ -721,7 +721,7 @@ namespace KindleMate2 {
                         continue;
                     }
 
-                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString()) > 0) {
+                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
                         continue;
                     }
 
@@ -739,7 +739,8 @@ namespace KindleMate2 {
                         briefType = (BriefType)brieftype,
                         clippingtypelocation = row["clippingtypelocation"].ToString() ?? string.Empty,
                         read = read,
-                        clipping_importdate = row["clipping_importdate"].ToString() ?? string.Empty,
+                        clippingdate = row["clippingdate"].ToString() ?? string.Empty,
+                        clipping_importdate = row["clipping_importdate"].ToString() ?? DateTime.Now.ToString(CultureInfo.InvariantCulture),
                         tag = row["tag"].ToString() ?? string.Empty,
                         sync = sync,
                         newbookname = row["newbookname"].ToString() ?? string.Empty,
@@ -2188,7 +2189,13 @@ namespace KindleMate2 {
                             break;
                     }
 
-                    if (_staticData.IsExistClippingsOfContent(content) > 1) {
+                    if (_staticData.IsExistClippingsOfContent(content)) {
+                        if (_staticData.DeleteClippingsByKey(key)) {
+                            countDuplicated++;
+                        }
+                    }
+
+                    if (_staticData.IsExistClippingsContainingContent(content)) {
                         if (_staticData.DeleteClippingsByKey(key)) {
                             countDuplicated++;
                         }
