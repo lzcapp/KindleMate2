@@ -136,9 +136,11 @@
 		<PackageReference Include="Autoupdater.NET.Official" Version="1.9.2" />
 		<PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
 		<PackageReference Include="Markdig" Version="0.41.3" />
+		<PackageReference Include="MediaDevices" Version="1.10.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="ReaLTaiizor" Version="3.8.1.3" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+		<PackageReference Include="System.Management" Version="9.0.8" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
 	</ItemGroup>

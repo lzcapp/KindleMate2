@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using KindleMate2.Properties;
 
 namespace KindleMate2
 {
@@ -169,7 +170,7 @@ namespace KindleMate2
             // pictureBox
             // 
             pictureBox.Dock = DockStyle.Fill;
-            pictureBox.Image = Properties.Resources.bookmark;
+            pictureBox.Image = Resources.bookmark;
             pictureBox.Location = new Point(22, 21);
             pictureBox.Name = "pictureBox";
             tableLayoutPanel.SetRowSpan(pictureBox, 4);
@@ -252,7 +253,7 @@ namespace KindleMate2
             // 
             pictureBox1.Cursor = Cursors.Hand;
             pictureBox1.Dock = DockStyle.Fill;
-            pictureBox1.Image = Properties.Resources.new_button;
+            pictureBox1.Image = Resources.new_button;
             pictureBox1.Location = new Point(6, 3);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(25, 25);
