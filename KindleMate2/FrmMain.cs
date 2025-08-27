@@ -14,6 +14,7 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Control = System.Windows.Controls.Control;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -422,9 +423,9 @@ namespace KindleMate2 {
 
         private void RefreshData(bool isReQuery = true) {
             try {
-                label1.Text  = string.Empty;
-                label2.Text  = string.Empty;
-                label3.Text  = string.Empty;
+                label1.Text = string.Empty;
+                label2.Text = string.Empty;
+                label3.Text = string.Empty;
                 lblBook.Text = string.Empty;
                 lblAuthor.Text = string.Empty;
                 lblLocation.Text = string.Empty;
@@ -494,8 +495,8 @@ namespace KindleMate2 {
 
             if (books.Count != 0) {
                 foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
-                             ToolTipText = book.BookName
-                         })) {
+                    ToolTipText = book.BookName
+                })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
             }
@@ -519,8 +520,8 @@ namespace KindleMate2 {
             treeViewWords.Nodes.Add(rootNodeWords);
 
             foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
-                         ToolTipText = word.Word
-                     })) {
+                ToolTipText = word.Word
+            })) {
                 treeViewWords.Nodes.Add(wordNode);
             }
 
@@ -1274,13 +1275,11 @@ namespace KindleMate2 {
         }
 
         private void LblContent_LostFocus(object? sender, EventArgs e) {
-            HideCaret(lblContent.Handle);
-            DestroyCaret();
+            HideCaret(sender);
         }
 
         private void LblContent_GotFocus(object? sender, EventArgs e) {
-            HideCaret(lblContent.Handle);
-            DestroyCaret();
+            HideCaret(sender);
         }
 
         private void ShowContentEditDialog() {
@@ -2253,17 +2252,17 @@ namespace KindleMate2 {
                     }
 
                     switch (contentTrimmed.Equals(content)) {
-                        case false when !booknameTrimmed.Equals(bookname): 
+                        case false when !booknameTrimmed.Equals(bookname):
                             if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
                                 countTrimmed++;
                             }
                             break;
-                        case false: 
+                        case false:
                             if (_staticData.UpdateClippings(key, contentTrimmed, bookname)) {
                                 countTrimmed++;
                             }
                             break;
-                        default: 
+                        default:
                             if (!booknameTrimmed.Equals(bookname)) {
                                 if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
                                     countTrimmed++;
@@ -2721,5 +2720,19 @@ namespace KindleMate2 {
 
         [GeneratedRegex(@"\(([^()]+)\)[^(]*$")]
         private static partial Regex BookNameRegex();
+
+        private void lblContent_MouseDown(object sender, MouseEventArgs e) {
+            HideCaret(sender);
+        }
+
+        private void HideCaret(object? sender) {
+            if (sender != null) {
+                System.Windows.Forms.Control? control = sender as System.Windows.Forms.Control ?? null;
+                if (control != null) {
+                    HideCaret(control.Handle);
+                    DestroyCaret();
+                }
+            }
+        }
     }
 }
