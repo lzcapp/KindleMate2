@@ -1,3 +1,9 @@
+using DarkModeForms;
+using KindleMate2.Entities;
+using KindleMate2.Properties;
+using Markdig;
+using Markdig.Helpers;
+using MediaDevices;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SQLite;
@@ -8,12 +14,6 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using DarkModeForms;
-using KindleMate2.Entities;
-using KindleMate2.Properties;
-using Markdig;
-using Markdig.Helpers;
-using MediaDevices;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -39,11 +39,9 @@ namespace KindleMate2 {
 
         private string _kindleDrive;
 
-        private readonly string _kindleClippingsPath;
+        private Device.Type _kindleDeviceType = Device.Type.Unknown;
 
-        private readonly string _kindleWordsPath;
-
-        private readonly string _kindleVersionPath;
+        private readonly string _kindleClippingsPath, _kindleWordsPath, _kindleVersionPath;
 
         private string _selectedBook;
 
@@ -56,8 +54,6 @@ namespace KindleMate2 {
         private string _searchText;
 
         private bool _isDarkTheme;
-
-        public USB USBWatcher= new USB();
 
         public FrmMain() {
             InitializeComponent();
@@ -230,18 +226,42 @@ namespace KindleMate2 {
 
             StaticData.CheckUpdate();
 
-            IsKindleDeviceConnected();
+            IsKindleConnected();
 
-            var query = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2 OR EventType = 3"; // 2表示设备插入
-            using ManagementEventWatcher watcher = new ManagementEventWatcher(query);
-            watcher.EventArrived += USBEventHandler;
-            watcher.Start();
+            AddDeviceWatcher();
         }
 
-        private void USBEventHandler(object sender, EventArrivedEventArgs e) {
+        private void AddDeviceWatcher() {
+            const string deviceChangeQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2 OR EventType = 3";
+            using var watcher = new ManagementEventWatcher(deviceChangeQuery);
+            watcher.EventArrived += UsbDeviceEventHandler;
+            watcher.Start();
+
+            const string mtpCreationQuery = "SELECT * FROM __InstanceCreationEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
+            using var deviceArrivalWatcher = new ManagementEventWatcher(mtpCreationQuery);
+            deviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
+            deviceArrivalWatcher.Start();
+
+            const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity' ";
+            using var deviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
+            deviceRemovalWatcher.EventArrived += MtpDeviceEventHandler;
+            deviceRemovalWatcher.Start();
+        }
+
+        private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
+            _kindleDeviceType = Device.Type.USB;
+            DeviceEventHandler(sender);
+        }
+
+        private void MtpDeviceEventHandler(object sender, EventArrivedEventArgs e) {
+            _kindleDeviceType = Device.Type.MTP;
+            DeviceEventHandler(sender);
+        }
+
+        private void DeviceEventHandler(object sender) {
             if (sender is ManagementEventWatcher watcher) {
                 watcher.Stop();
-                IsKindleDeviceConnected();
+                IsKindleConnected();
                 watcher.Start();
             }
         }
@@ -255,21 +275,26 @@ namespace KindleMate2 {
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
-            var clippingsResult = ImportKindleClippings(kindleClippingsPath);
-            var wordResult = ImportKindleWords(kindleWordsPath);
-            if (string.IsNullOrWhiteSpace(clippingsResult + wordResult)) {
+            try {
+                var clippingsResult = ImportKindleClippings(kindleClippingsPath);
+                var wordResult = ImportKindleWords(kindleWordsPath);
+                if (string.IsNullOrWhiteSpace(clippingsResult + wordResult)) {
+                    return string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(clippingsResult)) {
+                    return wordResult;
+                }
+
+                if (string.IsNullOrWhiteSpace(wordResult)) {
+                    return clippingsResult;
+                }
+
+                return clippingsResult + "\n" + wordResult;
+            } catch (Exception e) {
+                Console.WriteLine(e);
                 return string.Empty;
             }
-
-            if (string.IsNullOrWhiteSpace(clippingsResult)) {
-                return wordResult;
-            }
-
-            if (string.IsNullOrWhiteSpace(wordResult)) {
-                return clippingsResult;
-            }
-
-            return clippingsResult + "\n" + wordResult;
         }
 
         private string ImportKindleWords(string kindleWordsPath) {
@@ -1623,71 +1648,83 @@ namespace KindleMate2 {
             }
         }
 
-        private bool IsKindleDeviceConnected() {
-            var drives = DriveInfo.GetDrives();
-
+        private void IsKindleConnected() {
             var isConnected = false;
 
             try {
-                foreach (DriveInfo drive in drives) {
-                    if (drive.DriveType != DriveType.Removable) {
-                        continue;
-                    }
-                    var documentsDir = Path.Combine(drive.Name, "documents");
-                    if (!Directory.Exists(documentsDir)) {
-                        continue;
-                    }
-                    var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
-                    if (!File.Exists(clippingsPath)) {
-                        continue;
-                    }
-                    isConnected = true;
-                    _kindleDrive = drive.Name;
+                isConnected = _kindleDeviceType switch {
+                    Device.Type.USB => HandleUsbDevice(),
+                    Device.Type.MTP => HandleMtpDevice(),
+                    _ => isConnected
+                };
+
+                if (!isConnected) {
+                    isConnected = HandleUsbDevice() || HandleMtpDevice();
                 }
-            
-                var versionText = "";
-                if (isConnected) {
-                    var kindleVersionPath = Path.Combine(_kindleDrive, _kindleVersionPath);
-                    if (File.Exists(kindleVersionPath)) {
-                        using var reader = new StreamReader(kindleVersionPath);
-                        versionText = reader.ReadToEnd();
-                    }
-                    KindleConnected(versionText);
+
+                if (!isConnected) {
+                    _kindleDrive = string.Empty;
+                    menuSyncFromKindle.Visible = false;
+                    menuKindle.Visible = false;
                 } else {
-                    var devices = MediaDevice.GetDevices();
-                    using MediaDevice? device = devices.First(d => d.FriendlyName.ToLowerInvariant().Contains("kindle") || d.Model.ToLowerInvariant().Contains("kindle"));
-                    device.Connect();
-                    MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
-                    var files = systemDir.EnumerateFiles("version.txt");
-                    var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                    if (mediaFileInfos.Any()) {
-                        MediaFileInfo? file = mediaFileInfos[0];
-                        var memoryStream = new MemoryStream();
-                        device.DownloadFile(file.FullName, memoryStream);
-                        memoryStream.Position = 0;
-                        using var reader = new StreamReader(memoryStream);
-                        versionText = reader.ReadToEnd();
-                        isConnected = true;
-                        KindleConnected(versionText);
-                    }
+                    menuSyncFromKindle.Visible = true;
+                    menuKindle.Visible = true;
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
             }
-
-            if (!isConnected) {
-                _kindleDrive = string.Empty;
-                menuSyncFromKindle.Visible = false;
-                menuKindle.Visible = false;
-                return false;
-            } else {
-                menuSyncFromKindle.Visible = true;
-                menuKindle.Visible = true;
-                return true;
-            }
         }
 
-        private void KindleConnected(string versionText) {
+        private bool HandleUsbDevice() {
+            var drives = DriveInfo.GetDrives();
+            foreach (DriveInfo drive in drives) {
+                if (drive.DriveType != DriveType.Removable) {
+                    continue;
+                }
+                var documentsDir = Path.Combine(drive.Name, "documents");
+                if (!Directory.Exists(documentsDir)) {
+                    continue;
+                }
+                var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
+                if (!File.Exists(clippingsPath)) {
+                    continue;
+                }
+
+                _kindleDrive = drive.Name;
+
+                var versionText = "";
+                var kindleVersionPath = Path.Combine(_kindleDrive, _kindleVersionPath);
+                if (File.Exists(kindleVersionPath)) {
+                    using var reader = new StreamReader(kindleVersionPath);
+                    versionText = reader.ReadToEnd();
+                }
+                SetKindleVersionText(versionText);
+                return true;
+            }
+            return false;
+        }
+
+        private bool HandleMtpDevice() {
+            var devices = MediaDevice.GetDevices();
+            using MediaDevice? device = devices.First(d => d.FriendlyName.Contains("kindle", StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains("kindle", StringComparison.InvariantCultureIgnoreCase));
+            device.Connect();
+            MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
+            var files = systemDir.EnumerateFiles("version.txt");
+            var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
+            if (mediaFileInfos.Any()) {
+                MediaFileInfo? file = mediaFileInfos[0];
+                var memoryStream = new MemoryStream();
+                device.DownloadFile(file.FullName, memoryStream);
+                memoryStream.Position = 0;
+                using var reader = new StreamReader(memoryStream);
+                var versionText = reader.ReadToEnd();
+                SetKindleVersionText(versionText);
+                return true;
+            }
+            return false;
+        }
+
+        private void SetKindleVersionText(string versionText) {
             if (!string.IsNullOrWhiteSpace(versionText)) {
                 var kindleVersion = versionText.Trim().Split('(')[0].Replace("Kindle", "").Trim();
                 if (!string.IsNullOrEmpty(kindleVersion)) {

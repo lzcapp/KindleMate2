@@ -1,6 +1,5 @@
-﻿using System.ComponentModel;
-using KindleMate2.Properties;
-using Timer = System.Windows.Forms.Timer;
+﻿using KindleMate2.Properties;
+using System.ComponentModel;
 
 namespace KindleMate2 {
     partial class FrmMain {

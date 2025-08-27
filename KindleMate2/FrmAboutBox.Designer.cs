@@ -1,5 +1,5 @@
-﻿using System.ComponentModel;
-using KindleMate2.Properties;
+﻿using KindleMate2.Properties;
+using System.ComponentModel;
 
 namespace KindleMate2
 {
