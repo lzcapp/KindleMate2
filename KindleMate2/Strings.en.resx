@@ -525,4 +525,7 @@
   <data name="Confirm_Clear_Vocabulary" xml:space="preserve">
     <value>Are you sure you want to clear the vocabulary list? </value>
   </data>
+  <data name="X_Page" xml:space="preserve">
+	  <value />
+  </data>
 </root>
