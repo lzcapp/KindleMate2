@@ -14,7 +14,6 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Control = System.Windows.Controls.Control;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -34,23 +33,18 @@ namespace KindleMate2 {
 
         private readonly StaticData _staticData;
 
-        private readonly string _programsDirectory;
 
         private readonly string _filePath;
 
-        private string _kindleDrive;
+        private Device.Type _deviceType = Device.Type.Unknown;
 
-        private Device.Type _kindleDeviceType = Device.Type.Unknown;
+        private string _driveLetter;
 
-        private readonly string _kindleClippingsPath, _kindleWordsPath, _kindleVersionPath;
+        private readonly string _programPath, _clippingsPath, _wordsPath, _versionPath, _backupPath;
 
-        private string _selectedBook;
+        private string _selectedBook, _selectedWord;
 
-        private string _selectedWord;
-
-        private int _selectedTreeIndex;
-
-        private int _selectedDataGridIndex;
+        private int _selectedTreeIndex, _selectedDataGridIndex;
 
         private string _searchText;
 
@@ -59,9 +53,16 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
+            _programPath = Environment.CurrentDirectory;
+            _filePath = Path.Combine(_programPath, "KM2.dat");
+            _clippingsPath = Path.Combine("documents", "My Clippings.txt");
+            _wordsPath = Path.Combine("system", "vocabulary", "vocab.db");
+            _versionPath = Path.Combine("system", "version.txt");
+            _backupPath = Path.Combine(_programPath, "Backups");
+
             try {
-                if (File.Exists(Path.Combine(Environment.CurrentDirectory, "KM2.dat"))) {
-                    File.Delete(Path.Combine(Environment.CurrentDirectory, "KM.dat"));
+                if (File.Exists(Path.Combine(_backupPath, "KM2.dat"))) {
+                    File.Delete(Path.Combine(_backupPath, "KM.dat"));
                 } else {
                     if (!StaticData.CreateDatabase()) {
                         _ = MessageBox(Strings.Create_Database_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
@@ -85,12 +86,7 @@ namespace KindleMate2 {
                 _staticData.DisposeConnection();
             };
 
-            _programsDirectory = Environment.CurrentDirectory;
-            _filePath = Path.Combine(_programsDirectory, "KM2.dat");
-            _kindleClippingsPath = Path.Combine("documents", "My Clippings.txt");
-            _kindleWordsPath = Path.Combine("system", "vocabulary", "vocab.db");
-            _kindleVersionPath = Path.Combine("system", "version.txt");
-            _kindleDrive = string.Empty;
+            _driveLetter = string.Empty;
             _selectedBook = Strings.Select_All;
             _selectedWord = Strings.Select_All;
             _selectedTreeIndex = 0;
@@ -200,8 +196,8 @@ namespace KindleMate2 {
             }
 
             if (_staticData.IsDatabaseEmpty()) {
-                if (Directory.Exists(Path.Combine(_programsDirectory, "Backups"))) {
-                    var filePath = Path.Combine(_programsDirectory, "Backups", "KM2.dat");
+                if (Directory.Exists(Path.Combine(_programPath, "Backups"))) {
+                    var filePath = Path.Combine(_programPath, "Backups", "KM2.dat");
 
                     var fileSize = new FileInfo(filePath).Length / 1024;
                     if (File.Exists(filePath) && fileSize >= 20) {
@@ -250,12 +246,12 @@ namespace KindleMate2 {
         }
 
         private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
-            _kindleDeviceType = Device.Type.USB;
+            _deviceType = Device.Type.USB;
             DeviceEventHandler(sender);
         }
 
         private void MtpDeviceEventHandler(object sender, EventArrivedEventArgs e) {
-            _kindleDeviceType = Device.Type.MTP;
+            _deviceType = Device.Type.MTP;
             DeviceEventHandler(sender);
         }
 
@@ -1651,7 +1647,7 @@ namespace KindleMate2 {
             var isConnected = false;
 
             try {
-                isConnected = _kindleDeviceType switch {
+                isConnected = _deviceType switch {
                     Device.Type.USB => HandleUsbDevice(),
                     Device.Type.MTP => HandleMtpDevice(),
                     _ => isConnected
@@ -1662,7 +1658,7 @@ namespace KindleMate2 {
                 }
 
                 if (!isConnected) {
-                    _kindleDrive = string.Empty;
+                    _driveLetter = string.Empty;
                     menuSyncFromKindle.Visible = false;
                     menuKindle.Visible = false;
                 } else {
@@ -1689,10 +1685,10 @@ namespace KindleMate2 {
                     continue;
                 }
 
-                _kindleDrive = drive.Name;
+                _driveLetter = drive.Name;
 
                 var versionText = "";
-                var kindleVersionPath = Path.Combine(_kindleDrive, _kindleVersionPath);
+                var kindleVersionPath = Path.Combine(_driveLetter, _versionPath);
                 if (File.Exists(kindleVersionPath)) {
                     using var reader = new StreamReader(kindleVersionPath);
                     versionText = reader.ReadToEnd();
@@ -1739,11 +1735,50 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
-            var kindleClippingsPath = Path.Combine(_kindleDrive, _kindleClippingsPath);
-            var kindleWordsPath = Path.Combine(_kindleDrive, _kindleWordsPath);
+            var kindleClippingsPath = Path.Combine(_driveLetter, _clippingsPath);
+            var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
+            var kindleWordsPath = Path.Combine(_driveLetter, _wordsPath);
+            var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
+
+            if (_deviceType == Device.Type.USB) {
+                File.Copy(kindleClippingsPath, backupClippingsPath);
+                File.Copy(kindleWordsPath, backupWordsPath);
+            } else if (_deviceType == Device.Type.MTP) {
+                var devices = MediaDevice.GetDevices();
+                using MediaDevice? device = devices.First(d => d.FriendlyName.Contains("kindle", StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains("kindle", StringComparison.InvariantCultureIgnoreCase));
+                device.Connect();
+                MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\documents\");
+                var files = systemDir.EnumerateFiles("My Clippings.txt");
+                MediaFileInfo[] fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                if (fileInfos.Any()) {
+                    MediaFileInfo file = fileInfos[0];
+                    var memoryStream = new MemoryStream();
+                    device.DownloadFile(file.FullName, memoryStream);
+                    memoryStream.Position = 0;
+                    try {
+                        File.WriteAllBytes(backupClippingsPath, memoryStream.ToArray());
+                    } catch (Exception ex) {
+                        Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                    }
+                }
+                systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\vocabulary\");
+                files = systemDir.EnumerateFiles("vocab.db");
+                fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                if (fileInfos.Any()) {
+                    MediaFileInfo file = fileInfos[0];
+                    var memoryStream = new MemoryStream();
+                    device.DownloadFile(file.FullName, memoryStream);
+                    memoryStream.Position = 0;
+                    try {
+                        File.WriteAllBytes(backupWordsPath, memoryStream.ToArray());
+                    } catch (Exception ex) {
+                        Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                    }
+                }
+            }
 
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, e) => { e.Result = Import(kindleClippingsPath, kindleWordsPath); };
+            bw.DoWork += (_, e) => { e.Result = Import(backupClippingsPath, backupWordsPath); };
             bw.RunWorkerCompleted += (_, e) => {
                 if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
                     MessageBox(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1922,10 +1957,10 @@ namespace KindleMate2 {
             dataTable.DefaultView.Sort = "key ASC";
             DataTable sortedDataTable = dataTable.DefaultView.ToTable();
 
-            var filePath = Path.Combine(_programsDirectory, "Backups", "My Clippings.txt");
+            var filePath = Path.Combine(_programPath, "Backups", "My Clippings.txt");
 
-            if (!Directory.Exists(Path.Combine(_programsDirectory, "Backups"))) {
-                Directory.CreateDirectory(Path.Combine(_programsDirectory, "Backups"));
+            if (!Directory.Exists(Path.Combine(_programPath, "Backups"))) {
+                Directory.CreateDirectory(Path.Combine(_programPath, "Backups"));
             }
 
             if (File.Exists(filePath)) {
@@ -1962,7 +1997,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    Process.Start("explorer.exe", Path.Combine(_programsDirectory, "Backups"));
+                    Process.Start("explorer.exe", Path.Combine(_programPath, "Backups"));
                 }
             }
         }
@@ -1972,17 +2007,17 @@ namespace KindleMate2 {
                 return;
             }
 
-            var filePath = Path.Combine(Environment.CurrentDirectory, "Backups", "KM2.dat");
+            var filePath = Path.Combine(_backupPath, "KM2.dat");
 
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
 
-            if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "Backups"))) {
-                Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "Backups"));
+            if (!Directory.Exists(_backupPath)) {
+                Directory.CreateDirectory(_backupPath);
             }
 
-            File.Copy(Path.Combine(Environment.CurrentDirectory, "KM2.dat"), filePath);
+            File.Copy(Path.Combine(_backupPath, "KM2.dat"), filePath);
         }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
@@ -2407,7 +2442,7 @@ namespace KindleMate2 {
                     }
                 }
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
 
                 var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
 
@@ -2419,7 +2454,7 @@ namespace KindleMate2 {
 
                 htmlContent += "\r\n</body>\r\n</html>";
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
+                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
 
                 return true;
             } catch (Exception) {
@@ -2507,7 +2542,7 @@ namespace KindleMate2 {
                     }
                 }
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
 
                 var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
 
@@ -2519,7 +2554,7 @@ namespace KindleMate2 {
 
                 htmlContent += "\r\n</body>\r\n</html>";
 
-                File.WriteAllText(Path.Combine(_programsDirectory, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
+                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
 
                 return true;
             } catch (Exception) {
@@ -2528,14 +2563,14 @@ namespace KindleMate2 {
         }
 
         private void MenuExportMd_Click(object sender, EventArgs e) {
-            var path = Path.Combine(_programsDirectory, "Exports");
+            var path = Path.Combine(_programPath, "Exports");
             if (!Directory.Exists(path)) {
                 Directory.CreateDirectory(path);
             }
 
             const string css = "@import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap);*{font-family:-apple-system,\"Noto Sans\",\"Helvetica Neue\",Helvetica,\"Nimbus Sans L\",Arial,\"Liberation Sans\",\"PingFang SC\",\"Hiragino Sans GB\",\"Noto Sans CJK SC\",\"Source Han Sans SC\",\"Source Han Sans CN\",\"Microsoft YaHei UI\",\"Microsoft YaHei\",\"Wenquanyi Micro Hei\",\"WenQuanYi Zen Hei\",\"ST Heiti\",SimHei,\"WenQuanYi Zen Hei Sharp\",\"Noto Emoji\",sans-serif}body{font-family:Arial,sans-serif;background-color:#f9f9f9;color:#333;line-height:1.6;align-items:center;width:80vw;margin:20px auto}h1{font-size:30px;text-align:center;margin:30px auto;color:#333}h2{font-size:24px;margin:30px auto;color:#333}p{font-size:16px;margin:20px auto}code{background-color:#faebd7;border-radius:10px;padding:2px 6px}";
 
-            File.WriteAllText(Path.Combine(_programsDirectory, "Exports", "styles.css"), css);
+            File.WriteAllText(Path.Combine(_programPath, "Exports", "styles.css"), css);
 
             if (!ClippingsToMarkdown() || !VocabsToMarkdown()) {
                 return;
@@ -2546,7 +2581,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            Process.Start("explorer.exe", Path.Combine(_programsDirectory, "Exports"));
+            Process.Start("explorer.exe", Path.Combine(_programPath, "Exports"));
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
@@ -2689,7 +2724,7 @@ namespace KindleMate2 {
             if (result != DialogResult.Yes) {
                 return;
             }
-            Process.Start("explorer.exe", Path.Combine(_programsDirectory, "Exports"));
+            Process.Start("explorer.exe", Path.Combine(_programPath, "Exports"));
         }
 
         private void TreeViewBooks_AfterSelect(object sender, TreeViewEventArgs e) {
@@ -2727,12 +2762,18 @@ namespace KindleMate2 {
 
         private void HideCaret(object? sender) {
             if (sender != null) {
-                System.Windows.Forms.Control? control = sender as System.Windows.Forms.Control ?? null;
+                Control? control = sender as Control ?? null;
                 if (control != null) {
                     HideCaret(control.Handle);
                     DestroyCaret();
                 }
             }
+        }
+
+        private string GetCurrentTimestamp() {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            var unixTimestampInSeconds = now.ToUnixTimeSeconds();
+            return unixTimestampInSeconds.ToString();
         }
     }
 }
