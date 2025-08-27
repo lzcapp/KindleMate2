@@ -199,17 +199,19 @@ namespace KindleMate2 {
                 if (Directory.Exists(Path.Combine(_programPath, "Backups"))) {
                     var filePath = Path.Combine(_programPath, "Backups", "KM2.dat");
 
-                    var fileSize = new FileInfo(filePath).Length / 1024;
-                    if (File.Exists(filePath) && fileSize >= 20) {
-                        DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (resultRestore == DialogResult.Yes) {
-                            File.Copy(filePath, _filePath, true);
-                            RefreshData();
-                            return;
-                        }
-                        DialogResult resultDeleteBackup = MessageBox(Strings.Confirm_Delete_Backup, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (resultDeleteBackup == DialogResult.Yes) {
-                            File.Delete(filePath);
+                    if (File.Exists(filePath)) {
+                        var fileSize = new FileInfo(filePath).Length / 1024;
+                        if (File.Exists(filePath) && fileSize >= 20) {
+                            DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (resultRestore == DialogResult.Yes) {
+                                File.Copy(filePath, _filePath, true);
+                                RefreshData();
+                                return;
+                            }
+                            DialogResult resultDeleteBackup = MessageBox(Strings.Confirm_Delete_Backup, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (resultDeleteBackup == DialogResult.Yes) {
+                                File.Delete(filePath);
+                            }
                         }
                     }
                 }
@@ -2017,7 +2019,7 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(_backupPath);
             }
 
-            File.Copy(Path.Combine(_backupPath, "KM2.dat"), filePath);
+            File.Copy(Path.Combine(_programPath, "KM2.dat"), filePath);
         }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
