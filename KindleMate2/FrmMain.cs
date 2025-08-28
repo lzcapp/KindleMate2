@@ -17,12 +17,6 @@ using System.Text.RegularExpressions;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        [DllImport("User32.dll")]
-        private static extern bool HideCaret(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        private static extern bool DestroyCaret();
-
         private DataTable _clippingsDataTable = new();
 
         private DataTable _originClippingsDataTable = new();
@@ -32,32 +26,38 @@ namespace KindleMate2 {
         private DataTable _lookupsDataTable = new();
 
         private readonly StaticData _staticData;
-
-
-        private readonly string _filePath;
-
+        
         private Device.Type _deviceType = Device.Type.Unknown;
 
         private string _driveLetter;
 
-        private readonly string _programPath, _clippingsPath, _wordsPath, _versionPath, _backupPath;
+        private readonly string _programPath, _backupPath, _databasePath, _clippingsPath, _wordsPath, _versionPath;
 
-        private string _selectedBook, _selectedWord;
+        private string _selectedBook, _selectedWord, _searchText;
 
         private int _selectedTreeIndex, _selectedDataGridIndex;
 
-        private string _searchText;
-
         private bool _isDarkTheme;
+        
+        private const string DatabaseFileName = "KM2.dat";
+        private const string ClippingsFileName = "My Clippings.txt";
+        private const string VocabFileName = "vocab.db";
+        private const string VersionFileName = "version.txt";
+
+        [DllImport("User32.dll")]
+        private static extern bool HideCaret(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool DestroyCaret();
 
         public FrmMain() {
             InitializeComponent();
 
             _programPath = Environment.CurrentDirectory;
-            _filePath = Path.Combine(_programPath, "KM2.dat");
-            _clippingsPath = Path.Combine("documents", "My Clippings.txt");
-            _wordsPath = Path.Combine("system", "vocabulary", "vocab.db");
-            _versionPath = Path.Combine("system", "version.txt");
+            _databasePath = Path.Combine(_programPath, DatabaseFileName);
+            _clippingsPath = Path.Combine("documents", ClippingsFileName);
+            _wordsPath = Path.Combine("system", "vocabulary", VocabFileName);
+            _versionPath = Path.Combine("system", VersionFileName);
             _backupPath = Path.Combine(_programPath, "Backups");
 
             try {
@@ -190,7 +190,7 @@ namespace KindleMate2 {
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (!File.Exists(_filePath)) {
+            if (!File.Exists(_databasePath)) {
                 RefreshData();
                 return;
             }
@@ -204,7 +204,7 @@ namespace KindleMate2 {
                         if (File.Exists(filePath) && fileSize >= 20) {
                             DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultRestore == DialogResult.Yes) {
-                                File.Copy(filePath, _filePath, true);
+                                File.Copy(filePath, _databasePath, true);
                                 RefreshData();
                                 return;
                             }
@@ -1705,6 +1705,7 @@ namespace KindleMate2 {
             var devices = MediaDevice.GetDevices();
             using MediaDevice? device = devices.First(d => d.FriendlyName.Contains("kindle", StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains("kindle", StringComparison.InvariantCultureIgnoreCase));
             device.Connect();
+            _driveLetter = @"\Internal Storage\";
             MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
             var files = systemDir.EnumerateFiles("version.txt");
             var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
@@ -2321,7 +2322,7 @@ namespace KindleMate2 {
                     }
                 }
 
-                var fileInfo = new FileInfo(_filePath);
+                var fileInfo = new FileInfo(_databasePath);
                 var originFileSize = fileInfo.Length;
 
                 _staticData.CommitTransaction();
