@@ -1709,7 +1709,7 @@ namespace KindleMate2 {
 
         private bool HandleMtpDevice() {
             var devices = MediaDevice.GetDevices();
-            using MediaDevice? device = devices.First(d => d.FriendlyName.Contains("kindle", StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains("kindle", StringComparison.InvariantCultureIgnoreCase));
+            using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
             device.Connect();
             _driveLetter = @"\Internal Storage\";
             MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
@@ -1730,7 +1730,7 @@ namespace KindleMate2 {
 
         private void SetKindleVersionText(string versionText) {
             if (!string.IsNullOrWhiteSpace(versionText)) {
-                var kindleVersion = versionText.Trim().Split('(')[0].Replace("Kindle", "").Trim();
+                var kindleVersion = versionText.Trim().Split('(')[0].Replace(Kindle, "").Trim();
                 if (!string.IsNullOrEmpty(kindleVersion)) {
                     menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected + Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
                 }
