@@ -38,11 +38,18 @@ namespace KindleMate2 {
         private int _selectedTreeIndex, _selectedDataGridIndex;
 
         private bool _isDarkTheme;
-        
+
+        private const string Kindle = "Kindle";
+        private const string SystemPathName = "system";
+        private const string DocumentsPathName = "documents";
+        private const string VocabularyPathName = "vocabulary";
+        private const string BackupsPathName = "Backups";
+        private const string KindleMateDatabaseFileName = "KM.dat";
         private const string DatabaseFileName = "KM2.dat";
         private const string ClippingsFileName = "My Clippings.txt";
         private const string VocabFileName = "vocab.db";
         private const string VersionFileName = "version.txt";
+        private const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
         [DllImport("User32.dll")]
         private static extern bool HideCaret(IntPtr hWnd);
@@ -55,14 +62,14 @@ namespace KindleMate2 {
 
             _programPath = Environment.CurrentDirectory;
             _databasePath = Path.Combine(_programPath, DatabaseFileName);
-            _clippingsPath = Path.Combine("documents", ClippingsFileName);
-            _wordsPath = Path.Combine("system", "vocabulary", VocabFileName);
-            _versionPath = Path.Combine("system", VersionFileName);
-            _backupPath = Path.Combine(_programPath, "Backups");
+            _clippingsPath = Path.Combine(DocumentsPathName, ClippingsFileName);
+            _wordsPath = Path.Combine(SystemPathName, VocabularyPathName, VocabFileName);
+            _versionPath = Path.Combine(SystemPathName, VersionFileName);
+            _backupPath = Path.Combine(_programPath, BackupsPathName);
 
             try {
-                if (File.Exists(Path.Combine(_backupPath, "KM2.dat"))) {
-                    File.Delete(Path.Combine(_backupPath, "KM.dat"));
+                if (File.Exists(Path.Combine(_backupPath, DatabaseFileName))) {
+                    File.Delete(Path.Combine(_backupPath, KindleMateDatabaseFileName));
                 } else {
                     if (!StaticData.CreateDatabase()) {
                         _ = MessageBox(Strings.Create_Database_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
@@ -163,13 +170,13 @@ namespace KindleMate2 {
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English") || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains("English", StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(currentCulture.Name, "zh-Hans", StringComparison.OrdinalIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, "zh-Hans", StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(currentCulture.Name, "zh-MO", StringComparison.OrdinalIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.OrdinalIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, "zh-MO", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
@@ -196,8 +203,8 @@ namespace KindleMate2 {
             }
 
             if (_staticData.IsDatabaseEmpty()) {
-                if (Directory.Exists(Path.Combine(_programPath, "Backups"))) {
-                    var filePath = Path.Combine(_programPath, "Backups", "KM2.dat");
+                if (Directory.Exists(Path.Combine(_programPath, BackupsPathName))) {
+                    var filePath = Path.Combine(_programPath, BackupsPathName, DatabaseFileName);
 
                     if (File.Exists(filePath)) {
                         var fileSize = new FileInfo(filePath).Length / 1024;
@@ -289,7 +296,7 @@ namespace KindleMate2 {
                     return clippingsResult;
                 }
 
-                return clippingsResult + "\n" + wordResult;
+                return clippingsResult + Environment.NewLine + wordResult;
             } catch (Exception e) {
                 Console.WriteLine(e);
                 return string.Empty;
@@ -935,7 +942,7 @@ namespace KindleMate2 {
             var split_b = line2.Split('|');
 
             var clippingtypelocation = string.Empty;
-            line2 = line2.Replace("- ", "", StringComparison.OrdinalIgnoreCase);
+            line2 = line2.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
             var indexOf = line2.LastIndexOf('|');
             if (indexOf >= 0) {
                 clippingtypelocation = line2[..(indexOf - 1)];
@@ -1092,7 +1099,7 @@ namespace KindleMate2 {
 
                         var usage_list = new List<string>();
                         foreach (DataRow row in _lookupsDataTable.Rows) {
-                            if (string.Equals(row["word_key"].ToString(), word_key, StringComparison.OrdinalIgnoreCase)) {
+                            if (string.Equals(row["word_key"].ToString(), word_key, StringComparison.InvariantCultureIgnoreCase)) {
                                 var str = row["word_key"].ToString() ?? string.Empty;
                                 var strContent = row["usage"].ToString() ?? string.Empty;
                                 if (!string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)) {
@@ -1629,8 +1636,7 @@ namespace KindleMate2 {
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
-            const string repoUrl = "https://github.com/lzcapp/KindleMate2";
-            OpenUrl(repoUrl);
+            OpenUrl(RepoUrl);
         }
 
         private void OpenUrl(string url) {
@@ -1709,7 +1715,7 @@ namespace KindleMate2 {
             MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
             var files = systemDir.EnumerateFiles("version.txt");
             var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
-            if (mediaFileInfos.Any()) {
+            if (mediaFileInfos.Length != 0) {
                 MediaFileInfo? file = mediaFileInfos[0];
                 var memoryStream = new MemoryStream();
                 device.DownloadFile(file.FullName, memoryStream);
@@ -1743,41 +1749,48 @@ namespace KindleMate2 {
             var kindleWordsPath = Path.Combine(_driveLetter, _wordsPath);
             var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
 
-            if (_deviceType == Device.Type.USB) {
-                File.Copy(kindleClippingsPath, backupClippingsPath);
-                File.Copy(kindleWordsPath, backupWordsPath);
-            } else if (_deviceType == Device.Type.MTP) {
-                var devices = MediaDevice.GetDevices();
-                using MediaDevice? device = devices.First(d => d.FriendlyName.Contains("kindle", StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains("kindle", StringComparison.InvariantCultureIgnoreCase));
-                device.Connect();
-                MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\documents\");
-                var files = systemDir.EnumerateFiles("My Clippings.txt");
-                MediaFileInfo[] fileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                if (fileInfos.Any()) {
-                    MediaFileInfo file = fileInfos[0];
-                    var memoryStream = new MemoryStream();
-                    device.DownloadFile(file.FullName, memoryStream);
-                    memoryStream.Position = 0;
-                    try {
-                        File.WriteAllBytes(backupClippingsPath, memoryStream.ToArray());
-                    } catch (Exception ex) {
-                        Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+            switch (_deviceType) {
+                case Device.Type.USB:
+                    File.Copy(kindleClippingsPath, backupClippingsPath);
+                    File.Copy(kindleWordsPath, backupWordsPath);
+                    break;
+                case Device.Type.MTP: {
+                    var devices = MediaDevice.GetDevices();
+                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
+                    device.Connect();
+                    MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\documents\");
+                    var files = systemDir.EnumerateFiles(ClippingsFileName);
+                    MediaFileInfo[] fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                    if (fileInfos.Length != 0) {
+                        MediaFileInfo file = fileInfos[0];
+                        var memoryStream = new MemoryStream();
+                        device.DownloadFile(file.FullName, memoryStream);
+                        memoryStream.Position = 0;
+                        try {
+                            File.WriteAllBytes(backupClippingsPath, memoryStream.ToArray());
+                        } catch (Exception ex) {
+                            Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                        }
                     }
-                }
-                systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\vocabulary\");
-                files = systemDir.EnumerateFiles("vocab.db");
-                fileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                if (fileInfos.Any()) {
-                    MediaFileInfo file = fileInfos[0];
-                    var memoryStream = new MemoryStream();
-                    device.DownloadFile(file.FullName, memoryStream);
-                    memoryStream.Position = 0;
-                    try {
-                        File.WriteAllBytes(backupWordsPath, memoryStream.ToArray());
-                    } catch (Exception ex) {
-                        Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                    systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\vocabulary\");
+                    files = systemDir.EnumerateFiles(VocabFileName);
+                    fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                    if (fileInfos.Length != 0) {
+                        MediaFileInfo file = fileInfos[0];
+                        var memoryStream = new MemoryStream();
+                        device.DownloadFile(file.FullName, memoryStream);
+                        memoryStream.Position = 0;
+                        try {
+                            File.WriteAllBytes(backupWordsPath, memoryStream.ToArray());
+                        } catch (Exception ex) {
+                            Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                        }
                     }
+                    break;
                 }
+                case Device.Type.Unknown:
+                default:
+                    return;
             }
 
             var bw = new BackgroundWorker();
@@ -2010,7 +2023,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            var filePath = Path.Combine(_backupPath, "KM2.dat");
+            var filePath = Path.Combine(_backupPath, DatabaseFileName);
 
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
@@ -2020,7 +2033,7 @@ namespace KindleMate2 {
                 Directory.CreateDirectory(_backupPath);
             }
 
-            File.Copy(Path.Combine(_programPath, "KM2.dat"), filePath);
+            File.Copy(Path.Combine(_programPath, DatabaseFileName), filePath);
         }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
@@ -2057,10 +2070,9 @@ namespace KindleMate2 {
 
         private void MenuImportKindleWords_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(vocab.db)",
+                Title = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(" + VocabFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
-                DefaultExt = "txt",
                 Filter = Strings.Kindle_Vocab_File + Strings.Space + @"(*.db)|*.db",
                 FilterIndex = 2,
                 RestoreDirectory = true,
