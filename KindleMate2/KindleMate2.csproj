@@ -10,7 +10,7 @@
 		<PackageIcon>bookmark.ico</PackageIcon>
 		<RepositoryUrl>https://github.com/lzcapp/KindleMate2.git</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageProjectUrl>https://github.com/lzcapp/KindleMate2</PackageProjectUrl>
+		<PackageProjectUrl>https://github.lzc.app/KindleMate2/</PackageProjectUrl>
 		<ErrorReport>none</ErrorReport>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -21,7 +21,7 @@
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>
-		<Version>2025.08.18</Version>
+		<Version>2025.08.29</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
