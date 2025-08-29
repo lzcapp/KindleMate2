@@ -26,12 +26,12 @@ namespace KindleMate2 {
         private DataTable _lookupsDataTable = new();
 
         private readonly StaticData _staticData;
-        
+
         private Device.Type _deviceType = Device.Type.Unknown;
 
-        private string _driveLetter;
+        private string _driveLetter = string.Empty;
 
-        private readonly string _programPath, _backupPath, _databasePath, _clippingsPath, _wordsPath, _versionPath;
+        private readonly string _programPath, _tempPath, _backupPath, _databasePath, _versionPath;
 
         private string _selectedBook, _selectedWord, _searchText;
 
@@ -43,6 +43,7 @@ namespace KindleMate2 {
         private const string SystemPathName = "system";
         private const string DocumentsPathName = "documents";
         private const string VocabularyPathName = "vocabulary";
+        private const string TempPathName = "Temp";
         private const string BackupsPathName = "Backups";
         private const string KindleMateDatabaseFileName = "KM.dat";
         private const string DatabaseFileName = "KM2.dat";
@@ -62,10 +63,18 @@ namespace KindleMate2 {
 
             _programPath = Environment.CurrentDirectory;
             _databasePath = Path.Combine(_programPath, DatabaseFileName);
-            _clippingsPath = Path.Combine(DocumentsPathName, ClippingsFileName);
-            _wordsPath = Path.Combine(SystemPathName, VocabularyPathName, VocabFileName);
             _versionPath = Path.Combine(SystemPathName, VersionFileName);
+            _tempPath = Path.Combine(_programPath, TempPathName);
             _backupPath = Path.Combine(_programPath, BackupsPathName);
+
+            _selectedBook = Strings.Select_All;
+            _selectedWord = Strings.Select_All;
+            _searchText = string.Empty;
+
+            dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+
+            lblContent.GotFocus += LblContent_GotFocus;
+            lblContent.LostFocus += LblContent_LostFocus;
 
             try {
                 if (File.Exists(Path.Combine(_backupPath, DatabaseFileName))) {
@@ -83,70 +92,31 @@ namespace KindleMate2 {
 
             _staticData = new StaticData();
 
-            SetTheme();
-
-            SetLang();
-
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 BackupDatabase();
                 _staticData.CloseConnection();
                 _staticData.DisposeConnection();
             };
 
-            _driveLetter = string.Empty;
-            _selectedBook = Strings.Select_All;
-            _selectedWord = Strings.Select_All;
-            _selectedTreeIndex = 0;
-            _selectedDataGridIndex = 0;
-            _searchText = GetSearchText();
+            SetTheme();
 
-            menuFile.Text = Strings.Files + @"(&F)";
-            menuRefresh.Text = Strings.Refresh;
-            menuStatistic.Text = Strings.Statistics;
-            menuRestart.Text = Strings.Restart;
-            menuExit.Text = Strings.Exit;
-            menuManage.Text = Strings.Management + @"(&M)";
-            menuImportKindle.Text = Strings.Import_Kindle_Clippings;
-            menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
-            menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
-            menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
-            menuExportMd.Text = Strings.Export_To_Markdown;
-            menuClean.Text = Strings.Clean_Database;
-            menuRebuild.Text = Strings.Rebuild_Database;
-            menuBackup.Text = Strings.Backup;
-            menuClear.Text = Strings.Clear_Data;
-            menuHelp.Text = Strings.Help + @"(&H)";
-            menuAbout.Text = Strings.About;
-            menuRepo.Text = Strings.GitHub_Repo;
-            menuLang.Text = Strings.Language + @"(&L)";
-            menuLangEN.Text = Strings.English;
-            menuLangSC.Text = Strings.SC;
-            menuLangTC.Text = Strings.TC;
-            menuLangAuto.Text = Strings.AutomaticDetection;
+            SetLang();
 
-            tabPageBooks.Text = Strings.Clippings;
-            tabPageWords.Text = Strings.Vocabulary_List;
+            SetText();
+        }
 
-            menuBookRefresh.Text = Strings.Refresh;
-            menuBooksDelete.Text = Strings.Delete;
-            menuRename.Text = Strings.Rename;
-
-            menuClippingsRefresh.Text = Strings.Refresh;
-            menuClippingsCopy.Text = Strings.Copy;
-            menuClippingsDelete.Text = Strings.Delete;
-
-            cmbSearch.Items.Add(Strings.Select_All);
-            cmbSearch.Items.Add(Strings.Book_Title);
-            cmbSearch.Items.Add(Strings.Author);
-            cmbSearch.Items.Add(Strings.Vocabulary);
-            cmbSearch.Items.Add(Strings.Stem);
-            cmbSearch.Items.Add(Strings.Content);
-            cmbSearch.SelectedIndex = 0;
-
-            dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-
-            lblContent.GotFocus += LblContent_GotFocus;
-            lblContent.LostFocus += LblContent_LostFocus;
+        private void SetTheme() {
+            _isDarkTheme = _staticData.IsDarkTheme();
+            try {
+                if (_isDarkTheme) {
+                    _ = new DarkModeCS(this, false);
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
+            } finally {
+                menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
+            }
         }
 
         private void SetLang() {
@@ -182,18 +152,49 @@ namespace KindleMate2 {
             }
         }
 
-        private void SetTheme() {
-            _isDarkTheme = _staticData.IsDarkTheme();
-            try {
-                if (_isDarkTheme) {
-                    _ = new DarkModeCS(this, false);
-                }
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                throw;
-            } finally {
-                menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
-            }
+        private void SetText() {
+            menuFile.Text = Strings.Files + @"(&F)";
+            menuRefresh.Text = Strings.Refresh;
+            menuStatistic.Text = Strings.Statistics;
+            menuRestart.Text = Strings.Restart;
+            menuExit.Text = Strings.Exit;
+            menuManage.Text = Strings.Management + @"(&M)";
+            menuImportKindle.Text = Strings.Import_Kindle_Clippings;
+            menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
+            menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
+            menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
+            menuSyncToKindle.Text = Strings.Sync_To_Kindle;
+            menuExportMd.Text = Strings.Export_To_Markdown;
+            menuClean.Text = Strings.Clean_Database;
+            menuRebuild.Text = Strings.Rebuild_Database;
+            menuBackup.Text = Strings.Backup;
+            menuClear.Text = Strings.Clear_Data;
+            menuHelp.Text = Strings.Help + @"(&H)";
+            menuAbout.Text = Strings.About;
+            menuRepo.Text = Strings.GitHub_Repo;
+            menuLang.Text = Strings.Language + @"(&L)";
+            menuLangEN.Text = Strings.English;
+            menuLangSC.Text = Strings.SC;
+            menuLangTC.Text = Strings.TC;
+            menuLangAuto.Text = Strings.AutomaticDetection;
+
+            tabPageBooks.Text = Strings.Clippings;
+            tabPageWords.Text = Strings.Vocabulary_List;
+
+            menuBookRefresh.Text = Strings.Refresh;
+            menuBooksDelete.Text = Strings.Delete;
+            menuRename.Text = Strings.Rename;
+
+            menuClippingsRefresh.Text = Strings.Refresh;
+            menuClippingsCopy.Text = Strings.Copy;
+            menuClippingsDelete.Text = Strings.Delete;
+
+            cmbSearch.Items.Add(Strings.Select_All);
+            cmbSearch.Items.Add(Strings.Book_Title);
+            cmbSearch.Items.Add(Strings.Author);
+            cmbSearch.Items.Add(Strings.Vocabulary);
+            cmbSearch.Items.Add(Strings.Stem);
+            cmbSearch.Items.Add(Strings.Content);
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
@@ -203,7 +204,7 @@ namespace KindleMate2 {
             }
 
             if (_staticData.IsDatabaseEmpty()) {
-                if (Directory.Exists(Path.Combine(_programPath, BackupsPathName))) {
+                if (Directory.Exists(_backupPath)) {
                     var filePath = Path.Combine(_programPath, BackupsPathName, DatabaseFileName);
 
                     if (File.Exists(filePath)) {
@@ -224,20 +225,27 @@ namespace KindleMate2 {
                 }
             }
 
+            _selectedBook = Strings.Select_All;
+            _selectedWord = Strings.Select_All;
+            _selectedTreeIndex = 0;
+            _selectedDataGridIndex = 0;
+            cmbSearch.SelectedIndex = 0;
+            _searchText = GetSearchText();
+
             RefreshData();
 
             treeViewBooks.Focus();
 
             CmbSearch_SelectedIndexChanged(this, e);
 
-            StaticData.CheckUpdate();
-
-            IsKindleConnected();
+            //StaticData.CheckUpdate();
 
             AddDeviceWatcher();
         }
 
         private void AddDeviceWatcher() {
+            IsKindleConnected();
+
             const string deviceChangeQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2 OR EventType = 3";
             using var watcher = new ManagementEventWatcher(deviceChangeQuery);
             watcher.EventArrived += UsbDeviceEventHandler;
@@ -265,26 +273,19 @@ namespace KindleMate2 {
         }
 
         private void DeviceEventHandler(object sender) {
-            if (sender is ManagementEventWatcher watcher) {
-                watcher.Stop();
-                IsKindleConnected();
-                watcher.Start();
+            if (sender is not ManagementEventWatcher watcher) {
+                return;
             }
-        }
-
-        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
-            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
-        }
-
-        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MsgIcon icon) {
-            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+            watcher.Stop();
+            IsKindleConnected();
+            watcher.Start();
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
             try {
                 var clippingsResult = ImportKindleClippings(kindleClippingsPath);
                 var wordResult = ImportKindleWords(kindleWordsPath);
-                if (string.IsNullOrWhiteSpace(clippingsResult + wordResult)) {
+                if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
                     return string.Empty;
                 }
 
@@ -712,8 +713,8 @@ namespace KindleMate2 {
         }
 
         // ReSharper disable once InconsistentNaming
-        private string ImportKMDatabase(string selectedFilePath) {
-            SQLiteConnection connection = new("Data Source=" + selectedFilePath + ";Version=3;");
+        private string ImportKMDatabase(string filePath) {
+            using SQLiteConnection connection = new("Data Source=" + filePath + ";Version=3;");
 
             var clippingsDataTable = new DataTable();
             var originClippingsDataTable = new DataTable();
@@ -1151,8 +1152,6 @@ namespace KindleMate2 {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
-
                         lblContent.SelectionBullet = true;
                         var usageLines = usage.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
                         foreach (var alines in usageLines.Select(line => line.Split("\n"))) {
@@ -1210,8 +1209,10 @@ namespace KindleMate2 {
                             }
                         }
 
+                        lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + usage_list.Count + Strings.Space + Strings.X_Lookups;
                         if (usage_clippings.Count > 0) {
+                            lblLocation.Text += Strings.Symbol_Comma + usage_clippings.Count + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + usage_clippings.Count + Strings.Space + Strings.X_Other_Books;
                         }
                         lblBookCount.Image = Resources.input_latin_uppercase;
@@ -1489,11 +1490,12 @@ namespace KindleMate2 {
 
         private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
             DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
-            if (hitTestInfo.RowIndex >= 0) {
-                dataGridView.ClearSelection();
-                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
-                _selectedDataGridIndex = hitTestInfo.RowIndex;
+            if (hitTestInfo.RowIndex < 0) {
+                return;
             }
+            dataGridView.ClearSelection();
+            dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+            _selectedDataGridIndex = hitTestInfo.RowIndex;
         }
 
         private void MenuBooksDelete_Click(object sender, EventArgs e) {
@@ -1605,7 +1607,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(KM2.dat)",
+                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(" + KindleMateDatabaseFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
@@ -1673,69 +1675,94 @@ namespace KindleMate2 {
                     menuSyncFromKindle.Visible = true;
                     menuKindle.Visible = true;
                 }
+
+                menuKindle.Enabled = isConnected;
             } catch (Exception e) {
                 Console.WriteLine(e);
             }
         }
 
         private bool HandleUsbDevice() {
-            var drives = DriveInfo.GetDrives();
-            foreach (DriveInfo drive in drives) {
-                if (drive.DriveType != DriveType.Removable) {
-                    continue;
-                }
-                var documentsDir = Path.Combine(drive.Name, "documents");
-                if (!Directory.Exists(documentsDir)) {
-                    continue;
-                }
-                var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
-                if (!File.Exists(clippingsPath)) {
-                    continue;
-                }
+            try {
+                var drives = DriveInfo.GetDrives();
+                foreach (DriveInfo drive in drives) {
+                    if (drive.DriveType != DriveType.Removable) {
+                        continue;
+                    }
+                    var documentsDir = Path.Combine(drive.Name, "documents");
+                    if (!Directory.Exists(documentsDir)) {
+                        continue;
+                    }
+                    var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
+                    if (!File.Exists(clippingsPath)) {
+                        continue;
+                    }
 
-                _driveLetter = drive.Name;
+                    _driveLetter = drive.Name;
 
-                var versionText = "";
-                var kindleVersionPath = Path.Combine(_driveLetter, _versionPath);
-                if (File.Exists(kindleVersionPath)) {
-                    using var reader = new StreamReader(kindleVersionPath);
-                    versionText = reader.ReadToEnd();
+                    var versionText = string.Empty;
+                    var kindleVersionPath = Path.Combine(_driveLetter, _versionPath);
+                    if (File.Exists(kindleVersionPath)) {
+                        using var reader = new StreamReader(kindleVersionPath);
+                        versionText = reader.ReadToEnd();
+                    }
+                    SetKindleVersionText(versionText);
+                    _deviceType = Device.Type.USB;
+                    return true;
                 }
-                SetKindleVersionText(versionText);
-                return true;
+                return false;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
             }
-            return false;
         }
 
         private bool HandleMtpDevice() {
-            var devices = MediaDevice.GetDevices();
-            using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-            device.Connect();
-            _driveLetter = @"\Internal Storage\";
-            MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\");
-            var files = systemDir.EnumerateFiles("version.txt");
-            var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
-            if (mediaFileInfos.Length != 0) {
-                MediaFileInfo? file = mediaFileInfos[0];
-                var memoryStream = new MemoryStream();
-                device.DownloadFile(file.FullName, memoryStream);
-                memoryStream.Position = 0;
-                using var reader = new StreamReader(memoryStream);
-                var versionText = reader.ReadToEnd();
-                SetKindleVersionText(versionText);
-                return true;
+            try {
+                var devices = MediaDevice.GetDevices();
+                foreach (MediaDevice? device in devices) {
+                    try {
+                        device.Connect();
+                        if (!device.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) && !device.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase)) {
+                            device.Disconnect();
+                            continue;
+                        }
+                        _driveLetter = @"\Internal Storage\";
+                        MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, SystemPathName));
+                        var files = systemDir.EnumerateFiles(VersionFileName);
+                        var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                        if (mediaFileInfos.Length == 0) {
+                            return false;
+                        }
+                        MediaFileInfo? file = mediaFileInfos[0];
+                        var memoryStream = new MemoryStream();
+                        device.DownloadFile(file.FullName, memoryStream);
+                        memoryStream.Position = 0;
+                        using var reader = new StreamReader(memoryStream);
+                        var versionText = reader.ReadToEnd();
+                        SetKindleVersionText(versionText);
+                        device.Disconnect();
+                        _deviceType = Device.Type.MTP;
+                        return true;
+                    } catch (Exception e) {
+                        Console.WriteLine(e);
+                    }
+                }
+                return false;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
             }
-            return false;
         }
 
         private void SetKindleVersionText(string versionText) {
-            if (!string.IsNullOrWhiteSpace(versionText)) {
-                var kindleVersion = versionText.Trim().Split('(')[0].Replace(Kindle, "").Trim();
-                if (!string.IsNullOrEmpty(kindleVersion)) {
-                    menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected + Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
-                }
-            } else {
-                menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected;
+            menuKindle.Text = Strings.Space + Strings.Kindle_Device_Connected;
+            if (string.IsNullOrWhiteSpace(versionText)) {
+                return;
+            }
+            var kindleVersion = versionText.Trim().Split('(')[0].Replace(Kindle, "").Trim();
+            if (!string.IsNullOrEmpty(kindleVersion)) {
+                menuKindle.Text += Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
             }
         }
 
@@ -1744,53 +1771,11 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
-            var kindleClippingsPath = Path.Combine(_driveLetter, _clippingsPath);
             var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-            var kindleWordsPath = Path.Combine(_driveLetter, _wordsPath);
             var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
 
-            switch (_deviceType) {
-                case Device.Type.USB:
-                    File.Copy(kindleClippingsPath, backupClippingsPath);
-                    File.Copy(kindleWordsPath, backupWordsPath);
-                    break;
-                case Device.Type.MTP: {
-                    var devices = MediaDevice.GetDevices();
-                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-                    device.Connect();
-                    MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(@"\Internal Storage\documents\");
-                    var files = systemDir.EnumerateFiles(ClippingsFileName);
-                    MediaFileInfo[] fileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                    if (fileInfos.Length != 0) {
-                        MediaFileInfo file = fileInfos[0];
-                        var memoryStream = new MemoryStream();
-                        device.DownloadFile(file.FullName, memoryStream);
-                        memoryStream.Position = 0;
-                        try {
-                            File.WriteAllBytes(backupClippingsPath, memoryStream.ToArray());
-                        } catch (Exception ex) {
-                            Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
-                        }
-                    }
-                    systemDir = device.GetDirectoryInfo(@"\Internal Storage\system\vocabulary\");
-                    files = systemDir.EnumerateFiles(VocabFileName);
-                    fileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                    if (fileInfos.Length != 0) {
-                        MediaFileInfo file = fileInfos[0];
-                        var memoryStream = new MemoryStream();
-                        device.DownloadFile(file.FullName, memoryStream);
-                        memoryStream.Position = 0;
-                        try {
-                            File.WriteAllBytes(backupWordsPath, memoryStream.ToArray());
-                        } catch (Exception ex) {
-                            Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
-                        }
-                    }
-                    break;
-                }
-                case Device.Type.Unknown:
-                default:
-                    return;
+            if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
+                return;
             }
 
             var bw = new BackgroundWorker();
@@ -1805,6 +1790,52 @@ namespace KindleMate2 {
                 RefreshData();
             };
             bw.RunWorkerAsync();
+        }
+
+        private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath) {
+            var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
+            var vocabularyPath = Path.Combine(_driveLetter, SystemPathName, VocabularyPathName);
+            switch (_deviceType) {
+                case Device.Type.USB:
+                    File.Copy(Path.Combine(documentPath, ClippingsFileName), backupClippingsPath);
+                    File.Copy(Path.Combine(vocabularyPath, VocabFileName), backupWordsPath);
+                    return true;
+                case Device.Type.MTP: {
+                    var devices = MediaDevice.GetDevices();
+                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
+                    device.Connect();
+                    ReadMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
+                    ReadMtpFile(device, vocabularyPath, VocabFileName, backupWordsPath);
+                    device.Disconnect();
+                    return true;
+                }
+                case Device.Type.Unknown:
+                default:
+                    return false;
+            }
+        }
+
+        private static void ReadMtpFile(MediaDevice device, string path, string fileName, string filePath) {
+            MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(path);
+            IEnumerable<MediaFileInfo> files = systemDir.EnumerateFiles(fileName);
+            var fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+            if (fileInfos.Length == 0) {
+                return;
+            }
+            MediaFileInfo file = fileInfos[0];
+            var memoryStream = new MemoryStream();
+            device.DownloadFile(file.FullName, memoryStream);
+            memoryStream.Position = 0;
+            try {
+                File.WriteAllBytes(filePath, memoryStream.ToArray());
+            } catch (Exception ex) {
+                Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+            }
+        }
+
+        private static void WriteMtpFile(MediaDevice device, string path, string fileName, string filePath) {
+            using var sr = new StreamReader(filePath);
+            device.UploadFile(sr.BaseStream, Path.Combine(path, fileName));
         }
 
         private void MenuKindle_Click(object sender, EventArgs e) {
@@ -1968,15 +1999,15 @@ namespace KindleMate2 {
             RefreshData();
         }
 
-        private bool BackupOriginClippings() {
+        private bool ExportClippingsFile(string path, string file = ClippingsFileName) {
             DataTable dataTable = _staticData.GetOriginClippingsDataTable();
             dataTable.DefaultView.Sort = "key ASC";
             DataTable sortedDataTable = dataTable.DefaultView.ToTable();
 
-            var filePath = Path.Combine(_programPath, "Backups", "My Clippings.txt");
+            var filePath = Path.Combine(path, file);
 
-            if (!Directory.Exists(Path.Combine(_programPath, "Backups"))) {
-                Directory.CreateDirectory(Path.Combine(_programPath, "Backups"));
+            if (!Directory.Exists(path)) {
+                Directory.CreateDirectory(path);
             }
 
             if (File.Exists(filePath)) {
@@ -2005,7 +2036,7 @@ namespace KindleMate2 {
             if (_clippingsDataTable.Rows.Count <= 0) {
                 MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                if (!BackupOriginClippings()) {
+                if (!ExportClippingsFile(_backupPath)) {
                     MessageBox(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 } else {
                     DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -2663,15 +2694,16 @@ namespace KindleMate2 {
 
         private void PicSearch_Click(object sender, EventArgs e) {
             var searchText = GetSearchText();
-            if (!_searchText.Equals(searchText)) {
-                _searchText = searchText;
-                RefreshData();
+            if (_searchText.Equals(searchText)) {
+                return;
             }
+            _searchText = searchText;
+            RefreshData();
         }
 
         private string GetSearchText() {
             var strSearch = txtSearch.Text;
-            if (!string.IsNullOrWhiteSpace(strSearch)) { } else {
+            if (string.IsNullOrWhiteSpace(strSearch)) {
                 txtSearch.Text = string.Empty;
             }
             return txtSearch.Text;
@@ -2785,10 +2817,47 @@ namespace KindleMate2 {
             }
         }
 
-        private string GetCurrentTimestamp() {
+        private static string GetCurrentTimestamp() {
             DateTimeOffset now = DateTimeOffset.UtcNow;
             var unixTimestampInSeconds = now.ToUnixTimeSeconds();
             return unixTimestampInSeconds.ToString();
+        }
+
+        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
+            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+        }
+
+        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MsgIcon icon) {
+            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+        }
+
+        private void menuSyncToKindle_Click(object sender, EventArgs e) {
+            DialogResult dialogResult = MessageBox(Strings.Confirm_Sync_To_Kindle, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult != DialogResult.Yes) {
+                return;
+            }
+            var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
+            var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
+            if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
+                return;
+            }
+            var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
+            switch (_deviceType) {
+                case Device.Type.USB:
+                    File.Copy(Path.Combine(documentPath, ClippingsFileName), Path.Combine(documentPath, ClippingsFileName), true);
+                    break;
+                case Device.Type.MTP: {
+                    var devices = MediaDevice.GetDevices();
+                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
+                    device.Connect();
+                    WriteMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
+                    device.Disconnect();
+                    break;
+                }
+                case Device.Type.Unknown:
+                default:
+                    break;
+            }
         }
     }
 }

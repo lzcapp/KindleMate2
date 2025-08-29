@@ -528,4 +528,10 @@
   <data name="X_Page" xml:space="preserve">
 	  <value />
   </data>
+  <data name="Sync_To_Kindle" xml:space="preserve">
+    <value>Sync to Kindle</value>
+  </data>
+  <data name="Confirm_Sync_To_Kindle" xml:space="preserve">
+    <value>Do you want to sync to your Kindle?</value>
+  </data>
 </root>

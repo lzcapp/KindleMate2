@@ -531,4 +531,10 @@
   <data name="Confirm_Clear_Vocabulary" xml:space="preserve">
     <value>确认要清空生词本吗？ </value>
   </data>
+  <data name="Sync_To_Kindle" xml:space="preserve">
+    <value>同步到Kindle设备</value>
+  </data>
+  <data name="Confirm_Sync_To_Kindle" xml:space="preserve">
+    <value>确认要同步到Kindle设备吗？</value>
+  </data>
 </root>
