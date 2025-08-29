@@ -1,6 +1,5 @@
-﻿using System.ComponentModel;
-using KindleMate2.Properties;
-using Timer = System.Windows.Forms.Timer;
+﻿using KindleMate2.Properties;
+using System.ComponentModel;
 
 namespace KindleMate2 {
     partial class FrmMain {
@@ -41,6 +40,7 @@ namespace KindleMate2 {
             menuImportKindleWords = new ToolStripMenuItem();
             menuImportKindleMate = new ToolStripMenuItem();
             menuSyncFromKindle = new ToolStripMenuItem();
+            menuSyncToKindle = new ToolStripMenuItem();
             menuExportMd = new ToolStripMenuItem();
             menuClean = new ToolStripMenuItem();
             menuRebuild = new ToolStripMenuItem();
@@ -99,7 +99,6 @@ namespace KindleMate2 {
             lblCount = new ToolStripStatusLabel();
             lblBookCount = new ToolStripStatusLabel();
             progressBar = new ToolStripProgressBar();
-            timer = new Timer(components);
             menuStrip.SuspendLayout();
             ((ISupportInitialize)splitContainerMain).BeginInit();
             splitContainerMain.Panel1.SuspendLayout();
@@ -184,7 +183,7 @@ namespace KindleMate2 {
             // 
             // menuManage
             // 
-            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuExportMd, menuClean, menuRebuild, menuBackup, menuClear });
+            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuSyncToKindle, menuExportMd, menuClean, menuRebuild, menuBackup, menuClear });
             menuManage.Name = "menuManage";
             menuManage.Size = new Size(121, 36);
             menuManage.Text = "管理(&M)";
@@ -221,6 +220,14 @@ namespace KindleMate2 {
             menuSyncFromKindle.Text = "从Kindle设备导入";
             menuSyncFromKindle.Visible = false;
             menuSyncFromKindle.Click += MenuSyncFromKindle_Click;
+            // 
+            // menuSyncToKindle
+            // 
+            menuSyncToKindle.Image = Resources.mobile_phone_with_arrow;
+            menuSyncToKindle.Name = "menuSyncToKindle";
+            menuSyncToKindle.Size = new Size(404, 44);
+            menuSyncToKindle.Text = "同步到Kindle设备";
+            menuSyncToKindle.Click += menuSyncToKindle_Click;
             // 
             // menuExportMd
             // 
@@ -798,10 +805,12 @@ namespace KindleMate2 {
             lblContent.Name = "lblContent";
             lblContent.ReadOnly = true;
             lblContent.ScrollBars = RichTextBoxScrollBars.Vertical;
-            lblContent.Size = new Size(1199, 212);
+            lblContent.Size = new Size(1199, 227);
             lblContent.TabIndex = 4;
+            lblContent.TabStop = false;
             lblContent.Text = "";
             lblContent.MouseDoubleClick += LblContent_MouseDoubleClick;
+            lblContent.MouseDown += lblContent_MouseDown;
             // 
             // menuContent
             // 
@@ -908,12 +917,6 @@ namespace KindleMate2 {
             progressBar.TextDirection = ToolStripTextDirection.Vertical270;
             progressBar.Visible = false;
             // 
-            // timer
-            // 
-            timer.Enabled = true;
-            timer.Interval = 1000;
-            timer.Tick += Timer_Tick;
-            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(192F, 192F);
@@ -993,7 +996,6 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuAbout;
         private ToolStripStatusLabel lblBookCount;
         private ToolStripMenuItem menuRepo;
-        private Timer timer;
         private ToolStripMenuItem menuKindle;
         private ToolStripMenuItem menuClippingsRefresh;
         private ToolStripMenuItem menuBookRefresh;
@@ -1036,5 +1038,6 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuBooksExport;
         private ContextMenuStrip menuTab;
         private ToolStripMenuItem menuTabClear;
+        private ToolStripMenuItem menuSyncToKindle;
     }
 }

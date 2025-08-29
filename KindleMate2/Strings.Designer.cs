@@ -412,6 +412,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 确认要同步到Kindle设备吗？ 的本地化字符串。
+        /// </summary>
+        internal static string Confirm_Sync_To_Kindle {
+            get {
+                return ResourceManager.GetString("Confirm_Sync_To_Kindle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 内容 的本地化字符串。
         /// </summary>
         internal static string Content {
@@ -1110,6 +1119,15 @@ namespace KindleMate2 {
         internal static string Symbol_Comma {
             get {
                 return ResourceManager.GetString("Symbol_Comma", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 同步到Kindle设备 的本地化字符串。
+        /// </summary>
+        internal static string Sync_To_Kindle {
+            get {
+                return ResourceManager.GetString("Sync_To_Kindle", resourceCulture);
             }
         }
         

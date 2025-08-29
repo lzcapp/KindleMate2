@@ -140,7 +140,7 @@ namespace KindleMate2 {
                 } else {
                     return DateTime.MinValue;
                 }
-            } catch (Exception e) {
+            } catch (Exception) {
                 return DateTime.MinValue;
             }
         }
