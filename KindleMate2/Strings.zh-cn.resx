@@ -537,4 +537,10 @@
   <data name="Confirm_Sync_To_Kindle" xml:space="preserve">
     <value>确认要同步到Kindle设备吗？</value>
   </data>
+  <data name="Sync_Failed" xml:space="preserve">
+    <value>同步失败</value>
+  </data>
+  <data name="Sync_Successful" xml:space="preserve">
+    <value>同步成功</value>
+  </data>
 </root>

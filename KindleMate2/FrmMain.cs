@@ -1835,6 +1835,7 @@ namespace KindleMate2 {
 
         private static void WriteMtpFile(MediaDevice device, string path, string fileName, string filePath) {
             using var sr = new StreamReader(filePath);
+            device.DeleteFile(Path.Combine(path, fileName));
             device.UploadFile(sr.BaseStream, Path.Combine(path, fileName));
         }
 
@@ -2836,27 +2837,36 @@ namespace KindleMate2 {
             if (dialogResult != DialogResult.Yes) {
                 return;
             }
-            var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-            var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
-            if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
-                return;
-            }
-            var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
-            switch (_deviceType) {
-                case Device.Type.USB:
-                    File.Copy(Path.Combine(documentPath, ClippingsFileName), Path.Combine(documentPath, ClippingsFileName), true);
-                    break;
-                case Device.Type.MTP: {
-                    var devices = MediaDevice.GetDevices();
-                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-                    device.Connect();
-                    WriteMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
-                    device.Disconnect();
-                    break;
+            try {
+                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
+                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
+                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
+                    return;
                 }
-                case Device.Type.Unknown:
-                default:
-                    break;
+                ExportClippingsFile(_tempPath);
+                var exportedClippingsPath = Path.Combine(_tempPath, ClippingsFileName);
+                var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
+                switch (_deviceType) {
+                    case Device.Type.USB:
+                        File.Copy(exportedClippingsPath, Path.Combine(documentPath, ClippingsFileName), true);
+                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case Device.Type.MTP: {
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        WriteMtpFile(device, documentPath, ClippingsFileName, exportedClippingsPath);
+                        device.Disconnect();
+                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    }
+                    case Device.Type.Unknown:
+                    default:
+                        break;
+                }
+            } catch (Exception exception) {
+                Console.WriteLine(exception);
+                MessageBox(Strings.Sync_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
             }
         }
     }

@@ -534,4 +534,10 @@
   <data name="Confirm_Sync_To_Kindle" xml:space="preserve">
     <value>Do you want to sync to your Kindle?</value>
   </data>
+  <data name="Sync_Failed" xml:space="preserve">
+    <value>Sync Failed</value>
+  </data>
+  <data name="Sync_Successful" xml:space="preserve">
+    <value>Sync Successful</value>
+  </data>
 </root>

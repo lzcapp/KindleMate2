@@ -1123,6 +1123,24 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   查找类似 同步失败 的本地化字符串。
+        /// </summary>
+        internal static string Sync_Failed {
+            get {
+                return ResourceManager.GetString("Sync_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 同步成功 的本地化字符串。
+        /// </summary>
+        internal static string Sync_Successful {
+            get {
+                return ResourceManager.GetString("Sync_Successful", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 同步到Kindle设备 的本地化字符串。
         /// </summary>
         internal static string Sync_To_Kindle {
