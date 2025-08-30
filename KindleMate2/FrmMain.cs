@@ -6,7 +6,6 @@ using Markdig.Helpers;
 using MediaDevices;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,9 +13,23 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using KindleMate2.Application.Services;
+using KindleMate2.Domain.Entities;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Infrastructure.Repositories;
+using Clipping = KindleMate2.Entities.Clipping;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
+        private readonly ClippingService _clippingService;
+        private readonly LookupService _lookupService;
+        private readonly OriginalClippingLineService _originalClippingLineService;
+        private readonly SettingService _settingService;
+        private readonly VocabService _vocabService;
+        private readonly ThemeService _themeService;
+        private readonly DatabaseService _databaseService;
+
         private DataTable _clippingsDataTable = new();
 
         private DataTable _originClippingsDataTable = new();
@@ -31,7 +44,7 @@ namespace KindleMate2 {
 
         private string _driveLetter = string.Empty;
 
-        private readonly string _programPath, _tempPath, _backupPath, _databasePath, _versionPath;
+        private readonly string _programPath, _tempPath, _backupPath, _databaseFilePath, _versionFilePath;
 
         private string _selectedBook, _selectedWord, _searchText;
 
@@ -61,9 +74,30 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
+            const string connectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
+
+            var clippingRepository = new ClippingRepository(connectionString);
+            _clippingService = new ClippingService(clippingRepository);
+
+            var lookupRepository = new LookupRepository(connectionString);
+            _lookupService = new LookupService(lookupRepository);
+
+            var originalClippingLineRepository = new OriginalClippingLineRepository(connectionString);
+            _originalClippingLineService = new OriginalClippingLineService(originalClippingLineRepository);
+
+            var settingRepository = new SettingRepository(connectionString);
+            _settingService = new SettingService(settingRepository);
+            _themeService = new ThemeService(settingRepository);
+
+            var vocabRepository = new VocabRepository(connectionString);
+            _vocabService = new VocabService(vocabRepository);
+
+            var databaseRepository = new DatabaseRepository(connectionString);
+            _databaseService = new DatabaseService(databaseRepository);
+
             _programPath = Environment.CurrentDirectory;
-            _databasePath = Path.Combine(_programPath, DatabaseFileName);
-            _versionPath = Path.Combine(SystemPathName, VersionFileName);
+            _databaseFilePath = Path.Combine(_programPath, DatabaseFileName);
+            _versionFilePath = Path.Combine(SystemPathName, VersionFileName);
             _tempPath = Path.Combine(_programPath, TempPathName);
             _backupPath = Path.Combine(_programPath, BackupsPathName);
 
@@ -76,26 +110,16 @@ namespace KindleMate2 {
             lblContent.GotFocus += LblContent_GotFocus;
             lblContent.LostFocus += LblContent_LostFocus;
 
-            try {
-                if (File.Exists(Path.Combine(_backupPath, DatabaseFileName))) {
-                    File.Delete(Path.Combine(_backupPath, KindleMateDatabaseFileName));
-                } else {
-                    if (!StaticData.CreateDatabase()) {
-                        _ = MessageBox(Strings.Create_Database_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
-                        Environment.Exit(0);
-                    }
+            if (!File.Exists(_databaseFilePath)) {
+                if (DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception? exception)) {
+                    var message = MessageHelper.BuildMessage(Strings.Create_Database_Failed, exception);
+                    MessageBox(message, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+                    Environment.Exit(0);
                 }
-            } catch (Exception e) {
-                MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
             }
 
-            _staticData = new StaticData();
-
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
-                BackupDatabase();
-                _staticData.CloseConnection();
-                _staticData.DisposeConnection();
+                DatabaseHelper.BackupDatabase(_programPath, _backupPath, DatabaseFileName);
             };
 
             SetTheme();
@@ -106,27 +130,30 @@ namespace KindleMate2 {
         }
 
         private void SetTheme() {
-            _isDarkTheme = _staticData.IsDarkTheme();
+            _isDarkTheme = _themeService.IsDarkTheme();
             try {
                 if (_isDarkTheme) {
                     _ = new DarkModeCS(this, false);
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
-                throw;
             } finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
         }
 
         private void SetLang() {
-            var name = _staticData.GetLanguage();
-            if (!string.IsNullOrWhiteSpace(name)) {
-                var culture = new CultureInfo(name);
+            Setting? cultureSetting = _settingService.GetSettingByName("lang");
+            if (cultureSetting == null || string.IsNullOrWhiteSpace(cultureSetting.value)) {
+                return;
+            }
+            var cultureName = cultureSetting.value;
+            if (!string.IsNullOrWhiteSpace(cultureName)) {
+                var culture = new CultureInfo(cultureName);
                 Thread.CurrentThread.CurrentUICulture = culture;
                 Thread.CurrentThread.CurrentCulture = culture;
 
-                switch (name.ToLowerInvariant()) {
+                switch (cultureName.ToLowerInvariant()) {
                     case "en":
                         menuLangEN.Visible = false;
                         break;
@@ -198,27 +225,24 @@ namespace KindleMate2 {
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (!File.Exists(_databasePath)) {
-                RefreshData();
+            if (!File.Exists(_databaseFilePath)) {
                 return;
             }
 
-            if (_staticData.IsDatabaseEmpty()) {
+            if (_databaseService.IsDatabaseEmpty()) {
                 if (Directory.Exists(_backupPath)) {
-                    var filePath = Path.Combine(_programPath, BackupsPathName, DatabaseFileName);
+                    var backupFilePath = Path.Combine(_backupPath, DatabaseFileName);
 
-                    if (File.Exists(filePath)) {
-                        var fileSize = new FileInfo(filePath).Length / 1024;
-                        if (File.Exists(filePath) && fileSize >= 20) {
+                    if (File.Exists(backupFilePath)) {
+                        var fileSize = new FileInfo(backupFilePath).Length / 1024;
+                        if (fileSize >= 20) {
                             DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultRestore == DialogResult.Yes) {
-                                File.Copy(filePath, _databasePath, true);
-                                RefreshData();
-                                return;
+                                File.Copy(backupFilePath, _databaseFilePath, true);
                             }
                             DialogResult resultDeleteBackup = MessageBox(Strings.Confirm_Delete_Backup, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultDeleteBackup == DialogResult.Yes) {
-                                File.Delete(filePath);
+                                File.Delete(backupFilePath);
                             }
                         }
                     }
@@ -235,8 +259,6 @@ namespace KindleMate2 {
             RefreshData();
 
             treeViewBooks.Focus();
-
-            CmbSearch_SelectedIndexChanged(this, e);
 
             //StaticData.CheckUpdate();
 
@@ -310,7 +332,7 @@ namespace KindleMate2 {
                 return string.Empty;
             }
 
-            SQLiteConnection connection = new("Data Source=" + kindleWordsPath + ";Version=3;");
+            SqliteConnection connection = new("Data Source=" + kindleWordsPath + ";Version=3;");
 
             var bookInfoTable = new DataTable();
             var lookupsTable = new DataTable();
@@ -1701,7 +1723,7 @@ namespace KindleMate2 {
                     _driveLetter = drive.Name;
 
                     var versionText = string.Empty;
-                    var kindleVersionPath = Path.Combine(_driveLetter, _versionPath);
+                    var kindleVersionPath = Path.Combine(_driveLetter, _versionFilePath);
                     if (File.Exists(kindleVersionPath)) {
                         using var reader = new StreamReader(kindleVersionPath);
                         versionText = reader.ReadToEnd();
@@ -1994,6 +2016,8 @@ namespace KindleMate2 {
                     dataGridView.Rows[_selectedDataGridIndex].Selected = true;
                     break;
             }
+
+            SetCmbSearchSelection();
         }
 
         private void MenuBookRefresh_Click(object sender, EventArgs e) {
@@ -2032,40 +2056,23 @@ namespace KindleMate2 {
         }
 
         private void MenuBackup_Click(object sender, EventArgs e) {
-            BackupDatabase();
+            DatabaseHelper.BackupDatabase(_programPath, _backupPath, DatabaseFileName);
 
             if (_clippingsDataTable.Rows.Count <= 0) {
                 MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                if (!ExportClippingsFile(_backupPath)) {
-                    MessageBox(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                } else {
+                if (_originalClippingLineService.Export(_backupPath, DatabaseFileName, out Exception? exception)) {
                     DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
                     }
 
                     Process.Start("explorer.exe", Path.Combine(_programPath, "Backups"));
+                } else {
+                    var message = MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception);
+                    MessageBox(message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        private void BackupDatabase() {
-            if (_staticData.IsDatabaseEmpty()) {
-                return;
-            }
-
-            var filePath = Path.Combine(_backupPath, DatabaseFileName);
-
-            if (File.Exists(filePath)) {
-                File.Delete(filePath);
-            }
-
-            if (!Directory.Exists(_backupPath)) {
-                Directory.CreateDirectory(_backupPath);
-            }
-
-            File.Copy(Path.Combine(_programPath, DatabaseFileName), filePath);
         }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
@@ -2094,7 +2101,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
+                FileName = System.Windows.Forms.Application.ExecutablePath,
                 UseShellExecute = true
             });
             Environment.Exit(0);
@@ -2366,7 +2373,7 @@ namespace KindleMate2 {
                     }
                 }
 
-                var fileInfo = new FileInfo(_databasePath);
+                var fileInfo = new FileInfo(_databaseFilePath);
                 var originFileSize = fileInfo.Length;
 
                 _staticData.CommitTransaction();
@@ -2711,6 +2718,10 @@ namespace KindleMate2 {
         }
 
         private void CmbSearch_SelectedIndexChanged(object sender, EventArgs e) {
+            SetCmbSearchSelection();
+        }
+
+        private void SetCmbSearchSelection() {
             var selected = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(selected)) {
                 return;

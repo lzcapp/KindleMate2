@@ -5,9 +5,13 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KindleMate2", "KindleMate2\KindleMate2.csproj", "{1EB1AF1A-FEFB-48A7-BF4D-08BABAF1FB6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2_WPF", "KindleMate2_WPF\KindleMate2_WPF.csproj", "{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Infrastructure", "KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj", "{F535E924-61B0-432D-A4EC-0236BD247B6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2_FW", "KindleMate2_FW\KindleMate2_FW.csproj", "{C8AB4849-8966-471C-AB30-C78A02BE0CAD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Domain", "KindleMate2.Domain\KindleMate2.Domain.csproj", "{4819A35A-34C2-46EA-AB5A-C50E0C196706}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Application", "KindleMate2.Application\KindleMate2.Application.csproj", "{491D1939-B327-4EF3-BAFC-C2EF3456442E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkModeForms", "Dark-Mode-Forms\src\DarkModeForms\DarkModeForms.csproj", "{79CDED44-DB19-8935-2E38-D10A5EE32CE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +23,22 @@ Global
 		{1EB1AF1A-FEFB-48A7-BF4D-08BABAF1FB6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1EB1AF1A-FEFB-48A7-BF4D-08BABAF1FB6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1EB1AF1A-FEFB-48A7-BF4D-08BABAF1FB6E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2904F7CF-5FE1-48BB-A332-5AD1B914DA9A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C8AB4849-8966-471C-AB30-C78A02BE0CAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F535E924-61B0-432D-A4EC-0236BD247B6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F535E924-61B0-432D-A4EC-0236BD247B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F535E924-61B0-432D-A4EC-0236BD247B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F535E924-61B0-432D-A4EC-0236BD247B6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4819A35A-34C2-46EA-AB5A-C50E0C196706}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4819A35A-34C2-46EA-AB5A-C50E0C196706}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4819A35A-34C2-46EA-AB5A-C50E0C196706}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4819A35A-34C2-46EA-AB5A-C50E0C196706}.Release|Any CPU.Build.0 = Release|Any CPU
+		{491D1939-B327-4EF3-BAFC-C2EF3456442E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{491D1939-B327-4EF3-BAFC-C2EF3456442E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{491D1939-B327-4EF3-BAFC-C2EF3456442E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{491D1939-B327-4EF3-BAFC-C2EF3456442E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79CDED44-DB19-8935-2E38-D10A5EE32CE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79CDED44-DB19-8935-2E38-D10A5EE32CE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79CDED44-DB19-8935-2E38-D10A5EE32CE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79CDED44-DB19-8935-2E38-D10A5EE32CE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

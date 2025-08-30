@@ -1,5 +1,5 @@
 ﻿namespace KindleMate2.Entities {
-    internal class Device {
+    internal static class Device {
         internal enum Type {
             Unknown,
             USB,

@@ -1,3 +1,5 @@
+using static System.Windows.Forms.Application;
+
 namespace KindleMate2 {
     internal static class Program {
         /// <summary>
@@ -7,10 +9,10 @@ namespace KindleMate2 {
         private static void Main() {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            EnableVisualStyles();
+            SetCompatibleTextRenderingDefault(false);
             //ApplicationConfiguration.Initialize();
-            Application.Run(new FrmMain());
+            Run(new FrmMain());
         }
     }
 }

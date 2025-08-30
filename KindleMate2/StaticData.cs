@@ -1,12 +1,14 @@
-﻿using System.Data;
+﻿using AutoUpdaterDotNET;
+using DarkModeForms;
+using HtmlAgilityPack;
+using KindleMate2.Entities;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Properties;
+using Newtonsoft.Json;
+using System.Data;
 using System.Data.SQLite;
 using System.Net.NetworkInformation;
 using System.Reflection;
-using AutoUpdaterDotNET;
-using DarkModeForms;
-using KindleMate2.Entities;
-using KindleMate2.Properties;
-using Newtonsoft.Json;
 
 namespace KindleMate2 {
     public class StaticData {
@@ -22,7 +24,8 @@ namespace KindleMate2 {
             using var connection = new SQLiteConnection(ConnectionString);
             connection.Open();
 
-            const string createClippings = "CREATE TABLE [clippings] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [content] TEXT DEFAULT(''), [bookname] TEXT DEFAULT(''), [authorname] TEXT, [brieftype] INTEGER, [clippingtypelocation] TEXT, [clippingdate] TEXT, [read] INT DEFAULT(0), [clipping_importdate] TEXT, [tag] TEXT, [sync] INT DEFAULT(0), [newbookname] TEXT, [colorRGB] INTEGER DEFAULT(-1), pagenumber INT DEFAULT(0));";
+            const string createClippings =
+                "CREATE TABLE [clippings] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [content] TEXT DEFAULT(''), [bookname] TEXT DEFAULT(''), [authorname] TEXT, [brieftype] INTEGER, [clippingtypelocation] TEXT, [clippingdate] TEXT, [read] INT DEFAULT(0), [clipping_importdate] TEXT, [tag] TEXT, [sync] INT DEFAULT(0), [newbookname] TEXT, [colorRGB] INTEGER DEFAULT(-1), pagenumber INT DEFAULT(0));";
             using (var command = new SQLiteCommand(createClippings, connection)) {
                 command.ExecuteNonQuery();
             }
@@ -32,7 +35,8 @@ namespace KindleMate2 {
                 command.ExecuteNonQuery();
             }
 
-            const string createOriginalClippings = "CREATE TABLE [original_clipping_lines] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [line1] TEXT DEFAULT(''), [line2] TEXT DEFAULT(''), [line3] TEXT DEFAULT(''), [line4] TEXT DEFAULT(''), [line5] TEXT DEFAULT(''));";
+            const string createOriginalClippings =
+                "CREATE TABLE [original_clipping_lines] ([key] TEXT PRIMARY KEY NOT NULL UNIQUE, [line1] TEXT DEFAULT(''), [line2] TEXT DEFAULT(''), [line3] TEXT DEFAULT(''), [line4] TEXT DEFAULT(''), [line5] TEXT DEFAULT(''));";
             using (var command = new SQLiteCommand(createOriginalClippings, connection)) {
                 command.ExecuteNonQuery();
             }
@@ -42,7 +46,8 @@ namespace KindleMate2 {
                 command.ExecuteNonQuery();
             }
 
-            const string createVocab = "CREATE TABLE [vocab] ([id] TEXT PRIMARY KEY NOT NULL UNIQUE, [word_key] TEXT, [word] TEXT NOT NULL, [stem] TEXT, [category] INTEGER DEFAULT '0', [translation] TEXT, [timestamp] TEXT, [frequency] INT DEFAULT(0), [sync] INT DEFAULT(0), [colorRGB] INTEGER DEFAULT(-1));";
+            const string createVocab =
+                "CREATE TABLE [vocab] ([id] TEXT PRIMARY KEY NOT NULL UNIQUE, [word_key] TEXT, [word] TEXT NOT NULL, [stem] TEXT, [category] INTEGER DEFAULT '0', [translation] TEXT, [timestamp] TEXT, [frequency] INT DEFAULT(0), [sync] INT DEFAULT(0), [colorRGB] INTEGER DEFAULT(-1));";
             using (var command = new SQLiteCommand(createVocab, connection)) {
                 command.ExecuteNonQuery();
             }
@@ -168,7 +173,7 @@ namespace KindleMate2 {
             command.Parameters.AddWithValue("@bookname", bookname);
             command.Parameters.AddWithValue("@pagenumber", pagenumber);
             using var adapter = new SQLiteDataAdapter(command);
-            
+
             var dataTable = new DataTable();
             adapter.Fill(dataTable);
 
@@ -176,7 +181,7 @@ namespace KindleMate2 {
                 DataRow row = dataTable.Rows[0];
                 var book = row["bookname"].ToString() ?? string.Empty;
                 var page = row["pagenumber"].ToString() ?? string.Empty;
-                if (bookname.Equals(book) && pagenumber.Equals(page) ) {
+                if (bookname.Equals(book) && pagenumber.Equals(page)) {
                     const string queryCount = "UPDATE clippings SET brieftype = -1 WHERE key = @key";
                     using var commandCount = new SQLiteCommand(queryCount, _connection);
                     commandCount.Parameters.AddWithValue("@key", row["key"]);
@@ -200,7 +205,7 @@ namespace KindleMate2 {
             command.Parameters.AddWithValue("@pagenumber", pagenumber);
 
             using var adapter = new SQLiteDataAdapter(command);
-            
+
             var dataTable = new DataTable();
             adapter.Fill(dataTable);
 
@@ -852,7 +857,7 @@ namespace KindleMate2 {
             if (theme.Equals("light", StringComparison.OrdinalIgnoreCase)) {
                 return false;
             }
-            isWindowsDarkTheme = IsWindowsDarkTheme();
+            isWindowsDarkTheme = ThemeHelper.IsWindowsDarkTheme();
             SetTheme(isWindowsDarkTheme);
             return isWindowsDarkTheme;
         }
@@ -912,7 +917,10 @@ namespace KindleMate2 {
             var result = 0;
 
             var tableNames = new List<string> {
-                "clippings", "lookups", "original_clipping_lines", "vocab"
+                "clippings",
+                "lookups",
+                "original_clipping_lines",
+                "vocab"
             };
 
             foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
@@ -934,7 +942,10 @@ namespace KindleMate2 {
             var result = 0;
 
             var tableNames = new List<string> {
-                "clippings", "lookups", "original_clipping_lines", "vocab"
+                "clippings",
+                "lookups",
+                "original_clipping_lines",
+                "vocab"
             };
 
             foreach (var queryCount in tableNames.Select(tableName => "SELECT COUNT(1) FROM " + tableName)) {
@@ -962,12 +973,12 @@ namespace KindleMate2 {
         }
 
         private static readonly Dictionary<char, int> romanMap = new() {
-            { 'I', 1 }, 
-            { 'V', 5 }, 
-            { 'X', 10 }, 
-            { 'L', 50 }, 
-            { 'C', 100 }, 
-            { 'D', 500 }, 
+            { 'I', 1 },
+            { 'V', 5 },
+            { 'X', 10 },
+            { 'L', 50 },
+            { 'C', 100 },
+            { 'D', 500 },
             { 'M', 1000 }
         };
 
@@ -1001,7 +1012,7 @@ namespace KindleMate2 {
             var col = string.Empty;
             var val = string.Empty;
             var parameters = new List<SQLiteParameter>();
-                
+
             foreach (PropertyInfo property in properties) {
                 var parameterName = property.Name;
                 if (parameterName.Equals("Ctypes", StringComparison.CurrentCultureIgnoreCase)) {
@@ -1124,7 +1135,7 @@ namespace KindleMate2 {
         internal static void CheckUpdate() {
             AutoUpdater.Icon = Resources.bookmark;
             AutoUpdater.ShowRemindLaterButton = false;
-            var currentDirectory = new DirectoryInfo(Application.StartupPath);
+            var currentDirectory = new DirectoryInfo(System.Windows.Forms.Application.StartupPath);
             if (currentDirectory.Parent != null) {
                 //AutoUpdater.DownloadPath = currentDirectory.Parent.FullName;
                 AutoUpdater.InstallationPath = currentDirectory.Parent.FullName;
@@ -1133,11 +1144,63 @@ namespace KindleMate2 {
             AutoUpdater.Start(Environment.Is64BitProcess ? "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x64.xml" : "https://github.lzc.app/KindleMate2/KindleMate2/AutoUpdater_x86.xml");
         }
 
+        internal static async Task<List<KindleSoftwareInfo>> ParseKindleSoftwarePage(string url) {
+            var kindleSoftwareList = new List<KindleSoftwareInfo>();
+
+            using var client = new HttpClient();
+            try {
+                var html = await client.GetStringAsync(url);
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(html);
+
+                // Select all section elements that contain Kindle model information
+                HtmlNodeCollection sections = doc.DocumentNode.SelectNodes("//section[contains(@class, 'cs-help-landing-section')]");
+
+                foreach (HtmlNode section in sections) {
+                    var model = section.SelectSingleNode(".//h4[@class='sectiontitle']")?.InnerText.Trim();
+
+                    if (string.IsNullOrEmpty(model) || !model.Contains("Kindle")) {
+                        continue;
+                    }
+                    var info = new KindleSoftwareInfo {
+                        Model = model
+                    };
+
+                    HtmlNodeCollection listItems = section.SelectNodes(".//ul/li");
+                    foreach (HtmlNode li in listItems) {
+                        // Try to find the version number
+                        HtmlNode versionSpan = li.SelectSingleNode(".//span[contains(text(), '.')]");
+                        var possibleVersion = versionSpan.InnerText.Trim();
+                        // Basic check to see if it looks like a version number
+                        if (System.Text.RegularExpressions.Regex.IsMatch(possibleVersion, @"^\d+(\.\d+)+$")) {
+                            info.Version = possibleVersion;
+                        }
+
+                        // Try to find the download link
+                        HtmlNode downloadLink = li.SelectSingleNode(".//a[contains(@href, 'update_Kindle')]");
+                        info.DownloadLink = downloadLink.GetAttributeValue("href", "");
+
+                        // Try to find the release notes link
+                        HtmlNode releaseNotesLink = li.SelectSingleNode(".//a[contains(@href, 'Notes')]");
+                        info.ReleaseNotesLink = releaseNotesLink.GetAttributeValue("href", "");
+                    }
+                    kindleSoftwareList.Add(info);
+                }
+            } catch (HttpRequestException e) {
+                Console.WriteLine($"Error fetching page: {e.Message}");
+            } catch (Exception e) {
+                Console.WriteLine($"An error occurred: {e.Message}");
+            }
+
+            return kindleSoftwareList;
+        }
+
         internal bool ClearClippings() {
             var result = 0;
 
             var tableNames = new List<string> {
-                "clippings", "original_clipping_lines"
+                "clippings",
+                "original_clipping_lines"
             };
 
             foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
@@ -1152,7 +1215,8 @@ namespace KindleMate2 {
             var result = 0;
 
             var tableNames = new List<string> {
-                "lookups", "vocab"
+                "lookups",
+                "vocab"
             };
 
             foreach (var queryDelete in tableNames.Select(tableName => "DELETE FROM " + tableName)) {
