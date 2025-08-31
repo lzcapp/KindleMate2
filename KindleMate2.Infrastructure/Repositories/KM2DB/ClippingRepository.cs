@@ -39,6 +39,36 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return null;
         }
 
+        public Clipping? GetByKeyAndContent(string key, string content) {
+            SqliteConnection connection = new(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key AND content = @content", connection);
+            cmd.Parameters.AddWithValue("@key", key);
+            cmd.Parameters.AddWithValue("@content", content);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            if (reader.Read()) {
+                return new Clipping {
+                    key = reader.GetString(0),
+                    content = reader.GetString(1),
+                    bookname = reader.GetString(2),
+                    authorname = reader.GetString(3),
+                    brieftype = reader.GetInt32(4),
+                    clippingtypelocation = reader.GetString(5),
+                    clippingdate = reader.GetString(6),
+                    read = reader.GetInt32(7),
+                    clipping_importdate = reader.GetString(8),
+                    tag = reader.GetString(9),
+                    sync = reader.GetInt32(10),
+                    newbookname = reader.GetString(11),
+                    colorRGB = reader.GetInt32(12),
+                    pagenumber = reader.GetInt32(13)
+                };
+            }
+            return null;
+        }
+
         public List<Clipping> GetAll() {
             var results = new List<Clipping>();
 

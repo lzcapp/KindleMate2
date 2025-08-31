@@ -14,6 +14,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetByKey(key);
         }
 
+        public Clipping? GetClippingByKeyAndContent(string key, string content) {
+            return _repository.GetByKeyAndContent(key, content);
+        }
+
         public IEnumerable<Clipping> GetAllClippings() {
             return _repository.GetAll();
         }

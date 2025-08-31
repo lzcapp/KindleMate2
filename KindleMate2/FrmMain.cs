@@ -98,7 +98,7 @@ namespace KindleMate2 {
             var databaseRepository = new DatabaseRepository(ConnectionString);
             _databaseService = new DatabaseService(databaseRepository);
 
-            _kmDatabaseService = new KMDatabaseService(lookupRepository, vocabRepository);
+            _kmDatabaseService = new KMDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, vocabRepository);
 
             _programPath = Environment.CurrentDirectory;
             _databaseFilePath = Path.Combine(_programPath, DatabaseFileName);
@@ -662,83 +662,6 @@ namespace KindleMate2 {
 
             return Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
                    vocabCount + Strings.Space + Strings.X_Vocabs;
-        }
-
-        private string ImportKindleClippings(string clippingsPath) {
-            var originClippingsTable = new DataTable();
-            originClippingsTable.Columns.Add("key", typeof(string));
-            originClippingsTable.Columns.Add("line1", typeof(string));
-            originClippingsTable.Columns.Add("line2", typeof(string));
-            originClippingsTable.Columns.Add("line3", typeof(string));
-            originClippingsTable.Columns.Add("line4", typeof(string));
-            originClippingsTable.Columns.Add("line5", typeof(string));
-
-            var clippingsTable = new DataTable();
-            clippingsTable.Columns.Add("key", typeof(string));
-            clippingsTable.Columns.Add("content", typeof(string));
-            clippingsTable.Columns.Add("bookname", typeof(string));
-            clippingsTable.Columns.Add("authorname", typeof(string));
-            clippingsTable.Columns.Add("brieftype", typeof(int));
-            clippingsTable.Columns.Add("clippingtypelocation", typeof(string));
-            clippingsTable.Columns.Add("clippingdate", typeof(string));
-            clippingsTable.Columns.Add("read", typeof(int));
-            clippingsTable.Columns.Add("clipping_importdate", typeof(string));
-            clippingsTable.Columns.Add("tag", typeof(string));
-            clippingsTable.Columns.Add("sync", typeof(int));
-            clippingsTable.Columns.Add("newbookname", typeof(string));
-            clippingsTable.Columns.Add("colorRGB", typeof(int));
-            clippingsTable.Columns.Add("pagenumber", typeof(int));
-
-            List<string> lines = [
-                .. File.ReadAllLines(clippingsPath)
-            ];
-
-            var delimiterIndex = new List<int>();
-
-            for (var i = 0; i < lines.Count; i++) {
-                lines[i] = RemoveControlChar(lines[i]);
-                if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
-                    delimiterIndex.Add(i);
-                }
-            }
-
-            var insertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                for (var i = 0; i < delimiterIndex.Count; i++) {
-                    var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
-                    var florDelimiter = delimiterIndex[i];
-
-                    var line1 = lines[ceilDelimiter + 1].Trim();
-                    var line2 = lines[ceilDelimiter + 2].Trim();
-                    var line3 = lines[ceilDelimiter + 3].Trim(); // line3 should be empty
-                    var line4 = lines[ceilDelimiter + 4].Trim();
-                    if (ceilDelimiter + 5 == ceilDelimiter) {
-                        // line4 is the rest
-                        for (var index = ceilDelimiter + 3; index < florDelimiter; index++) {
-                            line4 += lines[index];
-                            if (index < florDelimiter - 1) {
-                                line4 += "\n";
-                            }
-                        }
-                    }
-                    var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
-
-                    var result = HandleClippings(line1, line2, line3, line4, line5);
-                    if (result) {
-                        insertedCount++;
-                    }
-                }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-                return string.Empty;
-            }
-
-            return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
         }
 
         private bool HandleClippings(string line1, string line2, string line3, string line4, string line5, bool isRebuild = false) {
@@ -2611,9 +2534,6 @@ namespace KindleMate2 {
             }
             return output.ToString();
         }
-
-        [GeneratedRegex(@"\(([^()]+)\)[^(]*$")]
-        private static partial Regex BookNameRegex();
 
         private void lblContent_MouseDown(object sender, MouseEventArgs e) {
             HideCaret(sender);
