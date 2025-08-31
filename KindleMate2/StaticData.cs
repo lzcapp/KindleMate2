@@ -6,7 +6,6 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Properties;
 using Newtonsoft.Json;
 using System.Data;
-using System.Data.SQLite;
 using System.Net.NetworkInformation;
 using System.Reflection;
 

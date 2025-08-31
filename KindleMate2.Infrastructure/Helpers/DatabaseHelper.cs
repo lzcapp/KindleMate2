@@ -5,7 +5,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         public static bool CreateDatabase(string filePath, out Exception? exception) {
             exception = null;
             try {
-                using var connection = new SqliteConnection($"Data Source={filePath}");
+                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
                 connection.Open();
 
                 foreach (var script in GetTableCreationScripts()) {
@@ -91,6 +91,42 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             File.Copy(databaseFilePath, backupFilePath, true);
+        }
+
+        public static void ImportKMDatabase(string sourceDbPath, string targetDbPath) {
+            using var connection = new SqliteConnection($"Data Source={targetDbPath};");
+            connection.Open();
+
+            using var command = new SqliteCommand($"ATTACH DATABASE '{sourceDbPath}' AS SourceDb;", connection);
+            command.ExecuteNonQuery();
+
+            // Copy rows
+            using var copyCmd = new SqliteCommand(
+                "INSERT INTO clippings SELECT * FROM SourceDb.clippings;", connection);
+            copyCmd.ExecuteNonQuery();
+
+            // Detach
+            using var detachCmd = new SqliteCommand("DETACH DATABASE SourceDb;", connection);
+            detachCmd.ExecuteNonQuery();
+        }
+
+        public static void ImportVocabDatabase(string sourceDbPath, string targetDbPath) {
+            using var connection = new SqliteConnection($"Data Source={targetDbPath};");
+            connection.Open();
+
+            using var command = new SqliteCommand($"ATTACH DATABASE '{sourceDbPath}' AS SourceDb;", connection);
+            command.ExecuteNonQuery();
+
+            // Copy rows
+            using var copyCmd = new SqliteCommand("INSERT INTO lookups SELECT * FROM SourceDb.lookups;", connection);
+            copyCmd.ExecuteNonQuery();
+
+            using var copyCmd2 = new SqliteCommand("INSERT INTO vocab SELECT * FROM SourceDb.vocab;", connection);
+            copyCmd2.ExecuteNonQuery();
+
+            // Detach
+            using var detachCmd = new SqliteCommand("DETACH DATABASE SourceDb;", connection);
+            detachCmd.ExecuteNonQuery();
         }
     }
 }

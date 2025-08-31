@@ -13,12 +13,14 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using KindleMate2.Application.Services;
-using KindleMate2.Domain.Entities;
 using KindleMate2.Infrastructure.Helpers;
-using KindleMate2.Infrastructure.Repositories;
 using Clipping = KindleMate2.Entities.Clipping;
-using Microsoft.Data.Sqlite;
+using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Infrastructure.Repositories.VocabDB;
+using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
+using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
@@ -29,6 +31,7 @@ namespace KindleMate2 {
         private readonly VocabService _vocabService;
         private readonly ThemeService _themeService;
         private readonly DatabaseService _databaseService;
+        private readonly KMDatabaseService _kmDatabaseService;
 
         private DataTable _clippingsDataTable = new();
 
@@ -65,6 +68,8 @@ namespace KindleMate2 {
         private const string VersionFileName = "version.txt";
         private const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
+        private const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
+
         [DllImport("User32.dll")]
         private static extern bool HideCaret(IntPtr hWnd);
 
@@ -74,26 +79,26 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
-            const string connectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
-
-            var clippingRepository = new ClippingRepository(connectionString);
+            var clippingRepository = new ClippingRepository(ConnectionString);
             _clippingService = new ClippingService(clippingRepository);
 
-            var lookupRepository = new LookupRepository(connectionString);
+            var lookupRepository = new LookupRepository(ConnectionString);
             _lookupService = new LookupService(lookupRepository);
 
-            var originalClippingLineRepository = new OriginalClippingLineRepository(connectionString);
+            var originalClippingLineRepository = new OriginalClippingLineRepository(ConnectionString);
             _originalClippingLineService = new OriginalClippingLineService(originalClippingLineRepository);
 
-            var settingRepository = new SettingRepository(connectionString);
+            var settingRepository = new SettingRepository(ConnectionString);
             _settingService = new SettingService(settingRepository);
             _themeService = new ThemeService(settingRepository);
 
-            var vocabRepository = new VocabRepository(connectionString);
+            var vocabRepository = new VocabRepository(ConnectionString);
             _vocabService = new VocabService(vocabRepository);
 
-            var databaseRepository = new DatabaseRepository(connectionString);
+            var databaseRepository = new DatabaseRepository(ConnectionString);
             _databaseService = new DatabaseService(databaseRepository);
+
+            _kmDatabaseService = new KMDatabaseService(lookupRepository, vocabRepository);
 
             _programPath = Environment.CurrentDirectory;
             _databaseFilePath = Path.Combine(_programPath, DatabaseFileName);
@@ -332,121 +337,29 @@ namespace KindleMate2 {
                 return string.Empty;
             }
 
-            SqliteConnection connection = new("Data Source=" + kindleWordsPath + ";Version=3;");
+            var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
+            
+            var bookInfoRepository = new BookInfoRepository(connectionString);
+            var vocabLookupRepository = new VocabLookupRepository(connectionString);
+            var wordRepository = new WordRepository(connectionString);
+            var lookupRepository = new LookupRepository(ConnectionString);
+            var vocabRepository = new VocabRepository(ConnectionString);
+            var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
 
-            var bookInfoTable = new DataTable();
-            var lookupsTable = new DataTable();
-            var wordsTable = new DataTable();
-
-            connection.Open();
-
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
-                command.ExecuteNonQuery();
+            if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
+                var lookupCount = result["LookupCount"].ToString() ?? "0";
+                var insertedLookupCount = result["InsertedLookupCount"].ToString() ?? "0";
+                var insertedVocabCount = result["InsertedVocabCount"].ToString() ?? "0";
+                return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space +
+                       Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
+            } else {
+                var exception = result["Exception"].ToString() ?? string.Empty;
+                return exception;
             }
-
-            SQLiteTransaction? trans = connection.BeginTransaction();
-
-            try {
-                const string bookInfoQuery = "SELECT * FROM BOOK_INFO;";
-                using var bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
-                using var bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
-                bookInfoAdapter.Fill(bookInfoTable);
-
-                const string lookupsTableQuery = "SELECT * FROM LOOKUPS;";
-                using var lookupsCommand = new SQLiteCommand(lookupsTableQuery, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-                lookupsAdapter.Fill(lookupsTable);
-
-                const string wordsLookups = "SELECT * FROM WORDS;";
-                using var wordsCommand = new SQLiteCommand(wordsLookups, connection);
-                using var wordsAdapter = new SQLiteDataAdapter(wordsCommand);
-
-                wordsAdapter.Fill(wordsTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-
-            connection.Close();
-
-            var lookupsInsertedCount = 0;
-            var wordsInsertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                foreach (DataRow row in wordsTable.Rows) {
-                    var id = row["id"].ToString() ?? string.Empty;
-                    var word = row["word"].ToString() ?? string.Empty;
-                    var stem = row["stem"].ToString() ?? string.Empty;
-                    _ = int.TryParse(row["category"].ToString()!.Trim(), out var category);
-                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
-
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                    DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    if (!_staticData.IsExistVocabById(word + timestamp)) {
-                        wordsInsertedCount += _staticData.InsertVocab(word + timestamp, id, word, stem, category, formattedDateTime, 0);
-                    }
-                }
-
-                foreach (DataRow row in lookupsTable.Rows) {
-                    var word_key = row["word_key"].ToString() ?? string.Empty;
-                    var book_key = row["book_key"].ToString() ?? string.Empty;
-                    var usage = row["usage"].ToString() ?? string.Empty;
-                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
-
-                    var title = string.Empty;
-                    var authors = string.Empty;
-                    foreach (DataRow bookInfoRow in bookInfoTable.Rows) {
-                        var id = bookInfoRow["id"].ToString() ?? string.Empty;
-                        var guid = bookInfoRow["guid"].ToString() ?? string.Empty;
-                        if (id != book_key && guid != book_key) {
-                            continue;
-                        }
-
-                        title = bookInfoRow["title"].ToString() ?? string.Empty;
-                        authors = bookInfoRow["authors"].ToString() ?? string.Empty;
-                    }
-
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                    DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    if (!_staticData.IsExistLookups(formattedDateTime)) {
-                        lookupsInsertedCount += _staticData.InsertLookups(word_key, usage, title, authors, formattedDateTime);
-                    }
-                }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-            }
-
-            UpdateFrequency();
-
-            return Strings.Parsed_X + Strings.Space + lookupsTable.Rows.Count + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + lookupsInsertedCount + Strings.Space +
-                   Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private void UpdateFrequency() {
-            DataTable vocabDataTable = _staticData.GetVocabDataTable();
-            DataTable lookupsDataTable = _staticData.GetLookupsDataTable();
-
-            _staticData.BeginTransaction();
-            try {
-                foreach (DataRow row in vocabDataTable.Rows) {
-                    var word_key = row["word_key"].ToString() ?? string.Empty;
-                    var frequency = lookupsDataTable.AsEnumerable().Count(lookupsRow => lookupsRow["word_key"].ToString()?.Trim() == word_key);
-                    _staticData.UpdateVocab(word_key, frequency);
-                }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-            }
+            _kmDatabaseService.UpdateFrequency();
         }
 
         private void RefreshData(bool isReQuery = true) {
@@ -734,134 +647,21 @@ namespace KindleMate2 {
             }
         }
 
-        // ReSharper disable once InconsistentNaming
-        private string ImportKMDatabase(string filePath) {
-            using SQLiteConnection connection = new("Data Source=" + filePath + ";Version=3;");
+        private string ImportKmDatabase(string filePath) {
+            var clippingsCount = _clippingService.GetCount();
+            var vocabCount = _vocabService.GetCount();
 
-            var clippingsDataTable = new DataTable();
-            var originClippingsDataTable = new DataTable();
-            var lookupsDataTable = new DataTable();
-            var vocabDataTable = new DataTable();
+            DatabaseHelper.ImportKMDatabase(filePath, _databaseFilePath);
 
-            connection.Open();
-
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
-                command.ExecuteNonQuery();
-            }
-
-            SQLiteTransaction? trans = connection.BeginTransaction();
-
-            try {
-                const string queryClippings = "SELECT * FROM clippings;";
-                using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
-                using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
-                clippingAdapter.Fill(clippingsDataTable);
-
-                const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
-                using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
-                using var originAdapter = new SQLiteDataAdapter(originCommand);
-                originAdapter.Fill(originClippingsDataTable);
-
-                const string queryLookups = "SELECT * FROM lookups;";
-                using var lookupsCommand = new SQLiteCommand(queryLookups, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-                lookupsAdapter.Fill(lookupsDataTable);
-
-                const string queryVocab = "SELECT * FROM vocab;";
-                using var vocabCommand = new SQLiteCommand(queryVocab, connection);
-                using var vocabAdapter = new SQLiteDataAdapter(vocabCommand);
-                vocabAdapter.Fill(vocabDataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-
-            connection.Close();
-
-            var insertedCount = 0;
-            var wordsInsertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                foreach (DataRow row in clippingsDataTable.Rows) {
-                    if (_staticData.IsExistClippings(row["key"].ToString())) {
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(row["content"].ToString())) {
-                        continue;
-                    }
-
-                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
-                        continue;
-                    }
-
-                    _ = int.TryParse(row["brieftype"].ToString()!.Trim(), out var brieftype);
-                    _ = int.TryParse(row["read"].ToString()!.Trim(), out var read);
-                    _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
-                    _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
-                    _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-
-                    var entityClipping = new Clipping {
-                        key = row["key"].ToString() ?? string.Empty,
-                        content = row["content"].ToString() ?? string.Empty,
-                        bookname = row["bookname"].ToString() ?? string.Empty,
-                        authorname = row["authorname"].ToString() ?? string.Empty,
-                        briefType = (BriefType)brieftype,
-                        clippingtypelocation = row["clippingtypelocation"].ToString() ?? string.Empty,
-                        read = read,
-                        clippingdate = row["clippingdate"].ToString() ?? string.Empty,
-                        clipping_importdate = row["clipping_importdate"].ToString() ?? DateTime.Now.ToString(CultureInfo.InvariantCulture),
-                        tag = row["tag"].ToString() ?? string.Empty,
-                        sync = sync,
-                        newbookname = row["newbookname"].ToString() ?? string.Empty,
-                        colorRGB = colorRgb,
-                        pagenumber = pagenumber
-                    };
-
-                    if (_staticData.InsertClippings(entityClipping)) {
-                        insertedCount += 1;
-                    }
-                }
-
-                foreach (DataRow row in originClippingsDataTable.Rows) {
-                    if (_staticData.IsExistOriginalClippings(row["key"].ToString())) {
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(row["line4"].ToString())) {
-                        continue;
-                    }
-
-                    _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
-                }
-
-                foreach (DataRow row in lookupsDataTable.Rows) {
-                    if (_staticData.IsExistLookups(row["timestamp"].ToString() ?? string.Empty)) {
-                        continue;
-                    }
-
-                    _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
-                }
-
-                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows
-                                      where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)
-                                      select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty,
-                                          int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-            }
-
+            CleanDatabase();
+            
             UpdateFrequency();
 
-            var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
+            clippingsCount = _clippingService.GetCount() - clippingsCount;
+            vocabCount = _vocabService.GetCount() - vocabCount;
 
-            return Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
-                   wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
+            return Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                   vocabCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private string ImportKindleClippings(string clippingsPath) {
@@ -1646,7 +1446,7 @@ namespace KindleMate2 {
 
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKMDatabase(fileDialog.FileName); };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKmDatabase(fileDialog.FileName); };
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
                     MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
