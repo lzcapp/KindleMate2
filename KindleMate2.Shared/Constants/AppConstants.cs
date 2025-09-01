@@ -22,6 +22,23 @@
         
         public const string DatabaseNoNeedCleaning = "Database_No_Need_Cleaning";
         
+        public const string Css = "@import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap);*{font-family:-apple-system,\"Noto Sans\",\"Helvetica Neue\",Helvetica,\"Nimbus Sans L\",Arial,\"Liberation Sans\",\"PingFang SC\",\"Hiragino Sans GB\",\"Noto Sans CJK SC\",\"Source Han Sans SC\",\"Source Han Sans CN\",\"Microsoft YaHei UI\",\"Microsoft YaHei\",\"Wenquanyi Micro Hei\",\"WenQuanYi Zen Hei\",\"ST Heiti\",SimHei,\"WenQuanYi Zen Hei Sharp\",\"Noto Emoji\",sans-serif}body{font-family:Arial,sans-serif;background-color:#f9f9f9;color:#333;line-height:1.6;align-items:center;width:80vw;margin:20px auto}h1{font-size:30px;text-align:center;margin:30px auto;color:#333}h2{font-size:24px;margin:30px auto;color:#333}p{font-size:16px;margin:20px auto}code{background-color:#faebd7;border-radius:10px;padding:2px 6px}";
+        
         public const string Kindle = "Kindle";
+        public const string SystemPathName = "system";
+        public const string DocumentsPathName = "documents";
+        public const string VocabularyPathName = "vocabulary";
+        public const string TempPathName = "Temp";
+        public const string BackupsPathName = "Backups";
+        public const string ExportsPathName = "Exports";
+        public const string KindleMateDatabaseFileName = "KM.dat";
+        public const string DatabaseFileName = "KM2.dat";
+        public const string ClippingsFileName = "My Clippings.txt";
+        public const string VocabFileName = "vocab.db";
+        public const string VersionFileName = "version.txt";
+        public const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
+        public const string ExplorerExe = "explorer.exe";
+
+        public const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
     }
 }
