@@ -258,7 +258,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Dark-Mode-Forms\src\DarkModeForms\DarkModeForms.csproj" />
+	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />

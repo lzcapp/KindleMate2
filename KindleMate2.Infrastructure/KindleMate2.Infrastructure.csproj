@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Dark-Mode-Forms\src\DarkModeForms\DarkModeForms.csproj" />
+    <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
     <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
   </ItemGroup>
 
