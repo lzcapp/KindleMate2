@@ -43,16 +43,6 @@
 
 > [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
 
-### 项目
-
-- `KindleMate2` (WinForm): 当前的版本
-- ~`KindleMate2_WPF` (WPF): 还未完工，需要重构为WPF的UI~
-      
-    
-    
-      
-    
-
 ## 特性
 
 - [x] 导入标注（`My Clippings.txt`）
