@@ -1,7 +1,6 @@
 using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
-using KindleMate2.Entities;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Infrastructure.Repositories.VocabDB;
@@ -1494,21 +1493,23 @@ namespace KindleMate2 {
         private void MenuRename_Click(object sender, EventArgs e) {
             var index = tabControl.SelectedIndex;
             if (index == 0) {
-                if (treeViewBooks.SelectedNode != null && !treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
-                    var bookname = treeViewBooks.SelectedNode.Text;
-                    var authorname = GetAuthornameFromClippings(bookname);
-                    ShowBookRenameDialog(bookname, authorname);
+                if (treeViewBooks.SelectedNode == null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    return;
                 }
+                var bookname = treeViewBooks.SelectedNode.Text;
+                var authorname = GetAuthornameFromClippings(bookname);
+                ShowBookRenameDialog(bookname, authorname);
             }
         }
 
         private string GetAuthornameFromClippings(string bookname) {
             var authorname = string.Empty;
-            foreach (var row in _clippings) {
-                if (row.bookname.Equals(bookname)) {
-                    authorname = row.authorname;
-                    break;
+            foreach (Clipping row in _clippings) {
+                if (!row.bookname.Equals(bookname)) {
+                    continue;
                 }
+                authorname = row.authorname;
+                break;
             }
             return authorname;
         }
@@ -1650,37 +1651,6 @@ namespace KindleMate2 {
             RefreshData();
         }
 
-        private bool ExportClippingsFile(string path, string file = ClippingsFileName) {
-            DataTable dataTable = _staticData.GetOriginClippingsDataTable();
-            dataTable.DefaultView.Sort = "key ASC";
-            DataTable sortedDataTable = dataTable.DefaultView.ToTable();
-
-            var filePath = Path.Combine(path, file);
-
-            if (!Directory.Exists(path)) {
-                Directory.CreateDirectory(path);
-            }
-
-            if (File.Exists(filePath)) {
-                File.Delete(filePath);
-            }
-
-            using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            using var writer = new StreamWriter(fileStream);
-            foreach (DataRow row in sortedDataTable.Rows) {
-                writer.WriteLine(row["line1"]);
-                writer.WriteLine(row["line2"]);
-                writer.WriteLine(row["line3"]);
-                writer.WriteLine(row["line4"]);
-                writer.WriteLine(row["line5"]);
-            }
-
-            writer.Close();
-            fileStream.Close();
-
-            return true;
-        }
-
         private void MenuBackup_Click(object sender, EventArgs e) {
             DatabaseHelper.BackupDatabase(_programPath, _backupPath, DatabaseFileName);
 
@@ -1707,7 +1677,7 @@ namespace KindleMate2 {
 
         private void MenuClear_Click(object sender, EventArgs e) {
             if (_staticData.IsDatabaseEmpty()) {
-                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1908,11 +1878,35 @@ namespace KindleMate2 {
         private string RebuildDatabase() {
             DataTable origin = _staticData.GetOriginClippingsDataTable();
             if (origin.Rows.Count <= 0) {
-                return Strings.No_Data_To_Clear;
+                return Strings.Database_Empty;
             }
             _ = _staticData.EmptyTable("clippings");
-            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select _kmDatabaseService.HandleClippings(line1, line2, line3, line4, line5, true)).Count(result => result);
-            _staticData.CommitTransaction();
+            var insertedCount = (origin.Rows.Cast<DataRow>()
+                .Select(row => new {
+                    row,
+                    entityClipping = new Clipping()
+                })
+                .Select(@t => new {
+                    @t,
+                    line1 = @t.row["line1"].ToString() ?? string.Empty
+                })
+                .Select(@t => new {
+                    @t,
+                    line2 = @t.@t.row["line2"].ToString() ?? string.Empty
+                })
+                .Select(@t => new {
+                    @t,
+                    line3 = @t.@t.@t.row["line3"].ToString() ?? string.Empty
+                })
+                .Select(@t => new {
+                    @t,
+                    line4 = @t.@t.@t.@t.row["line4"].ToString() ?? string.Empty
+                })
+                .Select(@t => new {
+                    @t,
+                    line5 = @t.@t.@t.@t.@t.row["line5"].ToString() ?? string.Empty
+                })
+                .Select(@t => _kmDatabaseService.HandleClippings(@t.@t.@t.@t.@t.line1, @t.@t.@t.@t.line2, @t.@t.@t.line3, @t.@t.line4, @t.line5, true))).Count(result => result);
             var clipping = Strings.Parsed_X + Strings.Space + origin.Rows.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
             return clipping;
         }
@@ -1940,16 +1934,14 @@ namespace KindleMate2 {
         }
 
         private string CleanDatabase() {
-            _clippings = _staticData.GetClipingsDataTable();
-
-            _staticData.BeginTransaction();
+            _clippings = _clippingService.GetAllClippings();
 
             try {
                 var countEmpty = 0;
                 var countTrimmed = 0;
                 var countDuplicated = 0;
 
-                foreach (DataRow row in _clippings) {
+                foreach (var row in _clippings) {
                     var key = row["key"].ToString() ?? string.Empty;
                     var content = row["content"].ToString() ?? string.Empty;
                     var bookname = row["bookname"].ToString() ?? string.Empty;
@@ -2003,9 +1995,7 @@ namespace KindleMate2 {
                 var fileInfo = new FileInfo(_databaseFilePath);
                 var originFileSize = fileInfo.Length;
 
-                _staticData.CommitTransaction();
-
-                _staticData.VacuumDatabase();
+                DatabaseHelper.VacuumDatabase(_databaseFilePath);
 
                 var newFileSize = fileInfo.Length;
 
@@ -2018,7 +2008,6 @@ namespace KindleMate2 {
                 }
                 return Strings.Database_No_Need_Clean;
             } catch (Exception) {
-                _staticData.RollbackTransaction();
                 return string.Empty;
             }
         }
@@ -2271,7 +2260,7 @@ namespace KindleMate2 {
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
             if (_clippings.Count <= 0) {
-                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             using var dialog = new FrmStatistics();
@@ -2287,7 +2276,10 @@ namespace KindleMate2 {
         }
 
         private void MenuTheme_Click(object sender, EventArgs e) {
-            _staticData.SetTheme(_isDarkTheme ? "light" : "dark");
+            _settingService.UpdateSetting(new Setting {
+                name = AppConstants.SettingTheme,
+                value = _isDarkTheme ? "light" : "dark"
+            });
             Restart();
         }
 
@@ -2300,31 +2292,23 @@ namespace KindleMate2 {
         }
 
         private void MenuLangEN_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("en");
+            UpdateSettingLanguage("en");
             Restart();
         }
 
         private void MenuLangSC_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("zh-Hans");
+            UpdateSettingLanguage("zh-Hans");
             Restart();
         }
 
         private void MenuLangTC_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("zh-Hant");
+            UpdateSettingLanguage("zh-Hant");
             Restart();
         }
 
         private void MenuLangAuto_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("");
+            UpdateSettingLanguage();
             Restart();
-        }
-
-        private void FrmMain_FormClosing(object sender, FormClosingEventArgs e) {
-            try {
-                _staticData.CommitTransaction();
-            } catch {
-                // ignored
-            }
         }
 
         private void MenuContentCopy_Click(object sender, EventArgs e) {
@@ -2489,7 +2473,7 @@ namespace KindleMate2 {
                 if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
                     return;
                 }
-                ExportClippingsFile(_tempPath);
+                _originalClippingLineService.Export(backupClippingsPath, ClippingsFileName, out Exception? exception);
                 var exportedClippingsPath = Path.Combine(_tempPath, ClippingsFileName);
                 var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
                 switch (_deviceType) {
@@ -2514,6 +2498,13 @@ namespace KindleMate2 {
                 Console.WriteLine(exception);
                 MessageBox(Strings.Sync_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
             }
+        }
+
+        private void UpdateSettingLanguage(string lang = "") {
+            _settingService.UpdateSetting(new Setting {
+                name = AppConstants.SettingLanguage,
+                value = lang
+            });
         }
     }
 }

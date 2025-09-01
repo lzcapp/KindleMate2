@@ -128,5 +128,16 @@ namespace KindleMate2.Infrastructure.Helpers {
             using var detachCmd = new SqliteCommand("DETACH DATABASE SourceDb;", connection);
             detachCmd.ExecuteNonQuery();
         }
+
+        public static void VacuumDatabase(string filePath) {
+            try {
+                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
+                connection.Open();
+                using var command = new SqliteCommand("VACUUM;", connection);
+                command.ExecuteNonQuery();
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+            }
+        }
     }
 }

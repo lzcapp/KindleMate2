@@ -934,7 +934,6 @@ namespace KindleMate2 {
             SizeGripStyle = SizeGripStyle.Show;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Kindle Mate 2";
-            FormClosing += FrmMain_FormClosing;
             Load += FrmMain_Load;
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();

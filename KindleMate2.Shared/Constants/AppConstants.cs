@@ -12,5 +12,8 @@
         public const string InsertedVocabCount = "InsertedVocabCount";
         public const string ParsedCount = "ParsedCount";
         public const string InsertedCount = "InsertedCount";
+
+        public const string SettingTheme = "theme";
+        public const string SettingLanguage = "lang";
     }
 }

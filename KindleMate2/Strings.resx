@@ -420,7 +420,7 @@
   <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
     <value>您需要导入Kindle Mate的数据库文件吗？</value>
   </data>
-  <data name="No_Data_To_Clear" xml:space="preserve">
+  <data name="Database_Empty" xml:space="preserve">
     <value>数据库为空</value>
   </data>
   <data name="File" xml:space="preserve">
