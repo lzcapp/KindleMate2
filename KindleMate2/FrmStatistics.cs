@@ -62,7 +62,7 @@ namespace KindleMate2 {
 
                 var enumBooks = _clippings.AsEnumerable()
                     .GroupBy(row => {
-                        DateTime date = ParseDateTime(row.clippingdate);
+                        DateTime date = ParseDateTime(row.ClippingDate);
                         return new {
                             date.Year, date.Month, date.Day
                         };
@@ -82,7 +82,7 @@ namespace KindleMate2 {
                     chartBooksHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
                 }
 
-                var enumBooksTime = _clippings.AsEnumerable().GroupBy(row => (DateTime.Parse(row.clippingdate)).TimeOfDay.Hours).Select(g => new {
+                var enumBooksTime = _clippings.AsEnumerable().GroupBy(row => (DateTime.Parse(row.ClippingDate)).TimeOfDay.Hours).Select(g => new {
                     ClippingHour = g.Key, ClippingCount = g.Count()
                 });
 
@@ -91,7 +91,7 @@ namespace KindleMate2 {
                     chartBooksTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
                 }
 
-                var enumBooksWeek = _clippings.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.clippingdate).DayOfWeek).Select(g => new {
+                var enumBooksWeek = _clippings.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.ClippingDate).DayOfWeek).Select(g => new {
                     Weekday = g.Key, ClippingCount = g.Count()
                 });
 
@@ -102,7 +102,7 @@ namespace KindleMate2 {
 
                 var enumVocabs = _vocabs.AsEnumerable()
                     .GroupBy(row => {
-                        DateTime date = DateTime.Parse(row.timestamp);
+                        DateTime date = DateTime.Parse(row.Timestamp);
                         return new {
                             date.Year, date.Month, date.Day
                         };
@@ -122,7 +122,7 @@ namespace KindleMate2 {
                     chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
                 }
 
-                var enumVocabsTime = _vocabs.AsEnumerable().GroupBy(row => DateTime.Parse(row.timestamp).TimeOfDay.Hours).Select(g => new {
+                var enumVocabsTime = _vocabs.AsEnumerable().GroupBy(row => DateTime.Parse(row.Timestamp).TimeOfDay.Hours).Select(g => new {
                     ClippingHour = g.Key, ClippingCount = g.Count()
                 });
 
@@ -131,7 +131,7 @@ namespace KindleMate2 {
                     chartVocabsTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
                 }
 
-                var enumVocabsWeek = _vocabs.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.timestamp).DayOfWeek).Select(g => new {
+                var enumVocabsWeek = _vocabs.AsEnumerable().GroupBy(row => (int)DateTime.Parse(row.Timestamp).DayOfWeek).Select(g => new {
                     Weekday = g.Key, ClippingCount = g.Count()
                 });
 
@@ -211,9 +211,9 @@ namespace KindleMate2 {
                     try {
                         if (_clippings.Count > 0) {
                             clippings = _clippings.Count;
-                            books = _clippings.AsEnumerable().Select(row => row.bookname).Distinct().Count();
-                            authors = _clippings.AsEnumerable().Select(row => row.authorname).Distinct().Count();
-                            var bookTimes = _clippings.AsEnumerable().Select(row => DateTime.Parse(row.clippingdate));
+                            books = _clippings.AsEnumerable().Select(row => row.BookName).Distinct().Count();
+                            authors = _clippings.AsEnumerable().Select(row => row.AuthorName).Distinct().Count();
+                            var bookTimes = _clippings.AsEnumerable().Select(row => DateTime.Parse(row.ClippingDate));
                             bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
                         } else {
                             throw new Exception();
@@ -230,9 +230,9 @@ namespace KindleMate2 {
                     var vocabDays = 0;
                     try {
                         if (_vocabs.Count > 0) {
-                            lookups = _vocabs.Sum(row => Convert.ToInt32(row.frequency));
-                            words = _vocabs.AsEnumerable().Select(row => row.word).Distinct().Count();
-                            var vocabTimes = _vocabs.AsEnumerable().Select(row => DateTime.Parse(row.timestamp));
+                            lookups = _vocabs.Sum(row => Convert.ToInt32(row.Frequency));
+                            words = _vocabs.AsEnumerable().Select(row => row.Word).Distinct().Count();
+                            var vocabTimes = _vocabs.AsEnumerable().Select(row => DateTime.Parse(row.Timestamp));
                             vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
                         } else {
                             throw new Exception();

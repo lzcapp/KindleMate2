@@ -1,19 +1,19 @@
 ﻿namespace KindleMate2.Domain.Entities.KM2DB {
     public class Clipping {
-        public string key { get; set; } = null!;
-        public string? content { get; set; }
-        public string? bookname { get; set; }
-        public string? authorname { get; set; }
-        public BriefType? brieftype { get; set; }
-        public string? clippingtypelocation { get; set; }
-        public string? clippingdate { get; set; }
-        public int? read { get; set; }
-        public string? clipping_importdate { get; set; }
-        public string? tag { get; set; }
-        public int? sync { get; set; }
-        public string? newbookname { get; set; }
-        public int? colorRGB { get; set; }
-        public int? pagenumber { get; set; }
+        public string Key { get; set; } = null!;
+        public string? Content { get; set; }
+        public string? BookName { get; set; }
+        public string? AuthorName { get; set; }
+        public BriefType? BriefType { get; set; }
+        public string? ClippingTypeLocation { get; set; }
+        public string? ClippingDate { get; set; }
+        public int? Read { get; set; }
+        public string? ClippingImportDate { get; set; }
+        public string? Tag { get; set; }
+        public int? Sync { get; set; }
+        public string? NewBookName { get; set; }
+        public int? ColorRgb { get; set; }
+        public int? PageNumber { get; set; }
     }
 
     public enum BriefType {

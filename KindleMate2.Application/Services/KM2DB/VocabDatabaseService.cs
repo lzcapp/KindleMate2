@@ -49,8 +49,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                         continue;
                     }
                     _vocabRepository.Add(new Vocab {
-                        id = word + timestamp, 
-                        word_key = id, word = word, stem = stem, category = category, timestamp = formattedDateTime, frequency = 0
+                        Id = word + timestamp, 
+                        WordKey = id, Word = word, Stem = stem, Category = category, Timestamp = formattedDateTime, Frequency = 0
                     });
                     insertedVocabCount += 1;
                 }
@@ -117,11 +117,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var lookups = _km2DbLookupRepository.GetAll();
                 
                 foreach (Vocab vocab in vocabs) {
-                    var wordKey = vocab.word_key;
+                    var wordKey = vocab.WordKey;
                     var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey.Trim() == wordKey);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
-                        word_key = wordKey, 
-                        frequency = frequency
+                        WordKey = wordKey, 
+                        Frequency = frequency
                     });
                 }
                 return true;

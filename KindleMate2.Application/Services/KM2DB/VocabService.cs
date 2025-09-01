@@ -27,7 +27,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public void AddVocab(Vocab vocab) {
-            if (string.IsNullOrWhiteSpace(vocab.id)) {
+            if (string.IsNullOrWhiteSpace(vocab.Id)) {
                 throw new ArgumentException("[id] cannot be empty");
             }
 
@@ -57,7 +57,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return list;
             }
             foreach (Vocab vocab in vocabs) {
-                var bookTitle = vocab.word;
+                var bookTitle = vocab.Word;
                 if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
                     list.Add(bookTitle);
                 }
@@ -72,7 +72,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return list;
             }
             foreach (Vocab vocab in vocabs) {
-                var bookTitle = vocab.stem;
+                var bookTitle = vocab.Stem;
                 if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
                     list.Add(bookTitle);
                 }

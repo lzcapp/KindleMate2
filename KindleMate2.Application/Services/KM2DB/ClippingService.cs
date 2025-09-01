@@ -39,7 +39,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public void AddClipping(Clipping clipping) {
-            if (string.IsNullOrWhiteSpace(clipping.key)) {
+            if (string.IsNullOrWhiteSpace(clipping.Key)) {
                 throw new ArgumentException("[key] cannot be empty");
             }
 
@@ -65,7 +65,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return list;
             }
             foreach (Clipping clipping in clippings) {
-                var bookTitle = clipping.bookname;
+                var bookTitle = clipping.BookName;
                 if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
                     list.Add(bookTitle);
                 }
@@ -80,7 +80,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return list;
             }
             foreach (Clipping clipping in clippings) {
-                var bookTitle = clipping.authorname;
+                var bookTitle = clipping.AuthorName;
                 if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
                     list.Add(bookTitle);
                 }
@@ -92,9 +92,9 @@ namespace KindleMate2.Application.Services.KM2DB {
             var clippings = _repository.GetByBookName(originBookname);
             var result = 0;
             foreach (Clipping clipping in clippings) {
-                clipping.bookname = bookname;
+                clipping.BookName = bookname;
                 if (!string.IsNullOrWhiteSpace(authorname)) {
-                    clipping.authorname = authorname;
+                    clipping.AuthorName = authorname;
                 }
                 if (_repository.Update(clipping)) {
                     result++;

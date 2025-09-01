@@ -23,16 +23,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 using SqliteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read()) {
                     return new Vocab {
-                        id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        word_key = DatabaseHelper.GetSafeString(reader, 1),
-                        word = DatabaseHelper.GetSafeString(reader, 2) ?? throw new InvalidOperationException(),
-                        stem = DatabaseHelper.GetSafeString(reader, 3),
-                        category = DatabaseHelper.GetSafeInt(reader, 4),
-                        translation = DatabaseHelper.GetSafeString(reader, 5),
-                        timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                        frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                        sync = DatabaseHelper.GetSafeInt(reader, 8),
-                        colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
+                        Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        WordKey = DatabaseHelper.GetSafeString(reader, 1),
+                        Word = DatabaseHelper.GetSafeString(reader, 2) ?? throw new InvalidOperationException(),
+                        Stem = DatabaseHelper.GetSafeString(reader, 3),
+                        Category = DatabaseHelper.GetSafeInt(reader, 4),
+                        Translation = DatabaseHelper.GetSafeString(reader, 5),
+                        Timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                        Frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                        Sync = DatabaseHelper.GetSafeInt(reader, 8),
+                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
                     };
                 }
                 return null;
@@ -58,16 +58,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     continue;
                 }
                 var vocab = new Vocab {
-                    id = id,
-                    word_key = DatabaseHelper.GetSafeString(reader, 1),
-                    word = word,
-                    stem = DatabaseHelper.GetSafeString(reader, 3),
-                    category = DatabaseHelper.GetSafeInt(reader, 4),
-                    translation = DatabaseHelper.GetSafeString(reader, 5),
-                    timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                    frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                    sync = DatabaseHelper.GetSafeInt(reader, 8),
-                    colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
+                    Id = id,
+                    WordKey = DatabaseHelper.GetSafeString(reader, 1),
+                    Word = word,
+                    Stem = DatabaseHelper.GetSafeString(reader, 3),
+                    Category = DatabaseHelper.GetSafeInt(reader, 4),
+                    Translation = DatabaseHelper.GetSafeString(reader, 5),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                    Frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                    Sync = DatabaseHelper.GetSafeInt(reader, 8),
+                    ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
                 };
                 results.Add(vocab);
             }
@@ -98,16 +98,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     continue;
                 }
                 results.Add(new Vocab {
-                    id = id,
-                    word_key = DatabaseHelper.GetSafeString(reader, 1),
-                    word = word,
-                    stem = DatabaseHelper.GetSafeString(reader, 3),
-                    category = DatabaseHelper.GetSafeInt(reader, 4),
-                    translation = DatabaseHelper.GetSafeString(reader, 5),
-                    timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                    frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                    sync = DatabaseHelper.GetSafeInt(reader, 8),
-                    colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
+                    Id = id,
+                    WordKey = DatabaseHelper.GetSafeString(reader, 1),
+                    Word = word,
+                    Stem = DatabaseHelper.GetSafeString(reader, 3),
+                    Category = DatabaseHelper.GetSafeInt(reader, 4),
+                    Translation = DatabaseHelper.GetSafeString(reader, 5),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                    Frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                    Sync = DatabaseHelper.GetSafeInt(reader, 8),
+                    ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
                 });
             }
             return results;
@@ -131,16 +131,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection);
-            cmd.Parameters.AddWithValue("@id", vocab.id);
-            cmd.Parameters.AddWithValue("@word_key", vocab.word_key);
-            cmd.Parameters.AddWithValue("@word", vocab.word);
-            cmd.Parameters.AddWithValue("@stem", vocab.stem);
-            cmd.Parameters.AddWithValue("@category", vocab.category);
-            cmd.Parameters.AddWithValue("@translation", vocab.translation);
-            cmd.Parameters.AddWithValue("@timestamp", vocab.timestamp);
-            cmd.Parameters.AddWithValue("@frequency", vocab.frequency);
-            cmd.Parameters.AddWithValue("@sync", vocab.sync);
-            cmd.Parameters.AddWithValue("@colorRGB", vocab.colorRGB);
+            cmd.Parameters.AddWithValue("@id", vocab.Id);
+            cmd.Parameters.AddWithValue("@word_key", vocab.WordKey);
+            cmd.Parameters.AddWithValue("@word", vocab.Word);
+            cmd.Parameters.AddWithValue("@stem", vocab.Stem);
+            cmd.Parameters.AddWithValue("@category", vocab.Category);
+            cmd.Parameters.AddWithValue("@translation", vocab.Translation);
+            cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp);
+            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
+            cmd.Parameters.AddWithValue("@sync", vocab.Sync);
+            cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb);
             cmd.ExecuteNonQuery();
         }
 
@@ -149,16 +149,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE vocab SET word_key = @word_key, word = @word, stem = @stem, category = @category, translation = @translation, timestamp = @timestamp, frequency = @frequency, sync = @sync, colorRGB = @colorRGB WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", vocab.id);
-            cmd.Parameters.AddWithValue("@word_key", vocab.word_key);
-            cmd.Parameters.AddWithValue("@word", vocab.word);
-            cmd.Parameters.AddWithValue("@stem", vocab.stem);
-            cmd.Parameters.AddWithValue("@category", vocab.category);
-            cmd.Parameters.AddWithValue("@translation", vocab.translation);
-            cmd.Parameters.AddWithValue("@timestamp", vocab.timestamp);
-            cmd.Parameters.AddWithValue("@frequency", vocab.frequency);
-            cmd.Parameters.AddWithValue("@sync", vocab.sync);
-            cmd.Parameters.AddWithValue("@colorRGB", vocab.colorRGB);
+            cmd.Parameters.AddWithValue("@id", vocab.Id);
+            cmd.Parameters.AddWithValue("@word_key", vocab.WordKey);
+            cmd.Parameters.AddWithValue("@word", vocab.Word);
+            cmd.Parameters.AddWithValue("@stem", vocab.Stem);
+            cmd.Parameters.AddWithValue("@category", vocab.Category);
+            cmd.Parameters.AddWithValue("@translation", vocab.Translation);
+            cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp);
+            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
+            cmd.Parameters.AddWithValue("@sync", vocab.Sync);
+            cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb);
             cmd.ExecuteNonQuery();
         }
 
@@ -167,8 +167,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key", connection);
-            cmd.Parameters.AddWithValue("@word_key", vocab.word_key);
-            cmd.Parameters.AddWithValue("@frequency", vocab.frequency);
+            cmd.Parameters.AddWithValue("@word_key", vocab.WordKey);
+            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
             cmd.ExecuteNonQuery();
         }
 
