@@ -203,7 +203,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                 string clippingdate;
                 var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
                 datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                // ReSharper disable once InlineOutVariableDeclaration
                 var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
                 if (!isDateParsed) {
                     var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);

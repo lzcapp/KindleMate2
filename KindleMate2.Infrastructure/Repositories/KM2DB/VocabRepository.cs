@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -12,28 +13,33 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public Vocab? GetById(string id) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", id);
+                var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab WHERE id = @id", connection);
+                cmd.Parameters.AddWithValue("@id", id);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Vocab {
-                    id = reader.GetString(0),
-                    word_key = reader.GetString(1),
-                    word = reader.GetString(2),
-                    stem = reader.GetString(3),
-                    category = reader.GetInt32(4),
-                    translation = reader.GetString(5),
-                    timestamp = reader.GetString(6),
-                    frequency = reader.GetInt32(7),
-                    sync = reader.GetInt32(8),
-                    colorRGB = reader.GetInt32(9)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new Vocab {
+                        id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        word_key = DatabaseHelper.GetSafeString(reader, 1),
+                        word = DatabaseHelper.GetSafeString(reader, 2) ?? throw new InvalidOperationException(),
+                        stem = DatabaseHelper.GetSafeString(reader, 3),
+                        category = DatabaseHelper.GetSafeInt(reader, 4),
+                        translation = DatabaseHelper.GetSafeString(reader, 5),
+                        timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                        frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                        sync = DatabaseHelper.GetSafeInt(reader, 8),
+                        colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
+                    };
+                }
+                return null;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return null;
             }
-            return null;
         }
 
         public List<Vocab> GetAll() {
@@ -46,18 +52,24 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
-                results.Add(new Vocab {
-                    id = reader.GetString(0),
-                    word_key = reader.GetString(1),
-                    word = reader.GetString(2),
-                    stem = reader.GetString(3),
-                    category = reader.GetInt32(4),
-                    translation = reader.GetString(5),
-                    timestamp = reader.GetString(6),
-                    frequency = reader.GetInt32(7),
-                    sync = reader.GetInt32(8),
-                    colorRGB = reader.GetInt32(9)
-                });
+                var id = DatabaseHelper.GetSafeString(reader, 0);
+                var word = DatabaseHelper.GetSafeString(reader, 2);
+                if (id == null || word == null) {
+                    continue;
+                }
+                var vocab = new Vocab {
+                    id = id,
+                    word_key = DatabaseHelper.GetSafeString(reader, 1),
+                    word = word,
+                    stem = DatabaseHelper.GetSafeString(reader, 3),
+                    category = DatabaseHelper.GetSafeInt(reader, 4),
+                    translation = DatabaseHelper.GetSafeString(reader, 5),
+                    timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                    frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                    sync = DatabaseHelper.GetSafeInt(reader, 8),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
+                };
+                results.Add(vocab);
             }
             return results;
         }
@@ -68,31 +80,34 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            var sql = string.Empty;
-            if (type == AppEntities.SearchType.Vocabulary) {
-                sql = "WHERE word LIKE '%' || @strSearch || '%'";
-            } else if (type == AppEntities.SearchType.Stem) {
-                sql = "WHERE stem LIKE '%' || @strSearch || '%'";
-            } else if (type == AppEntities.SearchType.All) {
-                sql = "WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'";
-            }
+            var sql = type switch {
+                AppEntities.SearchType.Vocabulary => "WHERE word LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.Stem => "WHERE stem LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.All => "WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'",
+                _ => string.Empty
+            };
             var query = "SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab " + sql;
             var cmd = new SqliteCommand(query, connection);
             cmd.Parameters.AddWithValue("@strSearch", search);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var id = DatabaseHelper.GetSafeString(reader, 0);
+                var word = DatabaseHelper.GetSafeString(reader, 2);
+                if (id == null || word == null) {
+                    continue;
+                }
                 results.Add(new Vocab {
-                    id = reader.GetString(0),
-                    word_key = reader.GetString(1),
-                    word = reader.GetString(2),
-                    stem = reader.GetString(3),
-                    category = reader.GetInt32(4),
-                    translation = reader.GetString(5),
-                    timestamp = reader.GetString(6),
-                    frequency = reader.GetInt32(7),
-                    sync = reader.GetInt32(8),
-                    colorRGB = reader.GetInt32(9)
+                    id = id,
+                    word_key = DatabaseHelper.GetSafeString(reader, 1),
+                    word = word,
+                    stem = DatabaseHelper.GetSafeString(reader, 3),
+                    category = DatabaseHelper.GetSafeInt(reader, 4),
+                    translation = DatabaseHelper.GetSafeString(reader, 5),
+                    timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                    frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                    sync = DatabaseHelper.GetSafeInt(reader, 8),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 9)
                 });
             }
             return results;

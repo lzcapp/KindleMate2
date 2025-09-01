@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using KindleMate2.Infrastructure.Helpers;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class DatabaseRepository {
@@ -14,18 +15,20 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             // Get all user-defined tables
             var tableNames = new List<string>();
-            using (var cmdTables = new SqliteCommand(
-                       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-                       connection))
+            using (var cmdTables = new SqliteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';", connection))
             using (SqliteDataReader reader = cmdTables.ExecuteReader()) {
                 while (reader.Read()) {
-                    tableNames.Add(reader.GetString(0));
+                    var name = DatabaseHelper.GetSafeString(reader, 0);
+                    if (name == null) {
+                        continue;
+                    }
+                    tableNames.Add(name);
                 }
             }
 
             // Check each table for rows
             foreach (var table in tableNames) {
-                using var cmdCount = new SqliteCommand($"SELECT COUNT(1) FROM {table};", connection);
+                using var cmdCount = new SqliteCommand($"SELECT COUNT(*) FROM {table};", connection);
                 if (Convert.ToInt32(cmdCount.ExecuteScalar()) > 0) {
                     return false; // Found data in a table, database is not empty
                 }

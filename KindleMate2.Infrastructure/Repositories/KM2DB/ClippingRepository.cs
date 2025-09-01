@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
@@ -12,65 +13,75 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public Clipping? GetByKey(string key) {
-            SqliteConnection connection = new(_connectionString);
-            connection.Open();
+            try {
+                SqliteConnection connection = new(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
-                connection);
-            cmd.Parameters.AddWithValue("@key", key);
+                var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
+                    connection);
+                cmd.Parameters.AddWithValue("@key", key);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new Clipping {
+                        key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        content = DatabaseHelper.GetSafeString(reader, 1),
+                        bookname = DatabaseHelper.GetSafeString(reader, 2),
+                        authorname = DatabaseHelper.GetSafeString(reader, 3),
+                        brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                        clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                        read = DatabaseHelper.GetSafeInt(reader, 7),
+                        clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                        tag = DatabaseHelper.GetSafeString(reader, 9),
+                        sync = DatabaseHelper.GetSafeInt(reader, 10),
+                        newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                        colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                        pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
+                    };
+                }
+                return null;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return null;
             }
-            return null;
         }
 
         public Clipping? GetByKeyAndContent(string key, string content) {
-            SqliteConnection connection = new(_connectionString);
-            connection.Open();
+            try {
+                SqliteConnection connection = new(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand(
-                "SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key AND content = @content",
-                connection);
-            cmd.Parameters.AddWithValue("@key", key);
-            cmd.Parameters.AddWithValue("@content", content);
+                var cmd = new SqliteCommand(
+                    "SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key AND content = @content",
+                    connection);
+                cmd.Parameters.AddWithValue("@key", key);
+                cmd.Parameters.AddWithValue("@content", content);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new Clipping {
+                        key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        content = DatabaseHelper.GetSafeString(reader, 1),
+                        bookname = DatabaseHelper.GetSafeString(reader, 2),
+                        authorname = DatabaseHelper.GetSafeString(reader, 3),
+                        brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                        clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                        read = DatabaseHelper.GetSafeInt(reader, 7),
+                        clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                        tag = DatabaseHelper.GetSafeString(reader, 9),
+                        sync = DatabaseHelper.GetSafeInt(reader, 10),
+                        newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                        colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                        pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
+                    };
+                }
+                return null;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                return null;
             }
-            return null;
         }
 
         public List<Clipping> GetByBookNameAndPageNumber(string bookname, int pagenumber) {
@@ -87,21 +98,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;
@@ -122,21 +137,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;
@@ -161,21 +180,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;
@@ -193,22 +216,26 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.Parameters.AddWithValue("@content", content);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
+            while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;
@@ -224,21 +251,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;
@@ -255,21 +286,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new Clipping {
-                    key = reader.GetString(0),
-                    content = reader.GetString(1),
-                    bookname = reader.GetString(2),
-                    authorname = reader.GetString(3),
-                    brieftype = (BriefType)reader.GetInt32(4),
-                    clippingtypelocation = reader.GetString(5),
-                    clippingdate = reader.GetString(6),
-                    read = reader.GetInt32(7),
-                    clipping_importdate = reader.GetString(8),
-                    tag = reader.GetString(9),
-                    sync = reader.GetInt32(10),
-                    newbookname = reader.GetString(11),
-                    colorRGB = reader.GetInt32(12),
-                    pagenumber = reader.GetInt32(13)
+                    key = key,
+                    content = DatabaseHelper.GetSafeString(reader, 1),
+                    bookname = DatabaseHelper.GetSafeString(reader, 2),
+                    authorname = DatabaseHelper.GetSafeString(reader, 3),
+                    brieftype = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                    clippingtypelocation = DatabaseHelper.GetSafeString(reader, 5),
+                    clippingdate = DatabaseHelper.GetSafeString(reader, 6),
+                    read = DatabaseHelper.GetSafeInt(reader, 7),
+                    clipping_importdate = DatabaseHelper.GetSafeString(reader, 8),
+                    tag = DatabaseHelper.GetSafeString(reader, 9),
+                    sync = DatabaseHelper.GetSafeInt(reader, 10),
+                    newbookname = DatabaseHelper.GetSafeString(reader, 11),
+                    colorRGB = DatabaseHelper.GetSafeInt(reader, 12),
+                    pagenumber = DatabaseHelper.GetSafeInt(reader, 13)
                 });
             }
             return results;

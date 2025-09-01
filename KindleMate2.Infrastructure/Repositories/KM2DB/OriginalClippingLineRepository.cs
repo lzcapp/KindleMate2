@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -12,24 +13,29 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public OriginalClippingLine? GetByKey(string key) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines WHERE key = @key", connection);
-            cmd.Parameters.AddWithValue("@key", key);
+                var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines WHERE key = @key", connection);
+                cmd.Parameters.AddWithValue("@key", key);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new OriginalClippingLine {
-                    key = reader.GetString(0),
-                    line1 = reader.GetString(1),
-                    line2 = reader.GetString(2),
-                    line3 = reader.GetString(3),
-                    line4 = reader.GetString(4),
-                    line5 = reader.GetString(5)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new OriginalClippingLine {
+                        key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        line1 = DatabaseHelper.GetSafeString(reader, 1),
+                        line2 = DatabaseHelper.GetSafeString(reader, 2),
+                        line3 = DatabaseHelper.GetSafeString(reader, 3),
+                        line4 = DatabaseHelper.GetSafeString(reader, 4),
+                        line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    };
+                }
+                return null;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                return null;
             }
-            return null;
         }
         public List<OriginalClippingLine> GetAll() {
             var results = new List<OriginalClippingLine>();
@@ -41,13 +47,17 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new OriginalClippingLine {
-                    key = reader.GetString(0),
-                    line1 = reader.GetString(1),
-                    line2 = reader.GetString(2),
-                    line3 = reader.GetString(3),
-                    line4 = reader.GetString(4),
-                    line5 = reader.GetString(5)
+                    key = key,
+                    line1 = DatabaseHelper.GetSafeString(reader, 1),
+                    line2 = DatabaseHelper.GetSafeString(reader, 2),
+                    line3 = DatabaseHelper.GetSafeString(reader, 3),
+                    line4 = DatabaseHelper.GetSafeString(reader, 4),
+                    line5 = DatabaseHelper.GetSafeString(reader, 5)
                 });
             }
             return results;
@@ -73,13 +83,17 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (key == null) {
+                    continue;
+                }
                 results.Add(new OriginalClippingLine {
-                    key = reader.GetString(0),
-                    line1 = reader.GetString(1),
-                    line2 = reader.GetString(2),
-                    line3 = reader.GetString(3),
-                    line4 = reader.GetString(4),
-                    line5 = reader.GetString(5)
+                    key = key,
+                    line1 = DatabaseHelper.GetSafeString(reader, 1),
+                    line2 = DatabaseHelper.GetSafeString(reader, 2),
+                    line3 = DatabaseHelper.GetSafeString(reader, 3),
+                    line4 = DatabaseHelper.GetSafeString(reader, 4),
+                    line5 = DatabaseHelper.GetSafeString(reader, 5)
                 });
             }
             return results;

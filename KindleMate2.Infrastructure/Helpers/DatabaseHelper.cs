@@ -139,5 +139,12 @@ namespace KindleMate2.Infrastructure.Helpers {
                 Console.WriteLine(ex.Message);
             }
         }
+        
+        public static string? GetSafeString(SqliteDataReader reader, int ordinal) =>
+            reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+
+        public static int? GetSafeInt(SqliteDataReader reader, int ordinal) =>
+            reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+
     }
 }

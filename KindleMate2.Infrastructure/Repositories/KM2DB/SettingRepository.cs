@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
@@ -11,20 +12,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public Setting? GetByName(string name) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT name, value FROM settings WHERE name = @name", connection);
-            cmd.Parameters.AddWithValue("@name", name);
+                var cmd = new SqliteCommand("SELECT name, value FROM settings WHERE name = @name", connection);
+                cmd.Parameters.AddWithValue("@name", name);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Setting {
-                    name = reader.GetString(0),
-                    value = reader.GetString(1)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new Setting {
+                        name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        value = DatabaseHelper.GetSafeString(reader, 1)
+                    };
+                }
+                return null;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                return null;
             }
-            return null;
         }
 
         public List<Setting> GetAll() {
@@ -37,9 +43,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var name = DatabaseHelper.GetSafeString(reader, 0);
+                if (name == null) {
+                    continue;
+                }
                 results.Add(new Setting {
-                    name = reader.GetString(0),
-                    value = reader.GetString(1)
+                    name = name,
+                    value = DatabaseHelper.GetSafeString(reader, 1)
                 });
             }
             return results;

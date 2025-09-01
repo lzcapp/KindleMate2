@@ -2,7 +2,7 @@
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
-using System.Globalization;
+using KindleMate2.Infrastructure.Helpers;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class LookupRepository : ILookupRepository {
@@ -22,11 +22,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new Lookup {
-                    WordKey = reader.GetString(0),
-                    Usage = reader.GetString(1),
-                    Title = reader.GetString(2),
-                    Authors = reader.GetString(3),
-                    Timestamp = reader.GetString(4)
+                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
                 };
             }
             return null;
@@ -43,11 +43,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new Lookup {
-                    WordKey = reader.GetString(0),
-                    Usage = reader.GetString(1),
-                    Title = reader.GetString(2),
-                    Authors = reader.GetString(3),
-                    Timestamp = reader.GetString(4)
+                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
                 });
             }
             return results;
@@ -65,11 +65,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 results.Add(new Lookup {
-                    WordKey = reader.GetString(0),
-                    Usage = reader.GetString(1),
-                    Title = reader.GetString(2),
-                    Authors = reader.GetString(3),
-                    Timestamp = reader.GetString(4)
+                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
                 });
             }
             return results;
@@ -87,11 +87,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 results.Add(new Lookup {
-                    WordKey = reader.GetString(0),
-                    Usage = reader.GetString(1),
-                    Title = reader.GetString(2),
-                    Authors = reader.GetString(3),
-                    Timestamp = reader.GetString(4)
+                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
                 });
             }
             return results;
@@ -122,11 +122,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new Lookup {
-                    WordKey = reader.GetString(0),
-                    Usage = reader.GetString(1),
-                    Title = reader.GetString(2),
-                    Authors = reader.GetString(3),
-                    Timestamp = reader.GetString(4)
+                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
                 });
             }
             return results;
