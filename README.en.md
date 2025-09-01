@@ -1,3 +1,15 @@
+> **Kindle Mate `2`** 正在进行重大重构。本次重构将引入 多层架构（Layered Architecture），以提升代码的 可维护性、可扩展性、可测试性。
+> 
+> 预计完成时间：**2025年9月3日**。
+> 
+> 在此期间，将不会开发新的需求，我们会专注于架构重构与核心功能的稳定。感谢您的理解与支持！
+
+> **Kindle Mate `2`** is undergoing a major refactoring. This refactoring introduces Layered Architecture to enhance maintainability, scalability, and testability of the codebase.
+> 
+> Estimated completion date: **September 3, 2025**.
+> 
+> During this period, no new feature requests will be developed. We will focus on refactoring and ensuring the stability of core functionalities. Thank you for your understanding and support!
+
 # Kindle Mate `2`
 
 ![](Screenshots/banner.png#gh-light-mode-only)
@@ -30,11 +42,6 @@
 - Do `git submodule update --init --recursive` first after cloning this repo.
 
 > [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
-
-### Projects
-
-- `KindleMate2` (WinForm): Current version.
-- `KindleMate2_WPF` (WPF): Not yet done, much work to do.
 
 ## Features
 
