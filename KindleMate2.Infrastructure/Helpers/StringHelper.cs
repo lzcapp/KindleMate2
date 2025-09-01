@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using KindleMate2.Shared.Constants;
+using System.Text;
 using Markdig.Helpers;
 
 namespace KindleMate2.Infrastructure.Helpers {
@@ -68,6 +69,10 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             return $"{size:0.##} {sizes[order]}";
+        }
+
+        public static string ParseKindleVersion(string versionText) {
+            return versionText.Trim().Split('(')[0].Replace(AppConstants.Kindle, "").Trim();
         }
     }
 }

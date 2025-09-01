@@ -8,7 +8,6 @@ using KindleMate2.Properties;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using Markdig;
-using Markdig.Helpers;
 using MediaDevices;
 using System.ComponentModel;
 using System.Data;
@@ -114,9 +113,9 @@ namespace KindleMate2 {
             lblContent.LostFocus += LblContent_LostFocus;
 
             if (!File.Exists(_databaseFilePath)) {
-                if (DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception? exception)) {
+                if (DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception exception)) {
                     var message = MessageHelper.BuildMessage(Strings.Create_Database_Failed, exception);
-                    MessageBox(message, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+                    _ = MessageBox(message, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
                     Environment.Exit(0);
                 }
             }
@@ -280,7 +279,7 @@ namespace KindleMate2 {
             deviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
             deviceArrivalWatcher.Start();
 
-            const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity' ";
+            const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
             using var deviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
             deviceRemovalWatcher.EventArrived += MtpDeviceEventHandler;
             deviceRemovalWatcher.Start();
@@ -312,15 +311,12 @@ namespace KindleMate2 {
                 if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
                     return string.Empty;
                 }
-
                 if (string.IsNullOrWhiteSpace(clippingsResult)) {
                     return wordResult;
                 }
-
                 if (string.IsNullOrWhiteSpace(wordResult)) {
                     return clippingsResult;
                 }
-
                 return clippingsResult + Environment.NewLine + wordResult;
             } catch (Exception e) {
                 Console.WriteLine(e);
@@ -760,7 +756,7 @@ namespace KindleMate2 {
                         if (word.Length > 1) {
                             if (!isChinese) {
                                 foreach (Clipping row in _clippings) {
-                                    var strContent = row.content ?? string.Empty;
+                                    var strContent = row.content;
                                     if (string.IsNullOrWhiteSpace(strContent)) {
                                         continue;
                                     }
@@ -772,7 +768,7 @@ namespace KindleMate2 {
                                 }
                             } else {
                                 foreach (Clipping row in _clippings) {
-                                    var strContent = row.content ?? string.Empty;
+                                    var strContent = row.content;
                                     if (string.IsNullOrWhiteSpace(strContent)) {
                                         continue;
                                     }
@@ -864,8 +860,8 @@ namespace KindleMate2 {
 
                         break;
                 }
-            } catch (Exception) {
-                // ignored
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -921,11 +917,11 @@ namespace KindleMate2 {
             ShowContentEditDialog();
         }
 
-        private void LblContent_LostFocus(object? sender, EventArgs e) {
+        private static void LblContent_LostFocus(object? sender, EventArgs e) {
             HideCaret(sender);
         }
 
-        private void LblContent_GotFocus(object? sender, EventArgs e) {
+        private static void LblContent_GotFocus(object? sender, EventArgs e) {
             HideCaret(sender);
         }
 
@@ -974,18 +970,16 @@ namespace KindleMate2 {
                 return;
             }
             clipping.content = dialogContent;
-            if (!_clippingService.UpdateClipping(clipping)) {
+            if (_clippingService.UpdateClipping(clipping)) {
+                MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } else {
                 MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
             }
-            MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             RefreshData();
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
-            if (e is not {
-                    RowIndex: >= 0, ColumnIndex: >= 0
-                }) {
+            if (e.RowIndex <= -1 || e.ColumnIndex <= -1) {
                 return;
             }
 
@@ -1045,6 +1039,10 @@ namespace KindleMate2 {
         }
 
         private void MenuClippingDelete_Click(object sender, EventArgs e) {
+            DeleteRow();
+        }
+
+        private void DeleteRow() {
             if (dataGridView.SelectedRows.Count <= 0) {
                 return;
             }
@@ -1053,20 +1051,25 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     DialogResult resultClippings = MessageBox(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
                     if (resultClippings != DialogResult.Yes) {
                         return;
                     }
 
                     try {
                         foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                            if (_clippingService.DeleteClipping(row.Cells["key"].Value.ToString() ?? string.Empty)) {
+                            var key = row.Cells["key"].Value.ToString() ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(key)) {
+                                return;
+                            }
+                            if (_clippingService.DeleteClipping(key)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
-                    } catch (Exception) { }
+                    } catch (Exception ex) {
+                        Console.WriteLine(ex);
+                    }
 
                     break;
                 case 1:
@@ -1091,9 +1094,10 @@ namespace KindleMate2 {
                                 }
                             }
                         }
-                    } catch (Exception) {
+                    } catch (Exception ex) {
+                        Console.WriteLine(ex);
                     }
-
+                    
                     break;
             }
 
@@ -1127,26 +1131,36 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (e.KeyCode == Keys.Enter) {
-                ShowContentEditDialog();
-                e.Handled = true;
-            } else if (e.KeyCode == Keys.Delete) {
-                MenuClippingDelete_Click(sender, e);
+            switch (e.KeyCode) {
+                case Keys.Enter:
+                    ShowContentEditDialog();
+                    e.Handled = true;
+                    break;
+                case Keys.Delete:
+                    DeleteRow();
+                    break;
             }
         }
 
         private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
-            DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
-            if (hitTestInfo.RowIndex < 0) {
-                return;
+            try {
+                DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
+                if (hitTestInfo.RowIndex < 0) {
+                    return;
+                }
+                dataGridView.ClearSelection();
+                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+                _selectedDataGridIndex = hitTestInfo.RowIndex;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
             }
-            dataGridView.ClearSelection();
-            dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
-            _selectedDataGridIndex = hitTestInfo.RowIndex;
         }
 
         private void MenuBooksDelete_Click(object sender, EventArgs e) {
+            DeleteNodes();
+        }
+
+        private void DeleteNodes() {
             var index = tabControl.SelectedIndex;
             DialogResult result;
             switch (index) {
@@ -1158,24 +1172,22 @@ namespace KindleMate2 {
                         result = MessageBox(Strings.Confirm_Clear_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             _clippingService.DeleteAllClippings();
-                            RefreshData();
                         }
                     } else {
                         result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             var bookname = treeViewBooks.SelectedNode.Text;
                             var clippings = _clippingService.GetClippingByBookName(bookname);
-                            var resultX = true;
+                            var deletedCount = 0;
                             foreach (Clipping clipping in clippings) {
-                                if (!_clippingService.DeleteClipping(clipping.key)) {
-                                    resultX = false;
+                                if (_clippingService.DeleteClipping(clipping.key)) {
+                                    deletedCount++;
                                 }
                             }
-                            if (!resultX) {
+                            if (deletedCount == 0) {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                _selectedBook = string.Empty;
-                                return;
                             }
+                            _selectedBook = Strings.Select_All;
                         }
                     }
                     break;
@@ -1187,26 +1199,25 @@ namespace KindleMate2 {
                         result = MessageBox(Strings.Confirm_Clear_Vocabulary, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             _vocabService.DeleteAllVocabs();
-                            RefreshData();
                         }
                     } else {
                         result = MessageBox(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             var word = treeViewWords.SelectedNode.Text;
-                            var word_key = string.Empty;
+                            var wordKey = string.Empty;
                             foreach (Vocab vocab in _vocabs) {
                                 if (vocab.word != word) {
                                     continue;
                                 }
-                                word_key = vocab.word_key;
+                                wordKey = vocab.word_key;
                                 break;
                             }
 
-                            if (!_vocabService.DeleteVocabByWordKey(word_key) && !_lookupService.DeleteLookup(word_key)) {
+                            if (!_vocabService.DeleteVocabByWordKey(wordKey) && !_lookupService.DeleteLookup(wordKey)) {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
 
-                            _selectedWord = string.Empty;
+                            _selectedWord = Strings.Select_All;
                         }
                     }
                     break;
@@ -1415,7 +1426,7 @@ namespace KindleMate2 {
             if (string.IsNullOrWhiteSpace(versionText)) {
                 return;
             }
-            var kindleVersion = versionText.Trim().Split('(')[0].Replace(Kindle, "").Trim();
+            var kindleVersion = StringHelper.ParseKindleVersion(versionText);
             if (!string.IsNullOrEmpty(kindleVersion)) {
                 menuKindle.Text += Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
             }
@@ -1426,47 +1437,59 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
-            var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-            var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
+            try {
+                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
+                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
 
-            if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
-                return;
-            }
-
-            var bw = new BackgroundWorker();
-            bw.DoWork += (_, e) => { e.Result = Import(backupClippingsPath, backupWordsPath); };
-            bw.RunWorkerCompleted += (_, e) => {
-                if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
-                    MessageBox(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                } else {
-                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception)) {
+                    throw exception;
                 }
-                SetProgressBar(false);
-                RefreshData();
-            };
-            bw.RunWorkerAsync();
+
+                var bw = new BackgroundWorker();
+                bw.DoWork += (_, e) => { e.Result = Import(backupClippingsPath, backupWordsPath); };
+                bw.RunWorkerCompleted += (_, e) => {
+                    if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
+                        MessageBox(e.Result.ToString() ?? Strings.Import_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    } else {
+                        MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    SetProgressBar(false);
+                    RefreshData();
+                };
+                bw.RunWorkerAsync();
+            } catch (Exception ex) {
+                MessageBox(MessageHelper.BuildMessage(Strings.Import_Failed, ex), Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath) {
-            var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
-            var vocabularyPath = Path.Combine(_driveLetter, SystemPathName, VocabularyPathName);
-            switch (_deviceType) {
-                case Device.Type.USB:
-                    File.Copy(Path.Combine(documentPath, ClippingsFileName), backupClippingsPath);
-                    File.Copy(Path.Combine(vocabularyPath, VocabFileName), backupWordsPath);
-                    return true;
-                case Device.Type.MTP: {
-                    var devices = MediaDevice.GetDevices();
-                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-                    device.Connect();
-                    ReadMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
-                    ReadMtpFile(device, vocabularyPath, VocabFileName, backupWordsPath);
-                    device.Disconnect();
-                    return true;
+        private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception) {
+            exception = new Exception();
+            try {
+                var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
+                var vocabularyPath = Path.Combine(_driveLetter, SystemPathName, VocabularyPathName);
+                switch (_deviceType) {
+                    case Device.Type.USB: {
+                        File.Copy(Path.Combine(documentPath, ClippingsFileName), backupClippingsPath);
+                        File.Copy(Path.Combine(vocabularyPath, VocabFileName), backupWordsPath);
+                        return true;
+                    }
+                    case Device.Type.MTP: {
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        ReadMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
+                        ReadMtpFile(device, vocabularyPath, VocabFileName, backupWordsPath);
+                        device.Disconnect();
+                        return true;
+                    }
+                    case Device.Type.Unknown:
+                    default: {
+                        throw new Exception(Strings.Kindle_Connect_Failed);
+                    }
                 }
-                case Device.Type.Unknown:
-                default:
-                    return false;
+            } catch (Exception e) {
+                exception = e;
+                return false;
             }
         }
 
@@ -1666,7 +1689,7 @@ namespace KindleMate2 {
             if (_clippings.Count <= 0) {
                 MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                if (_originalClippingLineService.Export(_backupPath, DatabaseFileName, out Exception? exception)) {
+                if (_originalClippingLineService.Export(_backupPath, DatabaseFileName, out Exception exception)) {
                     DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
@@ -1851,7 +1874,7 @@ namespace KindleMate2 {
         private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (e.KeyCode == Keys.Delete) {
-                MenuBooksDelete_Click(sender, e);
+                DeleteNodes();
             } else if (e.KeyCode == Keys.Enter) {
                 MenuRename_Click(sender, e);
             }
@@ -2305,58 +2328,41 @@ namespace KindleMate2 {
 
         private void TreeViewWords_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode == Keys.Delete) {
-                MenuBooksDelete_Click(sender, e);
+                DeleteNodes();
             }
-        }
-
-        private static string RemoveControlChar(string input) {
-            var output = new StringBuilder();
-            foreach (var c in input.Where(c => !c.IsControl() && !c.IsNewLineOrLineFeed() && c != 65279)) {
-                output.Append(c);
-            }
-            return output.ToString();
         }
 
         private void lblContent_MouseDown(object sender, MouseEventArgs e) {
             HideCaret(sender);
         }
 
-        private void HideCaret(object? sender) {
-            if (sender != null) {
-                Control? control = sender as Control ?? null;
-                if (control != null) {
-                    HideCaret(control.Handle);
-                    DestroyCaret();
-                }
+        private static void HideCaret(object? sender) {
+            if (sender == null) {
+                return;
             }
-        }
-
-        private static string GetCurrentTimestamp() {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            var unixTimestampInSeconds = now.ToUnixTimeSeconds();
-            return unixTimestampInSeconds.ToString();
-        }
-
-        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
-            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
-        }
-
-        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MsgIcon icon) {
-            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+            Control? control = sender as Control ?? null;
+            if (control == null) {
+                return;
+            }
+            HideCaret(control.Handle);
+            DestroyCaret();
         }
 
         private void menuSyncToKindle_Click(object sender, EventArgs e) {
+            SyncToKindle();
+        }
+
+        private void SyncToKindle() {
             DialogResult dialogResult = MessageBox(Strings.Confirm_Sync_To_Kindle, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dialogResult != DialogResult.Yes) {
                 return;
             }
             try {
-                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
-                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
-                    return;
+                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
+                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) || !_originalClippingLineService.Export(backupClippingsPath, ClippingsFileName, out exception)) {
+                    throw exception;
                 }
-                _originalClippingLineService.Export(backupClippingsPath, ClippingsFileName, out Exception? exception);
                 var exportedClippingsPath = Path.Combine(_tempPath, ClippingsFileName);
                 var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
                 switch (_deviceType) {
@@ -2377,9 +2383,9 @@ namespace KindleMate2 {
                     default:
                         break;
                 }
-            } catch (Exception exception) {
-                Console.WriteLine(exception);
-                MessageBox(Strings.Sync_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                _ = MessageBox(MessageHelper.BuildMessage(Strings.Sync_Failed, ex), Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
             }
         }
 
@@ -2388,6 +2394,14 @@ namespace KindleMate2 {
                 name = AppConstants.SettingLanguage,
                 value = lang
             });
+        }
+
+        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
+            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+        }
+
+        private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MsgIcon icon) {
+            return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
         }
     }
 }

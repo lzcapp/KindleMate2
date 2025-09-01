@@ -543,4 +543,10 @@
   <data name="Sync_Successful" xml:space="preserve">
     <value>同步成功</value>
   </data>
+  <data name="Kindle_Connect_Failed" xml:space="preserve">
+	  <value>Kindle裝置連線失敗</value>
+  </data>
+  <data name="Import_Successful" xml:space="preserve">
+	  <value>導入成功</value>
+  </data>
 </root>

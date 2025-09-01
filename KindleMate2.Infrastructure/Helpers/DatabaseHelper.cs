@@ -2,8 +2,8 @@
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class DatabaseHelper {
-        public static bool CreateDatabase(string filePath, out Exception? exception) {
-            exception = null;
+        public static bool CreateDatabase(string filePath, out Exception exception) {
+            exception = new Exception();
             try {
                 using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWriteCreate;");
                 connection.Open();

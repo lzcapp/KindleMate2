@@ -753,6 +753,15 @@ namespace KindleMate2 {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 导入成功.
+        /// </summary>
+        internal static string Import_Successful {
+            get {
+                return ResourceManager.GetString("Import_Successful", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 导入.
         /// </summary>
         internal static string Imported_X {
@@ -776,6 +785,15 @@ namespace KindleMate2 {
         internal static string Kindle_Clipping_File {
             get {
                 return ResourceManager.GetString("Kindle_Clipping_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kindle设备连接失败.
+        /// </summary>
+        internal static string Kindle_Connect_Failed {
+            get {
+                return ResourceManager.GetString("Kindle_Connect_Failed", resourceCulture);
             }
         }
         

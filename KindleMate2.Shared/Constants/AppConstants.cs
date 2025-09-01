@@ -21,5 +21,7 @@
         public const string SettingLanguage = "lang";
         
         public const string DatabaseNoNeedCleaning = "Database_No_Need_Cleaning";
+        
+        public const string Kindle = "Kindle";
     }
 }

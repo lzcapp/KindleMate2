@@ -42,8 +42,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             _repository.Delete(key);
         }
 
-        public bool Export(string filePath, string fileName, out Exception? error) {
-            error = null;
+        public bool Export(string filePath, string fileName, out Exception exception) {
             try {
                 var originalClippingLines = GetAllOriginalClippingLines();
 
@@ -70,9 +69,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 writer.Close();
                 fileStream.Close();
 
+                exception = new Exception();
                 return true;
             } catch (Exception ex) {
-                error = ex;
+                exception = ex;
                 return false;
             }
         }

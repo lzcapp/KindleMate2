@@ -540,4 +540,10 @@
   <data name="Sync_Successful" xml:space="preserve">
     <value>Sync Successful</value>
   </data>
+  <data name="Kindle_Connect_Failed" xml:space="preserve">
+	  <value>Failed to connected to Kindle</value>
+  </data>
+  <data name="Import_Successful" xml:space="preserve">
+	  <value>Import Successful</value>
+  </data>
 </root>
