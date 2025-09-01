@@ -318,8 +318,8 @@ h3,
 h4,
 h5,
 h6 {
-    margin-top: 0;
-    margin-bottom: 0
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 h1 {
@@ -362,7 +362,8 @@ small {
 }
 
 blockquote {
-    margin: 0
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 ul,
@@ -6348,7 +6349,9 @@ pre {
 .markdown-body img {
     max-width: 100%;
     box-sizing: content-box;
-    background-color: #fff
+    background-color: #fff;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .markdown-body img[align=right] {
