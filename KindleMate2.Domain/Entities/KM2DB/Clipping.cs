@@ -23,4 +23,11 @@
         Bookmark = 2,
         Cut = 3
     }
+
+    public enum SearchType {
+        BookTitle,
+        Author,
+        Content,
+        All
+    }
 }

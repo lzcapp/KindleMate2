@@ -2,6 +2,7 @@
 using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Domain.Interfaces.VocabDB;
+using KindleMate2.Shared.Constants;
 using IVocabLookupRepository = KindleMate2.Domain.Interfaces.VocabDB.ILookupRepository;
 using IKm2DbLookupRepository = KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository;
 using Lookup = KindleMate2.Domain.Entities.VocabDB.Lookup;
@@ -23,7 +24,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             _vocabRepository = vocabRepository;
         }
         
-        public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, object> result) {
+        public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, string> result) {
             var words = _wordRepository.GetAll();
             var lookups = _vocabLookupRepository.GetAll();
             var bookInfos = _bookInfoRepository.GetAll();
@@ -89,29 +90,32 @@ namespace KindleMate2.Application.Services.KM2DB {
                     insertedLookupCount += 1;
                 }
 
-                UpdateFrequency();
+                if (!UpdateFrequency(out Exception exception)) {
+                    throw exception;
+                }
 
-                result = new Dictionary<string, object> {
-                    { "LookupCount", lookupCount },
-                    { "InsertedLookupCount", insertedLookupCount },
-                    { "InsertedVocabCount", insertedVocabCount }
+                result = new Dictionary<string, string> {
+                    { AppConstants.LookupCount, lookupCount.ToString() },
+                    { AppConstants.InsertedLookupCount, insertedLookupCount.ToString() },
+                    { AppConstants.InsertedVocabCount, insertedVocabCount.ToString() }
                 };
 
                 return true;
             } catch (Exception exception) {
-                result = new Dictionary<string, object> {
-                    { "Exception", exception.Message }
+                result = new Dictionary<string, string> {
+                    { AppConstants.Exception, exception.Message }
                 };
                 
                 return false;
             }
         }
 
-        private void UpdateFrequency() {
-            var vocabs = _vocabRepository.GetAll();
-            var lookups = _km2DbLookupRepository.GetAll();
-
+        private bool UpdateFrequency(out Exception exception) {
+            exception = new Exception();
             try {
+                var vocabs = _vocabRepository.GetAll();
+                var lookups = _km2DbLookupRepository.GetAll();
+                
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.word_key;
                     var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey.Trim() == wordKey);
@@ -120,7 +124,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                         frequency = frequency
                     });
                 }
-            } catch (Exception) {
+                return true;
+            } catch (Exception e) {
+                exception = e;
+                return false;
             }
         }
     }

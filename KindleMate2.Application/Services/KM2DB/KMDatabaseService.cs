@@ -4,10 +4,10 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
-using Microsoft.VisualBasic;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class KMDatabaseService {
+    public partial class KMDatabaseService {
         private readonly IClippingRepository _clippingRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
@@ -35,16 +35,18 @@ namespace KindleMate2.Application.Services.KM2DB {
             try {
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.word_key;
-                    var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.word_key.Trim() == wordKey);
+                    var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey.Trim() == wordKey);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
                         word_key = wordKey,
                         frequency = frequency
                     });
                 }
-            } catch (Exception) { }
+            } catch (Exception) {
+                // ignored
+            }
         }
 
-        public string ImportKindleClippings(string clippingsPath) {
+        public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
             List<string> lines = [
                 .. File.ReadAllLines(clippingsPath)
             ];
@@ -58,7 +60,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
             }
 
-            var insertedCount = 0;
+            int insertedCount;
             var myClippings = new List<MyClipping>();
 
             try {
@@ -68,6 +70,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     var line1 = lines[ceilDelimiter + 1].Trim();
                     var line2 = lines[ceilDelimiter + 2].Trim();
+                    // ReSharper disable once UnusedVariable
                     var line3 = lines[ceilDelimiter + 3].Trim(); // line3 should be empty
                     var line4 = lines[ceilDelimiter + 4].Trim();
                     if (ceilDelimiter + 5 == ceilDelimiter) {
@@ -87,20 +90,24 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Content = line4,
                         Delimiter = line5
                     });
-
-                    var result = HandleClippings(myClippings);
-                    if (result) {
-                        insertedCount++;
-                    }
                 }
-            } catch (Exception) {
-                return string.Empty;
+
+                insertedCount = HandleClippings(myClippings);
+            } catch (Exception e) {
+                result = new Dictionary<string, string> {
+                    { AppConstants.Exception, e.Message }
+                };
+                return false;
             }
 
-            return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+            result = new Dictionary<string, string> {
+                { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
+                { AppConstants.InsertedCount, insertedCount.ToString() }
+            };
+            return true;
         }
 
-        public bool HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
+        public int HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
             var insertResult = 0;
             
             foreach (MyClipping clipping in clippings) {
@@ -121,11 +128,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 entityClipping.brieftype = brieftype;
 
                 if (entityClipping.brieftype == BriefType.Bookmark) {
-                    return false;
+                    return 0;
                 }
 
                 if (content.Contains("您已达到本内容的剪贴上限")) {
-                    return false;
+                    return 0;
                 }
 
                 var split_b = metadata.Split('|');
@@ -159,7 +166,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     isPageParsed = int.TryParse(strMatched, out pagenumber);
                 }
                 if (!isPageParsed || pagenumber == -1 || pagenumber == 0) {
-                    return false;
+                    return 0;
                 }
                 entityClipping.clippingtypelocation = clippingtypelocation;
                 entityClipping.pagenumber = pagenumber;
@@ -179,14 +186,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (isDateParsed && parsedDate != DateTime.MinValue) {
                     clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                 } else {
-                    return false;
+                    return 0;
                 }
                 entityClipping.clippingdate = clippingdate;
 
                 var key = clippingdate + "|" + clippingtypelocation;
                 if (!isRebuild) {
                     if (_originalClippingLineRepository.GetByKey(key) != null) {
-                        return false;
+                        return 0;
                     }
                     _originalClippingLineRepository.Add(new OriginalClippingLine {
                         key = key, 
@@ -213,11 +220,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 entityClipping.authorname = authorname;
 
                 if (brieftype == BriefType.Note) {
-                    _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
+                    SetClippingsBriefTypeHide(bookname, pagenumber);
                 }
 
                 if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
-                    return false;
+                    return 0;
                 }
 
                 _clippingRepository.Add(entityClipping);
@@ -226,6 +233,36 @@ namespace KindleMate2.Application.Services.KM2DB {
 
 
             return insertResult;
+        }
+
+        public bool SetClippingsBriefTypeHide(string bookname, int pagenumber) {
+            try {
+                switch (bookname) {
+                    case null:
+                    case "":
+                        return true;
+                }
+
+                var clippings = _clippingRepository.GetByBookNameAndPageNumber(bookname, pagenumber);
+
+                if (clippings.Count <= 0) {
+                    return false;
+                }
+                Clipping clipping = clippings[0];
+                var book = clipping.bookname;
+                var page = clipping.pagenumber;
+                if (!bookname.Equals(book) || !pagenumber.Equals(page)) {
+                    return false;
+                }
+                _clippingRepository.UpdateBriefTypeByKey(new Clipping {
+                    key = clipping.key,
+                    brieftype = BriefType.Hide
+                });
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
         
 

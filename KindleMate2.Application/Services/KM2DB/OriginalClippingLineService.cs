@@ -13,7 +13,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetByKey(key);
         }
 
-        public IEnumerable<OriginalClippingLine> GetAllOriginalClippingLines() {
+        public List<OriginalClippingLine> GetAllOriginalClippingLines() {
             return _repository.GetAll();
         }
 

@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
     <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
   </ItemGroup>
 
 </Project>

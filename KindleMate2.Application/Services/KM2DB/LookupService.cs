@@ -13,7 +13,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetByWordKey(wordKey);
         }
 
-        public IEnumerable<Lookup> GetAllLookups() {
+        public List<Lookup> GetAllLookups() {
             return _repository.GetAll();
         }
 

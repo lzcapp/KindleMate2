@@ -24,7 +24,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     content = reader.GetString(1),
                     bookname = reader.GetString(2),
                     authorname = reader.GetString(3),
-                    brieftype = reader.GetInt32(4),
+                    brieftype = (BriefType)reader.GetInt32(4),
                     clippingtypelocation = reader.GetString(5),
                     clippingdate = reader.GetString(6),
                     read = reader.GetInt32(7),
@@ -54,7 +54,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     content = reader.GetString(1),
                     bookname = reader.GetString(2),
                     authorname = reader.GetString(3),
-                    brieftype = reader.GetInt32(4),
+                    brieftype = (BriefType)reader.GetInt32(4),
                     clippingtypelocation = reader.GetString(5),
                     clippingdate = reader.GetString(6),
                     read = reader.GetInt32(7),
@@ -67,6 +67,77 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 };
             }
             return null;
+        }
+
+        public List<Clipping> GetByBookNameAndPageNumber(string bookname, int pagenumber) {
+            var results = new List<Clipping>();
+            
+            SqliteConnection connection = new(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE bookname = @bookname AND pagenumber = @pagenumber", connection);
+            cmd.Parameters.AddWithValue("@bookname", bookname);
+            cmd.Parameters.AddWithValue("@pagenumber", pagenumber);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new Clipping {
+                    key = reader.GetString(0),
+                    content = reader.GetString(1),
+                    bookname = reader.GetString(2),
+                    authorname = reader.GetString(3),
+                    brieftype = (BriefType)reader.GetInt32(4),
+                    clippingtypelocation = reader.GetString(5),
+                    clippingdate = reader.GetString(6),
+                    read = reader.GetInt32(7),
+                    clipping_importdate = reader.GetString(8),
+                    tag = reader.GetString(9),
+                    sync = reader.GetInt32(10),
+                    newbookname = reader.GetString(11),
+                    colorRGB = reader.GetInt32(12),
+                    pagenumber = reader.GetInt32(13)
+                });
+            }
+            return results;
+        }
+
+        public List<Clipping> GetByFuzzySearch(string search, SearchType type) {
+            var results = new List<Clipping>();
+            
+            SqliteConnection connection = new(_connectionString);
+            connection.Open();
+
+            var sql = type switch {
+                SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%'",
+                SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%'",
+                SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%'",
+                SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'",
+                _ => string.Empty
+            };
+            var queryClippings = "SELECT DISTINCT * FROM clippings " + sql;
+            var cmd = new SqliteCommand(queryClippings, connection);
+            cmd.Parameters.AddWithValue("@strSearch", search);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new Clipping {
+                    key = reader.GetString(0),
+                    content = reader.GetString(1),
+                    bookname = reader.GetString(2),
+                    authorname = reader.GetString(3),
+                    brieftype = (BriefType)reader.GetInt32(4),
+                    clippingtypelocation = reader.GetString(5),
+                    clippingdate = reader.GetString(6),
+                    read = reader.GetInt32(7),
+                    clipping_importdate = reader.GetString(8),
+                    tag = reader.GetString(9),
+                    sync = reader.GetInt32(10),
+                    newbookname = reader.GetString(11),
+                    colorRGB = reader.GetInt32(12),
+                    pagenumber = reader.GetInt32(13)
+                });
+            }
+            return results;
         }
 
         public List<Clipping> GetAll() {
@@ -84,7 +155,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     content = reader.GetString(1),
                     bookname = reader.GetString(2),
                     authorname = reader.GetString(3),
-                    brieftype = reader.GetInt32(4),
+                    brieftype = (BriefType)reader.GetInt32(4),
                     clippingtypelocation = reader.GetString(5),
                     clippingdate = reader.GetString(6),
                     read = reader.GetInt32(7),
@@ -152,6 +223,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.Parameters.AddWithValue("@newbookname", clipping.newbookname);
             cmd.Parameters.AddWithValue("@colorRGB", clipping.colorRGB);
             cmd.Parameters.AddWithValue("@pagenumber", clipping.pagenumber);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void UpdateBriefTypeByKey(Clipping clipping) {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("UPDATE clippings SET brieftype = @brieftype WHERE key = @key", connection);
+            cmd.Parameters.AddWithValue("@key", clipping.key);
+            cmd.Parameters.AddWithValue("@brieftype", clipping.brieftype);
             cmd.ExecuteNonQuery();
         }
 

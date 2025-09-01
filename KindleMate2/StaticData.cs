@@ -10,7 +10,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 
 namespace KindleMate2 {
-    public class StaticData {
+    internal class StaticData {
         private const string ConnectionString = "Data Source=KM2.dat;Version=3;";
 
         private readonly SQLiteConnection _connection = new(ConnectionString);
@@ -153,42 +153,6 @@ namespace KindleMate2 {
                 }
             }
             return list;
-        }
-
-        internal bool SetClippingsBriefTypeHide(string bookname, string pagenumber) {
-            switch (bookname) {
-                case null:
-                case "":
-                    return true;
-            }
-            switch (pagenumber) {
-                case null:
-                case "":
-                    return true;
-            }
-
-            const string query = "SELECT * FROM clippings WHERE bookname = @bookname AND pagenumber = @pagenumber";
-            using var command = new SQLiteCommand(query, _connection);
-            command.Parameters.AddWithValue("@bookname", bookname);
-            command.Parameters.AddWithValue("@pagenumber", pagenumber);
-            using var adapter = new SQLiteDataAdapter(command);
-
-            var dataTable = new DataTable();
-            adapter.Fill(dataTable);
-
-            if (dataTable.Rows.Count > 0) {
-                DataRow row = dataTable.Rows[0];
-                var book = row["bookname"].ToString() ?? string.Empty;
-                var page = row["pagenumber"].ToString() ?? string.Empty;
-                if (bookname.Equals(book) && pagenumber.Equals(page)) {
-                    const string queryCount = "UPDATE clippings SET brieftype = -1 WHERE key = @key";
-                    using var commandCount = new SQLiteCommand(queryCount, _connection);
-                    commandCount.Parameters.AddWithValue("@key", row["key"]);
-                    var result = Convert.ToInt32(commandCount.ExecuteScalar());
-                    return result > 0;
-                }
-            }
-            return false;
         }
 
         internal string GetClippingsBriefTypeHide(string bookname, string pagenumber) {

@@ -9,11 +9,11 @@ namespace KindleMate2.Application.Services.KM2DB {
             _repository = repository;
         }
 
-        public Vocab? GetSettingByName(string id) {
+        public Vocab? GetVocabByName(string id) {
             return _repository.GetById(id);
         }
 
-        public IEnumerable<Vocab> GetAllSettings() {
+        public List<Vocab> GetAllVocabs() {
             return _repository.GetAll();
         }
 
@@ -21,7 +21,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetCount();
         }
 
-        public void AddSetting(Vocab vocab) {
+        public void AddVocab(Vocab vocab) {
             if (string.IsNullOrWhiteSpace(vocab.id)) {
                 throw new ArgumentException("[id] cannot be empty");
             }
@@ -29,11 +29,11 @@ namespace KindleMate2.Application.Services.KM2DB {
             _repository.Add(vocab);
         }
 
-        public void UpdateSetting(Vocab vocab) {
+        public void UpdateVocab(Vocab vocab) {
             _repository.Update(vocab);
         }
 
-        public void DeleteSetting(string id) {
+        public void DeleteVocab(string id) {
             _repository.Delete(id);
         }
     }
