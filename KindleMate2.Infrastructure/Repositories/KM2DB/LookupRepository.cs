@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 
@@ -31,7 +32,30 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return null;
         }
 
-        public Lookup? GetByTimestamp(string timeStamp) {
+        public List<Lookup> GetAll() {
+            var results = new List<Lookup>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT word_key, usage, title, authors, timestamp FROM lookups", connection);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new Lookup {
+                    WordKey = reader.GetString(0),
+                    Usage = reader.GetString(1),
+                    Title = reader.GetString(2),
+                    Authors = reader.GetString(3),
+                    Timestamp = reader.GetString(4)
+                });
+            }
+            return results;
+        }
+
+        public List<Lookup> GetByTimestamp(string timeStamp) {
+            var results = new List<Lookup>();
+            
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
@@ -40,24 +64,60 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
-                return new Lookup {
+                results.Add(new Lookup {
                     WordKey = reader.GetString(0),
                     Usage = reader.GetString(1),
                     Title = reader.GetString(2),
                     Authors = reader.GetString(3),
                     Timestamp = reader.GetString(4)
-                };
+                });
             }
-            return null;
+            return results;
         }
 
-        public List<Lookup> GetAll() {
+        public List<Lookup> GetByTitle(string title) {
+            var results = new List<Lookup>();
+            
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT word_key, usage, title, authors, timestamp FROM lookups WHERE title = @title", connection);
+            cmd.Parameters.AddWithValue("@title", title);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            if (reader.Read()) {
+                results.Add(new Lookup {
+                    WordKey = reader.GetString(0),
+                    Usage = reader.GetString(1),
+                    Title = reader.GetString(2),
+                    Authors = reader.GetString(3),
+                    Timestamp = reader.GetString(4)
+                });
+            }
+            return results;
+        }
+
+        public List<Lookup> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             var results = new List<Lookup>();
 
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT word_key, usage, title, authors, timestamp FROM lookups", connection);
+            var sql = string.Empty;
+            if (type == AppEntities.SearchType.BookTitle) {
+                sql = "WHERE title LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.Author) {
+                sql = "WHERE authors LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.Content) {
+                sql = "WHERE usage LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.Vocabulary || type == AppEntities.SearchType.Stem) {
+                sql = "WHERE word_key LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.All) {
+                sql = "WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+            }
+            var query = "SELECT DISTINCT * FROM lookups " + sql;
+            var cmd = new SqliteCommand(query, connection);
+            cmd.Parameters.AddWithValue("@strSearch", search);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -98,7 +158,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.ExecuteNonQuery();
         }
 
-        public void Update(Lookup lookup) {
+        public bool Update(Lookup lookup) {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
@@ -108,15 +168,23 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.Parameters.AddWithValue("@title", lookup.Title);
             cmd.Parameters.AddWithValue("@authors", lookup.Authors);
             cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp);
-            cmd.ExecuteNonQuery();
+            return cmd.ExecuteNonQuery() > 0;
         }
 
-        public void Delete(string wordKey) {
+        public bool Delete(string wordKey) {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("DELETE FROM lookups WHERE word_key = @word_key", connection);
             cmd.Parameters.AddWithValue("@word_key", wordKey);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        public void DeleteAll() {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("DELETE FROM lookups", connection);
             cmd.ExecuteNonQuery();
         }
     }

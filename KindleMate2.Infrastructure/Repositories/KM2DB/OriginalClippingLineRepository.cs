@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
@@ -37,6 +38,38 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines", connection);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new OriginalClippingLine {
+                    key = reader.GetString(0),
+                    line1 = reader.GetString(1),
+                    line2 = reader.GetString(2),
+                    line3 = reader.GetString(3),
+                    line4 = reader.GetString(4),
+                    line5 = reader.GetString(5)
+                });
+            }
+            return results;
+        }
+
+        public List<OriginalClippingLine> GetByFuzzySearch(string search, AppEntities.SearchType type) {
+            var results = new List<OriginalClippingLine>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            
+            var sql = string.Empty;
+            if (type is AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author) {
+                sql = "WHERE line1 LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.Content) {
+                sql = "WHERE line4 LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.All) {
+                sql = "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'";
+            }
+            var query = "SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines " + sql;
+            var cmd = new SqliteCommand(query, connection);
+            cmd.Parameters.AddWithValue("@strSearch", search);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -97,6 +130,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("DELETE FROM original_clipping_lines WHERE key = @key", connection);
             cmd.Parameters.AddWithValue("@key", key);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void DeleteAll() {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("DELETE FROM original_clipping_lines", connection);
             cmd.ExecuteNonQuery();
         }
     }

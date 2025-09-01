@@ -32,7 +32,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             return result;
         }
 
-        private static readonly Dictionary<char, int> RomanMap = new() {
+        public static readonly Dictionary<char, int> RomanMap = new() {
             { 'I', 1 },
             { 'V', 5 },
             { 'X', 10 },
@@ -41,5 +41,33 @@ namespace KindleMate2.Infrastructure.Helpers {
             { 'D', 500 },
             { 'M', 1000 }
         };
+
+        public static string TrimContent(string content) {
+            var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
+            return contentTrimmed;
+        }
+
+        public static string SanitizeFilename(string filename) {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            filename = invalidChars.Aggregate(filename, (current, c) => current.Replace(c, '_'));
+            filename = filename.Trim();
+            return filename;
+        }
+
+        public static string FormatFileSize(long fileSize) {
+            string[] sizes = [
+                "B", "KB", "MB", "GB", "TB"
+            ];
+
+            var order = 0;
+            double size = fileSize;
+
+            while (size >= 1024 && order < sizes.Length - 1) {
+                order++;
+                size /= 1024;
+            }
+
+            return $"{size:0.##} {sizes[order]}";
+        }
     }
 }

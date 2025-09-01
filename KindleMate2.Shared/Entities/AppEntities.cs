@@ -4,6 +4,8 @@
             BookTitle,
             Author,
             Content,
+            Vocabulary,
+            Stem,
             All
         }
     }

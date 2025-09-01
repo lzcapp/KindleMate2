@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
@@ -42,6 +43,42 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab", connection);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new Vocab {
+                    id = reader.GetString(0),
+                    word_key = reader.GetString(1),
+                    word = reader.GetString(2),
+                    stem = reader.GetString(3),
+                    category = reader.GetInt32(4),
+                    translation = reader.GetString(5),
+                    timestamp = reader.GetString(6),
+                    frequency = reader.GetInt32(7),
+                    sync = reader.GetInt32(8),
+                    colorRGB = reader.GetInt32(9)
+                });
+            }
+            return results;
+        }
+
+        public List<Vocab> GetByFuzzySearch(string search, AppEntities.SearchType type) {
+            var results = new List<Vocab>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var sql = string.Empty;
+            if (type == AppEntities.SearchType.Vocabulary) {
+                sql = "WHERE word LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.Stem) {
+                sql = "WHERE stem LIKE '%' || @strSearch || '%'";
+            } else if (type == AppEntities.SearchType.All) {
+                sql = "WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'";
+            }
+            var query = "SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab " + sql;
+            var cmd = new SqliteCommand(query, connection);
+            cmd.Parameters.AddWithValue("@strSearch", search);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -126,6 +163,23 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("DELETE FROM vocab WHERE id = @id", connection);
             cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public bool DeleteByWordKey(string wordKey) {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("DELETE FROM vocab WHERE word_key = @word_key", connection);
+            cmd.Parameters.AddWithValue("@word_key", wordKey);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        public void DeleteAll() {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("DELETE FROM vocab", connection);
             cmd.ExecuteNonQuery();
         }
     }

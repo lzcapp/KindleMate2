@@ -5,7 +5,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         public static bool CreateDatabase(string filePath, out Exception? exception) {
             exception = null;
             try {
-                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
+                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWriteCreate;");
                 connection.Open();
 
                 foreach (var script in GetTableCreationScripts()) {

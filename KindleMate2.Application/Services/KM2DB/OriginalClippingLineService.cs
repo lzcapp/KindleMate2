@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class OriginalClippingLineService {
@@ -15,6 +16,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public List<OriginalClippingLine> GetAllOriginalClippingLines() {
             return _repository.GetAll();
+        }
+
+        public List<OriginalClippingLine> GetByFuzzySearch(string search, AppEntities.SearchType type) {
+            return _repository.GetByFuzzySearch(search, type);
         }
 
         public int GetCount() {

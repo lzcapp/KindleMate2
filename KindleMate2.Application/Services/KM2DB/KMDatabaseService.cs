@@ -5,6 +5,7 @@ using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public partial class KMDatabaseService {
@@ -102,6 +103,34 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             result = new Dictionary<string, string> {
                 { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
+                { AppConstants.InsertedCount, insertedCount.ToString() }
+            };
+            return true;
+        }
+
+        public bool RebuildDatabase(out Dictionary<string, string> result) {
+            result = new Dictionary<string, string>();
+            var originalClippingLines = _originalClippingLineRepository.GetAll();
+            if (originalClippingLines.Count <= 0) {
+                return false;
+            }
+            
+            _clippingRepository.DeleteAll();
+            
+            var myClippings = new List<MyClipping>();
+            foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
+                myClippings.Add(new MyClipping() {
+                    Header = originalClippingLine.line1,
+                    Metadata = originalClippingLine.line2,
+                    Content = originalClippingLine.line4,
+                    Delimiter = originalClippingLine.line5
+                });
+            }
+            
+            var insertedCount = HandleClippings(myClippings);
+
+            result = new Dictionary<string, string> {
+                { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
                 { AppConstants.InsertedCount, insertedCount.ToString() }
             };
             return true;
@@ -265,6 +294,92 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
         
+        public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result) {
+            var clippings = _clippingRepository.GetAll();
+
+            try {
+                var emptyCount = 0;
+                var trimmedCount = 0;
+                var duplicatedCount = 0;
+
+                foreach (Clipping clipping in clippings) {
+                    var key = clipping.key;
+                    var content = clipping.content;
+                    var bookname = clipping.bookname;
+
+                    var contentTrimmed = StringHelper.TrimContent(content);
+                    var booknameTrimmed = StringHelper.TrimContent(bookname);
+
+                    if (string.IsNullOrWhiteSpace(key)) {
+                        continue;
+                    }
+                    if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(bookname) || string.IsNullOrWhiteSpace(contentTrimmed) || string.IsNullOrWhiteSpace(booknameTrimmed)) {
+                        _clippingRepository.Delete(key);
+                        emptyCount++;
+                        continue;
+                    }
+                    
+                    clipping.content = contentTrimmed;
+                    clipping.bookname = booknameTrimmed;
+
+                    if (!contentTrimmed.Equals(content) && !booknameTrimmed.Equals(bookname) || !contentTrimmed.Equals(content)) {
+                        if (_clippingRepository.Update(clipping)) {
+                            trimmedCount++;
+                        }
+                    }
+
+                    if (_clippingRepository.GetByContent(clipping.content).Count > 1 || _clippingRepository.GetByFuzzySearch(clipping.content, AppEntities.SearchType.Content).Count > 1) {
+                        if (_clippingRepository.Delete(key)) {
+                            duplicatedCount++;
+                        }
+                    }
+                }
+
+                var fileInfo = new FileInfo(databaseFilePath);
+                var originFileSize = fileInfo.Length;
+                DatabaseHelper.VacuumDatabase(databaseFilePath);
+                var newFileSize = fileInfo.Length;
+                var fileSizeDelta = originFileSize - newFileSize;
+
+                if (emptyCount > 0 && trimmedCount > 0 && duplicatedCount > 0) {
+                    throw new Exception(AppConstants.DatabaseNoNeedCleaning);
+                }
+                
+                result = new Dictionary<string, string> {
+                    { AppConstants.EmptyCount, emptyCount.ToString() },
+                    { AppConstants.TrimmedCount, trimmedCount.ToString() },
+                    { AppConstants.DuplicatedCount, duplicatedCount.ToString() },
+                    { AppConstants.FileSizeDelta, StringHelper.FormatFileSize(fileSizeDelta) }
+                };
+                return true;
+            } catch (Exception ex) {
+                result = new Dictionary<string, string>() {
+                    { AppConstants.Exception, ex.Message }
+                };
+                return false;
+            }
+        }
+        
+        public bool IsDatabaseEmpty() {
+            var result = 0;
+            result += _clippingRepository.GetCount();
+            result += _originalClippingLineRepository.GetCount();
+            result += _lookupRepository.GetCount();
+            result += _vocabRepository.GetCount();
+            return result == 0;
+        }
+        
+        public bool DeleteAllData() {
+            try {
+                _clippingRepository.DeleteAll();
+                _originalClippingLineRepository.DeleteAll();
+                _lookupRepository.DeleteAll();
+                _vocabRepository.DeleteAll();
+                return true;
+            } catch (Exception) {
+                return false;
+            }
+        }
 
         [GeneratedRegex(@"\(([^()]+)\)[^(]*$")]
         private static partial Regex BookNameRegex();
