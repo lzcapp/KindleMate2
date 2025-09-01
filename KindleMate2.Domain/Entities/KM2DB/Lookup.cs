@@ -5,5 +5,8 @@
         public string Title { get; set; }
         public string Authors { get; set; }
         public string Timestamp { get; set; }
+        public string Word { get; set; }
+        public string Stem { get; set; }
+        public string Frequency { get; set; }
     }
 }

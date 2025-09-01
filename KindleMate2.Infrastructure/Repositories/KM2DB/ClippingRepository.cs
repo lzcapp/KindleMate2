@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class ClippingRepository : IClippingRepository {
@@ -101,17 +102,17 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return results;
         }
 
-        public List<Clipping> GetByFuzzySearch(string search, SearchType type) {
+        public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             var results = new List<Clipping>();
             
             SqliteConnection connection = new(_connectionString);
             connection.Open();
 
             var sql = type switch {
-                SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%'",
-                SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%'",
-                SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%'",
-                SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'",
                 _ => string.Empty
             };
             var queryClippings = "SELECT DISTINCT * FROM clippings " + sql;

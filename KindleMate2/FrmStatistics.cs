@@ -1,8 +1,8 @@
-﻿using System.Data;
+﻿using DarkModeForms;
+using System.Data;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Globalization;
-using DarkModeForms;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {
@@ -137,9 +137,8 @@ namespace KindleMate2 {
                 if (!string.IsNullOrWhiteSpace(field)) {
                     DateTime date = DateTime.Parse(field);
                     return date;
-                } else {
-                    return DateTime.MinValue;
                 }
+                return DateTime.MinValue;
             } catch (Exception) {
                 return DateTime.MinValue;
             }

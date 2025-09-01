@@ -1,8 +1,8 @@
-﻿using System.ComponentModel;
+﻿using DarkModeForms;
+using KindleMate2.Entities;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
-using DarkModeForms;
-using KindleMate2.Entities;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {

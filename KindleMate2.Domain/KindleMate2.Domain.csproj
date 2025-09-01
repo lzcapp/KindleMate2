@@ -16,4 +16,8 @@
     <None Remove="KindleMate2.Domain.csproj.Backup.tmp" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

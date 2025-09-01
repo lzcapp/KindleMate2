@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Application.Services.KM2DB {
@@ -16,6 +17,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public Clipping? GetClippingByKeyAndContent(string key, string content) {
             return _repository.GetByKeyAndContent(key, content);
+        }
+
+        public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {
+            return _repository.GetByFuzzySearch(search, type);
         }
 
         public List<Clipping> GetAllClippings() {

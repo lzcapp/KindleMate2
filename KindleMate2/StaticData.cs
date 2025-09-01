@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using System.Data;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using HtmlDocument = HtmlAgilityPack.HtmlDocument;
 
 namespace KindleMate2 {
     internal class StaticData {
@@ -1113,7 +1115,7 @@ namespace KindleMate2 {
             using var client = new HttpClient();
             try {
                 var html = await client.GetStringAsync(url);
-                var doc = new HtmlAgilityPack.HtmlDocument();
+                var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
                 // Select all section elements that contain Kindle model information
@@ -1135,7 +1137,7 @@ namespace KindleMate2 {
                         HtmlNode versionSpan = li.SelectSingleNode(".//span[contains(text(), '.')]");
                         var possibleVersion = versionSpan.InnerText.Trim();
                         // Basic check to see if it looks like a version number
-                        if (System.Text.RegularExpressions.Regex.IsMatch(possibleVersion, @"^\d+(\.\d+)+$")) {
+                        if (Regex.IsMatch(possibleVersion, @"^\d+(\.\d+)+$")) {
                             info.Version = possibleVersion;
                         }
 
