@@ -105,7 +105,9 @@ namespace KindleMate2 {
                 }
             }
 
-            AppDomain.CurrentDomain.ProcessExit += (_, _) => { DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName); };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+                DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName);
+            };
 
             SetTheme();
 
