@@ -11,9 +11,7 @@ namespace KindleMate2 {
         private readonly ClippingService _clippingService;
         private readonly VocabService _vocabService;
         private readonly ThemeService _themeService;
-        
-        private bool _isDarkTheme;
-        
+
         private List<Clipping> _clippings = [];
         private List<Vocab> _vocabs = [];
 

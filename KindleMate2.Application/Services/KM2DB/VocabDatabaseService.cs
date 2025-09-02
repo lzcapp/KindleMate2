@@ -77,7 +77,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    if (_km2DbLookupRepository.GetByTimestamp(formattedDateTime) != null) {
+                    if (_km2DbLookupRepository.GetByTimestamp(formattedDateTime).Any()) {
                         continue;
                     }
                     _km2DbLookupRepository.Add(new Domain.Entities.KM2DB.Lookup {
