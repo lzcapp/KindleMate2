@@ -259,6 +259,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
                     continue;
                 }
+                
+                clipping.Content = content;
 
                 _clippingRepository.Add(clipping);
 
