@@ -22,7 +22,7 @@ namespace KindleMate2.Application.Services.VocabDB {
         }
 
         public void AddMetaData(MetaData metaData) {
-            if (string.IsNullOrWhiteSpace(metaData.id)) {
+            if (string.IsNullOrWhiteSpace(metaData.Id)) {
                 throw new ArgumentException("[id] cannot be empty");
             }
 

@@ -21,9 +21,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new Version {
-                    id = reader.GetString(0),
-                    dsname = reader.GetString(1),
-                    value = reader.GetInt32(2)
+                    Id = reader.GetString(0),
+                    Dsname = reader.GetString(1),
+                    Value = reader.GetInt32(2)
                 };
             }
             return null;
@@ -40,9 +40,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new Version {
-                    id = reader.GetString(0),
-                    dsname = reader.GetString(1),
-                    value = reader.GetInt32(2)
+                    Id = reader.GetString(0),
+                    Dsname = reader.GetString(1),
+                    Value = reader.GetInt32(2)
                 });
             }
             return results;
@@ -66,9 +66,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO VERSION (id, dsname, value) VALUES (@id, @dsname, @value)", connection);
-            cmd.Parameters.AddWithValue("@id", Version.id);
-            cmd.Parameters.AddWithValue("@dsname", Version.dsname);
-            cmd.Parameters.AddWithValue("@value", Version.value);
+            cmd.Parameters.AddWithValue("@id", Version.Id);
+            cmd.Parameters.AddWithValue("@dsname", Version.Dsname);
+            cmd.Parameters.AddWithValue("@value", Version.Value);
             cmd.ExecuteNonQuery();
         }
 
@@ -77,9 +77,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE VERSION SET dsname = @dsname, value = @value WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", Version.id);
-            cmd.Parameters.AddWithValue("@dsname", Version.dsname);
-            cmd.Parameters.AddWithValue("@value", Version.value);
+            cmd.Parameters.AddWithValue("@id", Version.Id);
+            cmd.Parameters.AddWithValue("@dsname", Version.Dsname);
+            cmd.Parameters.AddWithValue("@value", Version.Value);
             cmd.ExecuteNonQuery();
         }
 

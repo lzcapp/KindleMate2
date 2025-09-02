@@ -1,6 +1,4 @@
-﻿using KindleMate2.Domain.Interfaces.KM2DB;
-
-namespace KindleMate2.Application.Services.VocabDB {
+﻿namespace KindleMate2.Application.Services.VocabDB {
     using Lookup = Domain.Entities.VocabDB.Lookup;
     using ILookupRepository = Domain.Interfaces.VocabDB.ILookupRepository;
 
@@ -24,7 +22,7 @@ namespace KindleMate2.Application.Services.VocabDB {
         }
 
         public void AddLookup(Lookup lookup) {
-            if (string.IsNullOrWhiteSpace(lookup.id)) {
+            if (string.IsNullOrWhiteSpace(lookup.Id)) {
                 throw new ArgumentException("[id] cannot be empty");
             }
 

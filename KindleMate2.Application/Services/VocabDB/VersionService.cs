@@ -22,7 +22,7 @@ namespace KindleMate2.Application.Services.VocabDB {
         }
 
         public void AddVersion(Version version) {
-            if (string.IsNullOrWhiteSpace(version.id)) {
+            if (string.IsNullOrWhiteSpace(version.Id)) {
                 throw new ArgumentException("[id] cannot be empty");
             }
 

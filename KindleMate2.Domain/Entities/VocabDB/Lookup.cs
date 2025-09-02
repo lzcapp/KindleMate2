@@ -1,11 +1,16 @@
 ﻿namespace KindleMate2.Domain.Entities.VocabDB {
     public class Lookup {
-        public required string id { get; set; } = null!;
-        public string word_key { get; set; }
-        public string book_key { get; set; }
-        public string dict_key { get; set; }
-        public string pos { get; set; }
-        public string usage { get; set; }
-        public int timestamp { get; set; } = 0;
+        private int _timestamp;
+        public required string Id { get; set; } = null!;
+        public string? WordKey { get; set; }
+        public string? BookKey { get; set; }
+        public string? DictKey { get; set; }
+        public string? Pos { get; set; }
+        public string? Usage { get; set; }
+
+        public int? Timestamp {
+            get => _timestamp;
+            set => _timestamp = value ?? 0;
+        }
     }
 }

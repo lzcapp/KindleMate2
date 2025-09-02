@@ -20,13 +20,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new Word {
-                    id = reader.GetString(0),
+                    Id = reader.GetString(0),
                     word = reader.GetString(1),
-                    stem = reader.GetString(2),
-                    lang = reader.GetString(3),
-                    category = reader.GetInt32(4),
-                    timestamp = reader.GetInt32(5),
-                    profileid = reader.GetString(6)
+                    Stem = reader.GetString(2),
+                    Lang = reader.GetString(3),
+                    Category = reader.GetInt32(4),
+                    Timestamp = reader.GetInt32(5),
+                    Profileid = reader.GetString(6)
                 };
             }
             return null;
@@ -43,13 +43,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new Word {
-                    id = reader.GetString(0),
+                    Id = reader.GetString(0),
                     word = reader.GetString(1),
-                    stem = reader.GetString(2),
-                    lang = reader.GetString(3),
-                    category = reader.GetInt32(4),
-                    timestamp = reader.GetInt32(5),
-                    profileid = reader.GetString(6)
+                    Stem = reader.GetString(2),
+                    Lang = reader.GetString(3),
+                    Category = reader.GetInt32(4),
+                    Timestamp = reader.GetInt32(5),
+                    Profileid = reader.GetString(6)
                 });
             }
             return results;
@@ -73,13 +73,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO WORDS (id, word, stem, lang, category, timestamp, profileid) VALUES (@id, @word, @stem, @lang, @category, @timestamp, @profileid)", connection);
-            cmd.Parameters.AddWithValue("@id", Word.id);
+            cmd.Parameters.AddWithValue("@id", Word.Id);
             cmd.Parameters.AddWithValue("@word", Word.word);
-            cmd.Parameters.AddWithValue("@stem", Word.stem);
-            cmd.Parameters.AddWithValue("@lang", Word.lang);
-            cmd.Parameters.AddWithValue("@category", Word.category);
-            cmd.Parameters.AddWithValue("@timestamp", Word.timestamp);
-            cmd.Parameters.AddWithValue("@profileid", Word.profileid);
+            cmd.Parameters.AddWithValue("@stem", Word.Stem);
+            cmd.Parameters.AddWithValue("@lang", Word.Lang);
+            cmd.Parameters.AddWithValue("@category", Word.Category);
+            cmd.Parameters.AddWithValue("@timestamp", Word.Timestamp);
+            cmd.Parameters.AddWithValue("@profileid", Word.Profileid);
             cmd.ExecuteNonQuery();
         }
 
@@ -88,13 +88,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE WORDS SET word = @word, stem = @stem, lang = @lang, category = @category, timestamp = @timestamp, profileid = @profileid WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", Word.id);
+            cmd.Parameters.AddWithValue("@id", Word.Id);
             cmd.Parameters.AddWithValue("@word", Word.word);
-            cmd.Parameters.AddWithValue("@stem", Word.stem);
-            cmd.Parameters.AddWithValue("@lang", Word.lang);
-            cmd.Parameters.AddWithValue("@category", Word.category);
-            cmd.Parameters.AddWithValue("@timestamp", Word.timestamp);
-            cmd.Parameters.AddWithValue("@profileid", Word.profileid);
+            cmd.Parameters.AddWithValue("@stem", Word.Stem);
+            cmd.Parameters.AddWithValue("@lang", Word.Lang);
+            cmd.Parameters.AddWithValue("@category", Word.Category);
+            cmd.Parameters.AddWithValue("@timestamp", Word.Timestamp);
+            cmd.Parameters.AddWithValue("@profileid", Word.Profileid);
             cmd.ExecuteNonQuery();
         }
 

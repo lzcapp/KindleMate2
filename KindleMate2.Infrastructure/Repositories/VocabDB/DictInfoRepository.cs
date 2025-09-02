@@ -20,10 +20,10 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new DictInfo {
-                    id = reader.GetString(0),
-                    asin = reader.GetString(1),
-                    langin = reader.GetString(2),
-                    langout = reader.GetString(3)
+                    Id = reader.GetString(0),
+                    Asin = reader.GetString(1),
+                    Langin = reader.GetString(2),
+                    Langout = reader.GetString(3)
                 };
             }
             return null;
@@ -40,10 +40,10 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new DictInfo {
-                    id = reader.GetString(0),
-                    asin = reader.GetString(1),
-                    langin = reader.GetString(2),
-                    langout = reader.GetString(3)
+                    Id = reader.GetString(0),
+                    Asin = reader.GetString(1),
+                    Langin = reader.GetString(2),
+                    Langout = reader.GetString(3)
                 });
             }
             return results;
@@ -67,10 +67,10 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO DICT_INFO (id, asin, langin, langout) VALUES (@id, @asin, @langin, @langout)", connection);
-            cmd.Parameters.AddWithValue("@id", dictInfo.id);
-            cmd.Parameters.AddWithValue("@asin", dictInfo.asin);
-            cmd.Parameters.AddWithValue("@langin", dictInfo.langin);
-            cmd.Parameters.AddWithValue("@langout", dictInfo.langout);
+            cmd.Parameters.AddWithValue("@id", dictInfo.Id);
+            cmd.Parameters.AddWithValue("@asin", dictInfo.Asin);
+            cmd.Parameters.AddWithValue("@langin", dictInfo.Langin);
+            cmd.Parameters.AddWithValue("@langout", dictInfo.Langout);
             cmd.ExecuteNonQuery();
         }
 
@@ -79,10 +79,10 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE DICT_INFO SET asin = @asin, langin = @langin, langout = @langout WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", DictInfo.id);
-            cmd.Parameters.AddWithValue("@asin", DictInfo.asin);
-            cmd.Parameters.AddWithValue("@langin", DictInfo.langin);
-            cmd.Parameters.AddWithValue("@langout", DictInfo.langout);
+            cmd.Parameters.AddWithValue("@id", DictInfo.Id);
+            cmd.Parameters.AddWithValue("@asin", DictInfo.Asin);
+            cmd.Parameters.AddWithValue("@langin", DictInfo.Langin);
+            cmd.Parameters.AddWithValue("@langout", DictInfo.Langout);
             cmd.ExecuteNonQuery();
         }
 

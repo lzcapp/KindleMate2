@@ -20,12 +20,12 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new BookInfo {
-                    id = reader.GetString(0),
-                    asin = reader.GetString(1),
-                    guid = reader.GetString(2),
-                    lang = reader.GetString(3),
-                    title = reader.GetString(4),
-                    authors = reader.GetString(5)
+                    Id = reader.GetString(0),
+                    Asin = reader.GetString(1),
+                    Guid = reader.GetString(2),
+                    Lang = reader.GetString(3),
+                    Title = reader.GetString(4),
+                    Authors = reader.GetString(5)
                 };
             }
             return null;
@@ -42,12 +42,12 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new BookInfo {
-                    id = reader.GetString(0),
-                    asin = reader.GetString(1),
-                    guid = reader.GetString(2),
-                    lang = reader.GetString(3),
-                    title = reader.GetString(4),
-                    authors = reader.GetString(5)
+                    Id = reader.GetString(0),
+                    Asin = reader.GetString(1),
+                    Guid = reader.GetString(2),
+                    Lang = reader.GetString(3),
+                    Title = reader.GetString(4),
+                    Authors = reader.GetString(5)
                 });
             }
             return results;
@@ -71,12 +71,12 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO BOOK_INFO (id, asin, guid, lang, title, authors) VALUES (@id, @asin, @guid, @lang, @title, @authors)", connection);
-            cmd.Parameters.AddWithValue("@id", bookInfo.id);
-            cmd.Parameters.AddWithValue("@asin", bookInfo.asin);
-            cmd.Parameters.AddWithValue("@guid", bookInfo.guid);
-            cmd.Parameters.AddWithValue("@lang", bookInfo.lang);
-            cmd.Parameters.AddWithValue("@title", bookInfo.title);
-            cmd.Parameters.AddWithValue("@authors", bookInfo.authors);
+            cmd.Parameters.AddWithValue("@id", bookInfo.Id);
+            cmd.Parameters.AddWithValue("@asin", bookInfo.Asin);
+            cmd.Parameters.AddWithValue("@guid", bookInfo.Guid);
+            cmd.Parameters.AddWithValue("@lang", bookInfo.Lang);
+            cmd.Parameters.AddWithValue("@title", bookInfo.Title);
+            cmd.Parameters.AddWithValue("@authors", bookInfo.Authors);
             cmd.ExecuteNonQuery();
         }
 
@@ -85,12 +85,12 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE BOOK_INFO SET asin = @asin, guid = @guid, lang = @lang, title = @title, authors = @authors WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", bookInfo.id);
-            cmd.Parameters.AddWithValue("@asin", bookInfo.asin);
-            cmd.Parameters.AddWithValue("@guid", bookInfo.guid);
-            cmd.Parameters.AddWithValue("@lang", bookInfo.lang);
-            cmd.Parameters.AddWithValue("@title", bookInfo.title);
-            cmd.Parameters.AddWithValue("@authors", bookInfo.authors);
+            cmd.Parameters.AddWithValue("@id", bookInfo.Id);
+            cmd.Parameters.AddWithValue("@asin", bookInfo.Asin);
+            cmd.Parameters.AddWithValue("@guid", bookInfo.Guid);
+            cmd.Parameters.AddWithValue("@lang", bookInfo.Lang);
+            cmd.Parameters.AddWithValue("@title", bookInfo.Title);
+            cmd.Parameters.AddWithValue("@authors", bookInfo.Authors);
             cmd.ExecuteNonQuery();
         }
 

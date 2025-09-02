@@ -1,7 +1,7 @@
 ﻿namespace KindleMate2.Domain.Entities.VocabDB {
     public class Version {
-        public string id { get; set; }
-        public string dsname { get; set; }
-        public int value { get; set; }
+        public required string Id { get; set; } = null!;
+        public string? Dsname { get; set; }
+        public int? Value { get; set; }
     }
 }

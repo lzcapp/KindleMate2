@@ -1,9 +1,7 @@
 ﻿using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
-using KindleMate2.Entities;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 

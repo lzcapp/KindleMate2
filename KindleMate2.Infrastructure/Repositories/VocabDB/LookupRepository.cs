@@ -20,13 +20,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new Lookup {
-                    id = reader.GetString(0),
-                    word_key = reader.GetString(1),
-                    book_key = reader.GetString(2),
-                    dict_key = reader.GetString(3),
-                    pos = reader.GetString(4),
-                    usage = reader.GetString(5),
-                    timestamp = reader.GetInt32(6)
+                    Id = reader.GetString(0),
+                    WordKey = reader.GetString(1),
+                    BookKey = reader.GetString(2),
+                    DictKey = reader.GetString(3),
+                    Pos = reader.GetString(4),
+                    Usage = reader.GetString(5),
+                    Timestamp = reader.GetInt32(6)
                 };
             }
             return null;
@@ -43,13 +43,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 results.Add(new Lookup {
-                    id = reader.GetString(0),
-                    word_key = reader.GetString(1),
-                    book_key = reader.GetString(2),
-                    dict_key = reader.GetString(3),
-                    pos = reader.GetString(4),
-                    usage = reader.GetString(5),
-                    timestamp = reader.GetInt32(6)
+                    Id = reader.GetString(0),
+                    WordKey = reader.GetString(1),
+                    BookKey = reader.GetString(2),
+                    DictKey = reader.GetString(3),
+                    Pos = reader.GetString(4),
+                    Usage = reader.GetString(5),
+                    Timestamp = reader.GetInt32(6)
                 });
             }
             return results;
@@ -73,13 +73,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO LOOKUPS (id, word_key, book_key, dict_key, pos, usage, timestamp) VALUES (@id, @word_key, @book_key, @dict_key, @pos, @usage, @timestamp)", connection);
-            cmd.Parameters.AddWithValue("@id", lookup.id);
-            cmd.Parameters.AddWithValue("@word_key", lookup.word_key);
-            cmd.Parameters.AddWithValue("@book_key", lookup.book_key);
-            cmd.Parameters.AddWithValue("@dict_key", lookup.dict_key);
-            cmd.Parameters.AddWithValue("@pos", lookup.pos);
-            cmd.Parameters.AddWithValue("@usage", lookup.usage);
-            cmd.Parameters.AddWithValue("@timestamp", lookup.timestamp);
+            cmd.Parameters.AddWithValue("@id", lookup.Id);
+            cmd.Parameters.AddWithValue("@word_key", lookup.WordKey);
+            cmd.Parameters.AddWithValue("@book_key", lookup.BookKey);
+            cmd.Parameters.AddWithValue("@dict_key", lookup.DictKey);
+            cmd.Parameters.AddWithValue("@pos", lookup.Pos);
+            cmd.Parameters.AddWithValue("@usage", lookup.Usage);
+            cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp);
             cmd.ExecuteNonQuery();
         }
 
@@ -88,13 +88,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE LOOKUPS SET word_key = @word_key, book_key = @book_key, dict_key = @dict_key, pos = @pos, usage = @usage, timestamp = @timestamp WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", lookup.id);
-            cmd.Parameters.AddWithValue("@word_key", lookup.word_key);
-            cmd.Parameters.AddWithValue("@book_key", lookup.book_key);
-            cmd.Parameters.AddWithValue("@dict_key", lookup.dict_key);
-            cmd.Parameters.AddWithValue("@pos", lookup.pos);
-            cmd.Parameters.AddWithValue("@usage", lookup.usage);
-            cmd.Parameters.AddWithValue("@timestamp", lookup.timestamp);
+            cmd.Parameters.AddWithValue("@id", lookup.Id);
+            cmd.Parameters.AddWithValue("@word_key", lookup.WordKey);
+            cmd.Parameters.AddWithValue("@book_key", lookup.BookKey);
+            cmd.Parameters.AddWithValue("@dict_key", lookup.DictKey);
+            cmd.Parameters.AddWithValue("@pos", lookup.Pos);
+            cmd.Parameters.AddWithValue("@usage", lookup.Usage);
+            cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp);
             cmd.ExecuteNonQuery();
         }
 
