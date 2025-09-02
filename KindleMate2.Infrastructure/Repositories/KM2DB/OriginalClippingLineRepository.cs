@@ -31,12 +31,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         line5 = DatabaseHelper.GetSafeString(reader, 5)
                     };
                 }
-                return null;
             } catch (Exception ex) {
                 Console.WriteLine(ex);
-                return null;
             }
+            return null;
         }
+
         public List<OriginalClippingLine> GetAll() {
             var results = new List<OriginalClippingLine>();
 
@@ -48,7 +48,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (key == null) {
+                if (string.IsNullOrWhiteSpace(key)) {
                     continue;
                 }
                 results.Add(new OriginalClippingLine {
@@ -68,23 +68,21 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
-            
-            var sql = string.Empty;
-            if (type is AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author) {
-                sql = "WHERE line1 LIKE '%' || @strSearch || '%'";
-            } else if (type == AppEntities.SearchType.Content) {
-                sql = "WHERE line4 LIKE '%' || @strSearch || '%'";
-            } else if (type == AppEntities.SearchType.All) {
-                sql = "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'";
-            }
-            var query = "SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines " + sql;
-            var cmd = new SqliteCommand(query, connection);
+
+            var sql = type switch {
+                AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author => "WHERE line1 LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.Content => "WHERE line4 LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.All => "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'",
+                _ => string.Empty
+            };
+            sql = "SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines " + sql;
+            var cmd = new SqliteCommand(sql, connection);
             cmd.Parameters.AddWithValue("@strSearch", search);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (key == null) {
+                if (string.IsNullOrWhiteSpace(key)) {
                     continue;
                 }
                 results.Add(new OriginalClippingLine {
@@ -100,57 +98,84 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public int GetCount() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM original_clipping_lines", connection);
-            var result = cmd.ExecuteScalar();
+                var cmd = new SqliteCommand("SELECT COUNT(*) FROM original_clipping_lines", connection);
+                var result = cmd.ExecuteScalar();
 
-            // ExecuteScalar returns object, so convert to int
-            return Convert.ToInt32(result);
+                // ExecuteScalar returns object, so convert to int
+                return Convert.ToInt32(result);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return 0;
+            }
         }
 
-        public void Add(OriginalClippingLine originalClippingLine) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Add(OriginalClippingLine originalClippingLine) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
-            cmd.Parameters.AddWithValue("@key", originalClippingLine.key);
-            cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1);
-            cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2);
-            cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3);
-            cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4);
-            cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5);
-            cmd.ExecuteNonQuery();
-        }
-        public void Update(OriginalClippingLine originalClippingLine) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
-
-            var cmd = new SqliteCommand("UPDATE original_clipping_lines SET line1 = @line1, line2 = @line2, line3 = @line3, line4 = @line4, line5 = @line5 WHERE key = @key", connection);
-            cmd.Parameters.AddWithValue("@key", originalClippingLine.key);
-            cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1);
-            cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2);
-            cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3);
-            cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4);
-            cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5);
-            cmd.ExecuteNonQuery();
-        }
-        public void Delete(string key) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
-
-            var cmd = new SqliteCommand("DELETE FROM original_clipping_lines WHERE key = @key", connection);
-            cmd.Parameters.AddWithValue("@key", key);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
+                cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void DeleteAll() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Update(OriginalClippingLine originalClippingLine) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM original_clipping_lines", connection);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("UPDATE original_clipping_lines SET line1 = @line1, line2 = @line2, line3 = @line3, line4 = @line4, line5 = @line5 WHERE key = @key", connection);
+                cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
+        }
+
+        public bool Delete(string key) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new SqliteCommand("DELETE FROM original_clipping_lines WHERE key = @key", connection);
+                cmd.Parameters.AddWithValue("@key", key);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
+        }
+
+        public bool DeleteAll() {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new SqliteCommand("DELETE FROM original_clipping_lines", connection);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
     }
 }

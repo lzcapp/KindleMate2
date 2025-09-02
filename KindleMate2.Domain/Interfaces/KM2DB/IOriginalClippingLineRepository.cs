@@ -11,12 +11,12 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int GetCount();
 
-        void Add(OriginalClippingLine originalClippingLine);
+        bool Add(OriginalClippingLine originalClippingLine);
 
-        void Update(OriginalClippingLine originalClippingLine);
+        bool Update(OriginalClippingLine originalClippingLine);
 
-        void Delete(string key);
+        bool Delete(string key);
 
-        void DeleteAll();
+        bool DeleteAll();
     }
 }

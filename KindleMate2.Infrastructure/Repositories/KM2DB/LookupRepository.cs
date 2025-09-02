@@ -42,8 +42,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    continue;
+                }
                 results.Add(new Lookup {
-                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    WordKey = wordKey,
                     Usage = DatabaseHelper.GetSafeString(reader, 1),
                     Title = DatabaseHelper.GetSafeString(reader, 2),
                     Authors = DatabaseHelper.GetSafeString(reader, 3),
@@ -64,8 +68,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    throw new InvalidOperationException();
+                }
                 results.Add(new Lookup {
-                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    WordKey = wordKey,
                     Usage = DatabaseHelper.GetSafeString(reader, 1),
                     Title = DatabaseHelper.GetSafeString(reader, 2),
                     Authors = DatabaseHelper.GetSafeString(reader, 3),
@@ -86,8 +94,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    throw new InvalidOperationException();
+                }
                 results.Add(new Lookup {
-                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    WordKey = wordKey,
                     Usage = DatabaseHelper.GetSafeString(reader, 1),
                     Title = DatabaseHelper.GetSafeString(reader, 2),
                     Authors = DatabaseHelper.GetSafeString(reader, 3),
@@ -121,8 +133,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    continue;
+                }
                 results.Add(new Lookup {
-                    WordKey = DatabaseHelper.GetSafeString(reader, 0),
+                    WordKey = wordKey,
                     Usage = DatabaseHelper.GetSafeString(reader, 1),
                     Title = DatabaseHelper.GetSafeString(reader, 2),
                     Authors = DatabaseHelper.GetSafeString(reader, 3),
@@ -133,57 +149,85 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public int GetCount() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM lookups", connection);
-            var result = cmd.ExecuteScalar();
+                var cmd = new SqliteCommand("SELECT COUNT(*) FROM lookups", connection);
+                var result = cmd.ExecuteScalar();
 
-            // ExecuteScalar returns object, so convert to int
-            return Convert.ToInt32(result);
+                // ExecuteScalar returns object, so convert to int
+                return Convert.ToInt32(result);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return 0;
+            }
         }
 
-        public void Add(Lookup lookup) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Add(Lookup lookup) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection);
-            cmd.Parameters.AddWithValue("@word_key", lookup.WordKey);
-            cmd.Parameters.AddWithValue("@usage", lookup.Usage);
-            cmd.Parameters.AddWithValue("@title", lookup.Title);
-            cmd.Parameters.AddWithValue("@authors", lookup.Authors);
-            cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection);
+                cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@authors", lookup.Authors ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
         public bool Update(Lookup lookup) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key", connection);
-            cmd.Parameters.AddWithValue("@word_key", lookup.WordKey);
-            cmd.Parameters.AddWithValue("@usage", lookup.Usage);
-            cmd.Parameters.AddWithValue("@title", lookup.Title);
-            cmd.Parameters.AddWithValue("@authors", lookup.Authors);
-            cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp);
-            return cmd.ExecuteNonQuery() > 0;
+                var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key", connection);
+                cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@authors", lookup.Authors ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
         public bool Delete(string wordKey) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM lookups WHERE word_key = @word_key", connection);
-            cmd.Parameters.AddWithValue("@word_key", wordKey);
-            return cmd.ExecuteNonQuery() > 0;
+                var cmd = new SqliteCommand("DELETE FROM lookups WHERE word_key = @word_key", connection);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@word_key", wordKey);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void DeleteAll() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool DeleteAll() {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM lookups", connection);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("DELETE FROM lookups", connection);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
     }
 }

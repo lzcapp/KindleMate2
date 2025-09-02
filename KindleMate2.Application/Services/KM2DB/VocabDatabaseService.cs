@@ -118,10 +118,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.WordKey;
-                    var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey.Trim() == wordKey);
+                    var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey?.Trim() == wordKey);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
-                        WordKey = wordKey, 
-                        Frequency = frequency
+                        WordKey = wordKey,
+                        Frequency = frequency,
+                        Id = string.Empty,
+                        Word = string.Empty
                     });
                 }
                 return true;

@@ -5,8 +5,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         Setting? GetByName(string name);
         List<Setting> GetAll();
         int GetCount();
-        void Add(Setting setting);
-        void Update(Setting setting);
-        void Delete(string name);
+        bool Add(Setting setting);
+        bool Update(Setting setting);
+        bool Delete(string name);
     }
 }

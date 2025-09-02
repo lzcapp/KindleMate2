@@ -11,16 +11,16 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int GetCount();
 
-        void Add(Vocab vocab);
+        bool Add(Vocab vocab);
 
-        void Update(Vocab vocab);
+        bool Update(Vocab vocab);
 
-        void UpdateFrequencyByWordKey(Vocab vocab);
+        bool UpdateFrequencyByWordKey(Vocab vocab);
 
-        void Delete(string id);
+        bool Delete(string id);
 
         bool DeleteByWordKey(string wordKey);
 
-        void DeleteAll();
+        bool DeleteAll();
     }
 }

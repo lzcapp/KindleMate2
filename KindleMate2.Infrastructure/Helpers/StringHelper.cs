@@ -43,7 +43,10 @@ namespace KindleMate2.Infrastructure.Helpers {
             { 'M', 1000 }
         };
 
-        public static string TrimContent(string content) {
+        public static string TrimContent(string? content) {
+            if (content == null) {
+                return string.Empty;
+            }
             var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
             return contentTrimmed;
         }

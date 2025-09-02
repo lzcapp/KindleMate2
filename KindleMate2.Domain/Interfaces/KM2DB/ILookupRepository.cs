@@ -15,12 +15,12 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int GetCount();
 
-        void Add(Lookup lookup);
+        bool Add(Lookup lookup);
 
         bool Update(Lookup lookup);
 
         bool Delete(string wordKey);
 
-        void DeleteAll();
+        bool DeleteAll();
     }
 }
