@@ -168,11 +168,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clipping.BriefType = brieftype;
 
                 if (clipping.BriefType == BriefType.Bookmark) {
-                    return 0;
+                    continue;
                 }
 
                 if (content.Contains("您已达到本内容的剪贴上限")) {
-                    return 0;
+                    continue;
                 }
 
                 var split_b = metadata.Split('|');
@@ -206,7 +206,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     isPageParsed = int.TryParse(strMatched, out pagenumber);
                 }
                 if (!isPageParsed || pagenumber == -1 || pagenumber == 0) {
-                    return 0;
+                    continue;
                 }
                 clipping.ClippingTypeLocation = clippingtypelocation;
                 clipping.PageNumber = pagenumber;
@@ -225,21 +225,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (isDateParsed && parsedDate != DateTime.MinValue) {
                     clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                 } else {
-                    return 0;
+                    continue;
                 }
                 clipping.ClippingDate = clippingdate;
 
                 var key = clippingdate + "|" + clippingtypelocation;
                 if (!isRebuild) {
                     if (_originalClippingLineRepository.GetByKey(key) != null) {
-                        return 0;
+                        continue;
                     }
-                    _originalClippingLineRepository.Add(new OriginalClippingLine {
-                        key = key, 
-                        line1 = header, 
-                        line2 = metadata,
-                        line4 = content
-                    });
                 }
 
                 clipping.Key = key;
@@ -263,10 +257,20 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
 
                 if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
-                    return 0;
+                    continue;
                 }
 
                 _clippingRepository.Add(clipping);
+
+                if (!isRebuild) {
+                    _originalClippingLineRepository.Add(new OriginalClippingLine {
+                        key = key, 
+                        line1 = header, 
+                        line2 = metadata,
+                        line4 = content
+                    });
+                }
+                
                 insertResult += 1;
             }
 
