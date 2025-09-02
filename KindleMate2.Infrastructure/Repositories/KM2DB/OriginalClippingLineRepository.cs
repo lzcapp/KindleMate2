@@ -1,6 +1,7 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -28,7 +29,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         line2 = DatabaseHelper.GetSafeString(reader, 2),
                         line3 = DatabaseHelper.GetSafeString(reader, 3),
                         line4 = DatabaseHelper.GetSafeString(reader, 4),
-                        line5 = DatabaseHelper.GetSafeString(reader, 5)
+                        line5 = DatabaseHelper.GetSafeString(reader, 5) ?? AppConstants.Delimiter
                     };
                 }
                 return null;
@@ -57,7 +58,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     line2 = DatabaseHelper.GetSafeString(reader, 2),
                     line3 = DatabaseHelper.GetSafeString(reader, 3),
                     line4 = DatabaseHelper.GetSafeString(reader, 4),
-                    line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    line5 = DatabaseHelper.GetSafeString(reader, 5) ?? AppConstants.Delimiter
                 });
             }
             return results;
@@ -93,7 +94,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     line2 = DatabaseHelper.GetSafeString(reader, 2),
                     line3 = DatabaseHelper.GetSafeString(reader, 3),
                     line4 = DatabaseHelper.GetSafeString(reader, 4),
-                    line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    line5 = DatabaseHelper.GetSafeString(reader, 5) ?? AppConstants.Delimiter
                 });
             }
             return results;
@@ -105,7 +106,6 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM original_clipping_lines", connection);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
             var result = cmd.ExecuteScalar();
 
             // ExecuteScalar returns object, so convert to int
@@ -113,17 +113,21 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public void Add(OriginalClippingLine originalClippingLine) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
-            cmd.Parameters.AddWithValue("@key", originalClippingLine.key);
-            cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1);
-            cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2);
-            cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3);
-            cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4);
-            cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
+                cmd.Parameters.AddWithValue("@key", originalClippingLine.key);
+                cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1);
+                cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2);
+                cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3);
+                cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4);
+                cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5);
+                cmd.ExecuteNonQuery();
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
         }
         public void Update(OriginalClippingLine originalClippingLine) {
             using var connection = new SqliteConnection(_connectionString);

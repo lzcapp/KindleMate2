@@ -43,9 +43,12 @@ namespace KindleMate2.Infrastructure.Helpers {
             { 'M', 1000 }
         };
 
-        public static string TrimContent(string content) {
-            var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
-            return contentTrimmed;
+        public static string TrimContent(string? content) {
+            if (content != null) {
+                var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
+                return contentTrimmed;
+            }
+            return string.Empty;
         }
 
         public static string SanitizeFilename(string filename) {

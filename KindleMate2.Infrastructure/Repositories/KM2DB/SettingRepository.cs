@@ -61,7 +61,6 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM settings", connection);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
             var result = cmd.ExecuteScalar();
 
             // ExecuteScalar returns object, so convert to int

@@ -54,7 +54,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             while (reader.Read()) {
                 var id = DatabaseHelper.GetSafeString(reader, 0);
                 var word = DatabaseHelper.GetSafeString(reader, 2);
-                if (id == null || word == null) {
+                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(word)) {
                     continue;
                 }
                 var vocab = new Vocab {
@@ -94,7 +94,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             while (reader.Read()) {
                 var id = DatabaseHelper.GetSafeString(reader, 0);
                 var word = DatabaseHelper.GetSafeString(reader, 2);
-                if (id == null || word == null) {
+                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(word)) {
                     continue;
                 }
                 results.Add(new Vocab {
@@ -118,8 +118,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM vocab", connection);
-
-            using SqliteDataReader reader = cmd.ExecuteReader();
+            
             var result = cmd.ExecuteScalar();
 
             // ExecuteScalar returns object, so convert to int

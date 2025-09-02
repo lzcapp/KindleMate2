@@ -21,7 +21,7 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int GetCount();
 
-        void Add(Clipping clipping);
+        bool Add(Clipping clipping);
 
         bool Update(Clipping clipping);
 
