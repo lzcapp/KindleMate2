@@ -40,7 +40,5 @@
         public const string ExplorerExe = "explorer.exe";
 
         public const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
-
-        public const string Delimiter = "==========";
     }
 }

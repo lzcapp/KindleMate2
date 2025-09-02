@@ -99,7 +99,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -138,7 +138,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -181,7 +181,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -218,7 +218,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -252,7 +252,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -287,7 +287,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 var key = DatabaseHelper.GetSafeString(reader, 0);
-                if (string.IsNullOrWhiteSpace(key)) {
+                if (key == null) {
                     continue;
                 }
                 results.Add(new Clipping {
@@ -315,41 +315,34 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM clippings", connection);
-
             var result = cmd.ExecuteScalar();
 
             // ExecuteScalar returns object, so convert to int
             return Convert.ToInt32(result);
         }
 
-        public bool Add(Clipping clipping) {
-            try {
-                using var connection = new SqliteConnection(_connectionString);
-                connection.Open();
+        public void Add(Clipping clipping) {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand(
-                    "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
-                    connection);
-                cmd.Parameters.AddWithValue("@key", clipping.Key);
-                cmd.Parameters.AddWithValue("@content", clipping.Content);
-                cmd.Parameters.AddWithValue("@bookname", clipping.BookName);
-                cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName);
-                cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType);
-                cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation);
-                cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate);
-                cmd.Parameters.AddWithValue("@read", clipping.Read);
-                cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate);
-                cmd.Parameters.AddWithValue("@tag", clipping.Tag);
-                cmd.Parameters.AddWithValue("@sync", clipping.Sync);
-                cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName);
-                cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb);
-                cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber);
-                cmd.ExecuteNonQuery();
-                return true;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return false;
-            }
+            var cmd = new SqliteCommand(
+                "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
+                connection);
+            cmd.Parameters.AddWithValue("@key", clipping.Key);
+            cmd.Parameters.AddWithValue("@content", clipping.Content);
+            cmd.Parameters.AddWithValue("@bookname", clipping.BookName);
+            cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName);
+            cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType);
+            cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation);
+            cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate);
+            cmd.Parameters.AddWithValue("@read", clipping.Read);
+            cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate);
+            cmd.Parameters.AddWithValue("@tag", clipping.Tag);
+            cmd.Parameters.AddWithValue("@sync", clipping.Sync);
+            cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName);
+            cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb);
+            cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber);
+            cmd.ExecuteNonQuery();
         }
 
         public bool Update(Clipping clipping) {

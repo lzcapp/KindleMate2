@@ -38,8 +38,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetCount();
         }
 
-        public bool AddClipping(Clipping clipping) {
-            return string.IsNullOrWhiteSpace(clipping.Key) ? throw new ArgumentException("[key] cannot be empty") : _repository.Add(clipping);
+        public void AddClipping(Clipping clipping) {
+            if (string.IsNullOrWhiteSpace(clipping.Key)) {
+                throw new ArgumentException("[key] cannot be empty");
+            }
+
+            _repository.Add(clipping);
         }
 
         public bool UpdateClipping(Clipping clipping) {

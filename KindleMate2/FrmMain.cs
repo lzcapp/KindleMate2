@@ -141,20 +141,20 @@ namespace KindleMate2 {
                 Thread.CurrentThread.CurrentCulture = culture;
 
                 switch (cultureName.ToLowerInvariant()) {
-                    case Culture.English:
+                    case "en":
                         menuLangEN.Visible = false;
                         break;
-                    case Culture.ChineseSimplified:
+                    case "zh-hans":
                         menuLangSC.Visible = false;
                         break;
-                    case Culture.ChineseTraditional:
+                    case "zh-hant":
                         menuLangTC.Visible = false;
                         break;
                 }
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains(nameof(Culture.English), StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Culture.English, StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains("English", StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
                 } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.InvariantCultureIgnoreCase) ||
                            string.Equals(currentCulture.Name, "zh-Hans", StringComparison.InvariantCultureIgnoreCase)) {
@@ -675,27 +675,27 @@ namespace KindleMate2 {
                     case 0:
                         //var clippingdate = selectedRow.Cells[Columns.ClippingDate].Value.ToString() ?? string.Empty;
                         var bookname = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
-                        var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
-                        _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
+                        var authorname = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
+                        int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pagenumber);
                         var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
-                        var briefType = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
+                        var brieftype = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
 
                         lblBook.Text = bookname;
-                        if (authorName != string.Empty) {
-                            lblAuthor.Text = Strings.Left_Parenthesis + authorName + Strings.Right_Parenthesis;
+                        if (authorname != string.Empty) {
+                            lblAuthor.Text = Strings.Left_Parenthesis + authorname + Strings.Right_Parenthesis;
                         } else {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblLocation.Text = Strings.Page_ + Strings.Space + pageNumber + Strings.Space + Strings.X_Page;
+                        lblLocation.Text = Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page;
 
                         lblContent.Text = string.Empty;
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
-                        if (briefType.Equals("1")) {
+                        if (brieftype.Equals("1")) {
                             label1.Text = @"[" + Strings.Note + @"]";
                             label2.Text = @"[" + Strings.Clipping + @"]";
-                            label3.Text = _clippingService.GetClippingByBookNameAndPageNumberAndBriefType(bookname, pageNumber, BriefType.Note)[0].Content;
+                            label3.Text = _clippingService.GetClippingByBookNameAndPageNumberAndBriefType(bookname, pagenumber, BriefType.Note)[0].Content;
                             label1.Visible = true;
                             label2.Visible = true;
                             label3.Visible = true;
@@ -777,10 +777,10 @@ namespace KindleMate2 {
 
                         lblContent.SelectionBullet = true;
                         var usageLines = usage.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var lines in usageLines.Select(line => line.Split("\n"))) {
-                            for (var i = 0; i < lines.Length; i++) {
+                        foreach (var alines in usageLines.Select(line => line.Split("\n"))) {
+                            for (var i = 0; i < alines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
-                                var aline = lines[i];
+                                var aline = alines[i];
                                 lblContent.AppendText(aline.Trim() + "\n");
                             }
                             lblContent.SelectionBullet = false;
@@ -789,10 +789,10 @@ namespace KindleMate2 {
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText("\n\n");
 
-                        foreach (var lines in usage_clippings.Select(line => line.Split("\n"))) {
-                            for (var i = 0; i < lines.Length; i++) {
+                        foreach (var alines in usage_clippings.Select(line => line.Split("\n"))) {
+                            for (var i = 0; i < alines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
-                                var aline = lines[i];
+                                var aline = alines[i];
                                 lblContent.AppendText(aline.Trim() + "\n");
                             }
                             lblContent.SelectionBullet = false;
@@ -1515,27 +1515,27 @@ namespace KindleMate2 {
                     return;
                 }
                 var bookname = treeViewBooks.SelectedNode.Text;
-                var authorName = GetAuthorNameFromClippings(bookname);
-                ShowBookRenameDialog(bookname, authorName);
+                var authorname = GetAuthornameFromClippings(bookname);
+                ShowBookRenameDialog(bookname, authorname);
             }
         }
 
-        private string GetAuthorNameFromClippings(string bookname) {
-            var authorName = string.Empty;
+        private string GetAuthornameFromClippings(string bookname) {
+            var authorname = string.Empty;
             foreach (Clipping row in _clippings) {
                 if (row.BookName != null && !row.BookName.Equals(bookname)) {
                     continue;
                 }
-                authorName = row.AuthorName;
+                authorname = row.AuthorName;
                 break;
             }
-            return authorName ?? string.Empty;
+            return authorname ?? string.Empty;
         }
 
-        private void ShowBookRenameDialog(string bookname, string authorName) {
+        private void ShowBookRenameDialog(string bookname, string authorname) {
             var fields = new List<KeyValue> {
                 new(Strings.Book_Title, bookname),
-                new(Strings.Author, authorName)
+                new(Strings.Author, authorname)
             };
 
             Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
@@ -1557,10 +1557,10 @@ namespace KindleMate2 {
             if (string.IsNullOrWhiteSpace(dialogBook)) {
                 return;
             }
-            if (!string.IsNullOrWhiteSpace(authorName) && string.IsNullOrWhiteSpace(dialogAuthor)) {
-                dialogAuthor = authorName;
+            if (!string.IsNullOrWhiteSpace(authorname) && string.IsNullOrWhiteSpace(dialogAuthor)) {
+                dialogAuthor = authorname;
             }
-            if (bookname == dialogBook && authorName == dialogAuthor) {
+            if (bookname == dialogBook && authorname == dialogAuthor) {
                 MessageBox(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -1601,17 +1601,17 @@ namespace KindleMate2 {
             return bookname;
         }
 
-        private string GetAuthorNameFromContent() {
-            string authorName;
+        private string GetAuthornameFromContent() {
+            string authorname;
             if (!string.IsNullOrWhiteSpace(lblAuthor.Text)) {
-                authorName = lblAuthor.Text;
-                var startIndex = authorName.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
-                var endIndex = authorName.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
-                authorName = authorName.Substring(startIndex, endIndex - startIndex + 1);
+                authorname = lblAuthor.Text;
+                var startIndex = authorname.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
+                var endIndex = authorname.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
+                authorname = authorname.Substring(startIndex, endIndex - startIndex + 1);
             } else {
-                authorName = dataGridView.Rows[0].Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
+                authorname = dataGridView.Rows[0].Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
             }
-            return authorName;
+            return authorname;
         }
 
         private void MenuClippingsRefresh_Click(object sender, EventArgs e) {
@@ -1643,13 +1643,13 @@ namespace KindleMate2 {
                     DataGridViewRow selectedRow = dataGridView.SelectedRows[0];
 
                     var bookname = selectedRow.Cells[Columns.BookName].Value.ToString();
-                    var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString();
+                    var authorname = selectedRow.Cells[Columns.AuthorName].Value.ToString();
                     //var clippinglocation = selectedRow.Cells[Columns.ClippingTypeLocation].Value.ToString();
                     //var content = selectedRow.Cells[Columns.Content].Value.ToString();
 
                     lblBook.Text = bookname;
-                    if (authorName != string.Empty) {
-                        lblAuthor.Text = Strings.Left_Parenthesis + authorName + Strings.Right_Parenthesis;
+                    if (authorname != string.Empty) {
+                        lblAuthor.Text = Strings.Left_Parenthesis + authorname + Strings.Right_Parenthesis;
                     } else {
                         lblAuthor.Text = string.Empty;
                     }
@@ -1835,16 +1835,16 @@ namespace KindleMate2 {
             }
             if (!e.Node.Text.Equals(Strings.Select_All)) {
                 var bookname = e.Node.Text;
-                var authorName = GetAuthorNameFromClippings(bookname);
-                ShowBookRenameDialog(bookname, authorName);
+                var authorname = GetAuthornameFromClippings(bookname);
+                ShowBookRenameDialog(bookname, authorname);
             }
         }
-    
+
         private void Content_Rename_MouseDoubleClick() {
             if (tabControl.SelectedIndex == 0) {
                 var bookname = GetBooknameFromContent();
-                var authorName = GetAuthorNameFromContent();
-                ShowBookRenameDialog(bookname, authorName);
+                var authorname = GetAuthornameFromContent();
+                ShowBookRenameDialog(bookname, authorname);
             }
         }
 
@@ -1972,10 +1972,10 @@ namespace KindleMate2 {
                         markdown.AppendLine();
 
                         foreach (DataRow row in filteredBooks.Rows) {
-                            var clippingLocation = row[Columns.ClippingTypeLocation].ToString();
+                            var clippinglocation = row[Columns.ClippingTypeLocation].ToString();
                             var content = row[Columns.Content].ToString();
 
-                            markdown.AppendLine("**" + clippingLocation + "**");
+                            markdown.AppendLine("**" + clippinglocation + "**");
 
                             markdown.AppendLine();
 
@@ -1999,10 +1999,10 @@ namespace KindleMate2 {
                     markdown.AppendLine();
 
                     foreach (DataRow row in filteredBooks.Rows) {
-                        var clippingLocation = row[Columns.ClippingTypeLocation].ToString();
+                        var clippinglocation = row[Columns.ClippingTypeLocation].ToString();
                         var content = row[Columns.Content].ToString();
 
-                        markdown.AppendLine("**" + clippingLocation + "**");
+                        markdown.AppendLine("**" + clippinglocation + "**");
 
                         markdown.AppendLine();
 
@@ -2187,12 +2187,12 @@ namespace KindleMate2 {
         }
 
         private void MenuLangSC_Click(object sender, EventArgs e) {
-            UpdateSettingLanguage(Culture.ChineseSimplified);
+            UpdateSettingLanguage("zh-Hans");
             Restart();
         }
 
         private void MenuLangTC_Click(object sender, EventArgs e) {
-            UpdateSettingLanguage(Culture.ChineseTraditional);
+            UpdateSettingLanguage("zh-Hant");
             Restart();
         }
 
