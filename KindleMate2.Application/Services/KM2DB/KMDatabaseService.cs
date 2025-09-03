@@ -165,9 +165,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 } else if (metadata.Contains("文章剪切") || metadata.Contains("Cut")) {
                     brieftype = BriefType.Cut;
                 }
-                clipping.BriefType = brieftype;
+                clipping.BriefType = (long)brieftype;
 
-                if (clipping.BriefType == BriefType.Bookmark) {
+                if (clipping.BriefType == (long)BriefType.Bookmark) {
                     continue;
                 }
 
@@ -301,7 +301,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 _clippingRepository.UpdateBriefTypeByKey(new Clipping {
                     Key = clipping.Key,
-                    BriefType = BriefType.Hide
+                    BriefType = (long)BriefType.Hide
                 });
                 return true;
             } catch (Exception e) {

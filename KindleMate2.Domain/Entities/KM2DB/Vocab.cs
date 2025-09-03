@@ -1,15 +1,15 @@
 ﻿namespace KindleMate2.Domain.Entities.KM2DB {
     public class Vocab {
-        private int? _category;
+        private long? _category;
         private int? _frequency;
         private int? _sync;
-        private int? _colorRgb;
+        private long? _colorRgb;
         public required string Id { get; set; } = null!;
         public string? WordKey { get; set; }
         public required string Word { get; set; } = null!;
         public string? Stem { get; set; }
 
-        public int? Category {
+        public long? Category {
             get => _category;
             set => _category = value ?? 0;
         }
@@ -27,7 +27,7 @@
             set => _sync = value ?? 0;
         }
 
-        public int? ColorRgb {
+        public long? ColorRgb {
             get => _colorRgb;
             set => _colorRgb = value ?? -1;
         }

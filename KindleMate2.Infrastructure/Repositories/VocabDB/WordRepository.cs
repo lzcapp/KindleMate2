@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.VocabDB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
@@ -11,23 +12,30 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
         }
 
         public Word? GetById(string id) {
-            SqliteConnection connection = new(_connectionString);
-            connection.Open();
+            try {
+                SqliteConnection connection = new(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", id);
+                var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS WHERE id = @id", connection);
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Word {
-                    Id = reader.GetString(0),
-                    word = reader.GetString(1),
-                    Stem = reader.GetString(2),
-                    Lang = reader.GetString(3),
-                    Category = reader.GetInt32(4),
-                    Timestamp = reader.GetInt32(5),
-                    Profileid = reader.GetString(6)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new Word {
+                        Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        word = DatabaseHelper.GetSafeString(reader, 1),
+                        Stem = DatabaseHelper.GetSafeString(reader, 2),
+                        Lang = DatabaseHelper.GetSafeString(reader, 3),
+                        Category = DatabaseHelper.GetSafeLong(reader, 4),
+                        Timestamp = DatabaseHelper.GetSafeLong(reader, 5),
+                        Profileid = DatabaseHelper.GetSafeString(reader, 6)
+                    };
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
             }
             return null;
         }
@@ -35,76 +43,116 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
         public List<Word> GetAll() {
             var results = new List<Word>();
 
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS", connection);
-            
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            while (reader.Read()) {
-                results.Add(new Word {
-                    Id = reader.GetString(0),
-                    word = reader.GetString(1),
-                    Stem = reader.GetString(2),
-                    Lang = reader.GetString(3),
-                    Category = reader.GetInt32(4),
-                    Timestamp = reader.GetInt32(5),
-                    Profileid = reader.GetString(6)
-                });
+                var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS", connection);
+
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                while (reader.Read()) {
+                    var id = DatabaseHelper.GetSafeString(reader, 0);
+                    if (string.IsNullOrWhiteSpace(id)) {
+                        continue;
+                    }
+                    results.Add(new Word {
+                        Id = id,
+                        word = DatabaseHelper.GetSafeString(reader, 1),
+                        Stem = DatabaseHelper.GetSafeString(reader, 2),
+                        Lang = DatabaseHelper.GetSafeString(reader, 3),
+                        Category = DatabaseHelper.GetSafeLong(reader, 4),
+                        Timestamp = DatabaseHelper.GetSafeLong(reader, 5),
+                        Profileid = DatabaseHelper.GetSafeString(reader, 6)
+                    });
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
             }
+
             return results;
         }
 
         public int GetCount() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM WORDS", connection);
+                var cmd = new SqliteCommand("SELECT COUNT(*) FROM WORDS", connection);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            var result = cmd.ExecuteScalar();
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                var result = cmd.ExecuteScalar();
 
-            // ExecuteScalar returns object, so convert to int
-            return Convert.ToInt32(result);
+                // ExecuteScalar returns object, so convert to int
+                return Convert.ToInt32(result);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return 0;
+            }
         }
 
-        public void Add(Word Word) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Add(Word word) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO WORDS (id, word, stem, lang, category, timestamp, profileid) VALUES (@id, @word, @stem, @lang, @category, @timestamp, @profileid)", connection);
-            cmd.Parameters.AddWithValue("@id", Word.Id);
-            cmd.Parameters.AddWithValue("@word", Word.word);
-            cmd.Parameters.AddWithValue("@stem", Word.Stem);
-            cmd.Parameters.AddWithValue("@lang", Word.Lang);
-            cmd.Parameters.AddWithValue("@category", Word.Category);
-            cmd.Parameters.AddWithValue("@timestamp", Word.Timestamp);
-            cmd.Parameters.AddWithValue("@profileid", Word.Profileid);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("INSERT INTO WORDS (id, word, stem, lang, category, timestamp, profileid) VALUES (@id, @word, @stem, @lang, @category, @timestamp, @profileid)", connection);
+                var id = word.Id;
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@word", word.word ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@stem", word.Stem ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@timestamp", word.Timestamp ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@profileid", word.Profileid ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void Update(Word Word) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Update(Word word) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE WORDS SET word = @word, stem = @stem, lang = @lang, category = @category, timestamp = @timestamp, profileid = @profileid WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", Word.Id);
-            cmd.Parameters.AddWithValue("@word", Word.word);
-            cmd.Parameters.AddWithValue("@stem", Word.Stem);
-            cmd.Parameters.AddWithValue("@lang", Word.Lang);
-            cmd.Parameters.AddWithValue("@category", Word.Category);
-            cmd.Parameters.AddWithValue("@timestamp", Word.Timestamp);
-            cmd.Parameters.AddWithValue("@profileid", Word.Profileid);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("UPDATE WORDS SET word = @word, stem = @stem, lang = @lang, category = @category, timestamp = @timestamp, profileid = @profileid WHERE id = @id", connection);
+                var id = word.Id;
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@word", word.word ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@stem", word.Stem ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@timestamp", word.Timestamp ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@profileid", word.Profileid ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void Delete(string id) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Delete(string id) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM WORDS WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("DELETE FROM WORDS WHERE id = @id", connection);
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
     }
 }

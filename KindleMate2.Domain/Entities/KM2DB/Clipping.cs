@@ -1,7 +1,7 @@
 ﻿namespace KindleMate2.Domain.Entities.KM2DB {
     public class Clipping {
         private string? _bookName;
-        private int _colorRgb;
+        private long _colorRgb;
         private string? _content;
         private int _pageNumber;
         private int? _read;
@@ -19,7 +19,7 @@
         }
 
         public string? AuthorName { get; set; }
-        public BriefType? BriefType { get; set; }
+        public long? BriefType { get; set; }
         public string? ClippingTypeLocation { get; set; }
         public string? ClippingDate { get; set; }
 
@@ -38,7 +38,7 @@
 
         public string? NewBookName { get; set; }
 
-        public int? ColorRgb {
+        public long? ColorRgb {
             get => _colorRgb;
             set => _colorRgb = value ?? -1;
         }

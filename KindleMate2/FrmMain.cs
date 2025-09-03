@@ -312,42 +312,52 @@ namespace KindleMate2 {
         }
 
         private string ImportKindleClippings(string clippingsPath) {
-            var message = string.Empty;
-            if (_kmDatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
-                var parsedCount = result[AppConstants.ParsedCount];
-                var insertedCount = result[AppConstants.InsertedCount];
-                message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
-            } else {
-                var exception = result[AppConstants.Exception];
-                Console.WriteLine(exception);
+            try {
+                var message = string.Empty;
+                if (_kmDatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+                    var parsedCount = result[AppConstants.ParsedCount];
+                    var insertedCount = result[AppConstants.InsertedCount];
+                    message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+                } else {
+                    var exception = result[AppConstants.Exception];
+                    Console.WriteLine(exception);
+                }
+                return message;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
             }
-            return message;
         }
 
         private string ImportKindleWords(string kindleWordsPath) {
-            if (!File.Exists(kindleWordsPath)) {
-                MessageBox(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return string.Empty;
+            try {
+                if (!File.Exists(kindleWordsPath)) {
+                    MessageBox(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return string.Empty;
+                }
+
+                var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
+
+                var bookInfoRepository = new BookInfoRepository(connectionString);
+                var vocabLookupRepository = new VocabLookupRepository(connectionString);
+                var wordRepository = new WordRepository(connectionString);
+                var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+                var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+                var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
+
+                if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
+                    var lookupCount = result[AppConstants.LookupCount];
+                    var insertedLookupCount = result[AppConstants.InsertedLookupCount];
+                    var insertedVocabCount = result[AppConstants.InsertedVocabCount];
+                    return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups +
+                           Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
+                }
+                var exception = result["Exception"];
+                return exception;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
             }
-
-            var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
-
-            var bookInfoRepository = new BookInfoRepository(connectionString);
-            var vocabLookupRepository = new VocabLookupRepository(connectionString);
-            var wordRepository = new WordRepository(connectionString);
-            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
-            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
-            var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
-
-            if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
-                var lookupCount = result[AppConstants.LookupCount];
-                var insertedLookupCount = result[AppConstants.InsertedLookupCount];
-                var insertedVocabCount = result[AppConstants.InsertedVocabCount];
-                return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups +
-                       Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
-            }
-            var exception = result["Exception"];
-            return exception;
         }
 
         private void UpdateFrequency() {
@@ -1425,15 +1435,18 @@ namespace KindleMate2 {
 
         private void ImportFromKindle() {
             try {
-                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
-                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+                var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
+                var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
 
                 if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception)) {
                     throw exception;
                 }
 
+                SetProgressBar(true);
                 var bw = new BackgroundWorker();
-                bw.DoWork += (_, e) => { e.Result = Import(backupClippingsPath, backupWordsPath); };
+                bw.DoWork += (_, e) => {
+                    e.Result = Import(backupClippingsPath, backupWordsPath);
+                };
                 bw.RunWorkerCompleted += (_, e) => {
                     if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
                         MessageBox(e.Result.ToString() ?? Strings.Import_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1505,7 +1518,9 @@ namespace KindleMate2 {
         }
 
         private void MenuKindle_Click(object sender, EventArgs e) {
+            menuKindle.Enabled = false;
             ImportFromKindle();
+            menuKindle.Enabled = true;
         }
 
         private void MenuRename_Click(object sender, EventArgs e) {

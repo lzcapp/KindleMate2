@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Domain.Interfaces.VocabDB;
 using KindleMate2.Domain.Entities.VocabDB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
@@ -11,20 +12,27 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
         }
 
         public DictInfo? GetById(string id) {
-            SqliteConnection connection = new(_connectionString);
-            connection.Open();
+            try {
+                SqliteConnection connection = new(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, asin, langin, langout FROM DICT_INFO WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", id);
+                var cmd = new SqliteCommand("SELECT id, asin, langin, langout FROM DICT_INFO WHERE id = @id", connection);
+                if (string.IsNullOrEmpty(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new DictInfo {
-                    Id = reader.GetString(0),
-                    Asin = reader.GetString(1),
-                    Langin = reader.GetString(2),
-                    Langout = reader.GetString(3)
-                };
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    return new DictInfo {
+                        Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        Asin = DatabaseHelper.GetSafeString(reader, 1),
+                        Langin = DatabaseHelper.GetSafeString(reader, 2),
+                        Langout = DatabaseHelper.GetSafeString(reader, 3)
+                    };
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
             }
             return null;
         }
@@ -32,67 +40,106 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
         public List<DictInfo> GetAll() {
             var results = new List<DictInfo>();
 
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, asin, langin, langout FROM DICT_INFO", connection);
+                var cmd = new SqliteCommand("SELECT id, asin, langin, langout FROM DICT_INFO", connection);
             
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            while (reader.Read()) {
-                results.Add(new DictInfo {
-                    Id = reader.GetString(0),
-                    Asin = reader.GetString(1),
-                    Langin = reader.GetString(2),
-                    Langout = reader.GetString(3)
-                });
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                while (reader.Read()) {
+                    var id = DatabaseHelper.GetSafeString(reader, 0);
+                    if (string.IsNullOrWhiteSpace(id)) {
+                        continue;
+                    }
+                    results.Add(new DictInfo {
+                        Id = id,
+                        Asin = DatabaseHelper.GetSafeString(reader, 1),
+                        Langin = DatabaseHelper.GetSafeString(reader, 2),
+                        Langout = DatabaseHelper.GetSafeString(reader, 3)
+                    });
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
             }
             return results;
         }
 
         public int GetCount() {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM DICT_INFO", connection);
+                var cmd = new SqliteCommand("SELECT COUNT(*) FROM DICT_INFO", connection);
 
-            using SqliteDataReader reader = cmd.ExecuteReader();
-            var result = cmd.ExecuteScalar();
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                var result = cmd.ExecuteScalar();
 
-            // ExecuteScalar returns object, so convert to int
-            return Convert.ToInt32(result);
+                // ExecuteScalar returns object, so convert to int
+                return Convert.ToInt32(result);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return 0;
+            }
         }
 
-        public void Add(DictInfo dictInfo) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Add(DictInfo dictInfo) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO DICT_INFO (id, asin, langin, langout) VALUES (@id, @asin, @langin, @langout)", connection);
-            cmd.Parameters.AddWithValue("@id", dictInfo.Id);
-            cmd.Parameters.AddWithValue("@asin", dictInfo.Asin);
-            cmd.Parameters.AddWithValue("@langin", dictInfo.Langin);
-            cmd.Parameters.AddWithValue("@langout", dictInfo.Langout);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("INSERT INTO DICT_INFO (id, asin, langin, langout) VALUES (@id, @asin, @langin, @langout)", connection);
+                var id = dictInfo.Id;
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@asin", dictInfo.Asin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@langin", dictInfo.Langin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@langout", dictInfo.Langout ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void Update(DictInfo DictInfo) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Update(DictInfo dictInfo) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE DICT_INFO SET asin = @asin, langin = @langin, langout = @langout WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", DictInfo.Id);
-            cmd.Parameters.AddWithValue("@asin", DictInfo.Asin);
-            cmd.Parameters.AddWithValue("@langin", DictInfo.Langin);
-            cmd.Parameters.AddWithValue("@langout", DictInfo.Langout);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("UPDATE DICT_INFO SET asin = @asin, langin = @langin, langout = @langout WHERE id = @id", connection);
+                var id = dictInfo.Id;
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@asin", dictInfo.Asin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@langin", dictInfo.Langin ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@langout", dictInfo.Langout ?? (object)DBNull.Value);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
 
-        public void Delete(string id) {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
+        public bool Delete(string id) {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM DICT_INFO WHERE id = @id", connection);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
+                var cmd = new SqliteCommand("DELETE FROM DICT_INFO WHERE id = @id", connection);
+                if (string.IsNullOrWhiteSpace(id)) {
+                    throw new InvalidOperationException();
+                }
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
         }
     }
 }

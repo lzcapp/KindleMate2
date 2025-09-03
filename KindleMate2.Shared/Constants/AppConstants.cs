@@ -28,6 +28,7 @@
         public const string SystemPathName = "system";
         public const string DocumentsPathName = "documents";
         public const string VocabularyPathName = "vocabulary";
+        public const string ImportsPathName = "imports";
         public const string TempPathName = "Temp";
         public const string BackupsPathName = "Backups";
         public const string ExportsPathName = "Exports";

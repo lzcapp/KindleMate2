@@ -25,15 +25,15 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, string> result) {
-            var words = _wordRepository.GetAll();
-            var lookups = _vocabLookupRepository.GetAll();
-            var bookInfos = _bookInfoRepository.GetAll();
-
-            var lookupCount = lookups.Count;
-            var insertedLookupCount = 0;
-            var insertedVocabCount = 0;
-
             try {
+                var words = _wordRepository.GetAll();
+                var lookups = _vocabLookupRepository.GetAll();
+                var bookInfos = _bookInfoRepository.GetAll();
+
+                var lookupCount = lookups.Count;
+                var insertedLookupCount = 0;
+                var insertedVocabCount = 0;
+                
                 foreach (Word item in words) {
                     var id = item.Id;
                     var word = item.word;
@@ -116,9 +116,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
 
                 return true;
-            } catch (Exception exception) {
-                result = new Dictionary<string, string> {
-                    { AppConstants.Exception, exception.Message }
+            } catch (Exception e) {
+                Console.WriteLine(e.Message);
+                result = new Dictionary<string, string>() {
+                    { AppConstants.Exception, e.Message }
                 };
 
                 return false;

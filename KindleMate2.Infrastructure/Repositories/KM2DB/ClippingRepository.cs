@@ -28,7 +28,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)DatabaseHelper.GetSafeInt(reader, 4, (int)BriefType.Highlight),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -36,7 +36,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     };
                 }
@@ -64,7 +64,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -72,7 +72,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     };
                 }
@@ -105,7 +105,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -113,7 +113,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }
@@ -147,7 +147,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -155,7 +155,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }
@@ -193,7 +193,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -201,7 +201,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }
@@ -232,7 +232,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4) ?? 0,
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -240,7 +240,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }
@@ -269,7 +269,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4) ?? 0,
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -277,7 +277,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }
@@ -308,7 +308,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Content = DatabaseHelper.GetSafeString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = (BriefType)(DatabaseHelper.GetSafeInt(reader, 4) ?? 0),
+                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
                         ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
                         ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
                         Read = DatabaseHelper.GetSafeInt(reader, 7),
@@ -316,7 +316,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         Tag = DatabaseHelper.GetSafeString(reader, 9),
                         Sync = DatabaseHelper.GetSafeInt(reader, 10),
                         NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 12),
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
                 }

@@ -2,6 +2,6 @@
     public class Version {
         public required string Id { get; set; } = null!;
         public string? Dsname { get; set; }
-        public int? Value { get; set; }
+        public long? Value { get; set; }
     }
 }

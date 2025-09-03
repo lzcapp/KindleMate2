@@ -6,22 +6,23 @@ namespace KindleMate2.Infrastructure.Helpers {
         public static DataTable ToDataTable<T>(IList<T> data) {
             var table = new DataTable(typeof(T).Name);
 
-            if (data == null || data.Count == 0)
+            if (data.Count == 0) {
                 return table;
+            }
 
             // Get all public properties of T
-            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             // Create columns
-            foreach (var prop in props) {
+            foreach (PropertyInfo prop in props) {
                 Type propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                 table.Columns.Add(prop.Name, propType);
             }
 
             // Add rows
-            foreach (var item in data) {
+            foreach (T item in data) {
                 var values = new object[props.Length];
-                for (int i = 0; i < props.Length; i++) {
+                for (var i = 0; i < props.Length; i++) {
                     values[i] = props[i].GetValue(item) ?? DBNull.Value;
                 }
                 table.Rows.Add(values);

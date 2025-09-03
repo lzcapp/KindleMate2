@@ -3,10 +3,15 @@
 
     public interface IVersionRepository {
         Version? GetById(string id);
+
         List<Version> GetAll();
+
         int GetCount();
-        void Add(Version version);
-        void Update(Version version);
-        void Delete(string id);
+
+        bool Add(Version version);
+
+        bool Update(Version version);
+
+        bool Delete(string id);
     }
 }

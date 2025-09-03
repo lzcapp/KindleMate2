@@ -27,12 +27,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         WordKey = DatabaseHelper.GetSafeString(reader, 1),
                         Word = DatabaseHelper.GetSafeString(reader, 2) ?? throw new InvalidOperationException(),
                         Stem = DatabaseHelper.GetSafeString(reader, 3),
-                        Category = DatabaseHelper.GetSafeInt(reader, 4),
+                        Category = DatabaseHelper.GetSafeLong(reader, 4),
                         Translation = DatabaseHelper.GetSafeString(reader, 5),
                         Timestamp = DatabaseHelper.GetSafeString(reader, 6),
                         Frequency = DatabaseHelper.GetSafeInt(reader, 7),
                         Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
                     };
                 }
                 return null;
@@ -63,12 +63,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         WordKey = DatabaseHelper.GetSafeString(reader, 1),
                         Word = word,
                         Stem = DatabaseHelper.GetSafeString(reader, 3),
-                        Category = DatabaseHelper.GetSafeInt(reader, 4),
+                        Category = DatabaseHelper.GetSafeLong(reader, 4),
                         Translation = DatabaseHelper.GetSafeString(reader, 5),
                         Timestamp = DatabaseHelper.GetSafeString(reader, 6),
                         Frequency = DatabaseHelper.GetSafeInt(reader, 7),
                         Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
                     };
                     results.Add(vocab);
                 }
@@ -107,12 +107,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         WordKey = DatabaseHelper.GetSafeString(reader, 1),
                         Word = word,
                         Stem = DatabaseHelper.GetSafeString(reader, 3),
-                        Category = DatabaseHelper.GetSafeInt(reader, 4),
+                        Category = DatabaseHelper.GetSafeLong(reader, 4),
                         Translation = DatabaseHelper.GetSafeString(reader, 5),
                         Timestamp = DatabaseHelper.GetSafeString(reader, 6),
                         Frequency = DatabaseHelper.GetSafeInt(reader, 7),
                         Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                        ColorRgb = DatabaseHelper.GetSafeInt(reader, 9)
+                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
                     });
                 }
             } catch (Exception e) {
