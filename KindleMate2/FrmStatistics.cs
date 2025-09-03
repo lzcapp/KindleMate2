@@ -4,13 +4,13 @@ using System.Globalization;
 using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {
-        private const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
         private readonly ClippingService _clippingService;
-        private readonly ThemeService _themeService;
         private readonly VocabService _vocabService;
 
         private List<Clipping> _clippings = [];
@@ -19,20 +19,19 @@ namespace KindleMate2 {
         public FrmStatistics() {
             InitializeComponent();
 
-            var clippingRepository = new ClippingRepository(ConnectionString);
+            var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
             _clippingService = new ClippingService(clippingRepository);
 
-            var vocabRepository = new VocabRepository(ConnectionString);
+            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
             _vocabService = new VocabService(vocabRepository);
-
-            var settingRepository = new SettingRepository(ConnectionString);
-            _themeService = new ThemeService(settingRepository);
 
             SetTheme();
         }
 
         private void SetTheme() {
-            if (!_themeService.IsDarkTheme()) {
+            var settingRepository = new SettingRepository(AppConstants.ConnectionString);
+            var themeService = new ThemeService(settingRepository);
+            if (!themeService.IsDarkTheme()) {
                 return;
             }
             _ = new DarkModeCS(this, false);
@@ -48,7 +47,7 @@ namespace KindleMate2 {
             chartVocabsWeek.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
             chartVocabsHistory.BackColor = ColorTranslator.FromHtml("#202020");
             chartVocabsHistory.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            
+
             Text = Strings.Statistics;
             tabPageBooks.Text = Strings.Clippings;
             tabPageVocabs.Text = Strings.Vocabulary_List;
@@ -61,7 +60,9 @@ namespace KindleMate2 {
             try {
                 _clippings = _clippingService.GetAllClippings();
                 _vocabs = _vocabService.GetAllVocabs();
-                
+
+                if (false) { }
+
                 SetBookTab();
 
                 SetVocabTab();
@@ -72,92 +73,104 @@ namespace KindleMate2 {
             }
         }
 
-        private void SetBookTab() {
-            if (_clippings.Count == 0) {
-                return;
-            }
+        private bool SetBookTab() {
+            try {
+                if (_clippings.Count == 0) {
+                    return false;
+                }
 
-            var enumBooks = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).GroupBy(row => {
-                DateTime date = ParseDateTime(row.ClippingDate!);
-                return new {
+                var validClippings = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => ParseDateTime(row.ClippingDate!)).ToList();
+
+                var listClippingsByDate = validClippings.GroupBy(date => new {
                     date.Year,
                     date.Month,
                     date.Day
-                };
-            }).Select(group => new {
-                group.Key.Year,
-                group.Key.Month,
-                group.Key.Day,
-                Count = group.Count()
-            });
-            var listBooks = enumBooks.OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
-            foreach (var dataPoint in listBooks) {
-                chartBooksHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
-            }
+                }).Select(group => new {
+                    group.Key.Year,
+                    group.Key.Month,
+                    group.Key.Day,
+                    Count = group.Count()
+                }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
 
-            var enumBooksTime = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).GroupBy(row => (DateTime.Parse(row.ClippingDate!)).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
-            });
+                foreach (var dataPoint in listClippingsByDate) {
+                    var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
+                    chartBooksHistory.Series[0].Points.AddXY(label, dataPoint.Count);
+                }
 
-            var listBooksTime = enumBooksTime.ToList();
-            foreach (var dataPoint in listBooksTime) {
-                chartBooksTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
-            }
+                var listClippingsByHour = validClippings.GroupBy(date => date.Hour).Select(group => new {
+                    ClippingHour = group.Key,
+                    ClippingCount = group.Count()
+                }).OrderBy(x => x.ClippingHour).ToList();
 
-            var enumBooksWeek = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).GroupBy(row => (int)DateTime.Parse(row.ClippingDate!).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
-            });
+                foreach (var dataPoint in listClippingsByHour) {
+                    chartBooksTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
+                }
 
-            var listBooksWeek = enumBooksWeek.ToList().OrderBy(x => x.Weekday);
-            foreach (var dataPoint in listBooksWeek) {
-                chartBooksWeek.Series[0].Points.AddXY(DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday], dataPoint.ClippingCount);
+                var listClippingsByWeekday = validClippings.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
+                    Weekday = group.Key,
+                    ClippingCount = group.Count()
+                }).OrderBy(x => x.Weekday).ToList();
+
+                foreach (var dataPoint in listClippingsByWeekday) {
+                    var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
+                    chartBooksWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
+                }
+
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetBookTab), e));
+                return false;
             }
         }
 
-        private void SetVocabTab() {
-            if (_vocabs.Count == 0) {
-                tabControl.TabPages.Remove(tabPageVocabs);
-                return;
-            }
-            
-            var enumVocabs = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).GroupBy(row => {
-                DateTime date = DateTime.Parse(row.Timestamp!);
-                return new {
+        private bool SetVocabTab() {
+            try {
+                if (_vocabs.Count == 0) {
+                    tabControl.TabPages.Remove(tabPageVocabs);
+                    return false;
+                }
+
+                var validVocabs = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
+
+                var listVocabsByDate = validVocabs.GroupBy(date => new {
                     date.Year,
                     date.Month,
                     date.Day
-                };
-            }).Select(group => new {
-                group.Key.Year,
-                group.Key.Month,
-                group.Key.Day,
-                Count = group.Count()
-            });
-            var listVocabs = enumVocabs.OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
-            foreach (var dataPoint in listVocabs) {
-                chartVocabsHistory.Series[0].Points.AddXY(dataPoint.Year + "." + dataPoint.Month + "." + dataPoint.Day, dataPoint.Count);
-            }
+                }).Select(group => new {
+                    group.Key.Year,
+                    group.Key.Month,
+                    group.Key.Day,
+                    Count = group.Count()
+                }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
+                
+                foreach (var dataPoint in listVocabsByDate) {
+                    var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
+                    chartVocabsHistory.Series[0].Points.AddXY(label, dataPoint.Count);
+                }
 
-            var enumVocabsTime = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).GroupBy(row => DateTime.Parse(row.Timestamp!).TimeOfDay.Hours).Select(g => new {
-                ClippingHour = g.Key,
-                ClippingCount = g.Count()
-            });
+                var listVocabsByHour = validVocabs.GroupBy(date => date.Hour).Select(group => new {
+                    ClippingHour = group.Key,
+                    ClippingCount = group.Count()
+                }).OrderBy(x => x.ClippingHour).ToList();
 
-            var listVocabsTime = enumVocabsTime.ToList();
-            foreach (var dataPoint in listVocabsTime) {
-                chartVocabsTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
-            }
+                foreach (var dataPoint in listVocabsByHour) {
+                    chartVocabsTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
+                }
+                
+                var listVocabsByWeekday = validVocabs.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
+                    Weekday = group.Key,
+                    ClippingCount = group.Count()
+                }).OrderBy(x => x.Weekday).ToList();
 
-            var enumVocabsWeek = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).GroupBy(row => (int)DateTime.Parse(row.Timestamp!).DayOfWeek).Select(g => new {
-                Weekday = g.Key,
-                ClippingCount = g.Count()
-            });
-
-            var listVocabsWeek = enumVocabsWeek.ToList().OrderBy(x => x.Weekday);
-            foreach (var dataPoint in listVocabsWeek) {
-                chartVocabsWeek.Series[0].Points.AddXY(DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday], dataPoint.ClippingCount);
+                foreach (var dataPoint in listVocabsByWeekday) {
+                    var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
+                    chartVocabsWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
+                }
+                
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetVocabTab), e));
+                return false;
             }
         }
 
@@ -180,9 +193,8 @@ namespace KindleMate2 {
 
                 var bitmap = new Bitmap(Width, Height);
                 DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
-                var unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds() + ".png";
-                var filePath = Path.Combine(Environment.CurrentDirectory, "Statistics", unixTimestamp);
-                var directoryPath = Path.Combine(Environment.CurrentDirectory, "Statistics");
+                var directoryPath = Path.Combine(Environment.CurrentDirectory, AppConstants.StatisticsPathName);
+                var filePath = Path.Combine(directoryPath, DateTimeHelper.GetCurrentTimestamp() + FileExtension.PNG);
                 if (!Directory.Exists(directoryPath)) {
                     Directory.CreateDirectory(directoryPath);
                 }
@@ -194,10 +206,11 @@ namespace KindleMate2 {
                 WindowState = FormWindowState.Normal;
 
                 MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Process.Start("Explorer.exe", "/select," + filePath);
+                Process.Start(AppConstants.ExplorerFileName, "/select," + filePath);
             } catch (Exception) {
                 MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            } finally {
+            }
+            finally {
                 btnSave.Visible = true;
                 WindowState = FormWindowState.Normal;
             }
@@ -217,50 +230,31 @@ namespace KindleMate2 {
 
         private void SetLblStatistics() {
             var selectedIndex = tabControl.SelectedIndex;
+            var text = string.Empty;
             switch (selectedIndex) {
                 case 0:
-                    var clippings = 0;
-                    var books = 0;
-                    var authors = 0;
-                    var bookDays = 0;
-                    try {
-                        if (_clippings.Count > 0) {
-                            clippings = _clippings.Count;
-                            books = _clippings.AsEnumerable().Select(row => row.BookName).Distinct().Count();
-                            authors = _clippings.AsEnumerable().Select(row => row.AuthorName).Distinct().Count();
-                            var bookTimes = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => DateTime.Parse(row.ClippingDate!)).ToList();
-                            bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
-                        } else {
-                            throw new Exception();
-                        }
-                    } catch {
-                        // ignored
-                    } finally {
-                        lblStatistics.Text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Space + Strings.X_Clippings +
-                                             Strings.Symbol_Comma + books + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + authors + Strings.Space + Strings.X_Authors;
+                    if (_clippings.Count > 0) {
+                        var clippings = _clippings.Count;
+                        var books = _clippings.AsEnumerable().Select(row => row.BookName).Distinct().Count();
+                        var authors = _clippings.AsEnumerable().Select(row => row.AuthorName).Distinct().Count();
+                        var bookTimes = _clippings.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => DateTime.Parse(row.ClippingDate!)).ToList();
+                        var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
+                        text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                               books + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + authors + Strings.Space + Strings.X_Authors;
                     }
                     break;
                 case 1:
-                    var lookups = 0;
-                    var words = 0;
-                    var vocabDays = 0;
-                    try {
-                        if (_vocabs.Count > 0) {
-                            lookups = _vocabs.Sum(row => Convert.ToInt32(row.Frequency));
-                            words = _vocabs.AsEnumerable().Select(row => row.Word).Distinct().Count();
-                            var vocabTimes = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
-                            vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
-                        } else {
-                            throw new Exception();
-                        }
-                    } catch {
-                        // ignored
-                    } finally {
-                        lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Space + Strings.X_Lookups +
-                                             Strings.Symbol_Comma + words + Strings.Space + Strings.X_Vocabs;
+                    if (_vocabs.Count > 0) {
+                        var lookups = _vocabs.Sum(row => Convert.ToInt32(row.Frequency));
+                        var words = _vocabs.AsEnumerable().Select(row => row.Word).Distinct().Count();
+                        var vocabTimes = _vocabs.AsEnumerable().Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
+                        var vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
+                        text = lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Space + Strings.X_Lookups +
+                                                    Strings.Symbol_Comma + words + Strings.Space + Strings.X_Vocabs;
                     }
                     break;
             }
+            lblStatistics.Text = text;
         }
     }
 }

@@ -2337,7 +2337,7 @@ namespace KindleMate2 {
             if (result != DialogResult.Yes) {
                 return;
             }
-            Process.Start(AppConstants.ExplorerExe, Path.Combine(_programPath, AppConstants.ExportsPathName));
+            Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.ExportsPathName));
         }
 
         private void TreeViewBooks_AfterSelect(object sender, TreeViewEventArgs e) {
