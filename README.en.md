@@ -64,10 +64,10 @@
 
 ## Screenshots
 
-<img src="Screenshots/01.png" width="100%">
-<img src="Screenshots/02.png" width="100%">
-<img src="Screenshots/03.png" width="100%">
-<img src="Screenshots/04.png" width="100%">
+<img src="docs/screenshots/01.png" width="100%">
+<img src="docs/screenshots/02.png" width="100%">
+<img src="docs/screenshots/03.png" width="100%">
+<img src="docs/screenshots/04.png" width="100%">
 
 ## Star ⭐ History
 
