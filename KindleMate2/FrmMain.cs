@@ -30,7 +30,7 @@ namespace KindleMate2 {
         private readonly VocabService _vocabService;
         private readonly ThemeService _themeService;
         private readonly DatabaseService _databaseService;
-        private readonly KMDatabaseService _kmDatabaseService;
+        private readonly KM2DatabaseService _km2DatabaseService;
 
         private List<Clipping> _clippings = [];
         private List<OriginalClippingLine> _originClippings = [];
@@ -80,7 +80,7 @@ namespace KindleMate2 {
             var databaseRepository = new DatabaseRepository(AppConstants.ConnectionString);
             _databaseService = new DatabaseService(databaseRepository);
 
-            _kmDatabaseService = new KMDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, vocabRepository);
+            _km2DatabaseService = new KM2DatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository);
 
             _programPath = Environment.CurrentDirectory;
             _databaseFilePath = Path.Combine(_programPath, AppConstants.DatabaseFileName);
@@ -105,9 +105,7 @@ namespace KindleMate2 {
                 }
             }
 
-            AppDomain.CurrentDomain.ProcessExit += (_, _) => {
-                DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName);
-            };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => { DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName); };
 
             SetTheme();
 
@@ -314,7 +312,7 @@ namespace KindleMate2 {
         private string ImportKindleClippings(string clippingsPath) {
             try {
                 var message = string.Empty;
-                if (_kmDatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+                if (_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
                     var parsedCount = result[AppConstants.ParsedCount];
                     var insertedCount = result[AppConstants.InsertedCount];
                     message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
@@ -349,8 +347,8 @@ namespace KindleMate2 {
                     var lookupCount = result[AppConstants.LookupCount];
                     var insertedLookupCount = result[AppConstants.InsertedLookupCount];
                     var insertedVocabCount = result[AppConstants.InsertedVocabCount];
-                    return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups +
-                           Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
+                    return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space +
+                           Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
                 }
                 var exception = result["Exception"];
                 return exception;
@@ -361,7 +359,7 @@ namespace KindleMate2 {
         }
 
         private void UpdateFrequency() {
-            _kmDatabaseService.UpdateFrequency();
+            _km2DatabaseService.UpdateFrequency();
         }
 
         private void RefreshData(bool isReQuery = true) {
@@ -647,10 +645,26 @@ namespace KindleMate2 {
         }
 
         private string ImportKmDatabase(string filePath) {
+            var kmConnectionString = DatabaseHelper.GetConnectionString(filePath);
+            
+            var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
+            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+            var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
+            var settingRepository = new SettingRepository(AppConstants.ConnectionString);
+            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+            
+            var kmClippingRepository = new ClippingRepository(kmConnectionString);
+            var kmLookupRepository = new LookupRepository(kmConnectionString);
+            var kmOriginalClippingLineRepository = new OriginalClippingLineRepository(kmConnectionString);
+            var kmSettingRepository = new SettingRepository(kmConnectionString);
+            var kmVocabRepository = new VocabRepository(kmConnectionString);
+            
+            var kmDatabaseService = new KMDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
+
             var clippingsCount = _clippingService.GetCount();
             var vocabCount = _vocabService.GetCount();
 
-            DatabaseHelper.ImportKMDatabase(filePath, _databaseFilePath);
+            kmDatabaseService.ImportFromKmDatabase();
 
             CleanDatabase();
 
@@ -1094,7 +1108,7 @@ namespace KindleMate2 {
                     } catch (Exception ex) {
                         Console.WriteLine(ex);
                     }
-                    
+
                     break;
             }
 
@@ -1444,7 +1458,7 @@ namespace KindleMate2 {
                 if (!Directory.Exists(backupWordsPath)) {
                     Directory.CreateDirectory(backupWordsPath);
                 }
-                
+
                 var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
                 var backupWordsFilePath = Path.Combine(backupWordsPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
 
@@ -1456,11 +1470,9 @@ namespace KindleMate2 {
                 menuKindle.Enabled = false;
                 menuSyncFromKindle.Enabled = false;
                 Cursor = Cursors.Default;
-                
+
                 var bw = new BackgroundWorker();
-                bw.DoWork += (_, e) => {
-                    e.Result = Import(backupClippingsFilePath, backupWordsFilePath);
-                };
+                bw.DoWork += (_, e) => { e.Result = Import(backupClippingsFilePath, backupWordsFilePath); };
                 bw.RunWorkerCompleted += (_, e) => {
                     if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
                         MessageBox(e.Result.ToString() ?? Strings.Import_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1491,7 +1503,8 @@ namespace KindleMate2 {
                     }
                     case Device.Type.MTP: {
                         var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
                         device.Connect();
                         ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
                         ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
@@ -1726,7 +1739,7 @@ namespace KindleMate2 {
         }
 
         private void MenuClear_Click(object sender, EventArgs e) {
-            if (_kmDatabaseService.IsDatabaseEmpty()) {
+            if (_km2DatabaseService.IsDatabaseEmpty()) {
                 MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -1736,7 +1749,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (_kmDatabaseService.DeleteAllData()) {
+            if (_km2DatabaseService.DeleteAllData()) {
                 MessageBox(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 MessageBox(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1922,7 +1935,7 @@ namespace KindleMate2 {
         }
 
         private string RebuildDatabase() {
-            if (_kmDatabaseService.RebuildDatabase(out var result)) {
+            if (_km2DatabaseService.RebuildDatabase(out var result)) {
                 var parsedCount = result[AppConstants.ParsedCount];
                 var insertedCount = result[AppConstants.InsertedCount];
                 var clipping = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
@@ -1954,7 +1967,7 @@ namespace KindleMate2 {
         }
 
         private string CleanDatabase() {
-            if (_kmDatabaseService.CleanDatabase(_databaseFilePath, out var result)) {
+            if (_km2DatabaseService.CleanDatabase(_databaseFilePath, out var result)) {
                 var countEmpty = result[AppConstants.EmptyCount];
                 var countTrimmed = result[AppConstants.TrimmedCount];
                 var countDuplicated = result[AppConstants.DuplicatedCount];
@@ -2385,7 +2398,8 @@ namespace KindleMate2 {
                         break;
                     case Device.Type.MTP: {
                         var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
                         device.Connect();
                         WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
                         device.Disconnect();

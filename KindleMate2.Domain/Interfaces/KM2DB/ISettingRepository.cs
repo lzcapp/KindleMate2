@@ -13,5 +13,7 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         bool Update(Setting setting);
 
         bool Delete(string name);
+
+        bool DeleteAll();
     }
 }

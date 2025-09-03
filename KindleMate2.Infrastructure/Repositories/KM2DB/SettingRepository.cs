@@ -114,5 +114,18 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 return false;
             }
         }
+
+        public bool DeleteAll() {
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new SqliteCommand("DELETE FROM settings", connection);
+                return cmd.ExecuteNonQuery() > 0;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                return false;
+            }
+        }
     }
 }
