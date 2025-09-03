@@ -382,13 +382,23 @@ namespace KindleMate2.Application.Services.KM2DB {
         
         public bool DeleteAllData() {
             try {
-                var isDeleted = true;
-                isDeleted = isDeleted && _clippingRepository.DeleteAll();
-                isDeleted = isDeleted && _originalClippingLineRepository.DeleteAll();
-                isDeleted = isDeleted && _lookupRepository.DeleteAll();
-                isDeleted = isDeleted && _settingRepository.DeleteAll();
-                isDeleted = isDeleted && _vocabRepository.DeleteAll();
-                return isDeleted;
+                var table = string.Empty;
+                if (!_clippingRepository.DeleteAll()) {
+                    table = "clippings";
+                }
+                if (!_lookupRepository.DeleteAll()) {
+                    table = "lookups";
+                }
+                if (!_originalClippingLineRepository.DeleteAll()) {
+                    table = "original_clipping_lines";
+                }
+                if (!_settingRepository.DeleteAll()) {
+                    table = "settings";
+                }
+                if (!_vocabRepository.DeleteAll()) {
+                    table = "vocab";
+                }
+                return string.IsNullOrEmpty(table) ? true : throw new Exception($"{nameof(DeleteAllData)}: Clear table [{table}] failed.");
             } catch (Exception) {
                 return false;
             }
