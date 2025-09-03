@@ -382,12 +382,13 @@ namespace KindleMate2.Application.Services.KM2DB {
         
         public bool DeleteAllData() {
             try {
-                _clippingRepository.DeleteAll();
-                _originalClippingLineRepository.DeleteAll();
-                _lookupRepository.DeleteAll();
-                _settingRepository.DeleteAll();
-                _vocabRepository.DeleteAll();
-                return true;
+                var isDeleted = true;
+                isDeleted = isDeleted && _clippingRepository.DeleteAll();
+                isDeleted = isDeleted && _originalClippingLineRepository.DeleteAll();
+                isDeleted = isDeleted && _lookupRepository.DeleteAll();
+                isDeleted = isDeleted && _settingRepository.DeleteAll();
+                isDeleted = isDeleted && _vocabRepository.DeleteAll();
+                return isDeleted;
             } catch (Exception) {
                 return false;
             }
