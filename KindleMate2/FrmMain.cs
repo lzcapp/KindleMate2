@@ -1455,6 +1455,7 @@ namespace KindleMate2 {
                 SetProgressBar(true);
                 menuKindle.Enabled = false;
                 menuSyncFromKindle.Enabled = false;
+                Cursor = Cursors.Default;
                 
                 var bw = new BackgroundWorker();
                 bw.DoWork += (_, e) => {
