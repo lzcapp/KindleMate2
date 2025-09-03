@@ -22,7 +22,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 using SqliteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read()) {
                     return new Setting {
-                        name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                        Name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
                         value = DatabaseHelper.GetSafeString(reader, 1)
                     };
                 }
@@ -48,7 +48,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     continue;
                 }
                 results.Add(new Setting {
-                    name = name,
+                    Name = name,
                     value = DatabaseHelper.GetSafeString(reader, 1)
                 });
             }
@@ -77,7 +77,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO settings (name, value) VALUES (@name, @value)", connection);
-                cmd.Parameters.AddWithValue("@name", setting.name ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
                 cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {
@@ -92,7 +92,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE settings SET value = @value WHERE name = @name", connection);
-                cmd.Parameters.AddWithValue("@name", setting.name ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
                 cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {

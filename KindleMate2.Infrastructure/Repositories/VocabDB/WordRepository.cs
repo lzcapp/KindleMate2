@@ -31,7 +31,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                         Lang = DatabaseHelper.GetSafeString(reader, 3),
                         Category = DatabaseHelper.GetSafeLong(reader, 4),
                         Timestamp = DatabaseHelper.GetSafeLong(reader, 5),
-                        Profileid = DatabaseHelper.GetSafeString(reader, 6)
+                        ProfileId = DatabaseHelper.GetSafeString(reader, 6)
                     };
                 }
             } catch (Exception e) {
@@ -62,7 +62,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                         Lang = DatabaseHelper.GetSafeString(reader, 3),
                         Category = DatabaseHelper.GetSafeLong(reader, 4),
                         Timestamp = DatabaseHelper.GetSafeLong(reader, 5),
-                        Profileid = DatabaseHelper.GetSafeString(reader, 6)
+                        ProfileId = DatabaseHelper.GetSafeString(reader, 6)
                     });
                 }
             } catch (Exception e) {
@@ -106,7 +106,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@timestamp", word.Timestamp ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@profileid", word.Profileid ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@profileid", word.ProfileId ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {
                 Console.WriteLine(e);
@@ -130,7 +130,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@timestamp", word.Timestamp ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@profileid", word.Profileid ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@profileid", word.ProfileId ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {
                 Console.WriteLine(e);

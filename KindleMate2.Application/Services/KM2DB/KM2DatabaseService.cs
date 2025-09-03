@@ -1,11 +1,11 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class KM2DatabaseService {
@@ -24,23 +24,22 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
-            List<string> lines = [
-                .. File.ReadAllLines(clippingsPath)
-            ];
-
-            var delimiterIndex = new List<int>();
-
-            for (var i = 0; i < lines.Count; i++) {
-                lines[i] = StringHelper.RemoveControlChar(lines[i]);
-                if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
-                    delimiterIndex.Add(i);
-                }
-            }
-
-            int insertedCount;
-            var myClippings = new List<MyClipping>();
-
             try {
+                List<string> lines = [
+                    .. File.ReadAllLines(clippingsPath)
+                ];
+
+                var delimiterIndex = new List<int>();
+
+                for (var i = 0; i < lines.Count; i++) {
+                    lines[i] = StringHelper.RemoveControlChar(lines[i]);
+                    if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
+                        delimiterIndex.Add(i);
+                    }
+                }
+
+                var myClippings = new List<MyClipping>();
+                
                 for (var i = 0; i < delimiterIndex.Count; i++) {
                     var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
                     var florDelimiter = delimiterIndex[i];
@@ -61,7 +60,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
 
-                    myClippings.Add(new MyClipping() {
+                    myClippings.Add(new MyClipping {
                         Header = line1,
                         Metadata = line2,
                         Content = line4,
@@ -69,54 +68,63 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
 
-                insertedCount = HandleClippings(myClippings);
+                var insertedCount = HandleClippings(myClippings);
+
+                result = new Dictionary<string, string> {
+                    { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
+                    { AppConstants.InsertedCount, insertedCount.ToString() }
+                };
+                return true;
             } catch (Exception e) {
                 result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
                 return false;
             }
-
-            result = new Dictionary<string, string> {
-                { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
-                { AppConstants.InsertedCount, insertedCount.ToString() }
-            };
-            return true;
         }
         
         public bool RebuildDatabase(out Dictionary<string, string> result) {
-            result = new Dictionary<string, string>();
-            var originalClippingLines = _originalClippingLineRepository.GetAll();
-            if (originalClippingLines.Count <= 0) {
+            try {
+                result = new Dictionary<string, string>();
+                
+                var originalClippingLines = _originalClippingLineRepository.GetAll();
+                if (originalClippingLines.Count <= 0) {
+                    return false;
+                }
+            
+                _clippingRepository.DeleteAll();
+            
+                var myClippings = new List<MyClipping>();
+                foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
+                    var line1 = originalClippingLine.line1;
+                    var line2 = originalClippingLine.line2;
+                    var line4 = originalClippingLine.line4;
+                    var line5 = originalClippingLine.line5;
+                    if (string.IsNullOrWhiteSpace(line1) || string.IsNullOrWhiteSpace(line2) || string.IsNullOrWhiteSpace(line4) || string.IsNullOrWhiteSpace(line5)) {
+                        continue;
+                    }
+                    myClippings.Add(new MyClipping {
+                        Header = line1,
+                        Metadata = line2,
+                        Content = line4,
+                        Delimiter = line5
+                    });
+                }
+            
+                var insertedCount = HandleClippings(myClippings);
+
+                result = new Dictionary<string, string> {
+                    { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
+                    { AppConstants.InsertedCount, insertedCount.ToString() }
+                };
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                result = new  Dictionary<string, string> {
+                    { AppConstants.Exception, e.Message }
+                };
                 return false;
             }
-            
-            _clippingRepository.DeleteAll();
-            
-            var myClippings = new List<MyClipping>();
-            foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
-                var line1 = originalClippingLine.line1;
-                var line2 = originalClippingLine.line2;
-                var line4 = originalClippingLine.line4;
-                var line5 = originalClippingLine.line5;
-                if (string.IsNullOrWhiteSpace(line1) || string.IsNullOrWhiteSpace(line2) || string.IsNullOrWhiteSpace(line4) || string.IsNullOrWhiteSpace(line5)) {
-                    continue;
-                }
-                myClippings.Add(new MyClipping() {
-                    Header = line1,
-                    Metadata = line2,
-                    Content = line4,
-                    Delimiter = line5
-                });
-            }
-            
-            var insertedCount = HandleClippings(myClippings);
-
-            result = new Dictionary<string, string> {
-                { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
-                { AppConstants.InsertedCount, insertedCount.ToString() }
-            };
-            return true;
         }
 
         private int HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
@@ -228,7 +236,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clipping.AuthorName = authorname;
 
                 if (brieftype == BriefType.Note) {
-                    SetClippingsBriefTypeHide(bookname, pagenumber);
+                    _ = SetClippingsBriefTypeHide(bookname, pagenumber);
                 }
 
                 if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
@@ -255,15 +263,15 @@ namespace KindleMate2.Application.Services.KM2DB {
             return insertResult;
         }
         
-        private bool SetClippingsBriefTypeHide(string bookname, int pagenumber) {
+        private bool SetClippingsBriefTypeHide(string bookName, int pageNumber) {
             try {
-                switch (bookname) {
+                switch (bookName) {
                     case null:
                     case "":
                         return true;
                 }
 
-                var clippings = _clippingRepository.GetByBookNameAndPageNumber(bookname, pagenumber);
+                var clippings = _clippingRepository.GetByBookNameAndPageNumber(bookName, pageNumber);
 
                 if (clippings.Count <= 0) {
                     return false;
@@ -271,7 +279,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 Clipping clipping = clippings[0];
                 var book = clipping.BookName;
                 var page = clipping.PageNumber;
-                if (!bookname.Equals(book) || !pagenumber.Equals(page)) {
+                if (!bookName.Equals(book) || !pageNumber.Equals(page)) {
                     return false;
                 }
                 _clippingRepository.UpdateBriefTypeByKey(new Clipping {
@@ -280,12 +288,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 });
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(e);
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetClippingsBriefTypeHide), e));
                 return false;
             }
         }
 
-        public void UpdateFrequency() {
+        public bool UpdateFrequency() {
             var vocabs = _vocabRepository.GetAll();
             var lookups = _lookupRepository.GetAll();
 
@@ -300,8 +308,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Word = string.Empty,
                     });
                 }
-            } catch (Exception) {
-                // ignored
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(UpdateFrequency), e));
+                return false;
             }
         }
         
@@ -366,8 +376,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return true;
             } catch (Exception e) {
-                Console.WriteLine($"{nameof(CleanDatabase)}: {e.Message}");
-                result = new Dictionary<string, string>() {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
                 return false;
@@ -383,32 +393,32 @@ namespace KindleMate2.Application.Services.KM2DB {
                 result += _vocabRepository.GetCount();
                 return result == 0;
             } catch (Exception e) {
-                Console.WriteLine($"{nameof(IsDatabaseEmpty)}: {e.Message}");
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
                 throw;
             }
         }
         
         public bool DeleteAllData() {
             try {
-                var table = string.Empty;
+                var table = new List<string>();
                 if (!_clippingRepository.DeleteAll()) {
-                    table = "clippings";
+                    table.Add("clippings");
                 }
                 if (!_lookupRepository.DeleteAll()) {
-                    table = "lookups";
+                    table.Add("lookups");
                 }
                 if (!_originalClippingLineRepository.DeleteAll()) {
-                    table = "original_clipping_lines";
+                    table.Add("original_clipping_lines");
                 }
                 if (!_settingRepository.DeleteAll()) {
-                    table = "settings";
+                    table.Add("settings");
                 }
                 if (!_vocabRepository.DeleteAll()) {
-                    table = "vocab";
+                    table.Add("vocab");
                 }
-                return string.IsNullOrEmpty(table) ? true : throw new Exception($"Clear table [{table}] failed.");
+                return table.Count == 0 ? true : throw new Exception($"Clear table [{string.Join(", ", table)}] failed.");
             } catch (Exception e) {
-                Console.WriteLine($"{nameof(DeleteAllData)}: {e.Message}");
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
                 return false;
             }
         }

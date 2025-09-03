@@ -1,9 +1,9 @@
-﻿using DarkModeForms;
+﻿using System.Diagnostics;
+using System.Reflection;
+using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {

@@ -1,5 +1,5 @@
-﻿using KindleMate2.Shared.Constants;
-using System.Text;
+﻿using System.Text;
+using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 
 namespace KindleMate2.Infrastructure.Helpers {
@@ -76,6 +76,10 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         public static string ParseKindleVersion(string versionText) {
             return versionText.Trim().Split('(')[0].Replace(AppConstants.Kindle, "").Trim();
+        }
+        
+        public static string GetExceptionMessage(string className, Exception e) {
+            return className + ": " + Environment.NewLine + e;
         }
     }
 }

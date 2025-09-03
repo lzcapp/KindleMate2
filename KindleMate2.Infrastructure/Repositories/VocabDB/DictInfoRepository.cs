@@ -1,5 +1,5 @@
-﻿using KindleMate2.Domain.Interfaces.VocabDB;
-using KindleMate2.Domain.Entities.VocabDB;
+﻿using KindleMate2.Domain.Entities.VocabDB;
+using KindleMate2.Domain.Interfaces.VocabDB;
 using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 

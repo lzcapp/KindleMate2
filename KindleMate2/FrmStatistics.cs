@@ -1,10 +1,10 @@
-﻿using DarkModeForms;
+﻿using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.Globalization;
+using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
-using System.Diagnostics;
-using System.Drawing.Imaging;
-using System.Globalization;
 
 namespace KindleMate2 {
     public partial class FrmStatistics : Form {

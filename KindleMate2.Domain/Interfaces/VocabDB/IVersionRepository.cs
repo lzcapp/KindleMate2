@@ -1,5 +1,7 @@
-﻿namespace KindleMate2.Domain.Interfaces.VocabDB {
-    using Version = Entities.VocabDB.Version;
+﻿using Version = KindleMate2.Domain.Entities.VocabDB.Version;
+
+namespace KindleMate2.Domain.Interfaces.VocabDB {
+    using Version = Version;
 
     public interface IVersionRepository {
         Version? GetById(string id);

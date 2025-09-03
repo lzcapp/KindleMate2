@@ -17,6 +17,6 @@
             set => _timestamp = value ?? 0;
         }
 
-        public string? Profileid { get; set; }
+        public string? ProfileId { get; set; }
     }
 }

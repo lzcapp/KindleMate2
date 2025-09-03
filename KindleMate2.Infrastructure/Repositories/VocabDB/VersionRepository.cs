@@ -1,9 +1,10 @@
 ﻿using KindleMate2.Domain.Interfaces.VocabDB;
 using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
+using Version = KindleMate2.Domain.Entities.VocabDB.Version;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
-    using Version = Domain.Entities.VocabDB.Version;
+    using Version = Version;
 
     public class VersionRepository : IVersionRepository {
         private readonly string _connectionString;
@@ -27,7 +28,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 if (reader.Read()) {
                     return new Version {
                         Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        Dsname = DatabaseHelper.GetSafeString(reader, 1),
+                        DsName = DatabaseHelper.GetSafeString(reader, 1),
                         Value = DatabaseHelper.GetSafeLong(reader, 2)
                     };
                 }
@@ -54,7 +55,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                     }
                     results.Add(new Version {
                         Id = id,
-                        Dsname = DatabaseHelper.GetSafeString(reader, 1),
+                        DsName = DatabaseHelper.GetSafeString(reader, 1),
                         Value = DatabaseHelper.GetSafeLong(reader, 2)
                     });
                 }
@@ -93,7 +94,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                     throw new InvalidOperationException();
                 }
                 cmd.Parameters.AddWithValue("@id", id);
-                cmd.Parameters.AddWithValue("@dsname", version.Dsname ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@dsname", version.DsName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@value", version.Value ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {
@@ -113,7 +114,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                     throw new InvalidOperationException();
                 }
                 cmd.Parameters.AddWithValue("@id", id);
-                cmd.Parameters.AddWithValue("@dsname", version.Dsname ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@dsname", version.DsName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@value", version.Value ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {

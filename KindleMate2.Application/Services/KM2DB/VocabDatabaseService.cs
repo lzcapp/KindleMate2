@@ -118,7 +118,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return true;
             } catch (Exception e) {
                 Console.WriteLine(e.Message);
-                result = new Dictionary<string, string>() {
+                result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
 

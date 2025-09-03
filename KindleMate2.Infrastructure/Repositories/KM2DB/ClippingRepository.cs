@@ -1,8 +1,8 @@
-﻿using Microsoft.Data.Sqlite;
-using KindleMate2.Domain.Entities.KM2DB;
+﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class ClippingRepository : IClippingRepository {
@@ -19,6 +19,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
                 var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
                     connection);
+                if (!string.IsNullOrWhiteSpace(key)) {
+                    throw new InvalidOperationException();
+                }
                 cmd.Parameters.AddWithValue("@key", key);
 
                 using SqliteDataReader reader = cmd.ExecuteReader();

@@ -2209,7 +2209,7 @@ namespace KindleMate2 {
 
         private void MenuTheme_Click(object sender, EventArgs e) {
             _settingService.UpdateSetting(new Setting {
-                name = AppConstants.SettingTheme,
+                Name = AppConstants.SettingTheme,
                 value = _isDarkTheme ? Theme.Light : Theme.Dark
             });
             Restart();
@@ -2418,7 +2418,7 @@ namespace KindleMate2 {
 
         private void UpdateSettingLanguage(string lang = "") {
             _settingService.UpdateSetting(new Setting {
-                name = AppConstants.SettingLanguage,
+                Name = AppConstants.SettingLanguage,
                 value = lang
             });
         }

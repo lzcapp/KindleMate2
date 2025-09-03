@@ -1,8 +1,8 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
-using KindleMate2.Infrastructure.Helpers;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class LookupRepository : ILookupRepository {

@@ -22,7 +22,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public void AddSetting(Setting setting) {
-            if (string.IsNullOrWhiteSpace(setting.name)) {
+            if (string.IsNullOrWhiteSpace(setting.Name)) {
                 throw new ArgumentException("[name] cannot be empty");
             }
 
@@ -30,7 +30,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public void UpdateSetting(Setting setting) {
-            if (GetSettingByName(setting.name) == null) {
+            if (GetSettingByName(setting.Name) == null) {
                 _repository.Add(setting);
             }
             _repository.Update(setting);

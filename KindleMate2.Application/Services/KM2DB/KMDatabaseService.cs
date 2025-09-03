@@ -2,7 +2,7 @@
 using KindleMate2.Domain.Interfaces.KM2DB;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public partial class KMDatabaseService {
+    public class KMDatabaseService {
         private readonly IClippingRepository _clippingRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
@@ -34,10 +34,14 @@ namespace KindleMate2.Application.Services.KM2DB {
             var kmOriginalClippingLines = _kmOriginalClippingLineRepository.GetAll();
             if (kmClippings.Count > 0 || kmOriginalClippingLines.Count > 0) {
                 foreach (Clipping kmClipping in kmClippings) {
-                    _clippingRepository.Add(kmClipping);
+                    if (!string.IsNullOrEmpty(kmClipping.Content) && (_clippingRepository.GetByKey(kmClipping.Key) == null || _clippingRepository.GetByContent(kmClipping.Content).Count > 0)) {
+                        _clippingRepository.Add(kmClipping);
+                    }
                 }
                 foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines) {
-                    _originalClippingLineRepository.Add(kmOriginalClippingLine);
+                    if (_originalClippingLineRepository.GetByKey(kmOriginalClippingLine.key) == null) {
+                        _originalClippingLineRepository.Add(kmOriginalClippingLine);
+                    }
                 }
             }
             
@@ -45,17 +49,23 @@ namespace KindleMate2.Application.Services.KM2DB {
             var kmVocabs = _kmVocabRepository.GetAll();
             if (kmLookups.Count > 0 || kmVocabs.Count > 0) {
                 foreach (Lookup kmLookup in kmLookups) {
-                    _lookupRepository.Add(kmLookup);
+                    if (!string.IsNullOrWhiteSpace(kmLookup.WordKey) && _lookupRepository.GetByWordKey(kmLookup.WordKey) == null) {
+                        _lookupRepository.Add(kmLookup);
+                    }
                 }
                 foreach (Vocab kmVocab in kmVocabs) {
-                    _vocabRepository.Add(kmVocab);
+                    if (_vocabRepository.GetById(kmVocab.Id) == null) {
+                        _vocabRepository.Add(kmVocab);
+                    }
                 }
             }
             
             var kmSettings = _kmSettingRepository.GetAll();
             if (kmSettings.Count > 0) {
                 foreach (Setting kmSetting in kmSettings) {
-                    _settingRepository.Add(kmSetting);
+                    if (_settingRepository.GetByName(kmSetting.Name) == null) {
+                        _settingRepository.Add(kmSetting);
+                    }
                 }
             }
         }

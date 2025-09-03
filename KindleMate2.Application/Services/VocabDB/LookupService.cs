@@ -1,6 +1,9 @@
-﻿namespace KindleMate2.Application.Services.VocabDB {
-    using Lookup = Domain.Entities.VocabDB.Lookup;
-    using ILookupRepository = Domain.Interfaces.VocabDB.ILookupRepository;
+﻿using KindleMate2.Domain.Entities.VocabDB;
+using KindleMate2.Domain.Interfaces.VocabDB;
+
+namespace KindleMate2.Application.Services.VocabDB {
+    using Lookup = Lookup;
+    using ILookupRepository = ILookupRepository;
 
     public class LookupService {
         private readonly ILookupRepository _repository;
