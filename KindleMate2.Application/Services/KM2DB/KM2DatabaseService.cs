@@ -348,11 +348,13 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 var fileInfo = new FileInfo(databaseFilePath);
                 var originFileSize = fileInfo.Length;
+                
                 DatabaseHelper.VacuumDatabase(databaseFilePath);
+                
                 var newFileSize = fileInfo.Length;
                 var fileSizeDelta = originFileSize - newFileSize;
 
-                if (emptyCount > 0 && trimmedCount > 0 && duplicatedCount > 0) {
+                if (emptyCount == 0 && trimmedCount == 0 && duplicatedCount == 0) {
                     throw new Exception(AppConstants.DatabaseNoNeedCleaning);
                 }
                 
@@ -363,21 +365,27 @@ namespace KindleMate2.Application.Services.KM2DB {
                     { AppConstants.FileSizeDelta, StringHelper.FormatFileSize(fileSizeDelta) }
                 };
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception e) {
+                Console.WriteLine($"{nameof(CleanDatabase)}: {e.Message}");
                 result = new Dictionary<string, string>() {
-                    { AppConstants.Exception, ex.Message }
+                    { AppConstants.Exception, e.Message }
                 };
                 return false;
             }
         }
         
         public bool IsDatabaseEmpty() {
-            var result = 0;
-            result += _clippingRepository.GetCount();
-            result += _originalClippingLineRepository.GetCount();
-            result += _lookupRepository.GetCount();
-            result += _vocabRepository.GetCount();
-            return result == 0;
+            try {
+                var result = 0;
+                result += _clippingRepository.GetCount();
+                result += _originalClippingLineRepository.GetCount();
+                result += _lookupRepository.GetCount();
+                result += _vocabRepository.GetCount();
+                return result == 0;
+            } catch (Exception e) {
+                Console.WriteLine($"{nameof(IsDatabaseEmpty)}: {e.Message}");
+                throw;
+            }
         }
         
         public bool DeleteAllData() {
@@ -398,8 +406,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (!_vocabRepository.DeleteAll()) {
                     table = "vocab";
                 }
-                return string.IsNullOrEmpty(table) ? true : throw new Exception($"{nameof(DeleteAllData)}: Clear table [{table}] failed.");
-            } catch (Exception) {
+                return string.IsNullOrEmpty(table) ? true : throw new Exception($"Clear table [{table}] failed.");
+            } catch (Exception e) {
+                Console.WriteLine($"{nameof(DeleteAllData)}: {e.Message}");
                 return false;
             }
         }
