@@ -1435,17 +1435,30 @@ namespace KindleMate2 {
 
         private void ImportFromKindle() {
             try {
-                var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
-                var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+                var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
+                var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
 
-                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception)) {
+                if (!Directory.Exists(backupClippingsPath)) {
+                    Directory.CreateDirectory(backupClippingsPath);
+                }
+                if (!Directory.Exists(backupWordsPath)) {
+                    Directory.CreateDirectory(backupWordsPath);
+                }
+                
+                var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
+                var backupWordsFilePath = Path.Combine(backupWordsPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+
+                if (!ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception exception)) {
                     throw exception;
                 }
 
                 SetProgressBar(true);
+                menuKindle.Enabled = false;
+                menuSyncFromKindle.Enabled = false;
+                
                 var bw = new BackgroundWorker();
                 bw.DoWork += (_, e) => {
-                    e.Result = Import(backupClippingsPath, backupWordsPath);
+                    e.Result = Import(backupClippingsFilePath, backupWordsFilePath);
                 };
                 bw.RunWorkerCompleted += (_, e) => {
                     if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
@@ -1454,6 +1467,8 @@ namespace KindleMate2 {
                         MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     SetProgressBar(false);
+                    menuKindle.Enabled = true;
+                    menuSyncFromKindle.Enabled = true;
                     RefreshData();
                 };
                 bw.RunWorkerAsync();
@@ -1518,9 +1533,7 @@ namespace KindleMate2 {
         }
 
         private void MenuKindle_Click(object sender, EventArgs e) {
-            menuKindle.Enabled = false;
             ImportFromKindle();
-            menuKindle.Enabled = true;
         }
 
         private void MenuRename_Click(object sender, EventArgs e) {
