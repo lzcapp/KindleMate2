@@ -61,13 +61,9 @@ namespace KindleMate2 {
                 _clippings = _clippingService.GetAllClippings();
                 _vocabs = _vocabService.GetAllVocabs();
 
-                if (false) { }
-
-                SetBookTab();
-
-                SetVocabTab();
-
-                SetLblStatistics();
+                if (SetBookTab() | SetVocabTab()) {
+                    SetLblStatistics();
+                }
             } catch (Exception exception) {
                 Messenger.MessageBox(exception.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
