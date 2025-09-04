@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 
@@ -80,6 +81,19 @@ namespace KindleMate2.Infrastructure.Helpers {
         
         public static string GetExceptionMessage(string className, Exception e) {
             return className + ": " + Environment.NewLine + e;
+        }
+        
+        public static string GetRuntimeArchitecture(){
+            var is64Bit = Environment.Is64BitProcess;
+            
+            var runtime = RuntimeInformation.FrameworkDescription.Contains(".NET") ? "runtime" : string.Empty;
+
+            return is64Bit switch {
+                true when runtime == "runtime" => "x64_runtime",
+                false when runtime == "runtime" => "x86_runtime",
+                true => "x64",
+                _ => "x86"
+            };
         }
     }
 }

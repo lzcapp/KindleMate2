@@ -7,6 +7,7 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using AutoUpdaterDotNET;
 using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
@@ -113,6 +114,8 @@ namespace KindleMate2 {
             SetLang();
 
             SetText();
+
+            SetAutoUpdater();
         }
 
         private void SetTheme() {
@@ -123,7 +126,8 @@ namespace KindleMate2 {
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
-            } finally {
+            }
+            finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
         }
@@ -647,20 +651,21 @@ namespace KindleMate2 {
 
         private string ImportKmDatabase(string filePath) {
             var kmConnectionString = DatabaseHelper.GetConnectionString(filePath);
-            
+
             var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
             var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
             var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
             var settingRepository = new SettingRepository(AppConstants.ConnectionString);
             var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
-            
+
             var kmClippingRepository = new ClippingRepository(kmConnectionString);
             var kmLookupRepository = new LookupRepository(kmConnectionString);
             var kmOriginalClippingLineRepository = new OriginalClippingLineRepository(kmConnectionString);
             var kmSettingRepository = new SettingRepository(kmConnectionString);
             var kmVocabRepository = new VocabRepository(kmConnectionString);
-            
-            var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
+
+            var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository,
+                kmSettingRepository, kmVocabRepository);
 
             var clippingsCount = _clippingService.GetCount();
             var vocabCount = _vocabService.GetCount();
@@ -673,14 +678,14 @@ namespace KindleMate2 {
             if (!kmDatabaseService.ImportFromKmDatabase()) {
                 return string.Empty;
             }
-            
+
             CleanDatabase();
             UpdateFrequency();
 
             clippingsCount = _clippingService.GetCount() - clippingsCount;
             vocabCount = _vocabService.GetCount() - vocabCount;
-            var message = Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings +
-                          Strings.Symbol_Comma + vocabCount + Strings.Space + Strings.X_Vocabs;
+            var message = Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space +
+                          Strings.X_Clippings + Strings.Symbol_Comma + vocabCount + Strings.Space + Strings.X_Vocabs;
             return message;
         }
 
@@ -2433,6 +2438,28 @@ namespace KindleMate2 {
 
         private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MsgIcon icon) {
             return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
+        }
+
+        private bool SetAutoUpdater() {
+            try {
+                var arch = StringHelper.GetRuntimeArchitecture();
+                Console.WriteLine($"Detected architecture: {arch}");
+                
+                var updateUrl = arch switch {
+                    "x64" => "https://github.lzc.app/KindleMate2/update_x64.xml",
+                    "x86" => "https://github.lzc.app/KindleMate2/update_x86.xml",
+                    "x64_runtime" => "https://github.lzc.app/KindleMate2/update_x64_runtime.xml",
+                    "x86_runtime" => "https://github.lzc.app/KindleMate2/update_x86_runtime.xml",
+                    _ => throw new NotSupportedException("Unsupported architecture detected")
+                };
+                
+                AutoUpdater.Start(updateUrl);
+                
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetAutoUpdater), e));
+                return false;
+            }
         }
     }
 }
