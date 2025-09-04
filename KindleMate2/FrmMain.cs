@@ -30,7 +30,7 @@ namespace KindleMate2 {
         private readonly VocabService _vocabService;
         private readonly ThemeService _themeService;
         private readonly DatabaseService _databaseService;
-        private readonly KM2DatabaseService _km2DatabaseService;
+        private readonly Km2DatabaseService _km2DatabaseService;
 
         private List<Clipping> _clippings = [];
         private List<OriginalClippingLine> _originClippings = [];
@@ -80,7 +80,7 @@ namespace KindleMate2 {
             var databaseRepository = new DatabaseRepository(AppConstants.ConnectionString);
             _databaseService = new DatabaseService(databaseRepository);
 
-            _km2DatabaseService = new KM2DatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository);
+            _km2DatabaseService = new Km2DatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository);
 
             _programPath = Environment.CurrentDirectory;
             _databaseFilePath = Path.Combine(_programPath, AppConstants.DatabaseFileName);
@@ -659,7 +659,7 @@ namespace KindleMate2 {
             var kmSettingRepository = new SettingRepository(kmConnectionString);
             var kmVocabRepository = new VocabRepository(kmConnectionString);
             
-            var kmDatabaseService = new KMDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
+            var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
 
             var clippingsCount = _clippingService.GetCount();
             var vocabCount = _vocabService.GetCount();

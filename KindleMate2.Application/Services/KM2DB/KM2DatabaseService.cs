@@ -8,14 +8,14 @@ using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class KM2DatabaseService {
+    public class Km2DatabaseService {
         private readonly IClippingRepository _clippingRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
         private readonly ISettingRepository _settingRepository;
         private readonly IVocabRepository _vocabRepository;
 
-        public KM2DatabaseService(IClippingRepository clippingRepository, ILookupRepository lookupRepository, IOriginalClippingLineRepository originalClippingLineRepository, ISettingRepository settingRepository, IVocabRepository vocabRepository) {
+        public Km2DatabaseService(IClippingRepository clippingRepository, ILookupRepository lookupRepository, IOriginalClippingLineRepository originalClippingLineRepository, ISettingRepository settingRepository, IVocabRepository vocabRepository) {
             _clippingRepository = clippingRepository;
             _lookupRepository = lookupRepository;
             _originalClippingLineRepository = originalClippingLineRepository;
@@ -139,42 +139,40 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var metadata = myClipping.Metadata;
                 var content = myClipping.Content;
                 
-                var brieftype = BriefType.Highlight;
+                var briefType = BriefType.Highlight;
                 if (metadata.Contains("笔记") || metadata.Contains("Note")) {
-                    brieftype = BriefType.Note;
+                    briefType = BriefType.Note;
                 } else if (metadata.Contains("书签") || metadata.Contains("Bookmark")) {
-                    brieftype = BriefType.Bookmark;
+                    briefType = BriefType.Bookmark;
                 } else if (metadata.Contains("文章剪切") || metadata.Contains("Cut")) {
-                    brieftype = BriefType.Cut;
+                    briefType = BriefType.Cut;
                 }
-                clipping.BriefType = (long)brieftype;
+                clipping.BriefType = (long)briefType;
 
                 if (clipping.BriefType == (long)BriefType.Bookmark) {
                     continue;
                 }
 
-                if (content.Contains("您已达到本内容的剪贴上限")) {
+                if (string.IsNullOrWhiteSpace(content) || KindleHelper.IsClippingLimitReached(content)) {
                     continue;
                 }
 
-                var split_b = metadata.Split('|');
-
-                var clippingtypelocation = string.Empty;
+                var clippingTypeLocation = string.Empty;
                 metadata = metadata.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
                 var indexOf = metadata.LastIndexOf('|');
                 if (indexOf >= 0) {
-                    clippingtypelocation = metadata[..(indexOf - 1)];
+                    clippingTypeLocation = metadata[..(indexOf - 1)];
                 }
-                indexOf = clippingtypelocation.LastIndexOf('|');
-                var pageStr = indexOf >= 0 ? clippingtypelocation[(indexOf)..] : clippingtypelocation;
-                var pagenumber = -1;
-                var pagenPattern = @"\d+(-\d+)?";
-                var isPagenIsMatch = Regex.IsMatch(pageStr, pagenPattern);
-                var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                var isRomanMatched = Regex.IsMatch(pageStr, romanPattern);
+                indexOf = clippingTypeLocation.LastIndexOf('|');
+                var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
+                var pageNumber = -1;
+                var pagePattern = @"\d+(-\d+)?";
+                var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
+                var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+                var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
                 var isPageParsed = false;
-                if (isPagenIsMatch) {
-                    var regex = new Regex(pagenPattern);
+                if (isPageMatched) {
+                    var regex = new Regex(pagePattern);
                     var strMatched = regex.Matches(pageStr)[0].Value;
                     var split = strMatched.Split("-");
                     if (split.Length > 1) {
@@ -182,19 +180,20 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                     strMatched = strMatched.Replace("#", "");
                     strMatched = strMatched.Split("）")[0];
-                    isPageParsed = int.TryParse(strMatched, out pagenumber);
+                    isPageParsed = int.TryParse(strMatched, out pageNumber);
                 } else if (isRomanMatched) {
                     var strMatched = StringHelper.RomanToInteger(pageStr).ToString();
-                    isPageParsed = int.TryParse(strMatched, out pagenumber);
+                    isPageParsed = int.TryParse(strMatched, out pageNumber);
                 }
-                if (!isPageParsed || pagenumber == -1 || pagenumber == 0) {
+                if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
                     continue;
                 }
-                clipping.ClippingTypeLocation = clippingtypelocation;
-                clipping.PageNumber = pagenumber;
+                clipping.ClippingTypeLocation = clippingTypeLocation;
+                clipping.PageNumber = pageNumber;
 
-                string clippingdate;
-                var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
+                string clippingDate;
+                var metaSplit = metadata.Split('|');
+                var datetime = metaSplit[^1].Replace("Added on", "").Replace("添加于", "").Trim();
                 datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
                 var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
                 if (!isDateParsed) {
@@ -205,13 +204,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                     isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
                 }
                 if (isDateParsed && parsedDate != DateTime.MinValue) {
-                    clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                 } else {
                     continue;
                 }
-                clipping.ClippingDate = clippingdate;
+                clipping.ClippingDate = clippingDate;
 
-                var key = clippingdate + "|" + clippingtypelocation;
+                var key = clippingDate + "|" + clippingTypeLocation;
                 if (!isRebuild) {
                     if (_originalClippingLineRepository.GetByKey(key) != null) {
                         continue;
@@ -220,23 +219,23 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 clipping.Key = key;
 
-                string bookname;
-                string authorname;
+                string bookName;
+                string authorName;
                 var bookNameRegex = new Regex(@"\(([^()]+)\)[^(]*$", RegexOptions.Compiled);
                 Match match = bookNameRegex.Match(header);
                 if (match.Success) {
-                    authorname = match.Groups[1].Value.Trim();
-                    bookname = header.Replace(match.Groups[0].Value.Trim(), "").Trim();
+                    authorName = match.Groups[1].Value.Trim();
+                    bookName = header.Replace(match.Groups[0].Value.Trim(), "").Trim();
                 } else {
-                    authorname = string.Empty;
-                    bookname = header;
+                    authorName = string.Empty;
+                    bookName = header;
                 }
-                bookname = bookname.Trim();
-                clipping.BookName = bookname;
-                clipping.AuthorName = authorname;
+                bookName = bookName.Trim();
+                clipping.BookName = bookName;
+                clipping.AuthorName = authorName;
 
-                if (brieftype == BriefType.Note) {
-                    _ = SetClippingsBriefTypeHide(bookname, pagenumber);
+                if (briefType == BriefType.Note) {
+                    _ = SetClippingsBriefTypeHide(bookName, pageNumber);
                 }
 
                 if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
