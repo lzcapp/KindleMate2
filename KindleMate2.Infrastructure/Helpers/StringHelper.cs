@@ -3,7 +3,7 @@ using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 
 namespace KindleMate2.Infrastructure.Helpers {
-    public class StringHelper {
+    public static class StringHelper {
         public static string RemoveControlChar(string input) {
             var output = new StringBuilder();
             foreach (var c in input.Where(c => !c.IsControl() && !c.IsNewLineOrLineFeed() && c != 65279)) {
@@ -33,7 +33,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             return result;
         }
 
-        public static readonly Dictionary<char, int> RomanMap = new() {
+        private static readonly Dictionary<char, int> RomanMap = new() {
             { 'I', 1 },
             { 'V', 5 },
             { 'X', 10 },

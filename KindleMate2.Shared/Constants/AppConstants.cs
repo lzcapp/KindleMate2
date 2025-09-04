@@ -34,12 +34,13 @@
         public const string ExportsPathName = "Exports";
         public const string StatisticsPathName = "Statistics";
         
-        public const string KindleMateDatabaseFileName = "KM.dat";
         public const string DatabaseFileName = "KM2.dat";
         public const string ClippingsFileName = "My Clippings.txt";
         public const string VocabFileName = "vocab.db";
         public const string VersionFileName = "version.txt";
         public const string ExplorerFileName = "explorer.exe";
+
+        public const string ExplorerSelect = "/select,";
         
         public const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 

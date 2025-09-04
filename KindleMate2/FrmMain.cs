@@ -41,7 +41,7 @@ namespace KindleMate2 {
 
         private string _driveLetter = string.Empty;
 
-        private readonly string _programPath, _tempPath, _backupPath, _databaseFilePath, _versionFilePath;
+        private readonly string _programPath, _tempPath, _backupPath, _importPath, _databaseFilePath, _versionFilePath;
 
         private string _selectedBook, _selectedWord;
 
@@ -87,6 +87,7 @@ namespace KindleMate2 {
             _versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
             _tempPath = Path.Combine(_programPath, AppConstants.TempPathName);
             _backupPath = Path.Combine(_programPath, AppConstants.BackupsPathName);
+            _importPath = Path.Combine(_programPath, AppConstants.ImportsPathName);
 
             _selectedBook = Strings.Select_All;
             _selectedWord = Strings.Select_All;
@@ -664,17 +665,23 @@ namespace KindleMate2 {
             var clippingsCount = _clippingService.GetCount();
             var vocabCount = _vocabService.GetCount();
 
-            kmDatabaseService.ImportFromKmDatabase();
+            if (File.Exists(filePath)) {
+                var backupFilePath = Path.Combine(_importPath, "KM_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
+                File.Copy(filePath, backupFilePath, true);
+            }
 
+            if (!kmDatabaseService.ImportFromKmDatabase()) {
+                return string.Empty;
+            }
+            
             CleanDatabase();
-
             UpdateFrequency();
 
             clippingsCount = _clippingService.GetCount() - clippingsCount;
             vocabCount = _vocabService.GetCount() - vocabCount;
-
-            return Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings +
-                   Strings.Symbol_Comma + vocabCount + Strings.Space + Strings.X_Vocabs;
+            var message = Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings +
+                          Strings.Symbol_Comma + vocabCount + Strings.Space + Strings.X_Vocabs;
+            return message;
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
@@ -697,7 +704,6 @@ namespace KindleMate2 {
 
                 switch (selectedIndex) {
                     case 0:
-                        //var clippingdate = selectedRow.Cells[Columns.ClippingDate].Value.ToString() ?? string.Empty;
                         var bookName = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
                         var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
                         _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
@@ -1284,7 +1290,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(" + AppConstants.KindleMateDatabaseFileName + @")",
+                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(" + AppConstants.DatabaseFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
@@ -1459,8 +1465,8 @@ namespace KindleMate2 {
                     Directory.CreateDirectory(backupWordsPath);
                 }
 
-                var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
-                var backupWordsFilePath = Path.Combine(backupWordsPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+                var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
+                var backupWordsFilePath = Path.Combine(backupWordsPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
 
                 if (!ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception exception)) {
                     throw exception;
@@ -1686,8 +1692,6 @@ namespace KindleMate2 {
 
                     var bookName = selectedRow.Cells[Columns.BookName].Value.ToString();
                     var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString();
-                    //var clippinglocation = selectedRow.Cells[Columns.ClippingTypeLocation].Value.ToString();
-                    //var content = selectedRow.Cells[Columns.Content].Value.ToString();
 
                     lblBook.Text = bookName;
                     if (authorName != string.Empty) {
@@ -2384,8 +2388,8 @@ namespace KindleMate2 {
                 return;
             }
             try {
-                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + ".txt");
-                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + ".db");
+                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
+                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
                 if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) || !_originalClippingLineService.Export(backupClippingsPath, AppConstants.ClippingsFileName, out exception)) {
                     throw exception;
                 }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Windows.Forms.DataVisualization.Charting;
 using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
@@ -35,25 +36,35 @@ namespace KindleMate2 {
                 return;
             }
             _ = new DarkModeCS(this, false);
-            chartBooksTime.BackColor = ColorTranslator.FromHtml("#202020");
-            chartBooksTime.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chartBooksWeek.BackColor = ColorTranslator.FromHtml("#202020");
-            chartBooksWeek.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chartBooksHistory.BackColor = ColorTranslator.FromHtml("#202020");
-            chartBooksHistory.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chartVocabsTime.BackColor = ColorTranslator.FromHtml("#202020");
-            chartVocabsTime.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chartVocabsWeek.BackColor = ColorTranslator.FromHtml("#202020");
-            chartVocabsWeek.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
-            chartVocabsHistory.BackColor = ColorTranslator.FromHtml("#202020");
-            chartVocabsHistory.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+            
+            SetControlColor(chartBooksTime);
+            SetControlColor(chartBooksWeek);
+            SetControlColor(chartBooksHistory);
+            SetControlColor(chartVocabsTime);
+            SetControlColor(chartVocabsWeek);
+            SetControlColor(chartVocabsHistory);
 
+            SetUIText();
+        }
+
+        private void SetUIText() {
             Text = Strings.Statistics;
             tabPageBooks.Text = Strings.Clippings;
             tabPageVocabs.Text = Strings.Vocabulary_List;
 
             tabPageBooks.Text = Strings.Clippings;
             tabPageVocabs.Text = Strings.Vocabulary_List;
+        }
+
+        private static bool SetControlColor(Chart chart) {
+            try {
+                chart.BackColor = Colors.DarkGray;
+                chart.ChartAreas[0].AxisX.LabelStyle.ForeColor = Color.White;
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetControlColor), e));
+                return false;
+            }
         }
 
         private void FrmStatistic_Load(object sender, EventArgs e) {
@@ -202,7 +213,7 @@ namespace KindleMate2 {
                 WindowState = FormWindowState.Normal;
 
                 MessageBox.Show(Strings.Statistics_Screenshot_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Process.Start(AppConstants.ExplorerFileName, "/select," + filePath);
+                Process.Start(AppConstants.ExplorerFileName, arguments: AppConstants.ExplorerSelect + filePath);
             } catch (Exception) {
                 MessageBox.Show(Strings.Statistics_Screenshot_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
