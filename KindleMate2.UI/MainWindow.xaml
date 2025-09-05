@@ -42,7 +42,7 @@
                 <Grid>
                     <DataGrid d:ItemsSource="{d:SampleData ItemCount=5}"/>
                 </Grid>
-                <Grid Grid.Row="1" DataContext="" Margin="0,116,-522,-280">
+                <Grid Grid.Row="1" DataContext="">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
