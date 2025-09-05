@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Shared", "Kindl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkModeForms", "DarkModeForms\src\DarkModeForms\DarkModeForms.csproj", "{1F8E5BE1-65F6-0BB8-B3D1-54471C3BC8DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.UI", "KindleMate2.UI\KindleMate2.UI.csproj", "{7805C098-E532-40DD-AC2B-2D29AF158C55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{1F8E5BE1-65F6-0BB8-B3D1-54471C3BC8DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F8E5BE1-65F6-0BB8-B3D1-54471C3BC8DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F8E5BE1-65F6-0BB8-B3D1-54471C3BC8DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7805C098-E532-40DD-AC2B-2D29AF158C55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7805C098-E532-40DD-AC2B-2D29AF158C55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7805C098-E532-40DD-AC2B-2D29AF158C55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7805C098-E532-40DD-AC2B-2D29AF158C55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
