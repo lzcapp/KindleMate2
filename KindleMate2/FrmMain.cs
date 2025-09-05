@@ -157,13 +157,13 @@ namespace KindleMate2 {
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English", StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Culture.English, StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains(nameof(Culture.English), StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Culture.English, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, Culture.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Culture.ChineseCN, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseSG, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Culture.ChineseMY, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, "zh-MO", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Culture.ChineseTW, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseHK, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Culture.ChineseMO, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
@@ -355,7 +355,7 @@ namespace KindleMate2 {
                     return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space +
                            Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
                 }
-                var exception = result["Exception"];
+                var exception = result[AppConstants.Exception];
                 return exception;
             } catch (Exception e) {
                 Console.WriteLine(e);
@@ -712,7 +712,7 @@ namespace KindleMate2 {
                         var bookName = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
                         var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
                         _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
-                        var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
+                        var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(" 　　", Environment.NewLine) ?? string.Empty;
                         var briefType = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
 
                         lblBook.Text = bookName;
@@ -727,7 +727,7 @@ namespace KindleMate2 {
                         lblContent.Text = string.Empty;
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
-                        if (briefType.Equals("1")) {
+                        if (briefType.Equals(((int)BriefType.Note).ToString())) {
                             label1.Text = @"[" + Strings.Note + @"]";
                             label2.Text = @"[" + Strings.Clipping + @"]";
                             label3.Text = _clippingService.GetClippingByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Note)[0].Content;
@@ -768,12 +768,12 @@ namespace KindleMate2 {
                         }
 
                         var isChinese = false;
-                        var length = Encoding.GetEncoding("UTF-8").GetBytes(word).Length;
+                        var length = Encoding.UTF8.GetBytes(word).Length;
                         if (length > word.Length) {
                             isChinese = true;
                         }
 
-                        var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
+                        var usage = usage_list.Aggregate(String.Empty, (current, s) => current + (s + Environment.NewLine).Replace(" 　　", Environment.NewLine));
                         var usage_clippings = new List<string>();
                         if (word.Length > 1) {
                             if (!isChinese) {
@@ -785,7 +785,7 @@ namespace KindleMate2 {
                                     if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                    usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row.BookName + "》" + "\n");
+                                    usage_clippings.Add(strContent.Replace(" 　　", Environment.NewLine) + " ——《" + row.BookName + "》" + Environment.NewLine);
                                     listUsage.Add(" ——《" + row.BookName + "》");
                                 }
                             } else {
@@ -797,7 +797,7 @@ namespace KindleMate2 {
                                     if (!strContent.Contains(word)) {
                                         continue;
                                     }
-                                    usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row.BookName + "》" + "\n");
+                                    usage_clippings.Add(strContent.Replace(" 　　", Environment.NewLine) + " ——《" + row.BookName + "》" + Environment.NewLine);
                                     listUsage.Add(" ——《" + row.BookName + "》");
                                 }
                             }
@@ -812,23 +812,23 @@ namespace KindleMate2 {
 
                         lblContent.SelectionBullet = true;
                         var usageLines = usage.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var lines in usageLines.Select(line => line.Split("\n"))) {
+                        foreach (var lines in usageLines.Select(line => line.Split(Environment.NewLine))) {
                             for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
                                 var aline = lines[i];
-                                lblContent.AppendText(aline.Trim() + "\n");
+                                lblContent.AppendText(aline.Trim() + Environment.NewLine);
                             }
                             lblContent.SelectionBullet = false;
                         }
 
                         lblContent.SelectionBullet = false;
-                        lblContent.AppendText("\n\n");
+                        lblContent.AppendText(Environment.NewLine + Environment.NewLine);
 
-                        foreach (var lines in usage_clippings.Select(line => line.Split("\n"))) {
+                        foreach (var lines in usage_clippings.Select(line => line.Split(Environment.NewLine))) {
                             for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
                                 var aline = lines[i];
-                                lblContent.AppendText(aline.Trim() + "\n");
+                                lblContent.AppendText(aline.Trim() + Environment.NewLine);
                             }
                             lblContent.SelectionBullet = false;
                         }
@@ -977,7 +977,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
+            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, string.Empty, ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
                 return;
             }
             var dialogContent = fields[0].Value.Trim();
@@ -1258,7 +1258,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(My Clippings.txt)",
+                Title = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(" + AppConstants.ClippingsFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "txt",
@@ -1377,11 +1377,11 @@ namespace KindleMate2 {
                     if (drive.DriveType != DriveType.Removable) {
                         continue;
                     }
-                    var documentsDir = Path.Combine(drive.Name, "documents");
+                    var documentsDir = Path.Combine(drive.Name, AppConstants.DocumentsPathName);
                     if (!Directory.Exists(documentsDir)) {
                         continue;
                     }
-                    var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
+                    var clippingsPath = Path.Combine(documentsDir, AppConstants.ClippingsFileName);
                     if (!File.Exists(clippingsPath)) {
                         continue;
                     }
@@ -1601,7 +1601,7 @@ namespace KindleMate2 {
                 }
             };
 
-            if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
+            if (Messenger.InputBox(Strings.Rename, string.Empty, ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
                 return;
             }
             var dialogBook = fields[0].Value.Trim();
@@ -1735,7 +1735,7 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    Process.Start("explorer.exe", Path.Combine(_programPath, "Backups"));
+                    Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.BackupsPathName));
                 } else {
                     var message = MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception);
                     MessageBox(message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -2196,7 +2196,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            Process.Start("explorer.exe", Path.Combine(_programPath, AppConstants.ExportsPathName));
+            Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.ExportsPathName));
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
