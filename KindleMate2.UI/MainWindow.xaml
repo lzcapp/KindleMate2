@@ -36,11 +36,13 @@
             </DockPanel>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <DataGrid d:ItemsSource="{d:SampleData ItemCount=5}" Margin="0,0,-261,0"/>
-                <Grid Margin="0,116,-522,-280" Grid.RowSpan="2">
+                <Grid>
+                    <DataGrid d:ItemsSource="{d:SampleData ItemCount=5}"/>
+                </Grid>
+                <Grid Grid.Row="1" DataContext="" Margin="0,116,-522,-280">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
