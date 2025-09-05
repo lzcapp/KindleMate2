@@ -28,7 +28,7 @@
 
 ## System Requirements
 
-- **Minimum**: `Windows 7` or later
+- **Minimum**: `Windows 7` or later / `Windows 2008 R2 SP1` or later
 - **Recommended**: `Windows 11`
 - **Architecture**: `x86` or `x64`.
 
