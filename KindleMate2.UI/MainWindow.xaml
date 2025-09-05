@@ -17,11 +17,11 @@
         <DockPanel>
             <DockPanel DockPanel.Dock="Left">
                 <DockPanel DockPanel.Dock="Top" LastChildFill="False">
-                    <ContentControl Content="ContentControl" DockPanel.Dock="Left"/>
+                    <ComboBox DockPanel.Dock="Left" />
                     <Image DockPanel.Dock="Right"/>
-                    <ComboBox Width="100"/>
+                    <ComboBox Width="100" IsEditable="True"/>
                 </DockPanel>
-                <TabControl DockPanel.Dock="Bottom">
+                <TabControl DockPanel.Dock="Bottom" TabStripPlacement="Bottom">
                     <TabItem Header="TabItem">
                         <Grid Background="#FFE5E5E5" Height="370">
                             <TreeView/>
@@ -39,9 +39,9 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Grid>
+                <DockPanel>
                     <DataGrid d:ItemsSource="{d:SampleData ItemCount=5}"/>
-                </Grid>
+                </DockPanel>
                 <Grid Grid.Row="1" DataContext="">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
