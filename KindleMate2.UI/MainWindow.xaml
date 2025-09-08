@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:toolkit="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls.Input.Toolkit"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
@@ -13,8 +14,16 @@
         </Grid.RowDefinitions>
 
         <Menu Grid.Row="0" DockPanel.Dock="Top">
-            <MenuItem Header="MenuItem"/>
-            <MenuItem Header="MenuItem"/>
+            <MenuItem Header="{StaticResource MenuFile}"/>
+            <MenuItem Header="{StaticResource MenuManage}"/>
+            <MenuItem Header="{StaticResource MenuHelp}">
+                <MenuItem Header="{StaticResource SubMenuAbout}">
+                    <MenuItem.Icon>
+                        <Image Source="/Images/information.png" Width="16" Height="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{StaticResource SubMenuGitHubRepo}" />
+            </MenuItem>
         </Menu>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -32,15 +41,20 @@
 
                     <ComboBox SelectedIndex="0" >
                         <ComboBoxItem Content="{StaticResource SelectAll}"/>
+                        <ComboBoxItem Content="{StaticResource BookTitle}"/>
+                        <ComboBoxItem Content="{StaticResource Author}"/>
+                        <ComboBoxItem Content="{StaticResource Vocabulary}"/>
+                        <ComboBoxItem Content="{StaticResource Stem}"/>
+                        <ComboBoxItem Content="{StaticResource Content}"/>
                     </ComboBox>
-                    <ComboBox Grid.Column="1" IsEditable="True"/>
-                    <Image Grid.Column="2"/>
+                    <ComboBox Grid.Column="1" Name="SearchComboBox"  IsEditable="True" Cursor="IBeam"/>
+                    <Image Grid.Column="2" Source="/Images/magnifying-glass-tilted-left.png" Cursor="Hand" Height="{Binding ActualHeight, ElementName=SearchComboBox}" />
                 </Grid>
                 <TabControl DockPanel.Dock="Bottom" TabStripPlacement="Bottom">
-                    <TabItem Header="TabItem">
+                    <TabItem Header="{StaticResource ClippingList}">
                         <TreeView x:Name="BooksTreeView"/>
                     </TabItem>
-                    <TabItem Header="TabItem">
+                    <TabItem Header="{StaticResource VocabularyList}">
                         <TreeView/>
                     </TabItem>
                 </TabControl>
