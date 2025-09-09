@@ -12,8 +12,19 @@
     <system:String x:Key="VocabularyList">生词本</system:String>
 
     <system:String x:Key="MenuFile">文件 (_F)</system:String>
+    <system:String x:Key="SubMenuRefresh">刷新</system:String>
+    <system:String x:Key="SubMenuRestart">重启</system:String>
+    <system:String x:Key="SubMenuExit">退出</system:String>
+
     <system:String x:Key="MenuManage">管理 (_M)</system:String>
     <system:String x:Key="MenuHelp">帮助 (_H)</system:String>
+
     <system:String x:Key="SubMenuAbout">关于</system:String>
     <system:String x:Key="SubMenuGitHubRepo">Github仓库</system:String>
+
+    <system:String x:Key="DialogExit_Caption">退出确认</system:String>
+    <system:String x:Key="DialogExit_Message">您确定要退出程序吗？</system:String>
+
+    <system:String x:Key="DialogRestart_Caption">重启确认</system:String>
+    <system:String x:Key="DialogRestart_Message">您确定要重启程序吗？</system:String>
 </ResourceDictionary>

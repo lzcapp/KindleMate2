@@ -39,7 +39,6 @@
     <None Remove="Images\star.png" />
     <None Remove="Images\sun.png" />
     <None Remove="Images\wastebasket.png" />
-    <None Remove="information.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -77,7 +76,6 @@
     <Resource Include="Images\star.png" />
     <Resource Include="Images\sun.png" />
     <Resource Include="Images\wastebasket.png" />
-    <Resource Include="information.png" />
   </ItemGroup>
 
 </Project>
