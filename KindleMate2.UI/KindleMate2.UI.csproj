@@ -15,6 +15,7 @@
     <None Remove="Images\bookmark.png" />
     <None Remove="Images\broom.png" />
     <None Remove="Images\card-file-box.png" />
+    <None Remove="Images\card-index.png" />
     <None Remove="Images\carpentry-saw.png" />
     <None Remove="Images\check-mark.png" />
     <None Remove="Images\clockwise-vertical-arrows.png" />
@@ -42,11 +43,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25104.5739" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +58,7 @@
     <Resource Include="Images\bookmark.png" />
     <Resource Include="Images\broom.png" />
     <Resource Include="Images\card-file-box.png" />
+    <Resource Include="Images\card-index.png" />
     <Resource Include="Images\carpentry-saw.png" />
     <Resource Include="Images\check-mark.png" />
     <Resource Include="Images\clockwise-vertical-arrows.png" />

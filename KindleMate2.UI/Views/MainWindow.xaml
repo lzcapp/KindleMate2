@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:viewmodels="clr-namespace:KindleMate2.UI.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="{StaticResource Title}" Height="450" Width="800" Icon="/Images/bookmark.ico">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -30,14 +30,80 @@
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
-            <MenuItem Header="{StaticResource MenuManage}"/>
+            <MenuItem Header="{StaticResource MenuManage}">
+                <MenuItem Header="{StaticResource SubMenuImport}">
+                    <MenuItem.Icon>
+                        <Image Source="/Images/mobile-phone-with-arrow.png" Width="16" Height="16"/>
+                    </MenuItem.Icon>
+                    <MenuItem Header="{StaticResource SubMenuImportClippings}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/memo.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuImportVocabulary}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/memo.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuImportKindleMateDatabase}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/page-facing-up.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuImportFromKindle}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/mobile-phone-with-arrow.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="{StaticResource SubMenuExport}">
+                    <MenuItem.Icon>
+                        <Image Source="/Images/bookmark-tabs.png" Width="16" Height="16"/>
+                    </MenuItem.Icon>
+                    <MenuItem Header="{StaticResource SubMenuExportAsMarkdown}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/bookmark-tabs.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuSyncToKindle}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/mobile-phone-with-arrow.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="{StaticResource SubMenuDatabase}">
+                    <MenuItem.Icon>
+                        <Image Source="/Images/card-file-box.png" Width="16" Height="16"/>
+                    </MenuItem.Icon>
+                    <MenuItem Header="{StaticResource SubMenuCleanDatabase}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/broom.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuRebuildDatabase}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/clockwise-vertical-arrows.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{StaticResource SubMenuClearDatabase}">
+                        <MenuItem.Icon>
+                            <Image Source="/Images/wastebasket.png" Width="16" Height="16"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="{StaticResource SubMenuBackup}">
+                    <MenuItem.Icon>
+                        <Image Source="/Images/card-index.png" Width="16" Height="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
             <MenuItem Header="{StaticResource MenuHelp}">
                 <MenuItem Header="{StaticResource SubMenuAbout}">
                     <MenuItem.Icon>
                         <Image Source="/Images/information.png" Width="16" Height="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="{StaticResource SubMenuGitHubRepo}">
+                <MenuItem Header="{StaticResource SubMenuGitHubRepo}" Command="{Binding CmdGitHubRepo}">
                     <MenuItem.Icon>
                         <Image Source="/Images/star.png" Width="16" Height="16"/>
                     </MenuItem.Icon>

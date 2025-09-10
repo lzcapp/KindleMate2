@@ -1,4 +1,3 @@
-﻿
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.UI.Commands;
@@ -7,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.UI.ViewModels {
     using Application = System.Windows.Application;
@@ -35,6 +35,7 @@ namespace KindleMate2.UI.ViewModels {
         public ICommand CmdRefresh { get; }
         public ICommand CmdRestart { get; }
         public ICommand CmdExit { get; }
+        public ICommand CmdGitHubRepo { get; }
 
         public MainViewModel(ClippingService clippingService, LookupService lookupService) {
             _clippingService = clippingService;
@@ -45,6 +46,7 @@ namespace KindleMate2.UI.ViewModels {
             CmdExit = new RelayCommand(_ => ExitApplication());
 
             LoadSampleBookTree();
+            CmdGitHubRepo = new RelayCommand(_ => OpenGitHubRepo());
         }
 
         private static void Refresh() { }
@@ -106,6 +108,21 @@ namespace KindleMate2.UI.ViewModels {
                 }
             }
 
+        private static void OpenGitHubRepo() {
+            OpenUrl(AppConstants.RepoUrl);
+        }
+
+        private static void OpenUrl(string url) {
+            try {
+                Process.Start(new ProcessStartInfo {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            } catch (Exception) {
+                Clipboard.SetText(url);
+                //MessageBox(Strings.Repo_URL_Copied, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //Messenger.Send(new ShowDialogMessage("Delete Item", "Are you sure?"));
+            }
         }
     }
 }
