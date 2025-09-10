@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 
@@ -94,6 +95,47 @@ namespace KindleMate2.Infrastructure.Helpers {
                 true => "x64",
                 _ => "x86"
             };
+        }
+
+        public static StringBuilder BuildMarkdownWithClippings(List<Clipping> clippings) {
+            var markdown = new StringBuilder();
+
+            try {
+                if (clippings.Count <= 0) {
+                    throw new Exception("No clippings found.");
+                }
+                
+                var bookName = clippings[0].BookName;
+
+                if (bookName != null) {
+                    markdown.AppendLine("## \ud83d\udcd6 " + bookName.Trim());
+                } else {
+                    throw new Exception("No book name found.");
+                }
+
+                markdown.AppendLine();
+
+                foreach (Clipping clipping in clippings) {
+                    var clippingLocation = clipping.ClippingTypeLocation;
+                    var content = clipping.Content;
+
+                    if (string.IsNullOrWhiteSpace(clippingLocation) || string.IsNullOrWhiteSpace(content)) {
+                        continue;
+                    }
+
+                    markdown.AppendLine("**" + clippingLocation + "**");
+
+                    markdown.AppendLine();
+
+                    markdown.AppendLine(content);
+
+                    markdown.AppendLine();
+                }
+                return markdown;
+            } catch (Exception e) {
+                Console.WriteLine(GetExceptionMessage(nameof(BuildMarkdownWithClippings), e));
+                return markdown;
+            }
         }
     }
 }

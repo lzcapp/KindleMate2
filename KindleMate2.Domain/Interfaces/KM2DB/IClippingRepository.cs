@@ -18,6 +18,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         List<Clipping> GetAll();
 
         List<Clipping> GetByBookName(string bookname);
+        
+        List<string> GetBookNamesList();
 
         int GetCount();
 

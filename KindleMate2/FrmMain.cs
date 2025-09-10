@@ -731,7 +731,7 @@ namespace KindleMate2 {
                         if (briefType.Equals(((int)BriefType.Note).ToString())) {
                             label1.Text = @"[" + Strings.Note + @"]";
                             label2.Text = @"[" + Strings.Clipping + @"]";
-                            label3.Text = _clippingService.GetClippingByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Note)[0].Content;
+                            label3.Text = _clippingService.GetClippingsByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Note)[0].Content;
                             label1.Visible = true;
                             label2.Visible = true;
                             label3.Visible = true;
@@ -1199,7 +1199,7 @@ namespace KindleMate2 {
                         result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             var bookname = treeViewBooks.SelectedNode.Text;
-                            var clippings = _clippingService.GetClippingByBookName(bookname);
+                            var clippings = _clippingService.GetClippingsByBookName(bookname);
                             var deletedCount = 0;
                             foreach (Clipping clipping in clippings) {
                                 if (_clippingService.DeleteClipping(clipping.Key)) {
@@ -2000,89 +2000,7 @@ namespace KindleMate2 {
 
         private bool ClippingsToMarkdown(string bookname = "") {
             try {
-                var filename = "Clippings";
-
-                var markdown = new StringBuilder();
-
-                markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
-
-                markdown.AppendLine();
-
-                if (string.IsNullOrWhiteSpace(bookname) || bookname.Equals(Strings.Select_All)) {
-                    markdown.AppendLine("[TOC]");
-
-                    markdown.AppendLine();
-
-                    foreach (TreeNode node in treeViewBooks.Nodes) {
-                        var nodeBookName = node.Text;
-
-                        if (nodeBookName.Equals(Strings.Select_All)) {
-                            continue;
-                        }
-
-                        var clippings = _clippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(nodeBookName)).ToList();
-                        var filteredBooks = DataTableHelper.ToDataTable(clippings);
-
-                        if (filteredBooks.Rows.Count <= 0) {
-                            return false;
-                        }
-
-                        markdown.AppendLine("## \ud83d\udcd6 " + nodeBookName.Trim());
-
-                        markdown.AppendLine();
-
-                        foreach (DataRow row in filteredBooks.Rows) {
-                            var clippingLocation = row[Columns.ClippingTypeLocation].ToString();
-                            var content = row[Columns.Content].ToString();
-
-                            markdown.AppendLine("**" + clippingLocation + "**");
-
-                            markdown.AppendLine();
-
-                            markdown.AppendLine(content);
-
-                            markdown.AppendLine();
-                        }
-                    }
-                } else {
-                    filename = StringHelper.SanitizeFilename(bookname);
-
-                    var clippings = _clippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(bookname)).ToList();
-                    var filteredBooks = DataTableHelper.ToDataTable(clippings);
-
-                    if (filteredBooks.Rows.Count <= 0) {
-                        return false;
-                    }
-
-                    markdown.AppendLine("## \ud83d\udcd6 " + bookname.Trim());
-
-                    markdown.AppendLine();
-
-                    foreach (DataRow row in filteredBooks.Rows) {
-                        var clippingLocation = row[Columns.ClippingTypeLocation].ToString();
-                        var content = row[Columns.Content].ToString();
-
-                        markdown.AppendLine("**" + clippingLocation + "**");
-
-                        markdown.AppendLine();
-
-                        markdown.AppendLine(content);
-
-                        markdown.AppendLine();
-                    }
-                }
-
-                File.WriteAllText(Path.Combine(_programPath, AppConstants.ExportsPathName, filename + ".md"), markdown.ToString(), Encoding.UTF8);
-
-                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-                MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
-                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
-
-                htmlContent += "\r\n</body>\r\n</html>";
-
-                File.WriteAllText(Path.Combine(_programPath, AppConstants.ExportsPathName, filename + ".html"), htmlContent, Encoding.UTF8);
-
+                _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
                 return true;
             } catch (Exception) {
                 return false;
@@ -2193,8 +2111,6 @@ namespace KindleMate2 {
             if (!Directory.Exists(path)) {
                 Directory.CreateDirectory(path);
             }
-
-            File.WriteAllText(Path.Combine(_programPath, AppConstants.ExportsPathName, "styles.css"), AppConstants.Css);
 
             if (!ClippingsToMarkdown() || !VocabsToMarkdown()) {
                 return;
@@ -2335,7 +2251,7 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    if (treeViewBooks.SelectedNode is null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewBooks.SelectedNode is null) {
                         return;
                     }
                     if (!ClippingsToMarkdown(treeViewBooks.SelectedNode.Text.Trim())) {
@@ -2343,7 +2259,7 @@ namespace KindleMate2 {
                     }
                     break;
                 case 1:
-                    if (treeViewWords.SelectedNode is null || treeViewWords.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewWords.SelectedNode is null) {
                         return;
                     }
                     if (!VocabsToMarkdown(treeViewWords.SelectedNode.Text.Trim())) {

@@ -1,6 +1,12 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+﻿using System.Data;
+using System.Text;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared;
+using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
+using Markdig;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class ClippingService {
@@ -18,7 +24,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetByKeyAndContent(key, content);
         }
 
-        public List<Clipping> GetClippingByBookNameAndPageNumberAndBriefType(string bookname, int pagenumber, BriefType brieftype) {
+        public List<Clipping> GetClippingsByBookNameAndPageNumberAndBriefType(string bookname, int pagenumber, BriefType brieftype) {
             return _repository.GetByBookNameAndPageNumberAndBriefType(bookname, pagenumber, brieftype);
         }
 
@@ -30,8 +36,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetAll();
         }
 
-        public List<Clipping> GetClippingByBookName(string bookname) {
+        public List<Clipping> GetClippingsByBookName(string bookname) {
             return _repository.GetByBookName(bookname);
+        }
+
+        public List<string> GetBookNamesList() {
+            return _repository.GetBookNamesList();
         }
 
         public int GetCount() {
@@ -101,6 +111,80 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
             }
             return result > 0;
+        }
+        
+        public bool ClippingsToMarkdown(string filePath, string bookname = "") {
+            try {
+                string filename;
+
+                var listClippings = GetAllClippings();
+
+                var markdown = new StringBuilder();
+
+                markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
+
+                markdown.AppendLine();
+
+                if (string.IsNullOrWhiteSpace(bookname) || bookname.Equals(Strings.Select_All)) {
+                    filename = "Clippings";
+                    
+                    markdown.AppendLine("[TOC]");
+
+                    markdown.AppendLine();
+
+                    foreach (var bookName in GetBookNamesList()) {
+                        var clippings = listClippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+                        markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
+                    }
+                } else {
+                    filename = StringHelper.SanitizeFilename(bookname);
+
+                    var clippings = listClippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(bookname)).ToList();
+                    var filteredBooks = DataTableHelper.ToDataTable(clippings);
+
+                    if (filteredBooks.Rows.Count <= 0) {
+                        return false;
+                    }
+
+                    markdown.AppendLine("## \ud83d\udcd6 " + bookname.Trim());
+
+                    markdown.AppendLine();
+
+                    foreach (DataRow row in filteredBooks.Rows) {
+                        var clippingLocation = row[Columns.ClippingTypeLocation].ToString();
+                        var content = row[Columns.Content].ToString();
+
+                        markdown.AppendLine("**" + clippingLocation + "**");
+
+                        markdown.AppendLine();
+
+                        markdown.AppendLine(content);
+
+                        markdown.AppendLine();
+                    }
+                }
+
+                if (!Directory.Exists(filePath)) {
+                    Directory.CreateDirectory(filePath);
+                }
+
+                File.WriteAllText(Path.Combine(filePath, filename + ".md"), markdown.ToString(), Encoding.UTF8);
+
+                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
+
+                MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
+                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
+
+                htmlContent += "\r\n</body>\r\n</html>";
+
+                File.WriteAllText(Path.Combine(filePath, filename + ".html"), htmlContent, Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(filePath, "styles.css"), AppConstants.Css);
+
+                return true;
+            } catch (Exception) {
+                return false;
+            }
         }
     }
 }

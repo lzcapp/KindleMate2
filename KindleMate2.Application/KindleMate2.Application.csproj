@@ -12,4 +12,8 @@
     <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
+  </ItemGroup>
+
 </Project>

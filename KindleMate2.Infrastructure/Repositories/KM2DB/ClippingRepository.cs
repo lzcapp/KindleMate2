@@ -259,7 +259,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 using var connection = new SqliteConnection(_connectionString);
                 connection.Open();
 
-                var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings", connection);
+                var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings ORDER BY bookname, pagenumber, clippingdate", connection);
 
                 using SqliteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read()) {
@@ -322,6 +322,28 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
                         PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
                     });
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
+            return results;
+        }
+
+        public List<string> GetBookNamesList() {
+            var results = new List<string>();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new SqliteCommand("SELECT DISTINCT bookname FROM Clippings ORDER BY bookname", connection);
+
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                while (reader.Read()) {
+                    var bookName = DatabaseHelper.GetSafeString(reader, 0);
+                    if (string.IsNullOrWhiteSpace(bookName)) {
+                        continue;
+                    }
+                    results.Add(bookName);
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
