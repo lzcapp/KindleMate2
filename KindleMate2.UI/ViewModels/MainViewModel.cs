@@ -1,18 +1,50 @@
-﻿using KindleMate2.UI.Commands;
+﻿
+using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.UI.Commands;
+using KindleMate2.UI.ViewModels.TreeViews;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 
 namespace KindleMate2.UI.ViewModels {
+    using Application = System.Windows.Application;
+
     public class MainViewModel : BaseViewModel {
+        private readonly ClippingService _clippingService;
+        private readonly LookupService _lookupService;
+
+        // Books tree
+        public ObservableCollection<BooksTreeItemViewModel> BooksTree { get; set; } = [];
+
+        // Vocabulary tree
+        public ObservableCollection<VocabularyTreeItemViewModel> VocabularyTree { get; set; } = [];
+
+        private int _totalCount;
+        public int TotalCount {
+            get => _totalCount;
+            set {
+                if (_totalCount != value) {
+                    _totalCount = value;
+                    OnPropertyChanged(nameof(TotalCount));
+                }
+            }
+        }
+
         public ICommand CmdRefresh { get; }
         public ICommand CmdRestart { get; }
         public ICommand CmdExit { get; }
 
-        public MainViewModel() {
+        public MainViewModel(ClippingService clippingService, LookupService lookupService) {
+            _clippingService = clippingService;
+            _lookupService = lookupService;
+
             CmdRestart = new RelayCommand(_ => Refresh());
             CmdRestart = new RelayCommand(_ => Restart());
             CmdExit = new RelayCommand(_ => ExitApplication());
+
+            LoadSampleBookTree();
         }
 
         private static void Refresh() { }
@@ -45,6 +77,35 @@ namespace KindleMate2.UI.ViewModels {
             if (result == MessageBoxResult.Yes) {
                 Application.Current.Shutdown();
             }
+        }
+
+        private void LoadSampleBookTree() {
+            var booksRootNode = new BooksTreeItemViewModel { Name = "Book A", Key = "1" };
+            BooksTree.Add(booksRootNode);
+            
+            var listClippings = _clippingService.GetAllClippings();
+            var listBooks = listClippings
+                .Where(c => !string.IsNullOrWhiteSpace(c.BookName))
+                .GroupBy(c => c.BookName)
+                .Select(group => group
+                    .OrderByDescending(c => c.PageNumber)
+                    .First()
+                )
+                .OrderBy(c => c.BookName)
+                .ToList();
+
+
+            foreach (Clipping book in listBooks) {
+                var name = book.BookName;
+                if (!string.IsNullOrWhiteSpace(name)) {
+                    var bookNode = new BooksTreeItemViewModel {
+                        Name = name,
+                        Key = book.Key
+                    };
+                    BooksTree.Add(bookNode);
+                }
+            }
+
         }
     }
 }

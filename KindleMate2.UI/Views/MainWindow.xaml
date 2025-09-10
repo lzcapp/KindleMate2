@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:viewmodels="clr-namespace:KindleMate2.UI.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
@@ -71,10 +71,16 @@
                 </Grid>
                 <TabControl DockPanel.Dock="Bottom" TabStripPlacement="Bottom">
                     <TabItem Header="{StaticResource ClippingList}">
-                        <TreeView x:Name="BooksTreeView"/>
+                        <TreeView x:Name="BooksTreeView" ItemsSource="{Binding BooksTree}">
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                    <TextBlock Text="{Binding Name}" />
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
                     </TabItem>
                     <TabItem Header="{StaticResource VocabularyList}">
-                        <TreeView/>
+                        <TreeView x:Name="VocabularyTreeView"/>
                     </TabItem>
                 </TabControl>
             </DockPanel>

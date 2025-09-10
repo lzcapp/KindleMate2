@@ -46,6 +46,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Images\bar-chart.png" />
     <Resource Include="Images\bookmark-tabs.png" />
     <Resource Include="Images\bookmark.ico" />
