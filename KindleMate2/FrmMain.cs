@@ -750,22 +750,8 @@ namespace KindleMate2 {
                             break;
                         }
 
-                        var listUsage = new HashSet<string>();
-
-                        var usage_list = new List<string>();
-                        foreach (Lookup row in _lookups) {
-                            if (!string.Equals(row.WordKey, word_key, StringComparison.InvariantCultureIgnoreCase)) {
-                                continue;
-                            }
-                            var str = row.WordKey;
-                            var strContent = row.Usage;
-                            if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strContent)) {
-                                continue;
-                            }
-                            var title = " ——《" + row.Title + "》";
-                            listUsage.Add(title);
-                            usage_list.Add(strContent + title);
-                        }
+                        var titleList = new HashSet<string>();
+                        var lookupsList = new HashSet<string>();
 
                         var isChinese = false;
                         var length = Encoding.UTF8.GetBytes(word).Length;
@@ -773,33 +759,47 @@ namespace KindleMate2 {
                             isChinese = true;
                         }
 
-                        var usage = usage_list.Aggregate(String.Empty, (current, s) => current + (s + Environment.NewLine).Replace(" 　　", Environment.NewLine));
-                        var usage_clippings = new List<string>();
-                        if (word.Length > 1) {
-                            if (!isChinese) {
-                                foreach (Clipping row in _clippings) {
-                                    var strContent = row.Content;
-                                    if (string.IsNullOrWhiteSpace(strContent)) {
-                                        continue;
-                                    }
+                        foreach (Lookup row in _lookups.AsEnumerable().OrderBy(x => x.Timestamp)) {
+                            var title = " ——《" + row.Title + "》";
+                            var str = row.WordKey;
+                            var strContent = row.Usage?.Replace(" 　　", Environment.NewLine);
+                            if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strContent)) {
+                                continue;
+                            }
+                            if (!string.Equals(row.WordKey, word_key, StringComparison.InvariantCultureIgnoreCase)) {
+                                if (!isChinese) {
                                     if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                    usage_clippings.Add(strContent.Replace(" 　　", Environment.NewLine) + " ——《" + row.BookName + "》" + Environment.NewLine);
-                                    listUsage.Add(" ——《" + row.BookName + "》");
-                                }
-                            } else {
-                                foreach (Clipping row in _clippings) {
-                                    var strContent = row.Content;
-                                    if (string.IsNullOrWhiteSpace(strContent)) {
+                                } else {
+                                    if (!strContent.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
                                         continue;
                                     }
-                                    if (!strContent.Contains(word)) {
+                                }
+                            }
+                            titleList.Add(title);
+                            lookupsList.Add(strContent + title + Environment.NewLine);
+                        }
+
+                        var clippingsList = new HashSet<string>();
+                        if (word.Length > 1) {
+                            foreach (Clipping row in _clippings.AsEnumerable().OrderBy(x => x.PageNumber)) {
+                                var title = " ——《" + row.BookName + "》";
+                                var strContent = row.Content?.Replace(" 　　", Environment.NewLine);
+                                if (string.IsNullOrWhiteSpace(strContent)) {
+                                    continue;
+                                }
+                                if (!isChinese) {
+                                    if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                    usage_clippings.Add(strContent.Replace(" 　　", Environment.NewLine) + " ——《" + row.BookName + "》" + Environment.NewLine);
-                                    listUsage.Add(" ——《" + row.BookName + "》");
+                                } else {
+                                    if (!strContent.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
+                                        continue;
+                                    }
                                 }
+                                titleList.Add(title);
+                                clippingsList.Add(strContent + title + Environment.NewLine);
                             }
                         }
 
@@ -810,9 +810,7 @@ namespace KindleMate2 {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblContent.SelectionBullet = true;
-                        var usageLines = usage.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var lines in usageLines.Select(line => line.Split(Environment.NewLine))) {
+                        foreach (var lines in lookupsList.Select(line => line.Split(Environment.NewLine))) {
                             for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
                                 var aline = lines[i];
@@ -820,11 +818,11 @@ namespace KindleMate2 {
                             }
                             lblContent.SelectionBullet = false;
                         }
-
                         lblContent.SelectionBullet = false;
-                        lblContent.AppendText(Environment.NewLine + Environment.NewLine);
 
-                        foreach (var lines in usage_clippings.Select(line => line.Split(Environment.NewLine))) {
+                        lblContent.AppendText(Environment.NewLine);
+
+                        foreach (var lines in clippingsList.Select(line => line.Split(Environment.NewLine))) {
                             for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
                                 var aline = lines[i];
@@ -853,7 +851,7 @@ namespace KindleMate2 {
 
                         index = 0;
 
-                        foreach (var book in listUsage) {
+                        foreach (var book in titleList) {
                             while (index < lblContent.TextLength) {
                                 var wordStartIndex = lblContent.Find(book, index, RichTextBoxFinds.None);
                                 if (wordStartIndex == -1) {
@@ -868,10 +866,11 @@ namespace KindleMate2 {
                         }
 
                         lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
-                        lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + usage_list.Count + Strings.Space + Strings.X_Lookups;
-                        if (usage_clippings.Count > 0) {
-                            lblLocation.Text += Strings.Symbol_Comma + usage_clippings.Count + Strings.Space + Strings.X_Clippings;
-                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + usage_clippings.Count + Strings.Space + Strings.X_Other_Books;
+                        lblLocation.Text += Strings.Symbol_Comma + lookupsList.Count + Strings.Space + Strings.X_Lookups;
+                        lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + lookupsList.Count + Strings.Space + Strings.X_Lookups;
+                        if (clippingsList.Count > 0) {
+                            lblLocation.Text += Strings.Symbol_Comma + clippingsList.Count + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + clippingsList.Count + Strings.Space + Strings.X_Other_Books;
                         }
                         lblBookCount.Image = Resources.input_latin_uppercase;
                         lblBookCount.Visible = true;
@@ -1839,7 +1838,16 @@ namespace KindleMate2 {
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
-                var lookups = _lookups.AsEnumerable().Where(row => row.WordKey?[3..] == _selectedWord).ToList();
+                var lookups = _lookups.AsEnumerable()
+                    .Where(row => {
+                        if (row.WordKey != null) {
+                            var index = row.WordKey.IndexOf(':');
+                            var cleaned = index >= 0 ? row.WordKey[(index + 1)..] : row.WordKey;
+                            return cleaned == _selectedWord;
+                        }
+                        return false;
+                    })
+                    .ToList();
                 var filteredWords = DataTableHelper.ToDataTable(lookups);
                 lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                 lblBookCount.Image = Resources.input_latin_uppercase;
