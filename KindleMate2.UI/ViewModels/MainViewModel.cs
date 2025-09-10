@@ -22,6 +22,7 @@ namespace KindleMate2.UI.ViewModels {
         public ObservableCollection<VocabularyTreeItemViewModel> VocabularyTree { get; set; } = [];
 
         private int _totalCount;
+
         public int TotalCount {
             get => _totalCount;
             set {
@@ -55,10 +56,7 @@ namespace KindleMate2.UI.ViewModels {
             var caption = Application.Current.Resources["DialogRestart_Caption"] as string ?? "Exit";
             var message = Application.Current.Resources["DialogRestart_Message"] as string ?? "Are you sure?";
 
-            MessageBoxResult result = MessageBox.Show(message,
-                caption,
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show(message, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes) {
                 var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
                 if (exePath != null) {
@@ -72,29 +70,21 @@ namespace KindleMate2.UI.ViewModels {
             var caption = Application.Current.Resources["DialogExit_Caption"] as string ?? "Exit";
             var message = Application.Current.Resources["DialogExit_Message"] as string ?? "Are you sure?";
 
-            MessageBoxResult result = MessageBox.Show(message,
-                caption,
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show(message, caption, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes) {
                 Application.Current.Shutdown();
             }
         }
 
         private void LoadSampleBookTree() {
-            var booksRootNode = new BooksTreeItemViewModel { Name = "Book A", Key = "1" };
+            var booksRootNode = new BooksTreeItemViewModel {
+                Name = "Book A",
+                Key = "1"
+            };
             BooksTree.Add(booksRootNode);
-            
+
             var listClippings = _clippingService.GetAllClippings();
-            var listBooks = listClippings
-                .Where(c => !string.IsNullOrWhiteSpace(c.BookName))
-                .GroupBy(c => c.BookName)
-                .Select(group => group
-                    .OrderByDescending(c => c.PageNumber)
-                    .First()
-                )
-                .OrderBy(c => c.BookName)
-                .ToList();
+            var listBooks = listClippings.Where(c => !string.IsNullOrWhiteSpace(c.BookName)).GroupBy(c => c.BookName).Select(group => group.OrderByDescending(c => c.PageNumber).First()).OrderBy(c => c.BookName).ToList();
 
 
             foreach (Clipping book in listBooks) {
@@ -107,6 +97,7 @@ namespace KindleMate2.UI.ViewModels {
                     BooksTree.Add(bookNode);
                 }
             }
+        }
 
         private static void OpenGitHubRepo() {
             OpenUrl(AppConstants.RepoUrl);

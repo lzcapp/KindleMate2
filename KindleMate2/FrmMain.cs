@@ -15,6 +15,7 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Infrastructure.Repositories.VocabDB;
 using KindleMate2.Properties;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using Markdig;
@@ -144,26 +145,26 @@ namespace KindleMate2 {
                 Thread.CurrentThread.CurrentCulture = culture;
 
                 switch (cultureName.ToLowerInvariant()) {
-                    case Culture.English:
+                    case Cultures.English:
                         menuLangEN.Visible = false;
                         break;
-                    case Culture.ChineseSimplified:
+                    case Cultures.ChineseSimplified:
                         menuLangSC.Visible = false;
                         break;
-                    case Culture.ChineseTraditional:
+                    case Cultures.ChineseTraditional:
                         menuLangTC.Visible = false;
                         break;
                 }
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains(nameof(Culture.English), StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Culture.English, StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains(nameof(Cultures.English), StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Cultures.English, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, Culture.ChineseCN, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseSG, StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, Culture.ChineseMY, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Cultures.ChineseCN, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSG, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseMY, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, Culture.ChineseTW, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseHK, StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, Culture.ChineseMO, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Culture.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Cultures.ChineseTW, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseHK, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseMO, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
@@ -2241,17 +2242,17 @@ namespace KindleMate2 {
         }
 
         private void MenuLangEN_Click(object sender, EventArgs e) {
-            UpdateSettingLanguage(Culture.English);
+            UpdateSettingLanguage(Cultures.English);
             Restart();
         }
 
         private void MenuLangSC_Click(object sender, EventArgs e) {
-            UpdateSettingLanguage(Culture.ChineseSimplified);
+            UpdateSettingLanguage(Cultures.ChineseSimplified);
             Restart();
         }
 
         private void MenuLangTC_Click(object sender, EventArgs e) {
-            UpdateSettingLanguage(Culture.ChineseTraditional);
+            UpdateSettingLanguage(Cultures.ChineseTraditional);
             Restart();
         }
 

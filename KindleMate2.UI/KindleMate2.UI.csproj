@@ -48,6 +48,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
     <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
   </ItemGroup>
 

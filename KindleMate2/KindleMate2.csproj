@@ -158,11 +158,6 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Settings.settings</DependentUpon>
 		</Compile>
-		<Compile Update="Strings.Designer.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Strings.resx</DependentUpon>
-		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -205,19 +200,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Update="Properties\Resources.zh-hant.resx">
 			<DependentUpon>Resources.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.en.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.resx">
-			<Generator>ResXFileCodeGenerator</Generator>
-			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.zh-hans.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.zh-hant.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
 		</EmbeddedResource>
 	</ItemGroup>
 

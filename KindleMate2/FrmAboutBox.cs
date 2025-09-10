@@ -4,26 +4,24 @@ using DarkModeForms;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {
-        private readonly ThemeService _themeService;
-        
-        private bool _isDarkTheme;
-
         private const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
         
         public FrmAboutBox() {
             InitializeComponent();
 
             var settingRepository = new SettingRepository(ConnectionString);
-            _themeService = new ThemeService(settingRepository);
+            var themeService = new ThemeService(settingRepository);
 
-            _isDarkTheme = _themeService.IsDarkTheme();
-            if (_themeService.IsDarkTheme()) {
-                _ = new DarkModeCS(this, false);
-                lblPath.LinkColor = Color.White;
+            themeService.IsDarkTheme();
+            if (!themeService.IsDarkTheme()) {
+                return;
             }
+            _ = new DarkModeCS(this, false);
+            lblPath.LinkColor = Color.White;
         }
 
         private static string AssemblyVersion {

@@ -1,5 +1,6 @@
-﻿namespace KindleMate2.Shared.Constants {
-    public class Culture {
+﻿// ReSharper disable InconsistentNaming
+namespace KindleMate2.Shared.Constants {
+    public static class Cultures {
         public const string English = "en";
         public const string Chinese = "zh";
         
