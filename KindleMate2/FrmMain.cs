@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -18,7 +17,6 @@ using KindleMate2.Properties;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
-using Markdig;
 using MediaDevices;
 using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
 using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
@@ -589,9 +587,6 @@ namespace KindleMate2 {
 
                         dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                     } else {
                         var lookups = _lookups.AsEnumerable().Where(row => row.WordKey?[3..] == _selectedWord).ToList();
                         var filteredWords = DataTableHelper.ToDataTable(lookups);
@@ -620,10 +615,10 @@ namespace KindleMate2 {
 
                         dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                         dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                     }
+                    dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                    dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                    dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
                     dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
 
@@ -713,7 +708,7 @@ namespace KindleMate2 {
                         var bookName = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
                         var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
                         _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
-                        var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(" 　　", Environment.NewLine) ?? string.Empty;
+                        var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine) ?? string.Empty;
                         var briefType = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
 
                         lblBook.Text = bookName;
@@ -763,7 +758,7 @@ namespace KindleMate2 {
                         foreach (Lookup row in _lookups.AsEnumerable().OrderBy(x => x.Timestamp)) {
                             var title = " ——《" + row.Title + "》";
                             var str = row.WordKey;
-                            var strContent = row.Usage?.Replace(" 　　", Environment.NewLine);
+                            var strContent = row.Usage?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                             if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strContent)) {
                                 continue;
                             }
@@ -786,7 +781,7 @@ namespace KindleMate2 {
                         if (word.Length > 1) {
                             foreach (Clipping row in _clippings.AsEnumerable().OrderBy(x => x.PageNumber)) {
                                 var title = " ——《" + row.BookName + "》";
-                                var strContent = row.Content?.Replace(" 　　", Environment.NewLine);
+                                var strContent = row.Content?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                                 if (string.IsNullOrWhiteSpace(strContent)) {
                                     continue;
                                 }
@@ -1840,14 +1835,7 @@ namespace KindleMate2 {
                 splitContainerDetail.Panel1Collapsed = true;
 
                 var lookups = _lookups.AsEnumerable()
-                    .Where(row => {
-                        if (row.WordKey != null) {
-                            var index = row.WordKey.IndexOf(':');
-                            var cleaned = index >= 0 ? row.WordKey[(index + 1)..] : row.WordKey;
-                            return cleaned == _selectedWord;
-                        }
-                        return false;
-                    })
+                    .Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase))
                     .ToList();
                 var filteredWords = DataTableHelper.ToDataTable(lookups);
                 lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
@@ -1893,19 +1881,21 @@ namespace KindleMate2 {
             if (e.Node.Text.Equals(Strings.Select_All)) {
                 return;
             }
-            if (!e.Node.Text.Equals(Strings.Select_All)) {
-                var bookName = e.Node.Text;
-                var authorName = GetAuthorNameFromClippings(bookName);
-                ShowBookRenameDialog(bookName, authorName);
+            if (e.Node.Text.Equals(Strings.Select_All)) {
+                return;
             }
+            var bookName = e.Node.Text;
+            var authorName = GetAuthorNameFromClippings(bookName);
+            ShowBookRenameDialog(bookName, authorName);
         }
 
         private void Content_Rename_MouseDoubleClick() {
-            if (tabControl.SelectedIndex == 0) {
-                var bookName = GetBooknameFromContent();
-                var authorName = GetAuthorNameFromContent();
-                ShowBookRenameDialog(bookName, authorName);
+            if (tabControl.SelectedIndex != 0) {
+                return;
             }
+            var bookName = GetBooknameFromContent();
+            var authorName = GetAuthorNameFromContent();
+            ShowBookRenameDialog(bookName, authorName);
         }
 
         private void LblBook_MouseDoubleClick(object sender, MouseEventArgs e) {
@@ -1921,10 +1911,13 @@ namespace KindleMate2 {
         }
 
         private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.Delete) {
-                DeleteNodes();
-            } else if (e.KeyCode == Keys.Enter) {
-                MenuRename_Click(sender, e);
+            switch (e.KeyCode) {
+                case Keys.Delete:
+                    DeleteNodes();
+                    break;
+                case Keys.Enter:
+                    MenuRename_Click(sender, e);
+                    break;
             }
         }
 
@@ -1953,13 +1946,13 @@ namespace KindleMate2 {
         }
 
         private string RebuildDatabase() {
-            if (_km2DatabaseService.RebuildDatabase(out var result)) {
-                var parsedCount = result[AppConstants.ParsedCount];
-                var insertedCount = result[AppConstants.InsertedCount];
-                var clipping = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
-                return clipping;
+            if (!_km2DatabaseService.RebuildDatabase(out var result)) {
+                return string.Empty;
             }
-            return string.Empty;
+            var parsedCount = result[AppConstants.ParsedCount];
+            var insertedCount = result[AppConstants.InsertedCount];
+            var clipping = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+            return clipping;
         }
 
         private void MenuClean_Click(object sender, EventArgs e) {

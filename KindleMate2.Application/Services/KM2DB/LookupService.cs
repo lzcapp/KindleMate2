@@ -103,16 +103,16 @@ namespace KindleMate2.Application.Services.KM2DB {
                 Directory.CreateDirectory(filePath);
             }
 
-            File.WriteAllText(Path.Combine(filePath, filename + ".md"), markdown.ToString(), Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
 
             var htmlContent = AppConstants.HtmlBegin;
             MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
             htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
             htmlContent += AppConstants.HtmlEnd;
 
-            File.WriteAllText(Path.Combine(filePath, filename + ".html"), htmlContent, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
 
-            File.WriteAllText(Path.Combine(filePath, "styles.css"), AppConstants.Css);
+            File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
 
             return true;
         }

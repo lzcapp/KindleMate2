@@ -41,6 +41,9 @@
         public const string VocabFileName = "vocab.db";
         public const string VersionFileName = "version.txt";
         public const string ExplorerFileName = "explorer.exe";
+        public const string CSSFileName = "styles.css";
+
+        public const string SpaceForNewLine = " 　　";
 
         public const string ExplorerSelect = "/select,";
         
