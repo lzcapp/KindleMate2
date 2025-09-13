@@ -1,8 +1,10 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
-using KindleMate2.Domain.Entities.KM2DB;
+﻿using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
+using System.Runtime.InteropServices;
+using System.Text;
+using Lookup = KindleMate2.Domain.Entities.KM2DB.Lookup;
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class StringHelper {
@@ -102,7 +104,7 @@ namespace KindleMate2.Infrastructure.Helpers {
 
             try {
                 if (clippings.Count <= 0) {
-                    throw new Exception("No clippings found.");
+                    throw new Exception("No clipping found.");
                 }
                 
                 var bookName = clippings[0].BookName;
@@ -134,6 +136,47 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return markdown;
             } catch (Exception e) {
                 Console.WriteLine(GetExceptionMessage(nameof(BuildMarkdownWithClippings), e));
+                return markdown;
+            }
+        }
+
+        public static StringBuilder BuildMarkdownWithLookups(List<Lookup> lookups) {
+            var markdown = new StringBuilder();
+
+            try {
+                if (lookups.Count <= 0) {
+                    throw new Exception("No lookup found.");
+                }
+                
+                var word = lookups[0].Word;
+
+                if (word != null) {
+                    markdown.AppendLine("## \ud83d\udcd6 " + word.Trim());
+                } else {
+                    throw new Exception("No word found.");
+                }
+
+                markdown.AppendLine();
+
+                foreach (Lookup lookup in lookups) {
+                    var title = lookup.Title;
+                    var usage = lookup.Usage;
+
+                    if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(usage)) {
+                        continue;
+                    }
+
+                    markdown.AppendLine("**" + title + "**");
+
+                    markdown.AppendLine();
+
+                    markdown.AppendLine(usage.Replace(word, " **`" + word + "`** "));
+
+                    markdown.AppendLine();
+                }
+                return markdown;
+            } catch (Exception e) {
+                Console.WriteLine(GetExceptionMessage(nameof(BuildMarkdownWithLookups), e));
                 return markdown;
             }
         }

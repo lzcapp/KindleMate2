@@ -121,6 +121,28 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return results;
         }
 
+        public List<string> GetWordsList() {
+            var results = new List<string>();
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                var cmd = new SqliteCommand("SELECT DISTINCT word FROM vocab ORDER BY word", connection);
+
+                using SqliteDataReader reader = cmd.ExecuteReader();
+                while (reader.Read()) {
+                    var word = DatabaseHelper.GetSafeString(reader, 0);
+                    if (string.IsNullOrWhiteSpace(word)) {
+                        continue;
+                    }
+                    results.Add(word);
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
+            return results;
+        }
+
         public int GetCount() {
             try {
                 using var connection = new SqliteConnection(_connectionString);

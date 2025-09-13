@@ -9,6 +9,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         List<Vocab> GetByFuzzySearch(string searchText, AppEntities.SearchType searchType);
 
+        List<string> GetWordsList();
+
         int GetCount();
 
         bool Add(Vocab vocab);

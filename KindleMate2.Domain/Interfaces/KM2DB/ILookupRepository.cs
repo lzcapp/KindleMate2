@@ -12,6 +12,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         List<Lookup> GetByTitle(string title);
 
         List<Lookup> GetByFuzzySearch(string search, AppEntities.SearchType type);
+        
+        List<string> GetWordKeysList();
 
         int GetCount();
 

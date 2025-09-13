@@ -1,6 +1,13 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
+using Markdig;
+using System.Data;
+using System.Text;
+using System.Xml.Linq;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class LookupService {
@@ -24,6 +31,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public List<Lookup> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             return _repository.GetByFuzzySearch(search, type);
+        }
+
+        public List<string> GetWordKeysList() {
+            return _repository.GetWordKeysList();
         }
 
         public int GetCount() {
@@ -59,6 +70,58 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
             }
             return result > 0;
+        }
+        
+        public bool LookupsToMarkdown(string filePath, string word = "") {
+            string filename;
+
+            var listLookups = GetAllLookups();
+
+            var markdown = new StringBuilder();
+
+            markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
+
+            markdown.AppendLine();
+
+            if (string.IsNullOrWhiteSpace(word) || word.Equals(Strings.Select_All)) {
+                filename = "Vocabs";
+                    
+                markdown.AppendLine("[TOC]");
+
+                markdown.AppendLine();
+
+                foreach (var wordKey in GetWordKeysList()) {
+                    var lookups = listLookups.AsEnumerable().Where(row => row.WordKey != null && row.WordKey.Equals(wordKey)).ToList();
+                    markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
+                }
+            } else {
+                filename = StringHelper.SanitizeFilename(word);
+
+                var lookups = listLookups.AsEnumerable().Where(row => {
+                    if (row.WordKey != null && row.Word.Equals(word)) {
+                        return true;
+                    }
+                    return false;
+                }).ToList();
+                markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
+            }
+
+            if (!Directory.Exists(filePath)) {
+                Directory.CreateDirectory(filePath);
+            }
+
+            File.WriteAllText(Path.Combine(filePath, filename + ".md"), markdown.ToString(), Encoding.UTF8);
+
+            var htmlContent = AppConstants.HtmlBegin;
+            MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
+            htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
+            htmlContent += AppConstants.HtmlEnd;
+
+            File.WriteAllText(Path.Combine(filePath, filename + ".html"), htmlContent, Encoding.UTF8);
+
+            File.WriteAllText(Path.Combine(filePath, "styles.css"), AppConstants.Css);
+
+            return true;
         }
     }
 }

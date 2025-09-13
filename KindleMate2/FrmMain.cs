@@ -2000,8 +2000,7 @@ namespace KindleMate2 {
 
         private bool ClippingsToMarkdown(string bookname = "") {
             try {
-                _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
-                return true;
+                return _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
             } catch (Exception) {
                 return false;
             }
@@ -2009,98 +2008,7 @@ namespace KindleMate2 {
 
         private bool VocabsToMarkdown(string word = "") {
             try {
-                var filename = "Vocabs";
-
-                var markdown = new StringBuilder();
-
-                markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
-
-                markdown.AppendLine();
-
-                if (string.IsNullOrWhiteSpace(word) || word.Equals(Strings.Select_All)) {
-                    markdown.AppendLine("[TOC]");
-
-                    markdown.AppendLine();
-
-                    foreach (TreeNode node in treeViewWords.Nodes) {
-                        var nodeWordText = node.Text;
-
-                        if (nodeWordText.Equals(Strings.Select_All)) {
-                            continue;
-                        }
-
-                        var lookups = _lookups.AsEnumerable().Where(row => row.Word == nodeWordText).ToList();
-                        var filteredBooks = DataTableHelper.ToDataTable(lookups);
-
-                        if (filteredBooks.Rows.Count <= 0) {
-                            return false;
-                        }
-
-                        markdown.AppendLine("## \ud83d\udd24 " + nodeWordText.Trim());
-
-                        markdown.AppendLine();
-
-                        foreach (DataRow row in filteredBooks.Rows) {
-                            var title = row[Columns.Title].ToString();
-                            var usage = row[Columns.Usage].ToString();
-
-                            if (usage == null) {
-                                continue;
-                            }
-
-                            markdown.AppendLine("**《" + title + "》**");
-
-                            markdown.AppendLine();
-
-                            markdown.AppendLine(usage.Replace(nodeWordText, " **`" + nodeWordText + "`** "));
-
-                            markdown.AppendLine();
-                        }
-                    }
-                } else {
-                    filename = StringHelper.SanitizeFilename(word);
-
-                    var lookups = _lookups.AsEnumerable().Where(row => row.Word != null && row.Word.Equals(word)).ToList();
-                    var filteredBooks = DataTableHelper.ToDataTable(lookups);
-
-                    if (filteredBooks.Rows.Count <= 0) {
-                        return false;
-                    }
-
-                    markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
-
-                    markdown.AppendLine();
-
-                    foreach (DataRow row in filteredBooks.Rows) {
-                        var title = row[Columns.Title].ToString();
-                        var usage = row[Columns.Usage].ToString();
-
-                        if (usage == null) {
-                            continue;
-                        }
-
-                        markdown.AppendLine("**《" + title + "》**");
-
-                        markdown.AppendLine();
-
-                        markdown.AppendLine(usage.Replace(word, " **`" + word + "`** "));
-
-                        markdown.AppendLine();
-                    }
-                }
-
-                File.WriteAllText(Path.Combine(_programPath, AppConstants.ExportsPathName, filename + ".md"), markdown.ToString(), Encoding.UTF8);
-
-                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-                MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
-                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
-
-                htmlContent += "\r\n</body>\r\n</html>";
-
-                File.WriteAllText(Path.Combine(_programPath, AppConstants.ExportsPathName, filename + ".html"), htmlContent, Encoding.UTF8);
-
-                return true;
+                return _lookupService.LookupsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), word);
             } catch (Exception) {
                 return false;
             }

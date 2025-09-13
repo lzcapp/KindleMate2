@@ -1,6 +1,13 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
+using Markdig;
+using System.Data;
+using System.Text;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class VocabService {
@@ -20,6 +27,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public List<Vocab> GetByFuzzySearch(string searchText, AppEntities.SearchType searchType) {
             return _repository.GetByFuzzySearch(searchText, searchType);
+        }
+
+        public List<string> GetWordsList() {
+            return _repository.GetWordsList();
         }
 
         public int GetCount() {
