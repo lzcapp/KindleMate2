@@ -4,9 +4,7 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using Markdig;
-using System.Data;
 using System.Text;
-using System.Xml.Linq;
 using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
@@ -97,12 +95,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             } else {
                 filename = StringHelper.SanitizeFilename(word);
 
-                var lookups = listLookups.AsEnumerable().Where(row => {
-                    if (row.WordKey != null && row.Word.Equals(word)) {
-                        return true;
-                    }
-                    return false;
-                }).ToList();
+                var lookups = listLookups.AsEnumerable().Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 
