@@ -125,8 +125,7 @@ namespace KindleMate2 {
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
-            }
-            finally {
+            } finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
         }
@@ -435,8 +434,8 @@ namespace KindleMate2 {
 
             if (books.Count != 0) {
                 foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
-                             ToolTipText = book.BookName
-                         })) {
+                    ToolTipText = book.BookName
+                })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
             }
@@ -460,8 +459,8 @@ namespace KindleMate2 {
             treeViewWords.Nodes.Add(rootNodeWords);
 
             foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
-                         ToolTipText = word.Word
-                     })) {
+                ToolTipText = word.Word
+            })) {
                 treeViewWords.Nodes.Add(wordNode);
             }
 
@@ -737,12 +736,12 @@ namespace KindleMate2 {
                         }
                         break;
                     case 1:
-                        var word_key = selectedRow.Cells[Columns.WordKey].Value.ToString() ?? string.Empty;
+                        var wordKey = selectedRow.Cells[Columns.WordKey].Value.ToString() ?? string.Empty;
                         var word = selectedRow.Cells[Columns.Word].Value.ToString() ?? string.Empty;
                         var stem = selectedRow.Cells[Columns.Stem].Value.ToString() ?? string.Empty;
                         var frequency = selectedRow.Cells[Columns.Frequency].Value.ToString() ?? string.Empty;
 
-                        if (string.IsNullOrWhiteSpace(word_key) || string.IsNullOrWhiteSpace(word) || string.IsNullOrWhiteSpace(stem) || string.IsNullOrWhiteSpace(frequency)) {
+                        if (string.IsNullOrWhiteSpace(wordKey) || string.IsNullOrWhiteSpace(word) || string.IsNullOrWhiteSpace(stem) || string.IsNullOrWhiteSpace(frequency)) {
                             break;
                         }
 
@@ -755,26 +754,32 @@ namespace KindleMate2 {
                             isChinese = true;
                         }
 
-                        foreach (Lookup row in _lookups.AsEnumerable().OrderBy(x => x.Timestamp)) {
-                            var title = " ——《" + row.Title + "》";
-                            var str = row.WordKey;
-                            var strContent = row.Usage?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
-                            if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strContent)) {
+                        var lookups = _lookups.AsEnumerable().OrderBy(x => x.Timestamp);
+                        foreach (Lookup lookup in lookups) {
+                            var title = " ——《" + lookup.Title + "》";
+                            var str = lookup.WordKey;
+                            var usage = lookup.Usage?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+                            if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(usage)) {
                                 continue;
                             }
-                            if (!string.Equals(row.WordKey, word_key, StringComparison.InvariantCultureIgnoreCase)) {
+                            if (!isChinese) {
+                                if (lookup.Word.Equals(stem, StringComparison.InvariantCultureIgnoreCase)) {
+                                    titleList.Add(title);
+                                    lookupsList.Add(usage + title + Environment.NewLine);
+                                    continue;
+                                }
+                            }
+                            if (!string.Equals(lookup.WordKey, wordKey, StringComparison.InvariantCultureIgnoreCase)) {
                                 if (!isChinese) {
-                                    if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
+                                    if (!Regex.IsMatch(usage, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                } else {
-                                    if (!strContent.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
-                                        continue;
-                                    }
+                                } else if (!usage.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
+                                    continue;
                                 }
                             }
                             titleList.Add(title);
-                            lookupsList.Add(strContent + title + Environment.NewLine);
+                            lookupsList.Add(usage + title + Environment.NewLine);
                         }
 
                         var clippingsList = new HashSet<string>();
@@ -953,7 +958,7 @@ namespace KindleMate2 {
                 new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
             };
 
-            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
                 if (fields == null) {
                     return;
                 }
@@ -1503,24 +1508,24 @@ namespace KindleMate2 {
                 var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
                 switch (_deviceType) {
                     case Device.Type.USB: {
-                        File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
-                        File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
-                        return true;
-                    }
+                            File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
+                            File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
+                            return true;
+                        }
                     case Device.Type.MTP: {
-                        var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d =>
-                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                        device.Connect();
-                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
-                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
-                        device.Disconnect();
-                        return true;
-                    }
+                            var devices = MediaDevice.GetDevices();
+                            using MediaDevice? device = devices.First(d =>
+                                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                            device.Connect();
+                            ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                            ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                            device.Disconnect();
+                            return true;
+                        }
                     case Device.Type.Unknown:
                     default: {
-                        throw new Exception(Strings.Kindle_Connect_Failed);
-                    }
+                            throw new Exception(Strings.Kindle_Connect_Failed);
+                        }
                 }
             } catch (Exception e) {
                 exception = e;
@@ -1586,7 +1591,7 @@ namespace KindleMate2 {
                 new(Strings.Author, authorName)
             };
 
-            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
                 if (fields != null) {
                     var dialogBook = fields[0].Value;
                     var dialogAuthor = fields[1].Value;
@@ -2232,15 +2237,15 @@ namespace KindleMate2 {
                         MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
                     case Device.Type.MTP: {
-                        var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d =>
-                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                        device.Connect();
-                        WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
-                        device.Disconnect();
-                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    }
+                            var devices = MediaDevice.GetDevices();
+                            using MediaDevice? device = devices.First(d =>
+                                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                            device.Connect();
+                            WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
+                            device.Disconnect();
+                            MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            break;
+                        }
                     case Device.Type.Unknown:
                     default:
                         break;
@@ -2270,7 +2275,7 @@ namespace KindleMate2 {
             try {
                 var arch = StringHelper.GetRuntimeArchitecture();
                 Console.WriteLine($"Detected architecture: {arch}");
-                
+
                 var updateUrl = arch switch {
                     "x64" => "https://github.lzc.app/KindleMate2/update_x64.xml",
                     "x86" => "https://github.lzc.app/KindleMate2/update_x86.xml",
@@ -2278,9 +2283,9 @@ namespace KindleMate2 {
                     "x86_runtime" => "https://github.lzc.app/KindleMate2/update_x86_runtime.xml",
                     _ => throw new NotSupportedException("Unsupported architecture detected")
                 };
-                
+
                 AutoUpdater.Start(updateUrl);
-                
+
                 return true;
             } catch (Exception e) {
                 Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetAutoUpdater), e));
