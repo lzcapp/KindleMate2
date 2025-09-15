@@ -23,8 +23,8 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetByKeyAndContent(key, content);
         }
 
-        public List<Clipping> GetClippingsByBookNameAndPageNumberAndBriefType(string bookname, int pagenumber, BriefType brieftype) {
-            return _repository.GetByBookNameAndPageNumberAndBriefType(bookname, pagenumber, brieftype);
+        public List<Clipping> GetClippingsByBookNameAndPageNumberAndBriefType(string bookName, int pageNumber, BriefType briefType) {
+            return _repository.GetByBookNameAndPageNumberAndBriefType(bookName, pageNumber, briefType);
         }
 
         public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {

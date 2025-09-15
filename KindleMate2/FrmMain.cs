@@ -756,7 +756,7 @@ namespace KindleMate2 {
 
                         var lookups = _lookups.AsEnumerable().OrderBy(x => x.Timestamp);
                         foreach (Lookup lookup in lookups) {
-                            var title = " ——《" + lookup.Title + "》";
+                            var title = string.Format(AppConstants.BookTitleFormat, lookup.Title);
                             var str = lookup.WordKey;
                             var usage = lookup.Usage?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                             if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(usage)) {
@@ -784,9 +784,9 @@ namespace KindleMate2 {
 
                         var clippingsList = new HashSet<string>();
                         if (word.Length > 1) {
-                            foreach (Clipping row in _clippings.AsEnumerable().OrderBy(x => x.PageNumber)) {
-                                var title = " ——《" + row.BookName + "》";
-                                var strContent = row.Content?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+                            foreach (Clipping clipping in _clippings.AsEnumerable().OrderBy(x => x.PageNumber)) {
+                                var title = string.Format(AppConstants.BookTitleFormat, clipping.BookName);
+                                var strContent = clipping.Content?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                                 if (string.IsNullOrWhiteSpace(strContent)) {
                                     continue;
                                 }
