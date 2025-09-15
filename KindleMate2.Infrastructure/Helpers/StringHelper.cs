@@ -178,44 +178,61 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
         }
 
-        public static string GetAuthorFromTitle(string input) {
-            if (string.IsNullOrEmpty(input)) {
-                return string.Empty;
-            }
-
-            // 2. Check if the string ends with a valid closing parenthesis
-            if (!input.EndsWith(")") && !input.EndsWith("）")) {
-                return string.Empty;
-            }
-
-            var countNestedChineseParentheses = 0;
-            var countNestedEnglishParentheses = 0;
-
-            var closeParentheses = input[^1];
-            for (var i = input.Length - 2; i >= 0; i--) {
-                var c = input[i];
-                switch (c) {
-                    case '）':
-                        countNestedChineseParentheses++;
-                        break;
-                    case ')':
-                        countNestedEnglishParentheses++;
-                        break;
+        public static (string BookName, string AuthorName) GetAuthorFromTitle(string input) {
+            try {
+                if (string.IsNullOrEmpty(input)) {
+                    throw new Exception("Input is null or empty.");
                 }
 
-                if (c is '（' or '(') {
-                    if (countNestedChineseParentheses == 0 && countNestedEnglishParentheses == 0) {
-                        return input.Substring(i, input.Length - i);
+                // 2. Check if the string ends with a valid closing parenthesis
+                if (!input.EndsWith(')') && !input.EndsWith('）')) {
+                    var lastIndex = input.LastIndexOf('-');
+                    if (lastIndex != -1) {
+                        var author = input.Substring(lastIndex + 1, input.Length - lastIndex - 1).Trim();
+                        var book = input[..lastIndex].Trim();
+                        return (book, author);
                     } else {
-                        if (c == '（') {
-                            countNestedChineseParentheses--;
-                        } else if (c == '(') {
-                            countNestedEnglishParentheses--;
+                        throw new Exception("No valid author name found.");
+                    }
+                }
+
+                var countNestedChineseParentheses = 0;
+                var countNestedEnglishParentheses = 0;
+
+                var closeParentheses = input[^1];
+                for (var i = input.Length - 2; i >= 0; i--) {
+                    var c = input[i];
+                    switch (c) {
+                        case '）':
+                            countNestedChineseParentheses++;
+                            break;
+                        case ')':
+                            countNestedEnglishParentheses++;
+                            break;
+                    }
+
+                    if (c is '（' or '(') {
+                        if (countNestedChineseParentheses == 0 && countNestedEnglishParentheses == 0) {
+                            var author = input.Substring(i + 1, input.Length - i - 2).Trim();
+                            var book = input[..i].Trim();
+                            return (book, author);
+                        } else {
+                            switch (c) {
+                                case '（':
+                                    countNestedChineseParentheses--;
+                                    break;
+                                case '(':
+                                    countNestedEnglishParentheses--;
+                                    break;
+                            }
                         }
                     }
                 }
+                throw new Exception("No valid author name found.");
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(GetAuthorFromTitle), e));
+                return (input, string.Empty);
             }
-            return string.Empty;
         }
     }
 }

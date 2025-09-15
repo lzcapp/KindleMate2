@@ -4,8 +4,8 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
-using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class Km2DatabaseService {
@@ -88,7 +88,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 
                 var originalClippingLines = _originalClippingLineRepository.GetAll();
                 if (originalClippingLines.Count <= 0) {
-                    return false;
+                    throw new Exception(Strings.Database_Empty);
                 }
             
                 _clippingRepository.DeleteAll();
@@ -128,6 +128,12 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         private int HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
             var insertResult = 0;
+
+            var allClippings = _clippingRepository.GetAll();
+            var originalKeys = _originalClippingLineRepository.GetAllKeys();
+            
+            var listAddClippings = new List<Clipping>();
+            var listAddOriginalClippings = new List<OriginalClippingLine>();
             
             foreach (MyClipping myClipping in clippings) {
                 var clipping = new Clipping {
@@ -210,24 +216,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clipping.ClippingDate = clippingDate;
 
                 var key = clippingDate + "|" + clippingTypeLocation;
-                if (!isRebuild) {
-                    if (_originalClippingLineRepository.GetByKey(key) != null) {
-                        continue;
-                    }
+                if (!isRebuild && originalKeys.Contains(key)) {
+                    continue;
                 }
 
                 clipping.Key = key;
 
-                string bookName;
-                var authorName = StringHelper.GetAuthorFromTitle(header);
-                if (!string.IsNullOrWhiteSpace(authorName)) {
-                    bookName = header.Replace(authorName, string.Empty, StringComparison.InvariantCultureIgnoreCase).Trim();
-                    authorName =  authorName.Substring(1, authorName.Length - 2).Trim();
-                } else {
-                    authorName = string.Empty;
-                    bookName = header;
-                }
-                bookName = bookName.Trim();
+                var (bookName, authorName) = StringHelper.GetAuthorFromTitle(header);
                 clipping.BookName = bookName;
                 clipping.AuthorName = authorName;
 
@@ -235,26 +230,31 @@ namespace KindleMate2.Application.Services.KM2DB {
                     _ = SetClippingsBriefTypeHide(bookName, pageNumber);
                 }
 
-                if (_clippingRepository.GetByKeyAndContent(key, content) != null) {
+                if (allClippings.Any(c => c.Key.Equals(key) && c.Content != null && c.Content.Contains(content))) {
                     continue;
                 }
                 
                 clipping.Content = content;
 
-                _clippingRepository.Add(clipping);
+                listAddClippings.Add(clipping);
 
                 if (!isRebuild) {
-                    _originalClippingLineRepository.Add(new OriginalClippingLine {
+                    listAddOriginalClippings.Add(new OriginalClippingLine {
                         key = key, 
                         line1 = header, 
                         line2 = metadata,
                         line4 = content
                     });
                 }
-                
-                insertResult += 1;
             }
 
+            if (listAddClippings.Count > 0) {
+                insertResult = _clippingRepository.Add(listAddClippings);
+            }
+
+            if (listAddOriginalClippings.Count > 0) {
+                _originalClippingLineRepository.Add(listAddOriginalClippings);
+            }
 
             return insertResult;
         }
@@ -315,42 +315,27 @@ namespace KindleMate2.Application.Services.KM2DB {
             var clippings = _clippingRepository.GetAll();
 
             try {
-                var emptyCount = 0;
-                var trimmedCount = 0;
-                var duplicatedCount = 0;
+                const int trimmedCount = 0;
+
+                var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
+                var emptyCount = _clippingRepository.Delete(emptyClippings);
+                
+                var duplicatedClippings = new List<Clipping>();
 
                 foreach (Clipping clipping in clippings) {
                     var key = clipping.Key;
                     var content = clipping.Content;
-                    var bookname = clipping.BookName;
-
-                    var contentTrimmed = StringHelper.TrimContent(content);
-                    var booknameTrimmed = StringHelper.TrimContent(bookname);
 
                     if (string.IsNullOrWhiteSpace(key)) {
                         continue;
                     }
-                    if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(bookname) || string.IsNullOrWhiteSpace(contentTrimmed) || string.IsNullOrWhiteSpace(booknameTrimmed)) {
-                        _clippingRepository.Delete(key);
-                        emptyCount++;
-                        continue;
-                    }
                     
-                    clipping.Content = contentTrimmed;
-                    clipping.BookName = booknameTrimmed;
-
-                    if (!contentTrimmed.Equals(content) && !booknameTrimmed.Equals(bookname) || !contentTrimmed.Equals(content)) {
-                        if (_clippingRepository.Update(clipping)) {
-                            trimmedCount++;
-                        }
-                    }
-
-                    if (_clippingRepository.GetByContent(clipping.Content).Count > 1 || _clippingRepository.GetByFuzzySearch(clipping.Content, AppEntities.SearchType.Content).Count > 1) {
-                        if (_clippingRepository.Delete(key)) {
-                            duplicatedCount++;
-                        }
+                    if (clippings.Select(c => c.Content != null && content != null && c.Content.Contains(content)).Count() > 1) {
+                        duplicatedClippings.Add(clipping);
                     }
                 }
+                
+                var duplicatedCount = _clippingRepository.Delete(duplicatedClippings);
 
                 var fileInfo = new FileInfo(databaseFilePath);
                 var originFileSize = fileInfo.Length;

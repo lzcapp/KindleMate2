@@ -397,6 +397,40 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             }
         }
 
+        public int Add(List<Clipping> listClippings) {
+            var count = 0;
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                foreach (Clipping clipping in listClippings) {
+                    var cmd = new SqliteCommand(
+                        "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
+                        connection);
+                    cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@content", clipping.Content ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@sync", clipping.Sync ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
+            return count;
+        }
+
         public bool Update(Clipping clipping) {
             try {
                 using var connection = new SqliteConnection(_connectionString);
@@ -411,6 +445,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
@@ -420,7 +455,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
                 return cmd.ExecuteNonQuery() > 0;
             } catch (Exception e) {
-                Console.WriteLine(e);
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(Update), e));
                 return false;
             }
         }
@@ -455,6 +490,29 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 Console.WriteLine(e);
                 return false;
             }
+        }
+
+        public int Delete(List<Clipping> listClippings) {
+            var count = 0;
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                foreach (Clipping clipping in listClippings) {
+                    var cmd = new SqliteCommand("DELETE FROM clippings WHERE key = @key", connection);
+                    var key = clipping.Key;
+                    if (string.IsNullOrWhiteSpace(key)) {
+                        throw new InvalidOperationException();
+                    }
+                    cmd.Parameters.AddWithValue("@key", key);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
+            return count;
         }
 
         public bool DeleteAll() {

@@ -7,6 +7,7 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class OriginalClippingLineRepository : IOriginalClippingLineRepository {
         private readonly string _connectionString;
+        private IOriginalClippingLineRepository _originalClippingLineRepositoryImplementation;
 
         public OriginalClippingLineRepository(string connectionString) {
             _connectionString = connectionString;
@@ -59,6 +60,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     line4 = DatabaseHelper.GetSafeString(reader, 4),
                     line5 = DatabaseHelper.GetSafeString(reader, 5)
                 });
+            }
+            return results;
+        }
+
+        public HashSet<string> GetAllKeys() {
+            var results = new HashSet<string>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT key FROM original_clipping_lines", connection);
+
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                var key = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(key)) {
+                    continue;
+                }
+                results.Add(key);
             }
             return results;
         }
@@ -130,6 +150,30 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 Console.WriteLine(e);
                 return false;
             }
+        }
+
+        public int Add(List<OriginalClippingLine> listOriginalClippings) {
+            var count = 0;
+            try {
+                using var connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
+                    var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
+                    cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
+            return count;
         }
 
         public bool Update(OriginalClippingLine originalClippingLine) {

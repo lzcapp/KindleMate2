@@ -25,11 +25,15 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool Add(Clipping clipping);
 
+        int Add(List<Clipping> listClippings);
+
         bool Update(Clipping clipping);
 
         bool UpdateBriefTypeByKey(Clipping clipping);
 
         bool Delete(string key);
+
+        int Delete(List<Clipping> listClippings);
         
         bool DeleteAll();
     }
