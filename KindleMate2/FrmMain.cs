@@ -788,7 +788,7 @@ namespace KindleMate2 {
                         if (word.Length > 1) {
                             foreach (Clipping clipping in _clippings.OrderBy(x => x.PageNumber)) {
                                 var title = string.Format(AppConstants.BookTitleFormat, clipping.BookName);
-                                var strContent = clipping.Content?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+                                var strContent = clipping.Content.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                                 if (string.IsNullOrWhiteSpace(strContent)) {
                                     continue;
                                 }
@@ -1549,7 +1549,7 @@ namespace KindleMate2 {
             try {
                 File.WriteAllBytes(filePath, memoryStream.ToArray());
             } catch (Exception ex) {
-                Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ReadMtpFile), ex));
             }
         }
 
@@ -1565,14 +1565,15 @@ namespace KindleMate2 {
 
         private void MenuRename_Click(object sender, EventArgs e) {
             var index = tabControl.SelectedIndex;
-            if (index == 0) {
-                if (treeViewBooks.SelectedNode == null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
-                    return;
-                }
-                var bookName = treeViewBooks.SelectedNode.Text;
-                var authorName = GetAuthorNameFromClippings(bookName);
-                ShowBookRenameDialog(bookName, authorName);
+            if (index != 0) {
+                return;
             }
+            if (treeViewBooks.SelectedNode == null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                return;
+            }
+            var bookName = treeViewBooks.SelectedNode.Text;
+            var authorName = GetAuthorNameFromClippings(bookName);
+            ShowBookRenameDialog(bookName, authorName);
         }
 
         private string GetAuthorNameFromClippings(string bookName) {
@@ -1594,12 +1595,13 @@ namespace KindleMate2 {
             };
 
             Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
-                if (fields != null) {
-                    var dialogBook = fields[0].Value;
-                    var dialogAuthor = fields[1].Value;
-                    if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
-                        e.Cancel = true;
-                    }
+                if (fields == null) {
+                    return;
+                }
+                var dialogBook = fields[0].Value;
+                var dialogAuthor = fields[1].Value;
+                if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
+                    e.Cancel = true;
                 }
             };
 
@@ -1627,7 +1629,7 @@ namespace KindleMate2 {
                 }
 
                 var resultRows = _clippings.Where(row => row.BookName == bookName).ToList();
-                dialogAuthor = (resultRows.Count > 0 ? resultRows[0].AuthorName : string.Empty);
+                dialogAuthor = resultRows.Count > 0 ? resultRows[0].AuthorName : string.Empty;
             }
 
             if (dialogAuthor != null) {
@@ -1813,7 +1815,7 @@ namespace KindleMate2 {
             menuRename.Visible = index switch {
                 0 => true,
                 1 => false,
-                _ => menuRename.Visible,
+                _ => menuRename.Visible
             };
             lblCount.Text = string.Empty;
             lblBookCount.Text = string.Empty;
