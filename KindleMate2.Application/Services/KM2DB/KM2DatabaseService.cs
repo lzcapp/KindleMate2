@@ -299,7 +299,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             try {
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.WordKey;
-                    var frequency = lookups.AsEnumerable().Count(lookupsRow => lookupsRow.WordKey?.Trim() == wordKey);
+                    var frequency = lookups.Count(lookupsRow => lookupsRow.WordKey?.Trim() == wordKey);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
                         WordKey = wordKey,
                         Frequency = frequency,

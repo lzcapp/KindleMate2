@@ -137,13 +137,13 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     foreach (var name in GetBookNamesList()) {
                         bookName = name;
-                        var clippings = listClippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+                        var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
                         markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
                     }
                 } else {
                     filename = StringHelper.SanitizeFilename(bookName);
 
-                    var clippings = listClippings.AsEnumerable().Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+                    var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
                     markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
                 }
 

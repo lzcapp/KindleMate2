@@ -89,13 +89,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                 markdown.AppendLine();
 
                 foreach (var wordKey in GetWordKeysList()) {
-                    var lookups = listLookups.AsEnumerable().Where(row => row.WordKey != null && row.WordKey.Equals(wordKey)).ToList();
+                    var lookups = listLookups.Where(row => row.WordKey != null && row.WordKey.Equals(wordKey)).ToList();
                     markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
                 }
             } else {
                 filename = StringHelper.SanitizeFilename(word);
 
-                var lookups = listLookups.AsEnumerable().Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
+                var lookups = listLookups.Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 

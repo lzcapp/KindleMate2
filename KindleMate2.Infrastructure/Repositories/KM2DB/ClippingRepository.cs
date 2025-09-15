@@ -335,7 +335,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 using var connection = new SqliteConnection(_connectionString);
                 connection.Open();
 
-                var cmd = new SqliteCommand("SELECT DISTINCT bookname FROM clippings ORDER BY bookname", connection);
+                var cmd = new SqliteCommand("SELECT DISTINCT bookname FROM clippings", connection);
 
                 using SqliteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read()) {
@@ -345,6 +345,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     }
                     results.Add(bookName);
                 }
+                results = results.OrderBy(x => x).ToList();
             } catch (Exception e) {
                 Console.WriteLine(e);
             }

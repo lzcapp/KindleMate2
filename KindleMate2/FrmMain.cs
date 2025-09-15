@@ -155,13 +155,15 @@ namespace KindleMate2 {
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains(nameof(Cultures.English), StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals(Cultures.English, StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains(nameof(Cultures.English), StringComparison.InvariantCultureIgnoreCase) ||
+                    currentCulture.TwoLetterISOLanguageName.Equals(Cultures.English, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
                 } else if (string.Equals(currentCulture.Name, Cultures.ChineseCN, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSG, StringComparison.InvariantCultureIgnoreCase) ||
                            string.Equals(currentCulture.Name, Cultures.ChineseMY, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangSC.Visible = false;
                 } else if (string.Equals(currentCulture.Name, Cultures.ChineseTW, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseHK, StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, Cultures.ChineseMO, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
+                           string.Equals(currentCulture.Name, Cultures.ChineseMO, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
@@ -403,14 +405,13 @@ namespace KindleMate2 {
                 var word = string.Empty;
                 var stem = string.Empty;
                 var frequency = string.Empty;
-                foreach (Vocab vocabRow in _vocabs) {
-                    if (vocabRow.WordKey != wordKey) {
+                foreach (Vocab vocab in _vocabs) {
+                    if (vocab.WordKey != wordKey) {
                         continue;
                     }
-
-                    word = vocabRow.Word;
-                    stem = vocabRow.Stem;
-                    frequency = vocabRow.Frequency.ToString();
+                    word = vocab.Word;
+                    stem = vocab.Stem;
+                    frequency = vocab.Frequency.ToString();
                     break;
                 }
 
@@ -419,9 +420,7 @@ namespace KindleMate2 {
                 row.Frequency = frequency ?? string.Empty;
             }
 
-            var books = _clippings.AsEnumerable().Select(row => new {
-                row.BookName
-            }).Distinct().OrderBy(book => book.BookName).ToList();
+            var books = _clippingService.GetBookNamesList();
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
@@ -433,18 +432,16 @@ namespace KindleMate2 {
             treeViewBooks.Nodes.Add(rootNodeBooks);
 
             if (books.Count != 0) {
-                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
-                    ToolTipText = book.BookName
-                })) {
+                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book) {
+                             ToolTipText = book
+                         })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
             }
 
             treeViewBooks.ExpandAll();
 
-            var words = _vocabs.AsEnumerable().Select(row => new {
-                row.Word
-            }).Distinct().OrderBy(word => word.Word).ToList();
+            var words = _vocabService.GetWordsList();
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
@@ -458,9 +455,9 @@ namespace KindleMate2 {
             }
             treeViewWords.Nodes.Add(rootNodeWords);
 
-            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
-                ToolTipText = word.Word
-            })) {
+            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word) {
+                         ToolTipText = word
+                     })) {
                 treeViewWords.Nodes.Add(wordNode);
             }
 
@@ -514,7 +511,7 @@ namespace KindleMate2 {
 
                         dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
                     } else {
-                        var clippings = _clippings.AsEnumerable().Where(row => row.BookName == _selectedBook).ToList();
+                        var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -587,7 +584,7 @@ namespace KindleMate2 {
                         dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                     } else {
-                        var lookups = _lookups.AsEnumerable().Where(row => row.WordKey?[3..] == _selectedWord).ToList();
+                        var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
                         var filteredWords = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                         lblBookCount.Image = Resources.input_latin_uppercase;
@@ -754,7 +751,7 @@ namespace KindleMate2 {
                             isChinese = true;
                         }
 
-                        var lookups = _lookups.AsEnumerable().OrderBy(x => x.Timestamp);
+                        var lookups = _lookups.OrderBy(x => x.Timestamp);
                         foreach (Lookup lookup in lookups) {
                             var title = string.Format(AppConstants.BookTitleFormat, lookup.Title);
                             var str = lookup.WordKey;
@@ -784,7 +781,7 @@ namespace KindleMate2 {
 
                         var clippingsList = new HashSet<string>();
                         if (word.Length > 1) {
-                            foreach (Clipping clipping in _clippings.AsEnumerable().OrderBy(x => x.PageNumber)) {
+                            foreach (Clipping clipping in _clippings.OrderBy(x => x.PageNumber)) {
                                 var title = string.Format(AppConstants.BookTitleFormat, clipping.BookName);
                                 var strContent = clipping.Content?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
                                 if (string.IsNullOrWhiteSpace(strContent)) {
@@ -900,7 +897,7 @@ namespace KindleMate2 {
                 dataGridView.Columns[Columns.AuthorName]!.Visible = true;
                 dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
             } else {
-                var clippings = _clippings.AsEnumerable().Where(row => row.BookName == _selectedBook).ToList();
+                var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                 var filteredBooks = DataTableHelper.ToDataTable(clippings);
                 lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Resources.open_book;
@@ -958,7 +955,7 @@ namespace KindleMate2 {
                 new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
             };
 
-            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
                 if (fields == null) {
                     return;
                 }
@@ -1012,7 +1009,7 @@ namespace KindleMate2 {
                 case 0:
                     if (columnName.Equals(Strings.Books)) {
                         _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value.ToString()!;
-                        var clippings = _clippings.AsEnumerable().Where(row => row.BookName == _selectedBook).ToList();
+                        var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -1029,7 +1026,7 @@ namespace KindleMate2 {
                 case 1:
                     if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
                         _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value.ToString()!;
-                        var lookups = _lookups.AsEnumerable().Where(row => row.Word == _selectedWord).ToList();
+                        var lookups = _lookups.Where(row => row.Word == _selectedWord).ToList();
                         var filteredWord = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -1508,24 +1505,24 @@ namespace KindleMate2 {
                 var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
                 switch (_deviceType) {
                     case Device.Type.USB: {
-                            File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
-                            File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
-                            return true;
-                        }
+                        File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
+                        File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
+                        return true;
+                    }
                     case Device.Type.MTP: {
-                            var devices = MediaDevice.GetDevices();
-                            using MediaDevice? device = devices.First(d =>
-                                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                            device.Connect();
-                            ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
-                            ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
-                            device.Disconnect();
-                            return true;
-                        }
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                        device.Disconnect();
+                        return true;
+                    }
                     case Device.Type.Unknown:
                     default: {
-                            throw new Exception(Strings.Kindle_Connect_Failed);
-                        }
+                        throw new Exception(Strings.Kindle_Connect_Failed);
+                    }
                 }
             } catch (Exception e) {
                 exception = e;
@@ -1591,7 +1588,7 @@ namespace KindleMate2 {
                 new(Strings.Author, authorName)
             };
 
-            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
                 if (fields != null) {
                     var dialogBook = fields[0].Value;
                     var dialogAuthor = fields[1].Value;
@@ -1618,7 +1615,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (_clippings.AsEnumerable().Any(row => row.BookName == "dialogBook")) {
+            if (_clippings.Any(row => row.BookName == "dialogBook")) {
                 DialogResult result = MessageBox(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result != DialogResult.Yes) {
                     return;
@@ -1839,9 +1836,7 @@ namespace KindleMate2 {
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
-                var lookups = _lookups.AsEnumerable()
-                    .Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase))
-                    .ToList();
+                var lookups = _lookups.Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase)).ToList();
                 var filteredWords = DataTableHelper.ToDataTable(lookups);
                 lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                 lblBookCount.Image = Resources.input_latin_uppercase;
@@ -2232,23 +2227,25 @@ namespace KindleMate2 {
                 var exportedClippingsPath = Path.Combine(_tempPath, AppConstants.ClippingsFileName);
                 var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
                 switch (_deviceType) {
-                    case Device.Type.USB:
+                    case Device.Type.USB: {
                         File.Copy(exportedClippingsPath, Path.Combine(documentPath, AppConstants.ClippingsFileName), true);
                         MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
+                    }
                     case Device.Type.MTP: {
-                            var devices = MediaDevice.GetDevices();
-                            using MediaDevice? device = devices.First(d =>
-                                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                            device.Connect();
-                            WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
-                            device.Disconnect();
-                            MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            break;
-                        }
-                    case Device.Type.Unknown:
-                    default:
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
+                        device.Disconnect();
+                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
+                    }
+                    case Device.Type.Unknown:
+                    default: {
+                        break;
+                    }
                 }
             } catch (Exception ex) {
                 Console.WriteLine(ex);
