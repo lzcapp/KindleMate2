@@ -315,6 +315,9 @@ namespace KindleMate2.Application.Services.KM2DB {
             var clippings = _clippingRepository.GetAll();
 
             try {
+                var fileInfo = new FileInfo(databaseFilePath);
+                var originFileSize = fileInfo.Length;
+                
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = _clippingRepository.Delete(emptyClippings);
                 
@@ -334,9 +337,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 
                 var duplicatedCount = _clippingRepository.Delete(duplicatedClippings);
-
-                var fileInfo = new FileInfo(databaseFilePath);
-                var originFileSize = fileInfo.Length;
                 
                 DatabaseHelper.VacuumDatabase(databaseFilePath);
                 
