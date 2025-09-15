@@ -46,8 +46,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     var line1 = lines[ceilDelimiter + 1].Trim();
                     var line2 = lines[ceilDelimiter + 2].Trim();
-                    // ReSharper disable once UnusedVariable
-                    var line3 = lines[ceilDelimiter + 3].Trim(); // line3 should be empty
+                    //  line3 should be empty
                     var line4 = lines[ceilDelimiter + 4].Trim();
                     if (ceilDelimiter + 5 == ceilDelimiter) {
                         // then line4 is the rest
@@ -111,7 +110,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
             
-                var insertedCount = HandleClippings(myClippings);
+                var insertedCount = HandleClippings(myClippings, isRebuild: true);
 
                 result = new Dictionary<string, string> {
                     { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
@@ -220,12 +219,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clipping.Key = key;
 
                 string bookName;
-                string authorName;
-                var bookNameRegex = new Regex(@"\(([^()]+)\)[^(]*$", RegexOptions.Compiled);
-                Match match = bookNameRegex.Match(header);
-                if (match.Success) {
-                    authorName = match.Groups[1].Value.Trim();
-                    bookName = header.Replace(match.Groups[0].Value.Trim(), "").Trim();
+                var authorName = StringHelper.GetAuthorFromTitle(header);
+                if (!string.IsNullOrWhiteSpace(authorName)) {
+                    bookName = header.Replace(authorName, string.Empty, StringComparison.InvariantCultureIgnoreCase).Trim();
+                    authorName =  authorName.Substring(1, authorName.Length - 2).Trim();
                 } else {
                     authorName = string.Empty;
                     bookName = header;

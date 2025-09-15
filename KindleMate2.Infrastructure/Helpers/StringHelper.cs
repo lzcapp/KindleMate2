@@ -4,6 +4,7 @@ using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Lookup = KindleMate2.Domain.Entities.KM2DB.Lookup;
 
 namespace KindleMate2.Infrastructure.Helpers {
@@ -81,14 +82,14 @@ namespace KindleMate2.Infrastructure.Helpers {
         public static string ParseKindleVersion(string versionText) {
             return versionText.Trim().Split('(')[0].Replace(AppConstants.Kindle, "").Trim();
         }
-        
+
         public static string GetExceptionMessage(string className, Exception e) {
             return className + ": " + Environment.NewLine + e;
         }
-        
-        public static string GetRuntimeArchitecture(){
+
+        public static string GetRuntimeArchitecture() {
             var is64Bit = Environment.Is64BitProcess;
-            
+
             var runtime = RuntimeInformation.FrameworkDescription.Contains(".NET") ? "runtime" : string.Empty;
 
             return is64Bit switch {
@@ -106,7 +107,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 if (clippings.Count <= 0) {
                     throw new Exception("No clipping found.");
                 }
-                
+
                 var bookName = clippings[0].BookName;
 
                 if (bookName != null) {
@@ -147,14 +148,10 @@ namespace KindleMate2.Infrastructure.Helpers {
                 if (lookups.Count <= 0) {
                     throw new Exception("No lookup found.");
                 }
-                
+
                 var word = lookups[0].Word;
 
-                if (word != null) {
-                    markdown.AppendLine("## \ud83d\udcd6 " + word.Trim());
-                } else {
-                    throw new Exception("No word found.");
-                }
+                markdown.AppendLine("## \ud83d\udcd6 " + word.Trim());
 
                 markdown.AppendLine();
 
@@ -179,6 +176,46 @@ namespace KindleMate2.Infrastructure.Helpers {
                 Console.WriteLine(GetExceptionMessage(nameof(BuildMarkdownWithLookups), e));
                 return markdown;
             }
+        }
+
+        public static string GetAuthorFromTitle(string input) {
+            if (string.IsNullOrEmpty(input)) {
+                return string.Empty;
+            }
+
+            // 2. Check if the string ends with a valid closing parenthesis
+            if (!input.EndsWith(")") && !input.EndsWith("）")) {
+                return string.Empty;
+            }
+
+            var countNestedChineseParentheses = 0;
+            var countNestedEnglishParentheses = 0;
+
+            var closeParentheses = input[^1];
+            for (var i = input.Length - 2; i >= 0; i--) {
+                var c = input[i];
+                switch (c) {
+                    case '）':
+                        countNestedChineseParentheses++;
+                        break;
+                    case ')':
+                        countNestedEnglishParentheses++;
+                        break;
+                }
+
+                if (c is '（' or '(') {
+                    if (countNestedChineseParentheses == 0 && countNestedEnglishParentheses == 0) {
+                        return input.Substring(i, input.Length - i);
+                    } else {
+                        if (c == '（') {
+                            countNestedChineseParentheses--;
+                        } else if (c == '(') {
+                            countNestedEnglishParentheses--;
+                        }
+                    }
+                }
+            }
+            return string.Empty;
         }
     }
 }

@@ -388,6 +388,7 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
+            GetSearchText();
             if (string.IsNullOrWhiteSpace(_searchText)) {
                 _clippings = _clippingService.GetAllClippings();
                 _originClippings = _originalClippingLineService.GetAllOriginalClippingLines();
@@ -420,7 +421,9 @@ namespace KindleMate2 {
                 row.Frequency = frequency ?? string.Empty;
             }
 
-            var books = _clippingService.GetBookNamesList();
+            var books = _clippings.Select(row => new {
+                row.BookName
+            }).Distinct().OrderBy(book => book.BookName).ToList();
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
@@ -432,8 +435,8 @@ namespace KindleMate2 {
             treeViewBooks.Nodes.Add(rootNodeBooks);
 
             if (books.Count != 0) {
-                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book) {
-                             ToolTipText = book
+                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
+                             ToolTipText = book.BookName
                          })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
@@ -441,7 +444,9 @@ namespace KindleMate2 {
 
             treeViewBooks.ExpandAll();
 
-            var words = _vocabService.GetWordsList();
+            var words = _vocabs.Select(row => new {
+                row.Word
+            }).Distinct().OrderBy(word => word.Word).ToList();
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
                 ImageIndex = 2,
@@ -455,8 +460,8 @@ namespace KindleMate2 {
             }
             treeViewWords.Nodes.Add(rootNodeWords);
 
-            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word) {
-                         ToolTipText = word
+            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
+                         ToolTipText = word.Word
                      })) {
                 treeViewWords.Nodes.Add(wordNode);
             }
