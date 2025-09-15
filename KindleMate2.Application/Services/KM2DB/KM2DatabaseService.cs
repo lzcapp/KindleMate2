@@ -230,7 +230,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     _ = SetClippingsBriefTypeHide(bookName, pageNumber);
                 }
 
-                if (allClippings.Any(c => c.Key.Equals(key) && c.Content != null && c.Content.Contains(content))) {
+                if (allClippings.Any(c => c.Key.Equals(key) && c.Content.Contains(content))) {
                     continue;
                 }
                 
@@ -315,8 +315,6 @@ namespace KindleMate2.Application.Services.KM2DB {
             var clippings = _clippingRepository.GetAll();
 
             try {
-                const int trimmedCount = 0;
-
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = _clippingRepository.Delete(emptyClippings);
                 
@@ -330,7 +328,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         continue;
                     }
                     
-                    if (clippings.Select(c => c.Content != null && content != null && c.Content.Contains(content)).Count() > 1) {
+                    if (clippings.Count(c => c.Content.Contains(content))  > 1) {
                         duplicatedClippings.Add(clipping);
                     }
                 }
@@ -345,13 +343,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var newFileSize = fileInfo.Length;
                 var fileSizeDelta = originFileSize - newFileSize;
 
-                if (emptyCount == 0 && trimmedCount == 0 && duplicatedCount == 0) {
+                if (emptyCount == 0 && duplicatedCount == 0) {
                     throw new Exception(AppConstants.DatabaseNoNeedCleaning);
                 }
                 
                 result = new Dictionary<string, string> {
                     { AppConstants.EmptyCount, emptyCount.ToString() },
-                    { AppConstants.TrimmedCount, trimmedCount.ToString() },
                     { AppConstants.DuplicatedCount, duplicatedCount.ToString() },
                     { AppConstants.FileSizeDelta, StringHelper.FormatFileSize(fileSizeDelta) }
                 };

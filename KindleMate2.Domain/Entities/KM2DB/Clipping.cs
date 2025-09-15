@@ -8,9 +8,9 @@
         private int? _sync;
         public required string Key { get; set; } = null!;
 
-        public string? Content {
-            get => _content;
-            set => _content = value ?? string.Empty;
+        public string Content {
+            get => _content ?? string.Empty;
+            set => _content = value;
         }
 
         public string? BookName {

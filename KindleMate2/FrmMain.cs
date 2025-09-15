@@ -1985,11 +1985,9 @@ namespace KindleMate2 {
         private string CleanDatabase() {
             if (_km2DatabaseService.CleanDatabase(_databaseFilePath, out var result)) {
                 var countEmpty = result[AppConstants.EmptyCount];
-                var countTrimmed = result[AppConstants.TrimmedCount];
                 var countDuplicated = result[AppConstants.DuplicatedCount];
                 var fileSizeDelta = result[AppConstants.FileSizeDelta];
-                return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
-                       Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
+                return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
             }
             var exception = result[AppConstants.Exception];
             Console.WriteLine(exception);
