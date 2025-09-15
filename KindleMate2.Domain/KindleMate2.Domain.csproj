@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Interfaces\新文件夹\**" />
-    <EmbeddedResource Remove="Interfaces\新文件夹\**" />
-    <None Remove="Interfaces\新文件夹\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="KindleMate2.Domain.csproj.Backup.tmp" />
   </ItemGroup>
 
