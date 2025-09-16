@@ -1,10 +1,8 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
-using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using Lookup = KindleMate2.Domain.Entities.KM2DB.Lookup;
 
 namespace KindleMate2.Infrastructure.Helpers {
@@ -85,6 +83,13 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         public static string GetExceptionMessage(string className, Exception e) {
             return className + ": " + Environment.NewLine + e;
+        }
+
+        public static string GetExceptionMessage(string className, Exception e, string[] parameters) {
+            var message = className + ": ";
+            message = parameters.Aggregate(message, (current, parameter) => current + (nameof(parameter) + ": " + parameter + ", "));
+            message += Environment.NewLine + e;
+            return message;
         }
 
         public static string GetRuntimeArchitecture() {
@@ -185,11 +190,11 @@ namespace KindleMate2.Infrastructure.Helpers {
                 }
 
                 // 2. Check if the string ends with a valid closing parenthesis
-                if (!input.EndsWith(')') && !input.EndsWith('）')) {
-                    var lastIndex = input.LastIndexOf('-');
-                    if (lastIndex != -1) {
-                        var author = input.Substring(lastIndex + 1, input.Length - lastIndex - 1).Trim();
-                        var book = input[..lastIndex].Trim();
+                if (!input.EndsWith(Symbols.ClosingParenthesis) && !input.EndsWith(Symbols.ClosingParenthesisChinese)) {
+                    var indexOfHyphen = input.LastIndexOf(Symbols.Hyphen);
+                    if (indexOfHyphen != -1) {
+                        var author = input.Substring(indexOfHyphen + 1, input.Length - indexOfHyphen - 1).Trim();
+                        var book = input[..indexOfHyphen].Trim();
                         return (book, author);
                     } else {
                         throw new Exception("No valid author name found.");
@@ -198,39 +203,41 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                 var countNestedChineseParentheses = 0;
                 var countNestedEnglishParentheses = 0;
-
-                var closeParentheses = input[^1];
+                
                 for (var i = input.Length - 2; i >= 0; i--) {
                     var c = input[i];
                     switch (c) {
-                        case '）':
+                        case Symbols.ClosingParenthesisChinese:
                             countNestedChineseParentheses++;
                             break;
-                        case ')':
+                        case Symbols.ClosingParenthesis:
                             countNestedEnglishParentheses++;
                             break;
                     }
 
-                    if (c is '（' or '(') {
-                        if (countNestedChineseParentheses == 0 && countNestedEnglishParentheses == 0) {
-                            var author = input.Substring(i + 1, input.Length - i - 2).Trim();
-                            var book = input[..i].Trim();
+                    string author;
+                    string book;
+                    if (c == Symbols.OpeningParenthesisChinese) {
+                        if (countNestedChineseParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesisChinese)) {
+                            author = input.Substring(i + 1, input.Length - i - 2).Trim();
+                            book = input[..i].Trim();
                             return (book, author);
                         } else {
-                            switch (c) {
-                                case '（':
-                                    countNestedChineseParentheses--;
-                                    break;
-                                case '(':
-                                    countNestedEnglishParentheses--;
-                                    break;
-                            }
+                            countNestedChineseParentheses--;
+                        }
+                    } else if (c == Symbols.OpeningParenthesis) {
+                        if (countNestedEnglishParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesis)) {
+                            author = input.Substring(i + 1, input.Length - i - 2).Trim();
+                            book = input[..i].Trim();
+                            return (book, author);
+                        } else if (c == '(') {
+                            countNestedEnglishParentheses--;
                         }
                     }
                 }
                 throw new Exception("No valid author name found.");
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(GetAuthorFromTitle), e));
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(GetAuthorFromTitle) +  " input: " + input, e));
                 return (input, string.Empty);
             }
         }
