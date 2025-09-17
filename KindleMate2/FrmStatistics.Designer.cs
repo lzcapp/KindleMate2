@@ -1,6 +1,6 @@
-﻿using KindleMate2.Properties;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows.Forms.DataVisualization.Charting;
+using KindleMate2.Properties;
 
 namespace KindleMate2 {
     partial class FrmStatistics {

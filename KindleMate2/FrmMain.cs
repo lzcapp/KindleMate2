@@ -1,12 +1,4 @@
-using DarkModeForms;
-using KindleMate2.Entities;
-using KindleMate2.Properties;
-using Markdig;
-using Markdig.Helpers;
-using MediaDevices;
 using System.ComponentModel;
-using System.Data;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,43 +6,51 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using AutoUpdaterDotNET;
+using DarkModeForms;
+using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Infrastructure.Repositories.VocabDB;
+using KindleMate2.Properties;
+using KindleMate2.Shared;
+using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Entities;
+using MediaDevices;
+using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
+using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        private DataTable _clippingsDataTable = new();
+        private readonly ClippingService _clippingService;
+        private readonly LookupService _lookupService;
+        private readonly OriginalClippingLineService _originalClippingLineService;
+        private readonly SettingService _settingService;
+        private readonly VocabService _vocabService;
+        private readonly ThemeService _themeService;
+        private readonly DatabaseService _databaseService;
+        private readonly Km2DatabaseService _km2DatabaseService;
 
-        private DataTable _originClippingsDataTable = new();
-
-        private DataTable _vocabDataTable = new();
-
-        private DataTable _lookupsDataTable = new();
-
-        private readonly StaticData _staticData;
+        private List<Clipping> _clippings = [];
+        private List<OriginalClippingLine> _originClippings = [];
+        private List<Vocab> _vocabs = [];
+        private List<Lookup> _lookups = [];
 
         private Device.Type _deviceType = Device.Type.Unknown;
 
         private string _driveLetter = string.Empty;
 
-        private readonly string _programPath, _tempPath, _backupPath, _databasePath, _versionPath;
+        private readonly string _programPath, _tempPath, _backupPath, _importPath, _databaseFilePath, _versionFilePath;
 
-        private string _selectedBook, _selectedWord, _searchText;
+        private string _selectedBook, _selectedWord;
+
+        private string _searchText;
+        private AppEntities.SearchType _searchType;
 
         private int _selectedTreeIndex, _selectedDataGridIndex;
 
         private bool _isDarkTheme;
-
-        private const string Kindle = "Kindle";
-        private const string SystemPathName = "system";
-        private const string DocumentsPathName = "documents";
-        private const string VocabularyPathName = "vocabulary";
-        private const string TempPathName = "Temp";
-        private const string BackupsPathName = "Backups";
-        private const string KindleMateDatabaseFileName = "KM.dat";
-        private const string DatabaseFileName = "KM2.dat";
-        private const string ClippingsFileName = "My Clippings.txt";
-        private const string VocabFileName = "vocab.db";
-        private const string VersionFileName = "version.txt";
-        private const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
         [DllImport("User32.dll")]
         private static extern bool HideCaret(IntPtr hWnd);
@@ -61,11 +61,33 @@ namespace KindleMate2 {
         public FrmMain() {
             InitializeComponent();
 
+            var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
+            _clippingService = new ClippingService(clippingRepository);
+
+            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+            _lookupService = new LookupService(lookupRepository);
+
+            var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
+            _originalClippingLineService = new OriginalClippingLineService(originalClippingLineRepository);
+
+            var settingRepository = new SettingRepository(AppConstants.ConnectionString);
+            _settingService = new SettingService(settingRepository);
+            _themeService = new ThemeService(settingRepository);
+
+            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+            _vocabService = new VocabService(vocabRepository);
+
+            var databaseRepository = new DatabaseRepository(AppConstants.ConnectionString);
+            _databaseService = new DatabaseService(databaseRepository);
+
+            _km2DatabaseService = new Km2DatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository);
+
             _programPath = Environment.CurrentDirectory;
-            _databasePath = Path.Combine(_programPath, DatabaseFileName);
-            _versionPath = Path.Combine(SystemPathName, VersionFileName);
-            _tempPath = Path.Combine(_programPath, TempPathName);
-            _backupPath = Path.Combine(_programPath, BackupsPathName);
+            _databaseFilePath = Path.Combine(_programPath, AppConstants.DatabaseFileName);
+            _versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
+            _tempPath = Path.Combine(_programPath, AppConstants.TempPathName);
+            _backupPath = Path.Combine(_programPath, AppConstants.BackupsPathName);
+            _importPath = Path.Combine(_programPath, AppConstants.ImportsPathName);
 
             _selectedBook = Strings.Select_All;
             _selectedWord = Strings.Select_All;
@@ -76,77 +98,72 @@ namespace KindleMate2 {
             lblContent.GotFocus += LblContent_GotFocus;
             lblContent.LostFocus += LblContent_LostFocus;
 
-            try {
-                if (File.Exists(Path.Combine(_backupPath, DatabaseFileName))) {
-                    File.Delete(Path.Combine(_backupPath, KindleMateDatabaseFileName));
-                } else {
-                    if (!StaticData.CreateDatabase()) {
-                        _ = MessageBox(Strings.Create_Database_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
-                        Environment.Exit(0);
-                    }
+            if (!File.Exists(_databaseFilePath)) {
+                if (DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception exception)) {
+                    var message = MessageHelper.BuildMessage(Strings.Create_Database_Failed, exception);
+                    _ = MessageBox(message, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+                    Environment.Exit(0);
                 }
-            } catch (Exception e) {
-                MessageBox(e.Message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
             }
 
-            _staticData = new StaticData();
-
-            AppDomain.CurrentDomain.ProcessExit += (_, _) => {
-                BackupDatabase();
-                _staticData.CloseConnection();
-                _staticData.DisposeConnection();
-            };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => { DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName); };
 
             SetTheme();
 
             SetLang();
 
             SetText();
+
+            SetAutoUpdater();
         }
 
         private void SetTheme() {
-            _isDarkTheme = _staticData.IsDarkTheme();
+            _isDarkTheme = _themeService.IsDarkTheme();
             try {
                 if (_isDarkTheme) {
                     _ = new DarkModeCS(this, false);
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);
-                throw;
             } finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
         }
 
         private void SetLang() {
-            var name = _staticData.GetLanguage();
-            if (!string.IsNullOrWhiteSpace(name)) {
-                var culture = new CultureInfo(name);
+            Setting? cultureSetting = _settingService.GetSettingByName("lang");
+            if (cultureSetting == null || string.IsNullOrWhiteSpace(cultureSetting.value)) {
+                return;
+            }
+            var cultureName = cultureSetting.value;
+            if (!string.IsNullOrWhiteSpace(cultureName)) {
+                var culture = new CultureInfo(cultureName);
                 Thread.CurrentThread.CurrentUICulture = culture;
                 Thread.CurrentThread.CurrentCulture = culture;
 
-                switch (name.ToLowerInvariant()) {
-                    case "en":
+                switch (cultureName.ToLowerInvariant()) {
+                    case Cultures.English:
                         menuLangEN.Visible = false;
                         break;
-                    case "zh-hans":
+                    case Cultures.ChineseSimplified:
                         menuLangSC.Visible = false;
                         break;
-                    case "zh-hant":
+                    case Cultures.ChineseTraditional:
                         menuLangTC.Visible = false;
                         break;
                 }
             } else {
                 menuLangAuto.Visible = false;
                 CultureInfo currentCulture = CultureInfo.CurrentCulture;
-                if (currentCulture.EnglishName.Contains("English", StringComparison.InvariantCultureIgnoreCase) || currentCulture.TwoLetterISOLanguageName.Equals("en", StringComparison.InvariantCultureIgnoreCase)) {
+                if (currentCulture.EnglishName.Contains(nameof(Cultures.English), StringComparison.InvariantCultureIgnoreCase) ||
+                    currentCulture.TwoLetterISOLanguageName.Equals(Cultures.English, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangEN.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-CN", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-SG", StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, "zh-Hans", StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Cultures.ChineseCN, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSG, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseMY, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseSimplified, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangSC.Visible = false;
-                } else if (string.Equals(currentCulture.Name, "zh-TW", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-HK", StringComparison.InvariantCultureIgnoreCase) ||
-                           string.Equals(currentCulture.Name, "zh-MO", StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, "zh-Hant", StringComparison.InvariantCultureIgnoreCase)) {
+                } else if (string.Equals(currentCulture.Name, Cultures.ChineseTW, StringComparison.InvariantCultureIgnoreCase) || string.Equals(currentCulture.Name, Cultures.ChineseHK, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseMO, StringComparison.InvariantCultureIgnoreCase) ||
+                           string.Equals(currentCulture.Name, Cultures.ChineseTraditional, StringComparison.InvariantCultureIgnoreCase)) {
                     menuLangTC.Visible = false;
                 }
             }
@@ -198,27 +215,24 @@ namespace KindleMate2 {
         }
 
         private void FrmMain_Load(object? sender, EventArgs e) {
-            if (!File.Exists(_databasePath)) {
-                RefreshData();
+            if (!File.Exists(_databaseFilePath)) {
                 return;
             }
 
-            if (_staticData.IsDatabaseEmpty()) {
+            if (_databaseService.IsDatabaseEmpty()) {
                 if (Directory.Exists(_backupPath)) {
-                    var filePath = Path.Combine(_programPath, BackupsPathName, DatabaseFileName);
+                    var backupFilePath = Path.Combine(_backupPath, AppConstants.DatabaseFileName);
 
-                    if (File.Exists(filePath)) {
-                        var fileSize = new FileInfo(filePath).Length / 1024;
-                        if (File.Exists(filePath) && fileSize >= 20) {
+                    if (File.Exists(backupFilePath)) {
+                        var fileSize = new FileInfo(backupFilePath).Length / 1024;
+                        if (fileSize >= 20) {
                             DialogResult resultRestore = MessageBox(Strings.Confirm_Restore_Database, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultRestore == DialogResult.Yes) {
-                                File.Copy(filePath, _databasePath, true);
-                                RefreshData();
-                                return;
+                                File.Copy(backupFilePath, _databaseFilePath, true);
                             }
                             DialogResult resultDeleteBackup = MessageBox(Strings.Confirm_Delete_Backup, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                             if (resultDeleteBackup == DialogResult.Yes) {
-                                File.Delete(filePath);
+                                File.Delete(backupFilePath);
                             }
                         }
                     }
@@ -230,13 +244,12 @@ namespace KindleMate2 {
             _selectedTreeIndex = 0;
             _selectedDataGridIndex = 0;
             cmbSearch.SelectedIndex = 0;
-            _searchText = GetSearchText();
+
+            GetSearchText();
 
             RefreshData();
 
             treeViewBooks.Focus();
-
-            CmbSearch_SelectedIndexChanged(this, e);
 
             //StaticData.CheckUpdate();
 
@@ -256,7 +269,7 @@ namespace KindleMate2 {
             deviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
             deviceArrivalWatcher.Start();
 
-            const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity' ";
+            const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
             using var deviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
             deviceRemovalWatcher.EventArrived += MtpDeviceEventHandler;
             deviceRemovalWatcher.Start();
@@ -288,15 +301,12 @@ namespace KindleMate2 {
                 if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
                     return string.Empty;
                 }
-
                 if (string.IsNullOrWhiteSpace(clippingsResult)) {
                     return wordResult;
                 }
-
                 if (string.IsNullOrWhiteSpace(wordResult)) {
                     return clippingsResult;
                 }
-
                 return clippingsResult + Environment.NewLine + wordResult;
             } catch (Exception e) {
                 Console.WriteLine(e);
@@ -304,127 +314,57 @@ namespace KindleMate2 {
             }
         }
 
+        private string ImportKindleClippings(string clippingsPath) {
+            try {
+                var message = string.Empty;
+                if (_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+                    var parsedCount = result[AppConstants.ParsedCount];
+                    var insertedCount = result[AppConstants.InsertedCount];
+                    message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+                } else {
+                    var exception = result[AppConstants.Exception];
+                    Console.WriteLine(exception);
+                }
+                return message;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
         private string ImportKindleWords(string kindleWordsPath) {
-            if (!File.Exists(kindleWordsPath)) {
-                MessageBox(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return string.Empty;
-            }
-
-            SQLiteConnection connection = new("Data Source=" + kindleWordsPath + ";Version=3;");
-
-            var bookInfoTable = new DataTable();
-            var lookupsTable = new DataTable();
-            var wordsTable = new DataTable();
-
-            connection.Open();
-
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
-                command.ExecuteNonQuery();
-            }
-
-            SQLiteTransaction? trans = connection.BeginTransaction();
-
             try {
-                const string bookInfoQuery = "SELECT * FROM BOOK_INFO;";
-                using var bookInfoCommand = new SQLiteCommand(bookInfoQuery, connection);
-                using var bookInfoAdapter = new SQLiteDataAdapter(bookInfoCommand);
-                bookInfoAdapter.Fill(bookInfoTable);
-
-                const string lookupsTableQuery = "SELECT * FROM LOOKUPS;";
-                using var lookupsCommand = new SQLiteCommand(lookupsTableQuery, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-                lookupsAdapter.Fill(lookupsTable);
-
-                const string wordsLookups = "SELECT * FROM WORDS;";
-                using var wordsCommand = new SQLiteCommand(wordsLookups, connection);
-                using var wordsAdapter = new SQLiteDataAdapter(wordsCommand);
-
-                wordsAdapter.Fill(wordsTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-
-            connection.Close();
-
-            var lookupsInsertedCount = 0;
-            var wordsInsertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                foreach (DataRow row in wordsTable.Rows) {
-                    var id = row["id"].ToString() ?? string.Empty;
-                    var word = row["word"].ToString() ?? string.Empty;
-                    var stem = row["stem"].ToString() ?? string.Empty;
-                    _ = int.TryParse(row["category"].ToString()!.Trim(), out var category);
-                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
-
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                    DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    if (!_staticData.IsExistVocabById(word + timestamp)) {
-                        wordsInsertedCount += _staticData.InsertVocab(word + timestamp, id, word, stem, category, formattedDateTime, 0);
-                    }
+                if (!File.Exists(kindleWordsPath)) {
+                    MessageBox(Strings.Kindle_Vocab_Not_Exist, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return string.Empty;
                 }
 
-                foreach (DataRow row in lookupsTable.Rows) {
-                    var word_key = row["word_key"].ToString() ?? string.Empty;
-                    var book_key = row["book_key"].ToString() ?? string.Empty;
-                    var usage = row["usage"].ToString() ?? string.Empty;
-                    _ = long.TryParse(row["timestamp"].ToString()!.Trim(), out var timestamp);
+                var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
 
-                    var title = string.Empty;
-                    var authors = string.Empty;
-                    foreach (DataRow bookInfoRow in bookInfoTable.Rows) {
-                        var id = bookInfoRow["id"].ToString() ?? string.Empty;
-                        var guid = bookInfoRow["guid"].ToString() ?? string.Empty;
-                        if (id != book_key && guid != book_key) {
-                            continue;
-                        }
+                var bookInfoRepository = new BookInfoRepository(connectionString);
+                var vocabLookupRepository = new VocabLookupRepository(connectionString);
+                var wordRepository = new WordRepository(connectionString);
+                var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+                var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+                var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
 
-                        title = bookInfoRow["title"].ToString() ?? string.Empty;
-                        authors = bookInfoRow["authors"].ToString() ?? string.Empty;
-                    }
-
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                    DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    if (!_staticData.IsExistLookups(formattedDateTime)) {
-                        lookupsInsertedCount += _staticData.InsertLookups(word_key, usage, title, authors, formattedDateTime);
-                    }
+                if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
+                    var lookupCount = result[AppConstants.LookupCount];
+                    var insertedLookupCount = result[AppConstants.InsertedLookupCount];
+                    var insertedVocabCount = result[AppConstants.InsertedVocabCount];
+                    return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space +
+                           Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
                 }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
+                var exception = result[AppConstants.Exception];
+                return exception;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
             }
-
-            UpdateFrequency();
-
-            return Strings.Parsed_X + Strings.Space + lookupsTable.Rows.Count + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + lookupsInsertedCount + Strings.Space +
-                   Strings.X_Lookups + Strings.Space + Strings.Symbol_Comma + wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
         }
 
         private void UpdateFrequency() {
-            DataTable vocabDataTable = _staticData.GetVocabDataTable();
-            DataTable lookupsDataTable = _staticData.GetLookupsDataTable();
-
-            _staticData.BeginTransaction();
-            try {
-                foreach (DataRow row in vocabDataTable.Rows) {
-                    var word_key = row["word_key"].ToString() ?? string.Empty;
-                    var frequency = lookupsDataTable.AsEnumerable().Count(lookupsRow => lookupsRow["word_key"].ToString()?.Trim() == word_key);
-                    _staticData.UpdateVocab(word_key, frequency);
-                }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-            }
+            _km2DatabaseService.UpdateFrequency();
         }
 
         private void RefreshData(bool isReQuery = true) {
@@ -448,46 +388,41 @@ namespace KindleMate2 {
         }
 
         private void DisplayData() {
+            GetSearchText();
             if (string.IsNullOrWhiteSpace(_searchText)) {
-                _clippingsDataTable = _staticData.GetClipingsDataTable();
-                _originClippingsDataTable = _staticData.GetOriginClippingsDataTable();
-                _vocabDataTable = _staticData.GetVocabDataTable();
-                _lookupsDataTable = _staticData.GetLookupsDataTable();
+                _clippings = _clippingService.GetAllClippings();
+                _originClippings = _originalClippingLineService.GetAllOriginalClippingLines();
+                _vocabs = _vocabService.GetAllVocabs();
+                _lookups = _lookupService.GetAllLookups();
             } else {
-                var type = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
-                _clippingsDataTable = _staticData.GetClipingsDataTableFuzzySearch(_searchText, type);
-                _originClippingsDataTable = _staticData.GetOriginClippingsDataTableFuzzySearch(_searchText, type);
-                _vocabDataTable = _staticData.GetVocabDataTableFuzzySearch(_searchText, type);
-                _lookupsDataTable = _staticData.GetLookupsDataTableFuzzySearch(_searchText, type);
+                _clippings = _clippingService.GetByFuzzySearch(_searchText, _searchType);
+                _originClippings = _originalClippingLineService.GetByFuzzySearch(_searchText, _searchType);
+                _vocabs = _vocabService.GetByFuzzySearch(_searchText, _searchType);
+                _lookups = _lookupService.GetByFuzzySearch(_searchText, _searchType);
             }
 
-            _lookupsDataTable.Columns.Add("word", typeof(string));
-            _lookupsDataTable.Columns.Add("stem", typeof(string));
-            _lookupsDataTable.Columns.Add("frequency", typeof(string));
-
-            foreach (DataRow row in _lookupsDataTable.Rows) {
-                var word_key = row["word_key"].ToString() ?? string.Empty;
+            foreach (Lookup row in _lookups) {
+                var wordKey = row.WordKey;
                 var word = string.Empty;
                 var stem = string.Empty;
                 var frequency = string.Empty;
-                foreach (DataRow vocabRow in _vocabDataTable.Rows) {
-                    if (vocabRow["word_key"].ToString() != word_key) {
+                foreach (Vocab vocab in _vocabs) {
+                    if (vocab.WordKey != wordKey) {
                         continue;
                     }
-
-                    word = vocabRow["word"].ToString() ?? string.Empty;
-                    stem = vocabRow["stem"].ToString() ?? string.Empty;
-                    frequency = vocabRow["frequency"].ToString() ?? string.Empty;
+                    word = vocab.Word;
+                    stem = vocab.Stem;
+                    frequency = vocab.Frequency.ToString();
                     break;
                 }
 
-                row["word"] = word;
-                row["stem"] = stem;
-                row["frequency"] = frequency;
+                row.Word = word;
+                row.Stem = stem ?? string.Empty;
+                row.Frequency = frequency ?? string.Empty;
             }
 
-            var books = _clippingsDataTable.AsEnumerable().Select(row => new {
-                BookName = row.Field<string>("bookname")
+            var books = _clippings.Select(row => new {
+                row.BookName
             }).Distinct().OrderBy(book => book.BookName).ToList();
 
             var rootNodeBooks = new TreeNode(Strings.Select_All) {
@@ -501,16 +436,16 @@ namespace KindleMate2 {
 
             if (books.Count != 0) {
                 foreach (TreeNode bookNode in books.Select(book => new TreeNode(book.BookName) {
-                    ToolTipText = book.BookName
-                })) {
+                             ToolTipText = book.BookName
+                         })) {
                     treeViewBooks.Nodes.Add(bookNode);
                 }
             }
 
             treeViewBooks.ExpandAll();
 
-            var words = _vocabDataTable.AsEnumerable().Select(row => new {
-                Word = row.Field<string>("word")
+            var words = _vocabs.Select(row => new {
+                row.Word
             }).Distinct().OrderBy(word => word.Word).ToList();
 
             var rootNodeWords = new TreeNode(Strings.Select_All) {
@@ -526,8 +461,8 @@ namespace KindleMate2 {
             treeViewWords.Nodes.Add(rootNodeWords);
 
             foreach (TreeNode wordNode in words.Select(word => new TreeNode(word.Word) {
-                ToolTipText = word.Word
-            })) {
+                         ToolTipText = word.Word
+                     })) {
                 treeViewWords.Nodes.Add(wordNode);
             }
 
@@ -542,152 +477,151 @@ namespace KindleMate2 {
             var selectedIndex = tabControl.SelectedIndex;
             switch (selectedIndex) {
                 case 0:
-                    if (_clippingsDataTable.Rows.Count <= 0) {
+                    if (_clippings.Count <= 0) {
                         return;
                     }
 
                     if (string.IsNullOrWhiteSpace(_selectedBook) || _selectedBook.Equals(Strings.Select_All)) {
                         _selectedBook = Strings.Select_All;
 
-                        dataGridView.DataSource = _clippingsDataTable;
+                        dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
 
-                        dataGridView.Columns["content"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
-                        dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
+                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
 
-                        dataGridView.Columns["key"]!.Visible = false;
-                        dataGridView.Columns["content"]!.Visible = true;
-                        dataGridView.Columns["bookname"]!.Visible = true;
-                        dataGridView.Columns["authorname"]!.Visible = true;
-                        dataGridView.Columns["brieftype"]!.Visible = false;
-                        dataGridView.Columns["clippingtypelocation"]!.Visible = false;
-                        dataGridView.Columns["clippingdate"]!.Visible = true;
-                        dataGridView.Columns["read"]!.Visible = false;
-                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
-                        dataGridView.Columns["tag"]!.Visible = false;
-                        dataGridView.Columns["sync"]!.Visible = false;
-                        dataGridView.Columns["newbookname"]!.Visible = false;
-                        dataGridView.Columns["colorRGB"]!.Visible = false;
-                        dataGridView.Columns["pagenumber"]!.Visible = true;
+                        dataGridView.Columns[Columns.Key]!.Visible = false;
+                        dataGridView.Columns[Columns.Content]!.Visible = true;
+                        dataGridView.Columns[Columns.BookName]!.Visible = true;
+                        dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                        dataGridView.Columns[Columns.BriefType]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
+                        dataGridView.Columns[Columns.Read]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
+                        dataGridView.Columns[Columns.Tag]!.Visible = false;
+                        dataGridView.Columns[Columns.Sync]!.Visible = false;
+                        dataGridView.Columns[Columns.NewBookName]!.Visible = false;
+                        dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
+                        dataGridView.Columns[Columns.PageNumber]!.Visible = true;
 
-                        dataGridView.Columns["bookname"]!.Width = 100;
-                        dataGridView.Columns["authorname"]!.Width = 100;
-                        dataGridView.Columns["clippingdate"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["pagenumber"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns[Columns.BookName]!.Width = 100;
+                        dataGridView.Columns[Columns.AuthorName]!.Width = 100;
+                        dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-                        dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+                        dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
                     } else {
-                        DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                        var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
 
                         dataGridView.DataSource = filteredBooks;
 
-                        dataGridView.Columns["content"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
-                        dataGridView.Columns["pagenumber"]!.HeaderText = Strings.Page;
-                        dataGridView.Columns["clippingdate"]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
+                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
 
-                        dataGridView.Columns["key"]!.Visible = false;
-                        dataGridView.Columns["content"]!.Visible = true;
-                        dataGridView.Columns["bookname"]!.Visible = false;
-                        dataGridView.Columns["authorname"]!.Visible = false;
-                        dataGridView.Columns["brieftype"]!.Visible = false;
-                        dataGridView.Columns["clippingtypelocation"]!.Visible = false;
-                        dataGridView.Columns["clippingdate"]!.Visible = true;
-                        dataGridView.Columns["read"]!.Visible = false;
-                        dataGridView.Columns["clipping_importdate"]!.Visible = false;
-                        dataGridView.Columns["tag"]!.Visible = false;
-                        dataGridView.Columns["sync"]!.Visible = false;
-                        dataGridView.Columns["newbookname"]!.Visible = false;
-                        dataGridView.Columns["colorRGB"]!.Visible = false;
-                        dataGridView.Columns["pagenumber"]!.Visible = true;
+                        dataGridView.Columns[Columns.Key]!.Visible = false;
+                        dataGridView.Columns[Columns.Content]!.Visible = true;
+                        dataGridView.Columns[Columns.BookName]!.Visible = false;
+                        dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                        dataGridView.Columns[Columns.BriefType]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
+                        dataGridView.Columns[Columns.Read]!.Visible = false;
+                        dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
+                        dataGridView.Columns[Columns.Tag]!.Visible = false;
+                        dataGridView.Columns[Columns.Sync]!.Visible = false;
+                        dataGridView.Columns[Columns.NewBookName]!.Visible = false;
+                        dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
+                        dataGridView.Columns[Columns.PageNumber]!.Visible = true;
 
-                        dataGridView.Columns["clippingdate"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["pagenumber"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["content"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-                        dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
+                        dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
                     }
 
-                    dataGridView.Columns["pagenumber"]!.DisplayIndex = 4;
+                    dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
 
                     break;
                 case 1:
-                    if (_vocabDataTable.Rows.Count <= 0) {
+                    if (_vocabs.Count <= 0) {
                         return;
                     }
 
-                    dataGridView.DataSource = _lookupsDataTable;
+                    dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
 
-                    dataGridView.Columns["word"]!.DisplayIndex = 0;
-                    dataGridView.Columns["stem"]!.DisplayIndex = 1;
+                    dataGridView.Columns[Columns.Word]!.DisplayIndex = 0;
+                    dataGridView.Columns[Columns.Stem]!.DisplayIndex = 1;
 
                     if (string.IsNullOrWhiteSpace(_selectedWord) || _selectedWord.Equals(Strings.Select_All)) {
                         _selectedWord = Strings.Select_All;
 
-                        dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns["stem"]!.HeaderText = Strings.Stem;
-                        dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
-                        dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["title"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
-                        dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
+                        dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
+                        dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
 
-                        dataGridView.Columns["word"]!.Visible = true;
-                        dataGridView.Columns["stem"]!.Visible = true;
-                        dataGridView.Columns["frequency"]!.Visible = true;
-                        dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["usage"]!.Visible = true;
-                        dataGridView.Columns["title"]!.Visible = false;
-                        dataGridView.Columns["authors"]!.Visible = false;
-                        dataGridView.Columns["timestamp"]!.Visible = true;
+                        dataGridView.Columns[Columns.Word]!.Visible = true;
+                        dataGridView.Columns[Columns.Stem]!.Visible = true;
+                        dataGridView.Columns[Columns.Frequency]!.Visible = true;
+                        dataGridView.Columns[Columns.WordKey]!.Visible = false;
+                        dataGridView.Columns[Columns.Usage]!.Visible = true;
+                        dataGridView.Columns[Columns.Title]!.Visible = false;
+                        dataGridView.Columns[Columns.Authors]!.Visible = false;
+                        dataGridView.Columns[Columns.Timestamp]!.Visible = true;
 
-                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["timestamp"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                     } else {
-                        DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == _selectedWord).CopyToDataTable();
+                        var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
+                        var filteredWords = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                         lblBookCount.Image = Resources.input_latin_uppercase;
                         lblBookCount.Visible = true;
 
                         dataGridView.DataSource = filteredWords;
 
-                        dataGridView.Columns["word"]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns["stem"]!.HeaderText = Strings.Stem;
-                        dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
-                        dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["title"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
-                        dataGridView.Columns["timestamp"]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
+                        dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
+                        dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
 
-                        dataGridView.Columns["word"]!.Visible = false;
-                        dataGridView.Columns["stem"]!.Visible = true;
-                        dataGridView.Columns["frequency"]!.Visible = false;
-                        dataGridView.Columns["word_key"]!.Visible = false;
-                        dataGridView.Columns["usage"]!.Visible = true;
-                        dataGridView.Columns["title"]!.Visible = false;
-                        dataGridView.Columns["authors"]!.Visible = false;
-                        dataGridView.Columns["timestamp"]!.Visible = true;
+                        dataGridView.Columns[Columns.Word]!.Visible = false;
+                        dataGridView.Columns[Columns.Stem]!.Visible = true;
+                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                        dataGridView.Columns[Columns.WordKey]!.Visible = false;
+                        dataGridView.Columns[Columns.Usage]!.Visible = true;
+                        dataGridView.Columns[Columns.Title]!.Visible = false;
+                        dataGridView.Columns[Columns.Authors]!.Visible = false;
+                        dataGridView.Columns[Columns.Timestamp]!.Visible = true;
 
-                        dataGridView.Columns["word"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["stem"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["frequency"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns["usage"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns["timestamp"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
                     }
+                    dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                    dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                    dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
-                    dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
+                    dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
 
                     break;
             }
@@ -698,340 +632,58 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     var booksCount = treeViewBooks.Nodes.Count - 1;
-                    var clippingsCount = _clippingsDataTable.Rows.Count;
-                    var originClippingsCount = _originClippingsDataTable.Rows.Count;
+                    var clippingsCount = _clippings.Count;
+                    var originClippingsCount = _originClippings.Count;
                     var diff = Math.Abs(originClippingsCount - clippingsCount);
                     lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + booksCount + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
                                     Strings.Deleted_X + Strings.Space + diff + Strings.Space + Strings.X_Rows;
                     break;
                 case 1:
-                    var vocabCount = _vocabDataTable.Rows.Count;
-                    var lookupsCount = _lookupsDataTable.Rows.Count;
+                    var vocabCount = _vocabs.Count;
+                    var lookupsCount = _lookups.Count;
                     lblCount.Text = Strings.Space + Strings.Totally + Strings.Space + vocabCount + Strings.Space + Strings.X_Vocabs + Strings.Symbol_Comma + Strings.Quried_X + Strings.Space + lookupsCount + Strings.Space + Strings.X_Times;
                     break;
             }
         }
 
-        // ReSharper disable once InconsistentNaming
-        private string ImportKMDatabase(string filePath) {
-            using SQLiteConnection connection = new("Data Source=" + filePath + ";Version=3;");
+        private string ImportKmDatabase(string filePath) {
+            var kmConnectionString = DatabaseHelper.GetConnectionString(filePath);
 
-            var clippingsDataTable = new DataTable();
-            var originClippingsDataTable = new DataTable();
-            var lookupsDataTable = new DataTable();
-            var vocabDataTable = new DataTable();
+            var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
+            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+            var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
+            var settingRepository = new SettingRepository(AppConstants.ConnectionString);
+            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
 
-            connection.Open();
+            var kmClippingRepository = new ClippingRepository(kmConnectionString);
+            var kmLookupRepository = new LookupRepository(kmConnectionString);
+            var kmOriginalClippingLineRepository = new OriginalClippingLineRepository(kmConnectionString);
+            var kmSettingRepository = new SettingRepository(kmConnectionString);
+            var kmVocabRepository = new VocabRepository(kmConnectionString);
 
-            using (var command = new SQLiteCommand("PRAGMA synchronous=OFF", connection)) {
-                command.ExecuteNonQuery();
+            var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository, vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository,
+                kmSettingRepository, kmVocabRepository);
+
+            var clippingsCount = _clippingService.GetCount();
+            var vocabCount = _vocabService.GetCount();
+
+            if (File.Exists(filePath)) {
+                var backupFilePath = Path.Combine(_importPath, "KM_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
+                File.Copy(filePath, backupFilePath, true);
             }
 
-            SQLiteTransaction? trans = connection.BeginTransaction();
-
-            try {
-                const string queryClippings = "SELECT * FROM clippings;";
-                using var clippingsCommand = new SQLiteCommand(queryClippings, connection);
-                using var clippingAdapter = new SQLiteDataAdapter(clippingsCommand);
-                clippingAdapter.Fill(clippingsDataTable);
-
-                const string queryOriginClippings = "SELECT * FROM original_clipping_lines;";
-                using var originCommand = new SQLiteCommand(queryOriginClippings, connection);
-                using var originAdapter = new SQLiteDataAdapter(originCommand);
-                originAdapter.Fill(originClippingsDataTable);
-
-                const string queryLookups = "SELECT * FROM lookups;";
-                using var lookupsCommand = new SQLiteCommand(queryLookups, connection);
-                using var lookupsAdapter = new SQLiteDataAdapter(lookupsCommand);
-                lookupsAdapter.Fill(lookupsDataTable);
-
-                const string queryVocab = "SELECT * FROM vocab;";
-                using var vocabCommand = new SQLiteCommand(queryVocab, connection);
-                using var vocabAdapter = new SQLiteDataAdapter(vocabCommand);
-                vocabAdapter.Fill(vocabDataTable);
-
-                trans.Commit();
-            } catch (Exception) {
-                trans.Rollback();
-            }
-
-            connection.Close();
-
-            var insertedCount = 0;
-            var wordsInsertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                foreach (DataRow row in clippingsDataTable.Rows) {
-                    if (_staticData.IsExistClippings(row["key"].ToString())) {
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(row["content"].ToString())) {
-                        continue;
-                    }
-
-                    if (_staticData.IsExistClippingsOfContent(row["content"].ToString())) {
-                        continue;
-                    }
-
-                    _ = int.TryParse(row["brieftype"].ToString()!.Trim(), out var brieftype);
-                    _ = int.TryParse(row["read"].ToString()!.Trim(), out var read);
-                    _ = int.TryParse(row["sync"].ToString()!.Trim(), out var sync);
-                    _ = int.TryParse(row["colorRGB"].ToString()!.Trim(), out var colorRgb);
-                    _ = int.TryParse(row["pagenumber"].ToString()!.Trim(), out var pagenumber);
-
-                    var entityClipping = new Clipping {
-                        key = row["key"].ToString() ?? string.Empty,
-                        content = row["content"].ToString() ?? string.Empty,
-                        bookname = row["bookname"].ToString() ?? string.Empty,
-                        authorname = row["authorname"].ToString() ?? string.Empty,
-                        briefType = (BriefType)brieftype,
-                        clippingtypelocation = row["clippingtypelocation"].ToString() ?? string.Empty,
-                        read = read,
-                        clippingdate = row["clippingdate"].ToString() ?? string.Empty,
-                        clipping_importdate = row["clipping_importdate"].ToString() ?? DateTime.Now.ToString(CultureInfo.InvariantCulture),
-                        tag = row["tag"].ToString() ?? string.Empty,
-                        sync = sync,
-                        newbookname = row["newbookname"].ToString() ?? string.Empty,
-                        colorRGB = colorRgb,
-                        pagenumber = pagenumber
-                    };
-
-                    if (_staticData.InsertClippings(entityClipping)) {
-                        insertedCount += 1;
-                    }
-                }
-
-                foreach (DataRow row in originClippingsDataTable.Rows) {
-                    if (_staticData.IsExistOriginalClippings(row["key"].ToString())) {
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(row["line4"].ToString())) {
-                        continue;
-                    }
-
-                    _staticData.InsertOriginClippings(row["key"].ToString()!, row["line1"].ToString()!, row["line2"].ToString()!, row["line3"].ToString()!, row["line4"].ToString()!, row["line5"].ToString()!);
-                }
-
-                foreach (DataRow row in lookupsDataTable.Rows) {
-                    if (_staticData.IsExistLookups(row["timestamp"].ToString() ?? string.Empty)) {
-                        continue;
-                    }
-
-                    _staticData.InsertLookups(row["word_key"].ToString()!, row["usage"].ToString()!, row["title"].ToString()!, row["authors"].ToString()!, row["timestamp"].ToString() ?? string.Empty);
-                }
-
-                wordsInsertedCount = (from DataRow row in vocabDataTable.Rows
-                                      where !_staticData.IsExistVocab(row["word_key"].ToString() ?? string.Empty)
-                                      select _staticData.InsertVocab(row["id"].ToString() ?? string.Empty, row["word_key"].ToString() ?? string.Empty, row["word"].ToString() ?? string.Empty, row["stem"].ToString() ?? string.Empty,
-                                          int.Parse(row["category"].ToString() ?? string.Empty), row["timestamp"].ToString() ?? string.Empty, int.Parse(row["frequency"].ToString() ?? string.Empty))).Sum();
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-            }
-
-            UpdateFrequency();
-
-            var rowsCount = clippingsDataTable.Rows.Count + lookupsDataTable.Rows.Count;
-
-            return Strings.Parsed_X + Strings.Space + rowsCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
-                   wordsInsertedCount + Strings.Space + Strings.X_Vocabs;
-        }
-
-        private string ImportKindleClippings(string clippingsPath) {
-            var originClippingsTable = new DataTable();
-            originClippingsTable.Columns.Add("key", typeof(string));
-            originClippingsTable.Columns.Add("line1", typeof(string));
-            originClippingsTable.Columns.Add("line2", typeof(string));
-            originClippingsTable.Columns.Add("line3", typeof(string));
-            originClippingsTable.Columns.Add("line4", typeof(string));
-            originClippingsTable.Columns.Add("line5", typeof(string));
-
-            var clippingsTable = new DataTable();
-            clippingsTable.Columns.Add("key", typeof(string));
-            clippingsTable.Columns.Add("content", typeof(string));
-            clippingsTable.Columns.Add("bookname", typeof(string));
-            clippingsTable.Columns.Add("authorname", typeof(string));
-            clippingsTable.Columns.Add("brieftype", typeof(int));
-            clippingsTable.Columns.Add("clippingtypelocation", typeof(string));
-            clippingsTable.Columns.Add("clippingdate", typeof(string));
-            clippingsTable.Columns.Add("read", typeof(int));
-            clippingsTable.Columns.Add("clipping_importdate", typeof(string));
-            clippingsTable.Columns.Add("tag", typeof(string));
-            clippingsTable.Columns.Add("sync", typeof(int));
-            clippingsTable.Columns.Add("newbookname", typeof(string));
-            clippingsTable.Columns.Add("colorRGB", typeof(int));
-            clippingsTable.Columns.Add("pagenumber", typeof(int));
-
-            List<string> lines = [
-                .. File.ReadAllLines(clippingsPath)
-            ];
-
-            var delimiterIndex = new List<int>();
-
-            for (var i = 0; i < lines.Count; i++) {
-                lines[i] = RemoveControlChar(lines[i]);
-                if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
-                    delimiterIndex.Add(i);
-                }
-            }
-
-            var insertedCount = 0;
-
-            _staticData.BeginTransaction();
-
-            try {
-                for (var i = 0; i < delimiterIndex.Count; i++) {
-                    var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
-                    var florDelimiter = delimiterIndex[i];
-
-                    var line1 = lines[ceilDelimiter + 1].Trim();
-                    var line2 = lines[ceilDelimiter + 2].Trim();
-                    var line3 = lines[ceilDelimiter + 3].Trim(); // line3 should be empty
-                    var line4 = lines[ceilDelimiter + 4].Trim();
-                    if (ceilDelimiter + 5 == ceilDelimiter) {
-                        // line4 is the rest
-                        for (var index = ceilDelimiter + 3; index < florDelimiter; index++) {
-                            line4 += lines[index];
-                            if (index < florDelimiter - 1) {
-                                line4 += "\n";
-                            }
-                        }
-                    }
-                    var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="
-
-                    var result = HandleClippings(line1, line2, line3, line4, line5);
-                    if (result) {
-                        insertedCount++;
-                    }
-                }
-
-                _staticData.CommitTransaction();
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
+            if (!kmDatabaseService.ImportFromKmDatabase()) {
                 return string.Empty;
             }
 
-            return Strings.Parsed_X + Strings.Space + delimiterIndex.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
-        }
+            CleanDatabase();
+            UpdateFrequency();
 
-        private bool HandleClippings(string line1, string line2, string line3, string line4, string line5, bool isRebuild = false) {
-            var entityClipping = new Clipping();
-
-            var content = line4;
-            entityClipping.content = content;
-
-            var brieftype = BriefType.Highlight;
-            if (line2.Contains("笔记") || line2.Contains("Note")) {
-                brieftype = BriefType.Note;
-            } else if (line2.Contains("书签") || line2.Contains("Bookmark")) {
-                //brieftype = BriefType.Bookmark;
-                return false;
-            } else if (line2.Contains("文章剪切") || line2.Contains("Cut")) {
-                brieftype = BriefType.Cut;
-            }
-            entityClipping.briefType = brieftype;
-
-            if (line4.Contains("您已达到本内容的剪贴上限")) {
-                return false;
-            }
-
-            var split_b = line2.Split('|');
-
-            var clippingtypelocation = string.Empty;
-            line2 = line2.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
-            var indexOf = line2.LastIndexOf('|');
-            if (indexOf >= 0) {
-                clippingtypelocation = line2[..(indexOf - 1)];
-            }
-            indexOf = clippingtypelocation.LastIndexOf('|');
-            var pageStr = indexOf >= 0 ? clippingtypelocation[(indexOf)..] : clippingtypelocation;
-            var pagenumber = -1;
-            var pagenPattern = @"\d+(-\d+)?";
-            var isPagenIsMatch = Regex.IsMatch(pageStr, pagenPattern);
-            var romanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-            var isRomanMatched = Regex.IsMatch(pageStr, romanPattern);
-            var isPageParsed = false;
-            if (isPagenIsMatch) {
-                var regex = new Regex(pagenPattern);
-                var strMatched = regex.Matches(pageStr)[0].Value;
-                var split = strMatched.Split("-");
-                if (split.Length > 1) {
-                    strMatched = strMatched.Split("-")[1];
-                }
-                strMatched = strMatched.Replace("#", "");
-                strMatched = strMatched.Split("）")[0];
-                isPageParsed = int.TryParse(strMatched, out pagenumber);
-            } else if (isRomanMatched) {
-                var strMatched = StaticData.RomanToInteger(pageStr).ToString();
-                isPageParsed = int.TryParse(strMatched, out pagenumber);
-            }
-            if (!isPageParsed || pagenumber == -1 || pagenumber == 0) {
-                return false;
-            }
-            entityClipping.clippingtypelocation = clippingtypelocation;
-            entityClipping.pagenumber = pagenumber;
-
-            string clippingdate;
-            var datetime = split_b[^1].Replace("Added on", "").Replace("添加于", "").Trim();
-            datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-            // ReSharper disable once InlineOutVariableDeclaration
-            var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
-            if (!isDateParsed) {
-                var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                if (dayOfWeekIndex != -1) {
-                    datetime = datetime.Remove(dayOfWeekIndex, 3);
-                }
-                isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
-            }
-            if (isDateParsed && parsedDate != DateTime.MinValue) {
-                clippingdate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-            } else {
-                return false;
-            }
-            entityClipping.clippingdate = clippingdate;
-
-            var key = clippingdate + "|" + clippingtypelocation;
-            if (!isRebuild) {
-                if (_staticData.IsExistOriginalClippings(key)) {
-                    return false;
-                }
-                var isOriginClippingsInserted = _staticData.InsertOriginClippings(key, line1, line2, line3, line4, line5);
-                if (!isOriginClippingsInserted) {
-                    return false;
-                }
-            }
-
-            entityClipping.key = key;
-
-            string bookname;
-            string authorname;
-            Match match = BookNameRegex().Match(line1);
-            if (match.Success) {
-                authorname = match.Groups[1].Value.Trim();
-                bookname = line1.Replace(match.Groups[0].Value.Trim(), "").Trim();
-            } else {
-                authorname = string.Empty;
-                bookname = line1;
-            }
-            bookname = bookname.Trim();
-            entityClipping.bookname = bookname;
-            entityClipping.authorname = authorname;
-
-            if (brieftype == BriefType.Note) {
-                _ = _staticData.SetClippingsBriefTypeHide(bookname, pagenumber.ToString());
-            }
-
-            if (_staticData.IsExistClippings(key, line4)) {
-                return false;
-            }
-
-            var insertResult = _staticData.InsertClippings(entityClipping);
-            return insertResult;
+            clippingsCount = _clippingService.GetCount() - clippingsCount;
+            vocabCount = _vocabService.GetCount() - vocabCount;
+            var message = Strings.Parsed_X + Strings.Space + clippingsCount + vocabCount + Strings.Space + Strings.X_Records + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space +
+                          Strings.X_Clippings + Strings.Symbol_Comma + vocabCount + Strings.Space + Strings.X_Vocabs;
+            return message;
         }
 
         private void DataGridView_SelectionChanged(object sender, EventArgs e) {
@@ -1054,29 +706,28 @@ namespace KindleMate2 {
 
                 switch (selectedIndex) {
                     case 0:
-                        //var clippingdate = selectedRow.Cells["clippingdate"].Value.ToString() ?? string.Empty;
-                        var bookname = selectedRow.Cells["bookname"].Value.ToString() ?? string.Empty;
-                        var authorname = selectedRow.Cells["authorname"].Value.ToString() ?? string.Empty;
-                        var pagenumber = selectedRow.Cells["pagenumber"].Value.ToString() ?? string.Empty;
-                        var content = selectedRow.Cells["content"].Value.ToString()?.Replace(" 　　", "\n") ?? string.Empty;
-                        var brieftype = selectedRow.Cells["brieftype"].Value.ToString() ?? string.Empty;
+                        var bookName = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
+                        var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
+                        _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
+                        var content = selectedRow.Cells[Columns.Content].Value.ToString()?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine) ?? string.Empty;
+                        var briefType = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
 
-                        lblBook.Text = bookname;
-                        if (authorname != string.Empty) {
-                            lblAuthor.Text = Strings.Left_Parenthesis + authorname + Strings.Right_Parenthesis;
+                        lblBook.Text = bookName;
+                        if (authorName != string.Empty) {
+                            lblAuthor.Text = Strings.Left_Parenthesis + authorName + Strings.Right_Parenthesis;
                         } else {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblLocation.Text = Strings.Page_ + Strings.Space + pagenumber + Strings.Space + Strings.X_Page;
+                        lblLocation.Text = Strings.Page_ + Strings.Space + pageNumber + Strings.Space + Strings.X_Page;
 
                         lblContent.Text = string.Empty;
                         lblContent.SelectionBullet = false;
                         lblContent.AppendText(content);
-                        if (brieftype.Equals("1")) {
+                        if (briefType.Equals(((int)BriefType.Note).ToString())) {
                             label1.Text = @"[" + Strings.Note + @"]";
                             label2.Text = @"[" + Strings.Clipping + @"]";
-                            label3.Text = _staticData.GetClippingsBriefTypeHide(bookname, pagenumber);
+                            label3.Text = _clippingService.GetClippingsByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Note)[0].Content;
                             label1.Visible = true;
                             label2.Visible = true;
                             label3.Visible = true;
@@ -1087,61 +738,71 @@ namespace KindleMate2 {
                         }
                         break;
                     case 1:
-                        var word_key = selectedRow.Cells["word_key"].Value.ToString() ?? string.Empty;
-                        var word = selectedRow.Cells["word"].Value.ToString() ?? string.Empty;
-                        var stem = selectedRow.Cells["stem"].Value.ToString() ?? string.Empty;
-                        var frequency = selectedRow.Cells["frequency"].Value.ToString() ?? string.Empty;
+                        var wordKey = selectedRow.Cells[Columns.WordKey].Value.ToString() ?? string.Empty;
+                        var word = selectedRow.Cells[Columns.Word].Value.ToString() ?? string.Empty;
+                        var stem = selectedRow.Cells[Columns.Stem].Value.ToString() ?? string.Empty;
+                        var frequency = selectedRow.Cells[Columns.Frequency].Value.ToString() ?? string.Empty;
 
-                        if (string.IsNullOrWhiteSpace(word_key) || string.IsNullOrWhiteSpace(word) || string.IsNullOrWhiteSpace(stem) || string.IsNullOrWhiteSpace(frequency)) {
+                        if (string.IsNullOrWhiteSpace(wordKey) || string.IsNullOrWhiteSpace(word) || string.IsNullOrWhiteSpace(stem) || string.IsNullOrWhiteSpace(frequency)) {
                             break;
                         }
 
-                        var listUsage = new HashSet<string>();
-
-                        var usage_list = new List<string>();
-                        foreach (DataRow row in _lookupsDataTable.Rows) {
-                            if (string.Equals(row["word_key"].ToString(), word_key, StringComparison.InvariantCultureIgnoreCase)) {
-                                var str = row["word_key"].ToString() ?? string.Empty;
-                                var strContent = row["usage"].ToString() ?? string.Empty;
-                                if (!string.IsNullOrWhiteSpace(str) && !string.IsNullOrWhiteSpace(strContent)) {
-                                    var title = " ——《" + row["title"] + "》";
-                                    listUsage.Add(title);
-                                    usage_list.Add(strContent + title);
-                                }
-                            }
-                        }
+                        var titleList = new HashSet<string>();
+                        var lookupsList = new HashSet<string>();
 
                         var isChinese = false;
-                        var length = Encoding.GetEncoding("UTF-8").GetBytes(word).Length;
+                        var length = Encoding.UTF8.GetBytes(word).Length;
                         if (length > word.Length) {
                             isChinese = true;
                         }
 
-                        var usage = usage_list.Aggregate("", (current, s) => current + (s + "\n").Replace(" 　　", "\n"));
-                        var usage_clippings = new List<string>();
-                        if (word.Length > 1) {
+                        var lookups = _lookups.OrderBy(x => x.Timestamp);
+                        foreach (Lookup lookup in lookups) {
+                            var title = string.Format(AppConstants.BookTitleFormat, lookup.Title);
+                            var str = lookup.WordKey;
+                            var usage = lookup.Usage?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+                            if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(usage)) {
+                                continue;
+                            }
                             if (!isChinese) {
-                                foreach (DataRow row in _clippingsDataTable.Rows) {
-                                    var strContent = row["content"].ToString() ?? string.Empty;
-                                    if (string.IsNullOrWhiteSpace(strContent)) {
+                                if (lookup.Word.Equals(stem, StringComparison.InvariantCultureIgnoreCase)) {
+                                    titleList.Add(title);
+                                    lookupsList.Add(usage + title + Environment.NewLine);
+                                    continue;
+                                }
+                            }
+                            if (!string.Equals(lookup.WordKey, wordKey, StringComparison.InvariantCultureIgnoreCase)) {
+                                if (!isChinese) {
+                                    if (!Regex.IsMatch(usage, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                    if (Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
-                                        usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n");
-                                        listUsage.Add(" ——《" + row["bookname"] + "》");
-                                    }
+                                } else if (!usage.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
+                                    continue;
                                 }
-                            } else {
-                                foreach (DataRow row in _clippingsDataTable.Rows) {
-                                    var strContent = row["content"].ToString() ?? string.Empty;
-                                    if (string.IsNullOrWhiteSpace(strContent)) {
+                            }
+                            titleList.Add(title);
+                            lookupsList.Add(usage + title + Environment.NewLine);
+                        }
+
+                        var clippingsList = new HashSet<string>();
+                        if (word.Length > 1) {
+                            foreach (Clipping clipping in _clippings.OrderBy(x => x.PageNumber)) {
+                                var title = string.Format(AppConstants.BookTitleFormat, clipping.BookName);
+                                var strContent = clipping.Content.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+                                if (string.IsNullOrWhiteSpace(strContent)) {
+                                    continue;
+                                }
+                                if (!isChinese) {
+                                    if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                                         continue;
                                     }
-                                    if (strContent.Contains(word)) {
-                                        usage_clippings.Add(strContent.Replace(" 　　", "\n") + " ——《" + row["bookname"] + "》" + "\n");
-                                        listUsage.Add(" ——《" + row["bookname"] + "》");
+                                } else {
+                                    if (!strContent.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
+                                        continue;
                                     }
                                 }
+                                titleList.Add(title);
+                                clippingsList.Add(strContent + title + Environment.NewLine);
                             }
                         }
 
@@ -1152,25 +813,23 @@ namespace KindleMate2 {
                             lblAuthor.Text = string.Empty;
                         }
 
-                        lblContent.SelectionBullet = true;
-                        var usageLines = usage.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var alines in usageLines.Select(line => line.Split("\n"))) {
-                            for (var i = 0; i < alines.Length; i++) {
+                        foreach (var lines in lookupsList.Select(line => line.Split(Environment.NewLine))) {
+                            for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
-                                var aline = alines[i];
-                                lblContent.AppendText(aline.Trim() + "\n");
+                                var aline = lines[i];
+                                lblContent.AppendText(aline.Trim() + Environment.NewLine);
                             }
                             lblContent.SelectionBullet = false;
                         }
-
                         lblContent.SelectionBullet = false;
-                        lblContent.AppendText("\n\n");
 
-                        foreach (var alines in usage_clippings.Select(line => line.Split("\n"))) {
-                            for (var i = 0; i < alines.Length; i++) {
+                        lblContent.AppendText(Environment.NewLine);
+
+                        foreach (var lines in clippingsList.Select(line => line.Split(Environment.NewLine))) {
+                            for (var i = 0; i < lines.Length; i++) {
                                 lblContent.SelectionBullet = i == 0;
-                                var aline = alines[i];
-                                lblContent.AppendText(aline.Trim() + "\n");
+                                var aline = lines[i];
+                                lblContent.AppendText(aline.Trim() + Environment.NewLine);
                             }
                             lblContent.SelectionBullet = false;
                         }
@@ -1195,7 +854,7 @@ namespace KindleMate2 {
 
                         index = 0;
 
-                        foreach (var book in listUsage) {
+                        foreach (var book in titleList) {
                             while (index < lblContent.TextLength) {
                                 var wordStartIndex = lblContent.Find(book, index, RichTextBoxFinds.None);
                                 if (wordStartIndex == -1) {
@@ -1210,10 +869,11 @@ namespace KindleMate2 {
                         }
 
                         lblLocation.Text = Strings.Frequency + Strings.Symbol_Colon + frequency + Strings.Space + Strings.X_Times;
-                        lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + usage_list.Count + Strings.Space + Strings.X_Lookups;
-                        if (usage_clippings.Count > 0) {
-                            lblLocation.Text += Strings.Symbol_Comma + usage_clippings.Count + Strings.Space + Strings.X_Clippings;
-                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + usage_clippings.Count + Strings.Space + Strings.X_Other_Books;
+                        lblLocation.Text += Strings.Symbol_Comma + lookupsList.Count + Strings.Space + Strings.X_Lookups;
+                        lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + lookupsList.Count + Strings.Space + Strings.X_Lookups;
+                        if (clippingsList.Count > 0) {
+                            lblLocation.Text += Strings.Symbol_Comma + clippingsList.Count + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Text += Strings.Symbol_Comma + Strings.Totally_Other_Books + Strings.Space + clippingsList.Count + Strings.Space + Strings.X_Other_Books;
                         }
                         lblBookCount.Image = Resources.input_latin_uppercase;
                         lblBookCount.Visible = true;
@@ -1224,8 +884,8 @@ namespace KindleMate2 {
 
                         break;
                 }
-            } catch (Exception) {
-                // ignored
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -1237,21 +897,22 @@ namespace KindleMate2 {
                 lblBookCount.Text = string.Empty;
                 lblBookCount.Image = null;
                 lblBookCount.Visible = false;
-                dataGridView.DataSource = _clippingsDataTable;
-                dataGridView.Columns["bookname"]!.Visible = true;
-                dataGridView.Columns["authorname"]!.Visible = true;
-                dataGridView.Sort(dataGridView.Columns["clippingdate"]!, ListSortDirection.Descending);
+                dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
+                dataGridView.Columns[Columns.BookName]!.Visible = true;
+                dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
             } else {
-                DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                var filteredBooks = DataTableHelper.ToDataTable(clippings);
                 lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
-                dataGridView.Columns["bookname"]!.Visible = false;
-                dataGridView.Columns["authorname"]!.Visible = false;
-                dataGridView.Columns["bookname"]!.HeaderText = Strings.Books;
-                dataGridView.Columns["authorname"]!.HeaderText = Strings.Author;
-                dataGridView.Sort(dataGridView.Columns["pagenumber"]!, ListSortDirection.Ascending);
+                dataGridView.Columns[Columns.BookName]!.Visible = false;
+                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
             }
         }
 
@@ -1280,64 +941,69 @@ namespace KindleMate2 {
             ShowContentEditDialog();
         }
 
-        private void LblContent_LostFocus(object? sender, EventArgs e) {
+        private static void LblContent_LostFocus(object? sender, EventArgs e) {
             HideCaret(sender);
         }
 
-        private void LblContent_GotFocus(object? sender, EventArgs e) {
+        private static void LblContent_GotFocus(object? sender, EventArgs e) {
             HideCaret(sender);
         }
 
         private void ShowContentEditDialog() {
-            if (tabControl.SelectedIndex == 0) {
-                var bookName = lblBook.Text;
-                var content = lblContent.Text;
-
-                var fields = new List<KeyValue> {
-                    new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
-                };
-
-                Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
-                    if (fields != null) {
-                        var fValue = fields[0].Value;
-                        if (string.IsNullOrWhiteSpace(fValue)) {
-                            e.Cancel = true;
-                        }
-                    }
-                };
-
-                if (dataGridView.SelectedRows.Count <= 0) {
-                    return;
-                }
-
-                var key = dataGridView.SelectedRows[0].Cells["key"].Value.ToString() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(key)) {
-                    return;
-                }
-
-                if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
-                    return;
-                }
-                var dialogContent = fields[0].Value.Trim();
-                if (string.IsNullOrWhiteSpace(dialogContent)) {
-                    return;
-                }
-                if (dialogContent.Equals(content)) {
-                    return;
-                }
-                if (!_staticData.UpdateClippings(key, dialogContent, string.Empty)) {
-                    MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                RefreshData();
+            if (tabControl.SelectedIndex != 0) {
+                return;
             }
+            var bookName = lblBook.Text;
+            var content = lblContent.Text;
+
+            var fields = new List<KeyValue> {
+                new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
+            };
+
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
+                if (fields == null) {
+                    return;
+                }
+                var fValue = fields[0].Value;
+                if (string.IsNullOrWhiteSpace(fValue)) {
+                    e.Cancel = true;
+                }
+            };
+
+            if (dataGridView.SelectedRows.Count <= 0) {
+                return;
+            }
+
+            var key = dataGridView.SelectedRows[0].Cells[Columns.Key].Value.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key)) {
+                return;
+            }
+
+            if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, string.Empty, ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
+                return;
+            }
+            var dialogContent = fields[0].Value.Trim();
+            if (string.IsNullOrWhiteSpace(dialogContent)) {
+                return;
+            }
+            if (dialogContent.Equals(content)) {
+                return;
+            }
+            Clipping? clipping = _clippingService.GetClippingByKey(key);
+            if (clipping == null) {
+                return;
+            }
+            clipping.Content = dialogContent;
+            if (_clippingService.UpdateClipping(clipping)) {
+                MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } else {
+                MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            RefreshData();
         }
 
         private void DataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e) {
-            if (e is not {
-                RowIndex: >= 0, ColumnIndex: >= 0
-            }) {
+            if (e.RowIndex <= -1 || e.ColumnIndex <= -1) {
                 return;
             }
 
@@ -1347,15 +1013,16 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     if (columnName.Equals(Strings.Books)) {
-                        _selectedBook = dataGridView.Rows[e.RowIndex].Cells["bookname"].Value.ToString()!;
-                        DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname") == _selectedBook).CopyToDataTable();
+                        _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value.ToString()!;
+                        var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
                         dataGridView.DataSource = filteredBooks;
-                        dataGridView.Columns["bookname"]!.Visible = false;
-                        dataGridView.Columns["authorname"]!.Visible = false;
-                        dataGridView.Sort(dataGridView.Columns["clippingtypelocation"]!, ListSortDirection.Ascending);
+                        dataGridView.Columns[Columns.BookName]!.Visible = false;
+                        dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                        dataGridView.Sort(dataGridView.Columns[Columns.ClippingTypeLocation]!, ListSortDirection.Ascending);
                         RefreshData();
                     } else {
                         ShowContentEditDialog();
@@ -1363,19 +1030,20 @@ namespace KindleMate2 {
                     break;
                 case 1:
                     if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
-                        _selectedWord = dataGridView.Rows[e.RowIndex].Cells["word"].Value.ToString()!;
-                        DataTable filteredWord = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == _selectedWord).CopyToDataTable();
+                        _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value.ToString()!;
+                        var lookups = _lookups.Where(row => row.Word == _selectedWord).ToList();
+                        var filteredWord = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
-                        dataGridView.Columns["usage"]!.Visible = true;
-                        dataGridView.Columns["title"]!.Visible = true;
-                        dataGridView.Columns["authors"]!.Visible = true;
-                        dataGridView.Columns["frequency"]!.Visible = false;
-                        dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-                        dataGridView.Columns["title"]!.HeaderText = Strings.Books;
-                        dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
-                        dataGridView.Sort(dataGridView.Columns["timestamp"]!, ListSortDirection.Descending);
+                        dataGridView.Columns[Columns.Usage]!.Visible = true;
+                        dataGridView.Columns[Columns.Title]!.Visible = true;
+                        dataGridView.Columns[Columns.Authors]!.Visible = true;
+                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
                         RefreshData();
                     }
                     break;
@@ -1395,6 +1063,10 @@ namespace KindleMate2 {
         }
 
         private void MenuClippingDelete_Click(object sender, EventArgs e) {
+            DeleteRow();
+        }
+
+        private void DeleteRow() {
             if (dataGridView.SelectedRows.Count <= 0) {
                 return;
             }
@@ -1403,24 +1075,24 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     DialogResult resultClippings = MessageBox(Strings.Confirm_Delete_Selected_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
                     if (resultClippings != DialogResult.Yes) {
                         return;
                     }
 
-                    _staticData.BeginTransaction();
-
                     try {
                         foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                            if (_staticData.DeleteClippingsByKey(row.Cells["key"].Value.ToString() ?? string.Empty)) {
+                            var key = row.Cells[Columns.Key].Value.ToString() ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(key)) {
+                                return;
+                            }
+                            if (_clippingService.DeleteClipping(key)) {
                                 dataGridView.Rows.Remove(row);
                             } else {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
-                        _staticData.CommitTransaction();
-                    } catch (Exception) {
-                        _staticData.RollbackTransaction();
+                    } catch (Exception ex) {
+                        Console.WriteLine(ex);
                     }
 
                     break;
@@ -1431,19 +1103,23 @@ namespace KindleMate2 {
                         return;
                     }
 
-                    _staticData.BeginTransaction();
-
                     try {
                         foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                            if (_staticData.DeleteLookupsByTimeStamp(row.Cells["timestamp"].Value.ToString() ?? string.Empty)) {
-                                dataGridView.Rows.Remove(row);
-                            } else {
-                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            var timestamp = row.Cells[Columns.Timestamp].Value.ToString() ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(timestamp)) {
+                                continue;
+                            }
+                            var lookups = _lookupService.GetLookupsByTimestamp(timestamp);
+                            foreach (Lookup lookup in lookups) {
+                                if (lookup.WordKey != null && _lookupService.DeleteLookup(lookup.WordKey)) {
+                                    dataGridView.Rows.Remove(row);
+                                } else {
+                                    MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
                             }
                         }
-                        _staticData.CommitTransaction();
-                    } catch (Exception) {
-                        _staticData.RollbackTransaction();
+                    } catch (Exception ex) {
+                        Console.WriteLine(ex);
                     }
 
                     break;
@@ -1465,11 +1141,11 @@ namespace KindleMate2 {
                 var index = tabControl.SelectedIndex;
                 switch (index) {
                     case 0:
-                        var content = dataGridView.SelectedRows[0].Cells["content"].Value.ToString() ?? string.Empty;
+                        var content = dataGridView.SelectedRows[0].Cells[Columns.Content].Value.ToString() ?? string.Empty;
                         Clipboard.SetText(content != string.Empty ? content : lblContent.Text);
                         break;
                     case 1:
-                        var usage = dataGridView.SelectedRows[0].Cells["usage"].Value.ToString() ?? string.Empty;
+                        var usage = dataGridView.SelectedRows[0].Cells[Columns.Usage].Value.ToString() ?? string.Empty;
                         Clipboard.SetText(usage != string.Empty ? usage : lblBook.Text);
                         break;
                 }
@@ -1479,26 +1155,36 @@ namespace KindleMate2 {
         }
 
         private void DataGridView_KeyDown(object sender, KeyEventArgs e) {
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (e.KeyCode == Keys.Enter) {
-                ShowContentEditDialog();
-                e.Handled = true;
-            } else if (e.KeyCode == Keys.Delete) {
-                MenuClippingDelete_Click(sender, e);
+            switch (e.KeyCode) {
+                case Keys.Enter:
+                    ShowContentEditDialog();
+                    e.Handled = true;
+                    break;
+                case Keys.Delete:
+                    DeleteRow();
+                    break;
             }
         }
 
         private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
-            DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
-            if (hitTestInfo.RowIndex < 0) {
-                return;
+            try {
+                DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
+                if (hitTestInfo.RowIndex < 0) {
+                    return;
+                }
+                dataGridView.ClearSelection();
+                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+                _selectedDataGridIndex = hitTestInfo.RowIndex;
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
             }
-            dataGridView.ClearSelection();
-            dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
-            _selectedDataGridIndex = hitTestInfo.RowIndex;
         }
 
         private void MenuBooksDelete_Click(object sender, EventArgs e) {
+            DeleteNodes();
+        }
+
+        private void DeleteNodes() {
             var index = tabControl.SelectedIndex;
             DialogResult result;
             switch (index) {
@@ -1509,17 +1195,23 @@ namespace KindleMate2 {
                     if (treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
                         result = MessageBox(Strings.Confirm_Clear_Clippings, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
-                            _staticData.ClearClippings();
-                            RefreshData();
+                            _clippingService.DeleteAllClippings();
                         }
                     } else {
                         result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             var bookname = treeViewBooks.SelectedNode.Text;
-                            if (!_staticData.DeleteClippingsByBook(bookname)) {
-                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                _selectedBook = string.Empty;
+                            var clippings = _clippingService.GetClippingsByBookName(bookname);
+                            var deletedCount = 0;
+                            foreach (Clipping clipping in clippings) {
+                                if (_clippingService.DeleteClipping(clipping.Key)) {
+                                    deletedCount++;
+                                }
                             }
+                            if (deletedCount == 0) {
+                                MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                            _selectedBook = Strings.Select_All;
                         }
                     }
                     break;
@@ -1530,28 +1222,26 @@ namespace KindleMate2 {
                     if (treeViewWords.SelectedNode.Text.Equals(Strings.Select_All)) {
                         result = MessageBox(Strings.Confirm_Clear_Vocabulary, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
-                            _staticData.ClearVocabs();
-                            RefreshData();
+                            _vocabService.DeleteAllVocabs();
                         }
                     } else {
                         result = MessageBox(Strings.Confirm_Delete_Lookups_Vocabs, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (result == DialogResult.Yes) {
                             var word = treeViewWords.SelectedNode.Text;
-                            var word_key = string.Empty;
-                            foreach (DataRow row in _vocabDataTable.Rows) {
-                                if (row["word"].ToString() != word) {
+                            var wordKey = string.Empty;
+                            foreach (Vocab vocab in _vocabs) {
+                                if (vocab.Word != word) {
                                     continue;
                                 }
-
-                                word_key = row["word_key"].ToString() ?? string.Empty;
+                                wordKey = vocab.WordKey;
                                 break;
                             }
 
-                            if (!_staticData.DeleteVocab(word_key) && !_staticData.DeleteLookupsByWordKey(word_key)) {
+                            if (wordKey != null && !_vocabService.DeleteVocabByWordKey(wordKey) && !_lookupService.DeleteLookup(wordKey)) {
                                 MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
 
-                            _selectedWord = string.Empty;
+                            _selectedWord = Strings.Select_All;
                         }
                     }
                     break;
@@ -1570,7 +1260,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindle_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(My Clippings.txt)",
+                Title = Strings.Import_Kindle_Clipping_File + Strings.Space + @"(" + AppConstants.ClippingsFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "txt",
@@ -1607,7 +1297,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindleMate_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(" + KindleMateDatabaseFileName + @")",
+                Title = Strings.Import_Kindle_Mate_Database_File + Strings.Space + @"(" + AppConstants.DatabaseFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 DefaultExt = "dat",
@@ -1624,7 +1314,7 @@ namespace KindleMate2 {
 
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKMDatabase(fileDialog.FileName); };
+            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = ImportKmDatabase(fileDialog.FileName); };
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(workerCompletedEventArgs.Result.ToString())) {
                     MessageBox(workerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1638,7 +1328,7 @@ namespace KindleMate2 {
         }
 
         private void MenuRepo_Click(object sender, EventArgs e) {
-            OpenUrl(RepoUrl);
+            OpenUrl(AppConstants.RepoUrl);
         }
 
         private void OpenUrl(string url) {
@@ -1689,11 +1379,11 @@ namespace KindleMate2 {
                     if (drive.DriveType != DriveType.Removable) {
                         continue;
                     }
-                    var documentsDir = Path.Combine(drive.Name, "documents");
+                    var documentsDir = Path.Combine(drive.Name, AppConstants.DocumentsPathName);
                     if (!Directory.Exists(documentsDir)) {
                         continue;
                     }
-                    var clippingsPath = Path.Combine(documentsDir, "My Clippings.txt");
+                    var clippingsPath = Path.Combine(documentsDir, AppConstants.ClippingsFileName);
                     if (!File.Exists(clippingsPath)) {
                         continue;
                     }
@@ -1701,7 +1391,7 @@ namespace KindleMate2 {
                     _driveLetter = drive.Name;
 
                     var versionText = string.Empty;
-                    var kindleVersionPath = Path.Combine(_driveLetter, _versionPath);
+                    var kindleVersionPath = Path.Combine(_driveLetter, _versionFilePath);
                     if (File.Exists(kindleVersionPath)) {
                         using var reader = new StreamReader(kindleVersionPath);
                         versionText = reader.ReadToEnd();
@@ -1723,13 +1413,13 @@ namespace KindleMate2 {
                 foreach (MediaDevice? device in devices) {
                     try {
                         device.Connect();
-                        if (!device.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) && !device.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase)) {
+                        if (!device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) && !device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
                             device.Disconnect();
                             continue;
                         }
                         _driveLetter = @"\Internal Storage\";
-                        MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, SystemPathName));
-                        var files = systemDir.EnumerateFiles(VersionFileName);
+                        MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, AppConstants.SystemPathName));
+                        var files = systemDir.EnumerateFiles(AppConstants.VersionFileName);
                         var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
                         if (mediaFileInfos.Length == 0) {
                             return false;
@@ -1760,7 +1450,7 @@ namespace KindleMate2 {
             if (string.IsNullOrWhiteSpace(versionText)) {
                 return;
             }
-            var kindleVersion = versionText.Trim().Split('(')[0].Replace(Kindle, "").Trim();
+            var kindleVersion = StringHelper.ParseKindleVersion(versionText);
             if (!string.IsNullOrEmpty(kindleVersion)) {
                 menuKindle.Text += Strings.Left_Parenthesis + kindleVersion + Strings.Right_Parenthesis;
             }
@@ -1771,47 +1461,77 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
-            var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-            var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
+            try {
+                var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
+                var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
 
-            if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
-                return;
-            }
-
-            var bw = new BackgroundWorker();
-            bw.DoWork += (_, e) => { e.Result = Import(backupClippingsPath, backupWordsPath); };
-            bw.RunWorkerCompleted += (_, e) => {
-                if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
-                    MessageBox(e.Result.ToString() ?? string.Empty, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                } else {
-                    MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!Directory.Exists(backupClippingsPath)) {
+                    Directory.CreateDirectory(backupClippingsPath);
                 }
-                SetProgressBar(false);
-                RefreshData();
-            };
-            bw.RunWorkerAsync();
+                if (!Directory.Exists(backupWordsPath)) {
+                    Directory.CreateDirectory(backupWordsPath);
+                }
+
+                var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
+                var backupWordsFilePath = Path.Combine(backupWordsPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
+
+                if (!ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception exception)) {
+                    throw exception;
+                }
+
+                SetProgressBar(true);
+                menuKindle.Enabled = false;
+                menuSyncFromKindle.Enabled = false;
+                Cursor = Cursors.Default;
+
+                var bw = new BackgroundWorker();
+                bw.DoWork += (_, e) => { e.Result = Import(backupClippingsFilePath, backupWordsFilePath); };
+                bw.RunWorkerCompleted += (_, e) => {
+                    if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
+                        MessageBox(e.Result.ToString() ?? Strings.Import_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    } else {
+                        MessageBox(Strings.Import_Failed, Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    SetProgressBar(false);
+                    menuKindle.Enabled = true;
+                    menuSyncFromKindle.Enabled = true;
+                    RefreshData();
+                };
+                bw.RunWorkerAsync();
+            } catch (Exception ex) {
+                MessageBox(MessageHelper.BuildMessage(Strings.Import_Failed, ex), Strings.Failed, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath) {
-            var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
-            var vocabularyPath = Path.Combine(_driveLetter, SystemPathName, VocabularyPathName);
-            switch (_deviceType) {
-                case Device.Type.USB:
-                    File.Copy(Path.Combine(documentPath, ClippingsFileName), backupClippingsPath);
-                    File.Copy(Path.Combine(vocabularyPath, VocabFileName), backupWordsPath);
-                    return true;
-                case Device.Type.MTP: {
-                    var devices = MediaDevice.GetDevices();
-                    using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-                    device.Connect();
-                    ReadMtpFile(device, documentPath, ClippingsFileName, backupClippingsPath);
-                    ReadMtpFile(device, vocabularyPath, VocabFileName, backupWordsPath);
-                    device.Disconnect();
-                    return true;
+        private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception) {
+            exception = new Exception();
+            try {
+                var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
+                var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
+                switch (_deviceType) {
+                    case Device.Type.USB: {
+                        File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
+                        File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
+                        return true;
+                    }
+                    case Device.Type.MTP: {
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                        device.Disconnect();
+                        return true;
+                    }
+                    case Device.Type.Unknown:
+                    default: {
+                        throw new Exception(Strings.Kindle_Connect_Failed);
+                    }
                 }
-                case Device.Type.Unknown:
-                default:
-                    return false;
+            } catch (Exception e) {
+                exception = e;
+                return false;
             }
         }
 
@@ -1829,7 +1549,7 @@ namespace KindleMate2 {
             try {
                 File.WriteAllBytes(filePath, memoryStream.ToArray());
             } catch (Exception ex) {
-                Console.WriteLine($"Error saving MemoryStream to file: {ex.Message}");
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ReadMtpFile), ex));
             }
         }
 
@@ -1845,80 +1565,87 @@ namespace KindleMate2 {
 
         private void MenuRename_Click(object sender, EventArgs e) {
             var index = tabControl.SelectedIndex;
-            if (index == 0) {
-                if (treeViewBooks.SelectedNode != null && !treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
-                    var bookname = treeViewBooks.SelectedNode.Text;
-                    var authorname = GetAuthornameFromClippings(bookname);
-                    ShowBookRenameDialog(bookname, authorname);
-                }
+            if (index != 0) {
+                return;
             }
+            if (treeViewBooks.SelectedNode == null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                return;
+            }
+            var bookName = treeViewBooks.SelectedNode.Text;
+            var authorName = GetAuthorNameFromClippings(bookName);
+            ShowBookRenameDialog(bookName, authorName);
         }
 
-        private string GetAuthornameFromClippings(string bookname) {
-            var authorname = string.Empty;
-            foreach (DataRow row in _clippingsDataTable.Rows) {
-                if ((row["bookname"].ToString() ?? string.Empty).Equals(bookname)) {
-                    authorname = row["authorname"].ToString() ?? string.Empty;
-                    break;
+        private string GetAuthorNameFromClippings(string bookName) {
+            var authorName = string.Empty;
+            foreach (Clipping row in _clippings) {
+                if (row.BookName != null && !row.BookName.Equals(bookName)) {
+                    continue;
                 }
+                authorName = row.AuthorName;
+                break;
             }
-            return authorname;
+            return authorName ?? string.Empty;
         }
 
-        private void ShowBookRenameDialog(string bookname, string authorname) {
+        private void ShowBookRenameDialog(string bookName, string authorName) {
             var fields = new List<KeyValue> {
-                new(Strings.Book_Title, bookname),
-                new(Strings.Author, authorname)
+                new(Strings.Book_Title, bookName),
+                new(Strings.Author, authorName)
             };
 
-            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")] (_, e) => {
-                if (fields != null) {
-                    var dialogBook = fields[0].Value;
-                    var dialogAuthor = fields[1].Value;
-                    if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
-                        e.Cancel = true;
-                    }
+            Messenger.ValidateControls += [SuppressMessage("ReSharper", "AccessToModifiedClosure")](_, e) => {
+                if (fields == null) {
+                    return;
+                }
+                var dialogBook = fields[0].Value;
+                var dialogAuthor = fields[1].Value;
+                if (string.IsNullOrWhiteSpace(dialogBook) || string.IsNullOrWhiteSpace(dialogAuthor)) {
+                    e.Cancel = true;
                 }
             };
 
-            if (Messenger.InputBox(Strings.Rename, "", ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) == DialogResult.OK) {
-                var dialogBook = fields[0].Value.Trim();
-                var dialogAuthor = fields[1].Value.Trim();
+            if (Messenger.InputBox(Strings.Rename, string.Empty, ref fields, MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) {
+                return;
+            }
+            var dialogBook = fields[0].Value.Trim();
+            var dialogAuthor = fields[1].Value.Trim();
 
-                if (string.IsNullOrWhiteSpace(dialogBook)) {
+            if (string.IsNullOrWhiteSpace(dialogBook)) {
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(authorName) && string.IsNullOrWhiteSpace(dialogAuthor)) {
+                dialogAuthor = authorName;
+            }
+            if (bookName == dialogBook && authorName == dialogAuthor) {
+                MessageBox(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (_clippings.Any(row => row.BookName == "dialogBook")) {
+                DialogResult result = MessageBox(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (result != DialogResult.Yes) {
                     return;
                 }
-                if (!string.IsNullOrWhiteSpace(authorname) && string.IsNullOrWhiteSpace(dialogAuthor)) {
-                    dialogAuthor = authorname;
-                }
-                if (bookname == dialogBook && authorname == dialogAuthor) {
-                    MessageBox(Strings.Books_Title_Not_Changed, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
 
-                if (_clippingsDataTable.AsEnumerable().Any(row => row.Field<string>("BookName") == "dialogBook")) {
-                    DialogResult result = MessageBox(Strings.Confirm_Same_Title_Combine, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (result != DialogResult.Yes) {
-                        return;
-                    }
+                var resultRows = _clippings.Where(row => row.BookName == bookName).ToList();
+                dialogAuthor = resultRows.Count > 0 ? resultRows[0].AuthorName : string.Empty;
+            }
 
-                    var resultRows = _clippingsDataTable.Select($"bookname = '{bookname}'");
-                    dialogAuthor = (resultRows.Length > 0 ? resultRows[0]["authorname"].ToString() : string.Empty) ?? string.Empty;
-                }
+            if (dialogAuthor != null) {
+                _lookupService.RenameBook(bookName, dialogBook, dialogAuthor);
 
-                _staticData.UpdateLookups(bookname, dialogBook, dialogAuthor);
-
-                if (!_staticData.RenameBook(bookname, dialogBook, dialogAuthor)) {
+                if (!_clippingService.RenameBook(bookName, dialogBook, dialogAuthor)) {
                     MessageBox(Strings.Book_Renamed_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-
-                MessageBox(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                _selectedBook = dialogBook;
-
-                RefreshData();
             }
+
+            MessageBox(Strings.Books_Renamed, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            _selectedBook = dialogBook;
+
+            RefreshData();
         }
 
         private string GetBooknameFromContent() {
@@ -1926,22 +1653,22 @@ namespace KindleMate2 {
             if (!string.IsNullOrWhiteSpace(lblBook.Text)) {
                 bookname = lblBook.Text;
             } else {
-                bookname = dataGridView.Rows[0].Cells["bookname"].Value.ToString() ?? string.Empty;
+                bookname = dataGridView.Rows[0].Cells[Columns.BookName].Value.ToString() ?? string.Empty;
             }
             return bookname;
         }
 
-        private string GetAuthornameFromContent() {
-            string authorname;
+        private string GetAuthorNameFromContent() {
+            string authorName;
             if (!string.IsNullOrWhiteSpace(lblAuthor.Text)) {
-                authorname = lblAuthor.Text;
-                var startIndex = authorname.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
-                var endIndex = authorname.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
-                authorname = authorname.Substring(startIndex, endIndex - startIndex + 1);
+                authorName = lblAuthor.Text;
+                var startIndex = authorName.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
+                var endIndex = authorName.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
+                authorName = authorName.Substring(startIndex, endIndex - startIndex + 1);
             } else {
-                authorname = dataGridView.Rows[0].Cells["authorname"].Value.ToString() ?? string.Empty;
+                authorName = dataGridView.Rows[0].Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
             }
-            return authorname;
+            return authorName;
         }
 
         private void MenuClippingsRefresh_Click(object sender, EventArgs e) {
@@ -1972,14 +1699,12 @@ namespace KindleMate2 {
 
                     DataGridViewRow selectedRow = dataGridView.SelectedRows[0];
 
-                    var bookname = selectedRow.Cells["bookname"].Value.ToString();
-                    var authorname = selectedRow.Cells["authorname"].Value.ToString();
-                    //var clippinglocation = selectedRow.Cells["clippingtypelocation"].Value.ToString();
-                    //var content = selectedRow.Cells["content"].Value.ToString();
+                    var bookName = selectedRow.Cells[Columns.BookName].Value.ToString();
+                    var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString();
 
-                    lblBook.Text = bookname;
-                    if (authorname != string.Empty) {
-                        lblAuthor.Text = Strings.Left_Parenthesis + authorname + Strings.Right_Parenthesis;
+                    lblBook.Text = bookName;
+                    if (authorName != string.Empty) {
+                        lblAuthor.Text = Strings.Left_Parenthesis + authorName + Strings.Right_Parenthesis;
                     } else {
                         lblAuthor.Text = string.Empty;
                     }
@@ -1994,78 +1719,32 @@ namespace KindleMate2 {
                     dataGridView.Rows[_selectedDataGridIndex].Selected = true;
                     break;
             }
+
+            SetCmbSearchSelection();
         }
 
         private void MenuBookRefresh_Click(object sender, EventArgs e) {
             RefreshData();
         }
 
-        private bool ExportClippingsFile(string path, string file = ClippingsFileName) {
-            DataTable dataTable = _staticData.GetOriginClippingsDataTable();
-            dataTable.DefaultView.Sort = "key ASC";
-            DataTable sortedDataTable = dataTable.DefaultView.ToTable();
-
-            var filePath = Path.Combine(path, file);
-
-            if (!Directory.Exists(path)) {
-                Directory.CreateDirectory(path);
-            }
-
-            if (File.Exists(filePath)) {
-                File.Delete(filePath);
-            }
-
-            using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            using var writer = new StreamWriter(fileStream);
-            foreach (DataRow row in sortedDataTable.Rows) {
-                writer.WriteLine(row["line1"]);
-                writer.WriteLine(row["line2"]);
-                writer.WriteLine(row["line3"]);
-                writer.WriteLine(row["line4"]);
-                writer.WriteLine(row["line5"]);
-            }
-
-            writer.Close();
-            fileStream.Close();
-
-            return true;
-        }
-
         private void MenuBackup_Click(object sender, EventArgs e) {
-            BackupDatabase();
+            DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName);
 
-            if (_clippingsDataTable.Rows.Count <= 0) {
+            if (_clippings.Count <= 0) {
                 MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                if (!ExportClippingsFile(_backupPath)) {
-                    MessageBox(Strings.Backup_Clippings_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                } else {
+                if (_originalClippingLineService.Export(_backupPath, AppConstants.DatabaseFileName, out Exception exception)) {
                     DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result != DialogResult.Yes) {
                         return;
                     }
 
-                    Process.Start("explorer.exe", Path.Combine(_programPath, "Backups"));
+                    Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.BackupsPathName));
+                } else {
+                    var message = MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception);
+                    MessageBox(message, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        private void BackupDatabase() {
-            if (_staticData.IsDatabaseEmpty()) {
-                return;
-            }
-
-            var filePath = Path.Combine(_backupPath, DatabaseFileName);
-
-            if (File.Exists(filePath)) {
-                File.Delete(filePath);
-            }
-
-            if (!Directory.Exists(_backupPath)) {
-                Directory.CreateDirectory(_backupPath);
-            }
-
-            File.Copy(Path.Combine(_programPath, DatabaseFileName), filePath);
         }
 
         private void MenuRefresh_Click(object sender, EventArgs e) {
@@ -2073,8 +1752,8 @@ namespace KindleMate2 {
         }
 
         private void MenuClear_Click(object sender, EventArgs e) {
-            if (_staticData.IsDatabaseEmpty()) {
-                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (_km2DatabaseService.IsDatabaseEmpty()) {
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -2083,7 +1762,7 @@ namespace KindleMate2 {
                 return;
             }
 
-            if (_staticData.EmptyTables()) {
+            if (_km2DatabaseService.DeleteAllData()) {
                 MessageBox(Strings.Data_Cleared, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 MessageBox(Strings.Clear_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -2094,7 +1773,7 @@ namespace KindleMate2 {
 
         private static void Restart() {
             Process.Start(new ProcessStartInfo {
-                FileName = Application.ExecutablePath,
+                FileName = System.Windows.Forms.Application.ExecutablePath,
                 UseShellExecute = true
             });
             Environment.Exit(0);
@@ -2102,7 +1781,7 @@ namespace KindleMate2 {
 
         private void MenuImportKindleWords_Click(object sender, EventArgs e) {
             var fileDialog = new OpenFileDialog {
-                Title = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(" + VocabFileName + @")",
+                Title = Strings.Import_Kindle_Vocab_File + Strings.Space + @"(" + AppConstants.VocabFileName + @")",
                 CheckFileExists = true,
                 CheckPathExists = true,
                 Filter = Strings.Kindle_Vocab_File + Strings.Space + @"(*.db)|*.db",
@@ -2136,7 +1815,7 @@ namespace KindleMate2 {
             menuRename.Visible = index switch {
                 0 => true,
                 1 => false,
-                _ => menuRename.Visible,
+                _ => menuRename.Visible
             };
             lblCount.Text = string.Empty;
             lblBookCount.Text = string.Empty;
@@ -2152,34 +1831,35 @@ namespace KindleMate2 {
                 lblBookCount.Text = string.Empty;
                 lblBookCount.Image = null;
                 lblBookCount.Visible = false;
-                dataGridView.DataSource = _lookupsDataTable;
+                dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
 
-                dataGridView.Columns["word"]!.Visible = true;
-                dataGridView.Columns["usage"]!.Visible = true;
-                dataGridView.Columns["title"]!.Visible = true;
-                dataGridView.Columns["authors"]!.Visible = true;
-                dataGridView.Columns["frequency"]!.Visible = true;
+                dataGridView.Columns[Columns.Word]!.Visible = true;
+                dataGridView.Columns[Columns.Usage]!.Visible = true;
+                dataGridView.Columns[Columns.Title]!.Visible = true;
+                dataGridView.Columns[Columns.Authors]!.Visible = true;
+                dataGridView.Columns[Columns.Frequency]!.Visible = true;
 
-                dataGridView.Columns["frequency"]!.HeaderText = Strings.Frequency;
+                dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
-                DataTable filteredWords = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word_key")?[3..] == _selectedWord).CopyToDataTable();
+                var lookups = _lookups.Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase)).ToList();
+                var filteredWords = DataTableHelper.ToDataTable(lookups);
                 lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                 lblBookCount.Image = Resources.input_latin_uppercase;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;
 
-                dataGridView.Columns["word"]!.Visible = false;
-                dataGridView.Columns["usage"]!.Visible = true;
-                dataGridView.Columns["title"]!.Visible = true;
-                dataGridView.Columns["authors"]!.Visible = true;
+                dataGridView.Columns[Columns.Word]!.Visible = false;
+                dataGridView.Columns[Columns.Usage]!.Visible = true;
+                dataGridView.Columns[Columns.Title]!.Visible = true;
+                dataGridView.Columns[Columns.Authors]!.Visible = true;
 
-                dataGridView.Columns["frequency"]!.Visible = false;
+                dataGridView.Columns[Columns.Frequency]!.Visible = false;
             }
-            dataGridView.Columns["usage"]!.HeaderText = Strings.Content;
-            dataGridView.Columns["title"]!.HeaderText = Strings.Books;
-            dataGridView.Columns["authors"]!.HeaderText = Strings.Author;
+            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
         }
 
         private void TreeViewWords_MouseDown(object sender, MouseEventArgs e) {
@@ -2208,19 +1888,21 @@ namespace KindleMate2 {
             if (e.Node.Text.Equals(Strings.Select_All)) {
                 return;
             }
-            if (!e.Node.Text.Equals(Strings.Select_All)) {
-                var bookname = e.Node.Text;
-                var authorname = GetAuthornameFromClippings(bookname);
-                ShowBookRenameDialog(bookname, authorname);
+            if (e.Node.Text.Equals(Strings.Select_All)) {
+                return;
             }
+            var bookName = e.Node.Text;
+            var authorName = GetAuthorNameFromClippings(bookName);
+            ShowBookRenameDialog(bookName, authorName);
         }
 
         private void Content_Rename_MouseDoubleClick() {
-            if (tabControl.SelectedIndex == 0) {
-                var bookname = GetBooknameFromContent();
-                var authorname = GetAuthornameFromContent();
-                ShowBookRenameDialog(bookname, authorname);
+            if (tabControl.SelectedIndex != 0) {
+                return;
             }
+            var bookName = GetBooknameFromContent();
+            var authorName = GetAuthorNameFromContent();
+            ShowBookRenameDialog(bookName, authorName);
         }
 
         private void LblBook_MouseDoubleClick(object sender, MouseEventArgs e) {
@@ -2236,11 +1918,13 @@ namespace KindleMate2 {
         }
 
         private void TreeViewBooks_KeyDown(object sender, KeyEventArgs e) {
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (e.KeyCode == Keys.Delete) {
-                MenuBooksDelete_Click(sender, e);
-            } else if (e.KeyCode == Keys.Enter) {
-                MenuRename_Click(sender, e);
+            switch (e.KeyCode) {
+                case Keys.Delete:
+                    DeleteNodes();
+                    break;
+                case Keys.Enter:
+                    MenuRename_Click(sender, e);
+                    break;
             }
         }
 
@@ -2255,9 +1939,7 @@ namespace KindleMate2 {
             }
             SetProgressBar(true);
             var bw = new BackgroundWorker();
-            bw.DoWork += (_, doWorkEventArgs) => {
-                doWorkEventArgs.Result = RebuildDatabase();
-            };
+            bw.DoWork += (_, doWorkEventArgs) => { doWorkEventArgs.Result = RebuildDatabase(); };
             bw.RunWorkerCompleted += (_, runWorkerCompletedEventArgs) => {
                 if (runWorkerCompletedEventArgs.Result != null && !string.IsNullOrWhiteSpace(runWorkerCompletedEventArgs.Result.ToString())) {
                     MessageBox(runWorkerCompletedEventArgs.Result.ToString() ?? string.Empty, Strings.Rebuild_Database, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -2268,25 +1950,22 @@ namespace KindleMate2 {
                 RefreshData();
             };
             bw.RunWorkerAsync();
-
         }
 
         private string RebuildDatabase() {
-            DataTable origin = _staticData.GetOriginClippingsDataTable();
-            if (origin.Rows.Count <= 0) {
-                return Strings.No_Data_To_Clear;
+            if (!_km2DatabaseService.RebuildDatabase(out var result)) {
+                return string.Empty;
             }
-            _ = _staticData.EmptyTable("clippings");
-            var insertedCount = (from DataRow row in origin.Rows let entityClipping = new Clipping() let line1 = row["line1"].ToString() ?? string.Empty let line2 = row["line2"].ToString() ?? string.Empty let line3 = row["line3"].ToString() ?? string.Empty let line4 = row["line4"].ToString() ?? string.Empty let line5 = row["line5"].ToString() ?? string.Empty select HandleClippings(line1, line2, line3, line4, line5, true)).Count(result => result);
-            _staticData.CommitTransaction();
-            var clipping = Strings.Parsed_X + Strings.Space + origin.Rows.Count + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+            var parsedCount = result[AppConstants.ParsedCount];
+            var insertedCount = result[AppConstants.InsertedCount];
+            var clipping = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
             return clipping;
         }
 
         private void MenuClean_Click(object sender, EventArgs e) {
-            _clippingsDataTable = _staticData.GetClipingsDataTable();
+            _clippings = _clippingService.GetAllClippings();
 
-            if (_clippingsDataTable.Rows.Count <= 0) {
+            if (_clippings.Count <= 0) {
                 MessageBox(Strings.Database_No_Need_Clean, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 SetProgressBar(true);
@@ -2306,204 +1985,20 @@ namespace KindleMate2 {
         }
 
         private string CleanDatabase() {
-            _clippingsDataTable = _staticData.GetClipingsDataTable();
-
-            _staticData.BeginTransaction();
-
-            try {
-                var countEmpty = 0;
-                var countTrimmed = 0;
-                var countDuplicated = 0;
-
-                foreach (DataRow row in _clippingsDataTable.Rows) {
-                    var key = row["key"].ToString() ?? string.Empty;
-                    var content = row["content"].ToString() ?? string.Empty;
-                    var bookname = row["bookname"].ToString() ?? string.Empty;
-
-                    var contentTrimmed = TrimContent(content);
-                    var booknameTrimmed = TrimContent(bookname);
-
-                    if (string.IsNullOrWhiteSpace(key)) {
-                        continue;
-                    }
-                    if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(bookname) || string.IsNullOrWhiteSpace(contentTrimmed) || string.IsNullOrWhiteSpace(booknameTrimmed)) {
-                        if (_staticData.DeleteClippingsByKey(key)) {
-                            countEmpty++;
-                        }
-                        continue;
-                    }
-
-                    switch (contentTrimmed.Equals(content)) {
-                        case false when !booknameTrimmed.Equals(bookname):
-                            if (_staticData.UpdateClippings(key, contentTrimmed, booknameTrimmed)) {
-                                countTrimmed++;
-                            }
-                            break;
-                        case false:
-                            if (_staticData.UpdateClippings(key, contentTrimmed, bookname)) {
-                                countTrimmed++;
-                            }
-                            break;
-                        default:
-                            if (!booknameTrimmed.Equals(bookname)) {
-                                if (_staticData.UpdateClippings(key, string.Empty, booknameTrimmed)) {
-                                    countTrimmed++;
-                                }
-                            }
-                            break;
-                    }
-
-                    if (_staticData.IsExistClippingsOfContent(content)) {
-                        if (_staticData.DeleteClippingsByKey(key)) {
-                            countDuplicated++;
-                        }
-                    }
-
-                    if (_staticData.IsExistClippingsContainingContent(content)) {
-                        if (_staticData.DeleteClippingsByKey(key)) {
-                            countDuplicated++;
-                        }
-                    }
-                }
-
-                var fileInfo = new FileInfo(_databasePath);
-                var originFileSize = fileInfo.Length;
-
-                _staticData.CommitTransaction();
-
-                _staticData.VacuumDatabase();
-
-                var newFileSize = fileInfo.Length;
-
-                var fileSizeDelta = originFileSize - newFileSize;
-
-                if (countEmpty > 0 || countTrimmed > 0 || countDuplicated > 0 || fileSizeDelta > 0) {
-                    return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Trimmed + Strings.Space + countTrimmed + Strings.Space +
-                           Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space +
-                           FormatFileSize(fileSizeDelta);
-                }
-                return Strings.Database_No_Need_Clean;
-            } catch (Exception) {
-                _staticData.RollbackTransaction();
-                return string.Empty;
+            if (_km2DatabaseService.CleanDatabase(_databaseFilePath, out var result)) {
+                var countEmpty = result[AppConstants.EmptyCount];
+                var countDuplicated = result[AppConstants.DuplicatedCount];
+                var fileSizeDelta = result[AppConstants.FileSizeDelta];
+                return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space + countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
             }
-        }
-
-        private static string TrimContent(string content) {
-            var contentTrimmed = content.TrimStart(' ', '.', '，', '。').Trim();
-            return contentTrimmed;
-        }
-
-        private static string FormatFileSize(long fileSize) {
-            string[] sizes = [
-                "B", "KB", "MB", "GB", "TB"
-            ];
-
-            var order = 0;
-            double size = fileSize;
-
-            while (size >= 1024 && order < sizes.Length - 1) {
-                order++;
-                size /= 1024;
-            }
-
-            return $"{size:0.##} {sizes[order]}";
-        }
-
-        private static string SanitizeFilename(string filename) {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            filename = invalidChars.Aggregate(filename, (current, c) => current.Replace(c, '_'));
-            filename = filename.Trim();
-            return filename;
+            var exception = result[AppConstants.Exception];
+            Console.WriteLine(exception);
+            return exception.Equals(AppConstants.DatabaseNoNeedCleaning) ? Strings.Database_No_Need_Clean : string.Empty;
         }
 
         private bool ClippingsToMarkdown(string bookname = "") {
             try {
-                var filename = "Clippings";
-
-                var markdown = new StringBuilder();
-
-                markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
-
-                markdown.AppendLine();
-
-                if (string.IsNullOrWhiteSpace(bookname) || bookname.Equals(Strings.Select_All)) {
-                    markdown.AppendLine("[TOC]");
-
-                    markdown.AppendLine();
-
-                    foreach (TreeNode node in treeViewBooks.Nodes) {
-                        var nodeBookName = node.Text;
-
-                        if (nodeBookName.Equals(Strings.Select_All)) {
-                            continue;
-                        }
-
-                        DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname")!.Equals(nodeBookName)).CopyToDataTable();
-
-                        if (filteredBooks.Rows.Count <= 0) {
-                            return false;
-                        }
-
-                        markdown.AppendLine("## \ud83d\udcd6 " + nodeBookName.Trim());
-
-                        markdown.AppendLine();
-
-                        foreach (DataRow row in filteredBooks.Rows) {
-                            var clippinglocation = row["clippingtypelocation"].ToString();
-                            var content = row["content"].ToString();
-
-                            markdown.AppendLine("**" + clippinglocation + "**");
-
-                            markdown.AppendLine();
-
-                            markdown.AppendLine(content);
-
-                            markdown.AppendLine();
-                        }
-                    }
-                } else {
-                    filename = SanitizeFilename(bookname);
-
-                    DataTable filteredBooks = _clippingsDataTable.AsEnumerable().Where(row => row.Field<string>("bookname")!.Equals(bookname)).CopyToDataTable();
-
-                    if (filteredBooks.Rows.Count <= 0) {
-                        return false;
-                    }
-
-                    markdown.AppendLine("## \ud83d\udcd6 " + bookname.Trim());
-
-                    markdown.AppendLine();
-
-                    foreach (DataRow row in filteredBooks.Rows) {
-                        var clippinglocation = row["clippingtypelocation"].ToString();
-                        var content = row["content"].ToString();
-
-                        markdown.AppendLine("**" + clippinglocation + "**");
-
-                        markdown.AppendLine();
-
-                        markdown.AppendLine(content);
-
-                        markdown.AppendLine();
-                    }
-                }
-
-                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
-
-                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-                MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
-                                            .UseAdvancedExtensions()
-                                            .UseTableOfContent()
-                                            .Build();
-                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
-
-                htmlContent += "\r\n</body>\r\n</html>";
-
-                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
-
-                return true;
+                return _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
             } catch (Exception) {
                 return false;
             }
@@ -2511,113 +2006,17 @@ namespace KindleMate2 {
 
         private bool VocabsToMarkdown(string word = "") {
             try {
-                var filename = "Vocabs";
-
-                var markdown = new StringBuilder();
-
-                markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
-
-                markdown.AppendLine();
-
-                if (string.IsNullOrWhiteSpace(word) || word.Equals(Strings.Select_All)) {
-                    markdown.AppendLine("[TOC]");
-
-                    markdown.AppendLine();
-
-                    foreach (TreeNode node in treeViewWords.Nodes) {
-                        var nodeWordText = node.Text;
-
-                        if (nodeWordText.Equals(Strings.Select_All)) {
-                            continue;
-                        }
-
-                        DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word") == nodeWordText).CopyToDataTable();
-
-                        if (filteredBooks.Rows.Count <= 0) {
-                            return false;
-                        }
-
-                        markdown.AppendLine("## \ud83d\udd24 " + nodeWordText.Trim());
-
-                        markdown.AppendLine();
-
-                        foreach (DataRow row in filteredBooks.Rows) {
-                            var title = row["title"].ToString();
-                            var usage = row["usage"].ToString();
-
-                            if (usage == null) {
-                                continue;
-                            }
-
-                            markdown.AppendLine("**《" + title + "》**");
-
-                            markdown.AppendLine();
-
-                            markdown.AppendLine(usage.Replace(nodeWordText, " **`" + nodeWordText + "`** "));
-
-                            markdown.AppendLine();
-                        }
-                    }
-                } else {
-                    filename = SanitizeFilename(word);
-
-                    DataTable filteredBooks = _lookupsDataTable.AsEnumerable().Where(row => row.Field<string>("word")!.Equals(word)).CopyToDataTable();
-
-                    if (filteredBooks.Rows.Count <= 0) {
-                        return false;
-                    }
-
-                    markdown.AppendLine("## \ud83d\udd24 " + word.Trim());
-
-                    markdown.AppendLine();
-
-                    foreach (DataRow row in filteredBooks.Rows) {
-                        var title = row["title"].ToString();
-                        var usage = row["usage"].ToString();
-
-                        if (usage == null) {
-                            continue;
-                        }
-
-                        markdown.AppendLine("**《" + title + "》**");
-
-                        markdown.AppendLine();
-
-                        markdown.AppendLine(usage.Replace(word, " **`" + word + "`** "));
-
-                        markdown.AppendLine();
-                    }
-                }
-
-                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".md"), markdown.ToString(), Encoding.UTF8);
-
-                var htmlContent = "<html><head>\r\n<link rel=\"stylesheet\" href=\"styles.css\">\r\n</head><body>\r\n";
-
-                MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
-                                            .UseAdvancedExtensions()
-                                            .UseTableOfContent()
-                                            .Build();
-                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
-
-                htmlContent += "\r\n</body>\r\n</html>";
-
-                File.WriteAllText(Path.Combine(_programPath, "Exports", filename + ".html"), htmlContent, Encoding.UTF8);
-
-                return true;
+                return _lookupService.LookupsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), word);
             } catch (Exception) {
                 return false;
             }
         }
 
         private void MenuExportMd_Click(object sender, EventArgs e) {
-            var path = Path.Combine(_programPath, "Exports");
+            var path = Path.Combine(_programPath, AppConstants.ExportsPathName);
             if (!Directory.Exists(path)) {
                 Directory.CreateDirectory(path);
             }
-
-            const string css = "@import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap);*{font-family:-apple-system,\"Noto Sans\",\"Helvetica Neue\",Helvetica,\"Nimbus Sans L\",Arial,\"Liberation Sans\",\"PingFang SC\",\"Hiragino Sans GB\",\"Noto Sans CJK SC\",\"Source Han Sans SC\",\"Source Han Sans CN\",\"Microsoft YaHei UI\",\"Microsoft YaHei\",\"Wenquanyi Micro Hei\",\"WenQuanYi Zen Hei\",\"ST Heiti\",SimHei,\"WenQuanYi Zen Hei Sharp\",\"Noto Emoji\",sans-serif}body{font-family:Arial,sans-serif;background-color:#f9f9f9;color:#333;line-height:1.6;align-items:center;width:80vw;margin:20px auto}h1{font-size:30px;text-align:center;margin:30px auto;color:#333}h2{font-size:24px;margin:30px auto;color:#333}p{font-size:16px;margin:20px auto}code{background-color:#faebd7;border-radius:10px;padding:2px 6px}";
-
-            File.WriteAllText(Path.Combine(_programPath, "Exports", "styles.css"), css);
 
             if (!ClippingsToMarkdown() || !VocabsToMarkdown()) {
                 return;
@@ -2628,12 +2027,12 @@ namespace KindleMate2 {
                 return;
             }
 
-            Process.Start("explorer.exe", Path.Combine(_programPath, "Exports"));
+            Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.ExportsPathName));
         }
 
         private void MenuStatistic_Click(object sender, EventArgs e) {
-            if (_clippingsDataTable.Rows.Count <= 0) {
-                MessageBox(Strings.No_Data_To_Clear, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (_clippings.Count <= 0) {
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             using var dialog = new FrmStatistics();
@@ -2649,7 +2048,10 @@ namespace KindleMate2 {
         }
 
         private void MenuTheme_Click(object sender, EventArgs e) {
-            _staticData.SetTheme(_isDarkTheme ? "light" : "dark");
+            _settingService.UpdateSetting(new Setting {
+                Name = AppConstants.SettingTheme,
+                value = _isDarkTheme ? Theme.Light : Theme.Dark
+            });
             Restart();
         }
 
@@ -2662,31 +2064,23 @@ namespace KindleMate2 {
         }
 
         private void MenuLangEN_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("en");
+            UpdateSettingLanguage(Cultures.English);
             Restart();
         }
 
         private void MenuLangSC_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("zh-Hans");
+            UpdateSettingLanguage(Cultures.ChineseSimplified);
             Restart();
         }
 
         private void MenuLangTC_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("zh-Hant");
+            UpdateSettingLanguage(Cultures.ChineseTraditional);
             Restart();
         }
 
         private void MenuLangAuto_Click(object sender, EventArgs e) {
-            _staticData.SetLanguage("");
+            UpdateSettingLanguage();
             Restart();
-        }
-
-        private void FrmMain_FormClosing(object sender, FormClosingEventArgs e) {
-            try {
-                _staticData.CommitTransaction();
-            } catch {
-                // ignored
-            }
         }
 
         private void MenuContentCopy_Click(object sender, EventArgs e) {
@@ -2694,41 +2088,52 @@ namespace KindleMate2 {
         }
 
         private void PicSearch_Click(object sender, EventArgs e) {
-            var searchText = GetSearchText();
-            if (_searchText.Equals(searchText)) {
-                return;
-            }
-            _searchText = searchText;
+            GetSearchText();
             RefreshData();
         }
 
-        private string GetSearchText() {
+        private void GetSearchText() {
             var strSearch = txtSearch.Text;
             if (string.IsNullOrWhiteSpace(strSearch)) {
                 txtSearch.Text = string.Empty;
             }
-            return txtSearch.Text;
+            _searchText = txtSearch.Text;
+
+            var searchType = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
+            if (searchType == Strings.Select_All) {
+                _searchType = AppEntities.SearchType.All;
+            } else if (searchType == Strings.Book_Title) {
+                _searchType = AppEntities.SearchType.BookTitle;
+            } else if (searchType == Strings.Author) {
+                _searchType = AppEntities.SearchType.Author;
+            } else if (searchType == Strings.Content) {
+                _searchType = AppEntities.SearchType.Content;
+            }
         }
 
         private void CmbSearch_SelectedIndexChanged(object sender, EventArgs e) {
+            SetCmbSearchSelection();
+        }
+
+        private void SetCmbSearchSelection() {
             var selected = cmbSearch.SelectedItem?.ToString() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(selected)) {
                 return;
             }
             List<string> list = [];
             if (selected.Equals(Strings.Book_Title)) {
-                list.AddRange(_staticData.GetClippingsBookTitleList());
+                list.AddRange(_clippingService.GetClippingsBookTitleList());
             } else if (selected.Equals(Strings.Author)) {
-                list.AddRange(_staticData.GetClippingsAuthorList());
+                list.AddRange(_clippingService.GetClippingsAuthorList());
             } else if (selected.Equals(Strings.Vocabulary)) {
-                list.AddRange(_staticData.GetVocabWordList());
+                list.AddRange(_vocabService.GetVocabWordList());
             } else if (selected.Equals(Strings.Stem)) {
-                list.AddRange(_staticData.GetVocabStemList());
+                list.AddRange(_vocabService.GetVocabStemList());
             } else {
-                list.AddRange(_staticData.GetClippingsBookTitleList());
-                list.AddRange(_staticData.GetClippingsAuthorList());
-                list.AddRange(_staticData.GetVocabWordList());
-                list.AddRange(_staticData.GetVocabStemList());
+                list.AddRange(_clippingService.GetClippingsBookTitleList());
+                list.AddRange(_clippingService.GetClippingsAuthorList());
+                list.AddRange(_vocabService.GetVocabWordList());
+                list.AddRange(_vocabService.GetVocabStemList());
             }
             var autoCompleteStringCollection = new AutoCompleteStringCollection();
             autoCompleteStringCollection.AddRange([.. list]);
@@ -2752,7 +2157,7 @@ namespace KindleMate2 {
             var index = tabControl.SelectedIndex;
             switch (index) {
                 case 0:
-                    if (treeViewBooks.SelectedNode is null || treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewBooks.SelectedNode is null) {
                         return;
                     }
                     if (!ClippingsToMarkdown(treeViewBooks.SelectedNode.Text.Trim())) {
@@ -2760,7 +2165,7 @@ namespace KindleMate2 {
                     }
                     break;
                 case 1:
-                    if (treeViewWords.SelectedNode is null || treeViewWords.SelectedNode.Text.Equals(Strings.Select_All)) {
+                    if (treeViewWords.SelectedNode is null) {
                         return;
                     }
                     if (!VocabsToMarkdown(treeViewWords.SelectedNode.Text.Trim())) {
@@ -2772,7 +2177,7 @@ namespace KindleMate2 {
             if (result != DialogResult.Yes) {
                 return;
             }
-            Process.Start("explorer.exe", Path.Combine(_programPath, "Exports"));
+            Process.Start(AppConstants.ExplorerFileName, Path.Combine(_programPath, AppConstants.ExportsPathName));
         }
 
         private void TreeViewBooks_AfterSelect(object sender, TreeViewEventArgs e) {
@@ -2789,39 +2194,75 @@ namespace KindleMate2 {
 
         private void TreeViewWords_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode == Keys.Delete) {
-                MenuBooksDelete_Click(sender, e);
+                DeleteNodes();
             }
         }
-
-        private static string RemoveControlChar(string input) {
-            var output = new StringBuilder();
-            foreach (var c in input.Where(c => !c.IsControl() && !c.IsNewLineOrLineFeed() && c != 65279)) {
-                output.Append(c);
-            }
-            return output.ToString();
-        }
-
-        [GeneratedRegex(@"\(([^()]+)\)[^(]*$")]
-        private static partial Regex BookNameRegex();
 
         private void lblContent_MouseDown(object sender, MouseEventArgs e) {
             HideCaret(sender);
         }
 
-        private void HideCaret(object? sender) {
-            if (sender != null) {
-                Control? control = sender as Control ?? null;
-                if (control != null) {
-                    HideCaret(control.Handle);
-                    DestroyCaret();
+        private static void HideCaret(object? sender) {
+            if (sender == null) {
+                return;
+            }
+            Control? control = sender as Control ?? null;
+            if (control == null) {
+                return;
+            }
+            HideCaret(control.Handle);
+            DestroyCaret();
+        }
+
+        private void menuSyncToKindle_Click(object sender, EventArgs e) {
+            SyncToKindle();
+        }
+
+        private void SyncToKindle() {
+            DialogResult dialogResult = MessageBox(Strings.Confirm_Sync_To_Kindle, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult != DialogResult.Yes) {
+                return;
+            }
+            try {
+                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
+                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
+                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) || !_originalClippingLineService.Export(backupClippingsPath, AppConstants.ClippingsFileName, out exception)) {
+                    throw exception;
                 }
+                var exportedClippingsPath = Path.Combine(_tempPath, AppConstants.ClippingsFileName);
+                var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
+                switch (_deviceType) {
+                    case Device.Type.USB: {
+                        File.Copy(exportedClippingsPath, Path.Combine(documentPath, AppConstants.ClippingsFileName), true);
+                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    }
+                    case Device.Type.MTP: {
+                        var devices = MediaDevice.GetDevices();
+                        using MediaDevice? device = devices.First(d =>
+                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                        device.Connect();
+                        WriteMtpFile(device, documentPath, AppConstants.ClippingsFileName, exportedClippingsPath);
+                        device.Disconnect();
+                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    }
+                    case Device.Type.Unknown:
+                    default: {
+                        break;
+                    }
+                }
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+                _ = MessageBox(MessageHelper.BuildMessage(Strings.Sync_Failed, ex), Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
             }
         }
 
-        private static string GetCurrentTimestamp() {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            var unixTimestampInSeconds = now.ToUnixTimeSeconds();
-            return unixTimestampInSeconds.ToString();
+        private void UpdateSettingLanguage(string lang = "") {
+            _settingService.UpdateSetting(new Setting {
+                Name = AppConstants.SettingLanguage,
+                value = lang
+            });
         }
 
         private DialogResult MessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon) {
@@ -2832,41 +2273,25 @@ namespace KindleMate2 {
             return Messenger.MessageBox(message, title, buttons, icon, _isDarkTheme);
         }
 
-        private void menuSyncToKindle_Click(object sender, EventArgs e) {
-            DialogResult dialogResult = MessageBox(Strings.Confirm_Sync_To_Kindle, Strings.Confirm, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (dialogResult != DialogResult.Yes) {
-                return;
-            }
+        private bool SetAutoUpdater() {
             try {
-                var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + GetCurrentTimestamp() + ".txt");
-                var backupWordsPath = Path.Combine(_backupPath, "vocab_" + GetCurrentTimestamp() + ".db");
-                if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath)) {
-                    return;
-                }
-                ExportClippingsFile(_tempPath);
-                var exportedClippingsPath = Path.Combine(_tempPath, ClippingsFileName);
-                var documentPath = Path.Combine(_driveLetter, DocumentsPathName);
-                switch (_deviceType) {
-                    case Device.Type.USB:
-                        File.Copy(exportedClippingsPath, Path.Combine(documentPath, ClippingsFileName), true);
-                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    case Device.Type.MTP: {
-                        var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d => d.FriendlyName.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(Kindle, StringComparison.InvariantCultureIgnoreCase));
-                        device.Connect();
-                        WriteMtpFile(device, documentPath, ClippingsFileName, exportedClippingsPath);
-                        device.Disconnect();
-                        MessageBox(Strings.Sync_Successful, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    }
-                    case Device.Type.Unknown:
-                    default:
-                        break;
-                }
-            } catch (Exception exception) {
-                Console.WriteLine(exception);
-                MessageBox(Strings.Sync_Failed, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
+                var arch = StringHelper.GetRuntimeArchitecture();
+                Console.WriteLine($"Detected architecture: {arch}");
+
+                var updateUrl = arch switch {
+                    "x64" => "https://github.lzc.app/KindleMate2/update_x64.xml",
+                    "x86" => "https://github.lzc.app/KindleMate2/update_x86.xml",
+                    "x64_runtime" => "https://github.lzc.app/KindleMate2/update_x64_runtime.xml",
+                    "x86_runtime" => "https://github.lzc.app/KindleMate2/update_x86_runtime.xml",
+                    _ => throw new NotSupportedException("Unsupported architecture detected")
+                };
+
+                AutoUpdater.Start(updateUrl);
+
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetAutoUpdater), e));
+                return false;
             }
         }
     }

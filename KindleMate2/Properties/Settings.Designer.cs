@@ -16,7 +16,7 @@ namespace KindleMate2.Properties {
     
     
     [CompilerGenerated()]
-    [GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.12.0.0")]
+    [GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
     internal sealed partial class Settings : ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(Synchronized(new Settings())));

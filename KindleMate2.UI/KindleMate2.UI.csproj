@@ -1,0 +1,89 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Images\bar-chart.png" />
+    <None Remove="Images\bookmark-tabs.png" />
+    <None Remove="Images\bookmark.ico" />
+    <None Remove="Images\bookmark.png" />
+    <None Remove="Images\broom.png" />
+    <None Remove="Images\card-file-box.png" />
+    <None Remove="Images\card-index.png" />
+    <None Remove="Images\carpentry-saw.png" />
+    <None Remove="Images\check-mark.png" />
+    <None Remove="Images\clockwise-vertical-arrows.png" />
+    <None Remove="Images\counterclockwise-arrows-button.png" />
+    <None Remove="Images\cross-mark-button.png" />
+    <None Remove="Images\eight-spoked-asterisk.png" />
+    <None Remove="Images\empty.png" />
+    <None Remove="Images\floppy-disk.png" />
+    <None Remove="Images\globe-with-meridians.png" />
+    <None Remove="Images\information.png" />
+    <None Remove="Images\input-latin-uppercase.png" />
+    <None Remove="Images\keycap-number-sign.png" />
+    <None Remove="Images\link.png" />
+    <None Remove="Images\magnifying-glass-tilted-left.png" />
+    <None Remove="Images\memo.png" />
+    <None Remove="Images\mobile-phone-with-arrow.png" />
+    <None Remove="Images\new-button.png" />
+    <None Remove="Images\new-moon.png" />
+    <None Remove="Images\open-book.png" />
+    <None Remove="Images\page-facing-up.png" />
+    <None Remove="Images\plus.png" />
+    <None Remove="Images\star.png" />
+    <None Remove="Images\sun.png" />
+    <None Remove="Images\wastebasket.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\bar-chart.png" />
+    <Resource Include="Images\bookmark-tabs.png" />
+    <Resource Include="Images\bookmark.ico" />
+    <Resource Include="Images\bookmark.png" />
+    <Resource Include="Images\broom.png" />
+    <Resource Include="Images\card-file-box.png" />
+    <Resource Include="Images\card-index.png" />
+    <Resource Include="Images\carpentry-saw.png" />
+    <Resource Include="Images\check-mark.png" />
+    <Resource Include="Images\clockwise-vertical-arrows.png" />
+    <Resource Include="Images\counterclockwise-arrows-button.png" />
+    <Resource Include="Images\cross-mark-button.png" />
+    <Resource Include="Images\eight-spoked-asterisk.png" />
+    <Resource Include="Images\empty.png" />
+    <Resource Include="Images\floppy-disk.png" />
+    <Resource Include="Images\globe-with-meridians.png" />
+    <Resource Include="Images\information.png" />
+    <Resource Include="Images\input-latin-uppercase.png" />
+    <Resource Include="Images\keycap-number-sign.png" />
+    <Resource Include="Images\link.png" />
+    <Resource Include="Images\magnifying-glass-tilted-left.png" />
+    <Resource Include="Images\memo.png" />
+    <Resource Include="Images\mobile-phone-with-arrow.png" />
+    <Resource Include="Images\new-button.png" />
+    <Resource Include="Images\new-moon.png" />
+    <Resource Include="Images\open-book.png" />
+    <Resource Include="Images\page-facing-up.png" />
+    <Resource Include="Images\plus.png" />
+    <Resource Include="Images\star.png" />
+    <Resource Include="Images\sun.png" />
+    <Resource Include="Images\wastebasket.png" />
+  </ItemGroup>
+
+</Project>

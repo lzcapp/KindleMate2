@@ -1,0 +1,45 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=System.Runtime">
+    <system:String x:Key="Title">Kindle Mate 2</system:String>
+
+    <system:String x:Key="SelectAll">全部</system:String>
+    <system:String x:Key="BookTitle">书名</system:String>
+    <system:String x:Key="Author">作者</system:String>
+    <system:String x:Key="Vocabulary">单词</system:String>
+    <system:String x:Key="Stem">词干</system:String>
+    <system:String x:Key="Content">内容</system:String>
+
+    <system:String x:Key="ClippingList">标注</system:String>
+    <system:String x:Key="VocabularyList">生词本</system:String>
+
+    <system:String x:Key="MenuFile">文件 (_F)</system:String>
+    <system:String x:Key="SubMenuRefresh">刷新</system:String>
+    <system:String x:Key="SubMenuRestart">重启</system:String>
+    <system:String x:Key="SubMenuExit">退出</system:String>
+
+    <system:String x:Key="MenuManage">管理 (_M)</system:String>
+    <system:String x:Key="SubMenuImport">导入</system:String>
+    <system:String x:Key="SubMenuImportClippings">导入Kindle标注</system:String>
+    <system:String x:Key="SubMenuImportVocabulary">导入Kindle生词本</system:String>
+    <system:String x:Key="SubMenuImportKindleMateDatabase">导入Kindle Mate数据库</system:String>
+    <system:String x:Key="SubMenuImportFromKindle">从Kindle设备导入</system:String>
+    <system:String x:Key="SubMenuSyncToKindle">同步到Kindle设备</system:String>
+    <system:String x:Key="SubMenuExport">导出</system:String>
+    <system:String x:Key="SubMenuExportAsMarkdown">导出为Markdown</system:String>
+    <system:String x:Key="SubMenuDatabase">维护数据库</system:String>
+    <system:String x:Key="SubMenuCleanDatabase">清理数据库</system:String>
+    <system:String x:Key="SubMenuRebuildDatabase">重建数据库</system:String>
+    <system:String x:Key="SubMenuClearDatabase">清空数据库</system:String>
+    <system:String x:Key="SubMenuBackup">备份</system:String>
+
+    <system:String x:Key="MenuHelp">帮助 (_H)</system:String>
+    <system:String x:Key="SubMenuAbout">关于</system:String>
+    <system:String x:Key="SubMenuGitHubRepo">Github仓库</system:String>
+
+    <system:String x:Key="DialogExitCaption">退出确认</system:String>
+    <system:String x:Key="DialogExitMessage">您确定要退出程序吗？</system:String>
+
+    <system:String x:Key="DialogRestartCaption">重启确认</system:String>
+    <system:String x:Key="DialogRestartMessage">您确定要重启程序吗？</system:String>
+</ResourceDictionary>

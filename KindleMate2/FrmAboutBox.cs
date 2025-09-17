@@ -1,20 +1,27 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 using DarkModeForms;
-using KindleMate2.Entities;
+using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared;
 
 namespace KindleMate2 {
     internal partial class FrmAboutBox : Form {
-        private readonly StaticData _staticData = new();
-
+        private const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
+        
         public FrmAboutBox() {
             InitializeComponent();
 
-            if (_staticData.IsDarkTheme()) {
-                _ = new DarkModeCS(this, false);
-                lblPath.LinkColor = Color.White;
+            var settingRepository = new SettingRepository(ConnectionString);
+            var themeService = new ThemeService(settingRepository);
+
+            themeService.IsDarkTheme();
+            if (!themeService.IsDarkTheme()) {
+                return;
             }
+            _ = new DarkModeCS(this, false);
+            lblPath.LinkColor = Color.White;
         }
 
         private static string AssemblyVersion {
@@ -65,7 +72,7 @@ namespace KindleMate2 {
             var filePath = Path.Combine(programsDirectory, "KM2.dat");
             var fileInfo = new FileInfo(filePath);
             var fileSize = fileInfo.Length;
-            lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + StaticData.FormatFileSize(fileSize) + Strings.Right_Parenthesis;
+            lblDatabase.Text = @"KM2.dat" + Strings.Left_Parenthesis + StringHelper.FormatFileSize(fileSize) + Strings.Right_Parenthesis;
 
             lblVersionText.Text = Strings.Version;
             lblCopyrightText.Text = Strings.Copyright;
@@ -73,7 +80,7 @@ namespace KindleMate2 {
             lblDatabaseText.Text = Strings.Database;
             okButton.Text = Strings.Confirm_Button;
 
-            var bw = new BackgroundWorker();
+            /*var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result == null) {
@@ -90,11 +97,11 @@ namespace KindleMate2 {
             };
             if (StaticData.IsInternetAvailable()) {
                 bw.RunWorkerAsync();
-            }
+            }*/
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {
-            StaticData.CheckUpdate();
+            /*StaticData.CheckUpdate();*/
         }
     }
 }

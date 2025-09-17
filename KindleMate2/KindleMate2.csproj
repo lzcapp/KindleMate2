@@ -21,7 +21,7 @@
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>
-		<Version>2025.08.29</Version>
+		<Version>2025.09.10</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
@@ -135,13 +135,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="Autoupdater.NET.Official" Version="1.9.2" />
+		<PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
 		<PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
-		<PackageReference Include="Markdig" Version="0.41.3" />
+		<PackageReference Include="Markdig" Version="0.42.0" />
 		<PackageReference Include="MediaDevices" Version="1.10.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="ReaLTaiizor" Version="3.8.1.3" />
-		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-		<PackageReference Include="System.Management" Version="9.0.8" />
+		<PackageReference Include="System.Management" Version="9.0.9" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
 	</ItemGroup>
@@ -156,11 +157,6 @@
 		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Settings.settings</DependentUpon>
-		</Compile>
-		<Compile Update="Strings.Designer.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Strings.resx</DependentUpon>
 		</Compile>
 	</ItemGroup>
 
@@ -205,22 +201,6 @@
 		<EmbeddedResource Update="Properties\Resources.zh-hant.resx">
 			<DependentUpon>Resources.resx</DependentUpon>
 		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.en.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.resx">
-			<Generator>ResXFileCodeGenerator</Generator>
-			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.zh-cn.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.zh-hans.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Strings.zh-hant.resx">
-			<DependentUpon>Strings.resx</DependentUpon>
-		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -254,6 +234,13 @@
 
 	<ItemGroup>
 	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
+	  <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+	  <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
+	  <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
 	</ItemGroup>
 
 </Project>
