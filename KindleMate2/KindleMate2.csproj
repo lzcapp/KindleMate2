@@ -21,7 +21,7 @@
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>
-		<Version>2025.09.10</Version>
+		<Version>2025.09.17</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
