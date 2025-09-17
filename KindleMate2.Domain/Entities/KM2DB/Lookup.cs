@@ -7,10 +7,11 @@
             get => _wordKey;
             set {
                 _wordKey = value;
-                if (value != null) {
-                    var index = value.IndexOf(':');
-                    Word = index >= 0 ? value[(index + 1)..] : value;
+                if (value == null) {
+                    return;
                 }
+                var index = value.IndexOf(':');
+                Word = index >= 0 ? value[(index + 1)..] : value;
             }
         }
 

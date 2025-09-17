@@ -52,5 +52,7 @@
         public const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
 
         public const string BookTitleFormat = " ——《{0}》";
+
+        public const string LocationFormat = "{0} - {1}";
     }
 }

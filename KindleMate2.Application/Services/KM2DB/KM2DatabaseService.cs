@@ -112,6 +112,8 @@ namespace KindleMate2.Application.Services.KM2DB {
             
                 var insertedCount = HandleClippings(myClippings, isRebuild: true);
 
+                UpdateFrequency();
+
                 result = new Dictionary<string, string> {
                     { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
                     { AppConstants.InsertedCount, insertedCount.ToString() }
@@ -130,121 +132,120 @@ namespace KindleMate2.Application.Services.KM2DB {
             var insertResult = 0;
 
             var allClippings = _clippingRepository.GetAll();
+            var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
             var originalKeys = _originalClippingLineRepository.GetAllKeys();
             
             var listAddClippings = new List<Clipping>();
             var listAddOriginalClippings = new List<OriginalClippingLine>();
             
             foreach (MyClipping myClipping in clippings) {
-                var clipping = new Clipping {
-                    Key = string.Empty
-                };
+                try {
+                    var clipping = new Clipping {
+                        Key = string.Empty
+                    };
 
-                var header = myClipping.Header;
-                var metadata = myClipping.Metadata;
-                var content = myClipping.Content;
-                
-                var briefType = BriefType.Highlight;
-                if (metadata.Contains("笔记") || metadata.Contains("Note")) {
-                    briefType = BriefType.Note;
-                } else if (metadata.Contains("书签") || metadata.Contains("Bookmark")) {
-                    briefType = BriefType.Bookmark;
-                } else if (metadata.Contains("文章剪切") || metadata.Contains("Cut")) {
-                    briefType = BriefType.Cut;
-                }
-                clipping.BriefType = (long)briefType;
+                    var header = myClipping.Header;
+                    var metadata = myClipping.Metadata;
+                    var content = myClipping.Content;
 
-                if (clipping.BriefType == (long)BriefType.Bookmark) {
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(content) || KindleHelper.IsClippingLimitReached(content)) {
-                    continue;
-                }
-
-                var clippingTypeLocation = string.Empty;
-                metadata = metadata.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
-                var indexOf = metadata.LastIndexOf('|');
-                if (indexOf >= 0) {
-                    clippingTypeLocation = metadata[..(indexOf - 1)];
-                }
-                indexOf = clippingTypeLocation.LastIndexOf('|');
-                var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
-                var pageNumber = -1;
-                var pagePattern = @"\d+(-\d+)?";
-                var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
-                var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
-                var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
-                var isPageParsed = false;
-                if (isPageMatched) {
-                    var regex = new Regex(pagePattern);
-                    var strMatched = regex.Matches(pageStr)[0].Value;
-                    var split = strMatched.Split("-");
-                    if (split.Length > 1) {
-                        strMatched = strMatched.Split("-")[1];
+                    if (string.IsNullOrWhiteSpace(content) || MyClippingsHelper.IsClippingLimitReached(content)) {
+                        continue;
                     }
-                    strMatched = strMatched.Replace("#", "");
-                    strMatched = strMatched.Split("）")[0];
-                    isPageParsed = int.TryParse(strMatched, out pageNumber);
-                } else if (isRomanMatched) {
-                    var strMatched = StringHelper.RomanToInteger(pageStr).ToString();
-                    isPageParsed = int.TryParse(strMatched, out pageNumber);
-                }
-                if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
-                    continue;
-                }
-                clipping.ClippingTypeLocation = clippingTypeLocation;
-                clipping.PageNumber = pageNumber;
 
-                string clippingDate;
-                var metaSplit = metadata.Split('|');
-                var datetime = metaSplit[^1].Replace("Added on", "").Replace("添加于", "").Trim();
-                datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
-                if (!isDateParsed) {
-                    var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                    if (dayOfWeekIndex != -1) {
-                        datetime = datetime.Remove(dayOfWeekIndex, 3);
-                    }
-                    isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
-                }
-                if (isDateParsed && parsedDate != DateTime.MinValue) {
-                    clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                } else {
-                    continue;
-                }
-                clipping.ClippingDate = clippingDate;
-
-                var key = clippingDate + "|" + clippingTypeLocation;
-                if (!isRebuild && originalKeys.Contains(key)) {
-                    continue;
-                }
-
-                clipping.Key = key;
-
-                var (bookName, authorName) = StringHelper.GetAuthorFromTitle(header);
-                clipping.BookName = bookName;
-                clipping.AuthorName = authorName;
-
-                if (briefType == BriefType.Note) {
-                    _ = SetClippingsBriefTypeHide(bookName, pageNumber);
-                }
-
-                if (allClippings.Any(c => c.Key.Equals(key) && c.Content.Contains(content))) {
-                    continue;
-                }
+                    Header headerResult = MyClippingsHelper.ParseTitleAndAuthor(header);
+                    clipping.BookName = headerResult.Title;
+                    clipping.AuthorName = headerResult.Author;
                 
-                clipping.Content = content;
+                    Location location = MyClippingsHelper.ParseLocation(metadata);
+                    clipping.PageNumber = location.Page;
+                    clipping.ClippingTypeLocation = string.Format(AppConstants.LocationFormat, location.From, location.To);
+                
+                    var clippingTypeLocation = string.Empty;
+                    metadata = metadata.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
+                    var indexOf = metadata.LastIndexOf('|');
+                    if (indexOf >= 0) {
+                        clippingTypeLocation = metadata[..(indexOf - 1)];
+                    }
+                    indexOf = clippingTypeLocation.LastIndexOf('|');
+                    var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
+                    var pageNumber = -1;
+                    var pagePattern = @"\d+(-\d+)?";
+                    var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
+                    var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+                    var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
+                    var isPageParsed = false;
+                    if (isPageMatched) {
+                        var regex = new Regex(pagePattern);
+                        var strMatched = regex.Matches(pageStr)[0].Value;
+                        var split = strMatched.Split("-");
+                        if (split.Length > 1) {
+                            strMatched = strMatched.Split("-")[1];
+                        }
+                        strMatched = strMatched.Replace("#", "");
+                        strMatched = strMatched.Split("）")[0];
+                        isPageParsed = int.TryParse(strMatched, out pageNumber);
+                    } else if (isRomanMatched) {
+                        var strMatched = StringHelper.RomanToInteger(pageStr).ToString();
+                        isPageParsed = int.TryParse(strMatched, out pageNumber);
+                    }
+                    if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
+                        continue;
+                    }
+                    clipping.PageNumber = pageNumber;
+                    clipping.ClippingTypeLocation = clippingTypeLocation;
 
-                listAddClippings.Add(clipping);
+                    string clippingDate;
+                    var metaSplit = metadata.Split('|');
+                    var datetime = metaSplit[^1].Replace("Added on", "").Replace("添加于", "").Trim();
+                    datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
+                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
+                    if (!isDateParsed) {
+                        var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
+                        if (dayOfWeekIndex != -1) {
+                            datetime = datetime.Remove(dayOfWeekIndex, 3);
+                        }
+                        isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
+                    }
+                    if (isDateParsed && parsedDate != DateTime.MinValue) {
+                        clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    } else {
+                        continue;
+                    }
+                    clipping.ClippingDate = clippingDate;
 
-                if (!isRebuild) {
-                    listAddOriginalClippings.Add(new OriginalClippingLine {
-                        key = key, 
-                        line1 = header, 
-                        line2 = metadata,
-                        line4 = content
-                    });
+                    var key = clippingDate + "|" + clippingTypeLocation;
+                    if (allClippingsKeys.Contains(key) || !isRebuild && originalKeys.Contains(key)) {
+                        continue;
+                    }
+
+                    clipping.Key = key;
+
+                    if (allClippings.Any(c => c.Key.Equals(key) && c.Content.Contains(content))) {
+                        continue;
+                    }
+                
+                    clipping.BriefType = (long)MyClippingsHelper.ParseEntryType(metadata);
+                    if (clipping.BriefType == (long)BriefType.Bookmark) {
+                        continue;
+                    }
+                    if (clipping.BriefType == (long)BriefType.Note) {
+                        _ = SetClippingsBriefTypeHide(clipping.BookName, pageNumber);
+                    }
+                
+                    clipping.Content = content;
+
+                    listAddClippings.Add(clipping);
+
+                    if (!isRebuild) {
+                        listAddOriginalClippings.Add(new OriginalClippingLine {
+                            key = key, 
+                            line1 = header, 
+                            line2 = metadata,
+                            line4 = content
+                        });
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine(StringHelper.GetExceptionMessage(nameof(HandleClippings), e));
                 }
             }
 
@@ -290,18 +291,24 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool UpdateFrequency() {
-            var vocabs = _vocabRepository.GetAll();
-            var lookups = _lookupRepository.GetAll();
-
             try {
+                var lookups = _lookupRepository.GetAll();
+                var frequencyMap = lookups
+                    .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
+                    .GroupBy(l => l.WordKey!.Trim())
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                var vocabs = _vocabRepository.GetAll();
                 foreach (Vocab vocab in vocabs) {
-                    var wordKey = vocab.WordKey;
-                    var frequency = lookups.Count(lookupsRow => lookupsRow.WordKey?.Trim() == wordKey);
+                    if (vocab.WordKey == null) {
+                        continue;
+                    }
+                    frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
-                        WordKey = wordKey,
+                        WordKey = vocab.WordKey,
                         Frequency = frequency,
                         Id = string.Empty,
-                        Word = string.Empty,
+                        Word = string.Empty, // frequency will be 0 if key not found
                     });
                 }
                 return true;

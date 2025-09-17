@@ -50,6 +50,7 @@
     }
 
     public enum BriefType {
+        Unknown = -2,
         Hide = -1,
         Highlight = 0,
         Note = 1,
