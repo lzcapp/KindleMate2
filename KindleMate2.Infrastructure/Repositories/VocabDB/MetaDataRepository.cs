@@ -131,7 +131,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM METADATA WHERE id = @id", connection);
-                if (!string.IsNullOrWhiteSpace(id)) {
+                if (string.IsNullOrWhiteSpace(id)) {
                     throw new InvalidOperationException();
                 }
                 cmd.Parameters.AddWithValue("@id", id);
