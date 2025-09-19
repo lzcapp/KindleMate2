@@ -15,7 +15,7 @@ namespace KindleMate2.Application.Services.KM3DB {
         private readonly ISettingRepository _settingRepository;
         private readonly IVocabRepository _vocabRepository;
 
-        public Km2DatabaseService(IClippingRepository clippingRepository, ILookupRepository lookupRepository, IOriginalClippingLineRepository originalClippingLineRepository, ISettingRepository settingRepository, IVocabRepository vocabRepository) {
+        public KM3DatabaseService(IClippingRepository clippingRepository, ILookupRepository lookupRepository, IOriginalClippingLineRepository originalClippingLineRepository, ISettingRepository settingRepository, IVocabRepository vocabRepository) {
             _clippingRepository = clippingRepository;
             _lookupRepository = lookupRepository;
             _originalClippingLineRepository = originalClippingLineRepository;

@@ -4,7 +4,7 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
-namespace KindleMate2.Infrastructure.Repositories.KM2DB {
+namespace KindleMate2.Infrastructure.Repositories.KM3DB {
     public class LookupRepository : ILookupRepository {
         private readonly string _connectionString;
 

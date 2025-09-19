@@ -1,7 +1,7 @@
 ﻿using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
-namespace KindleMate2.Infrastructure.Repositories.KM2DB {
+namespace KindleMate2.Infrastructure.Repositories.KM3DB {
     public class DatabaseRepository {
         private readonly string _connectionString;
 

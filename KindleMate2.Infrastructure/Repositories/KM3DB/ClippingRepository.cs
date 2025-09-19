@@ -28,20 +28,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM3DB {
                 using SqliteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read()) {
                     return new Clipping {
-                        Key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
-                        BookName = DatabaseHelper.GetSafeString(reader, 2),
-                        AuthorName = DatabaseHelper.GetSafeString(reader, 3),
-                        BriefType = DatabaseHelper.GetSafeLong(reader, 4),
-                        ClippingTypeLocation = DatabaseHelper.GetSafeString(reader, 5),
-                        ClippingDate = DatabaseHelper.GetSafeString(reader, 6),
-                        Read = DatabaseHelper.GetSafeInt(reader, 7),
-                        ClippingImportDate = DatabaseHelper.GetSafeString(reader, 8),
-                        Tag = DatabaseHelper.GetSafeString(reader, 9),
-                        Sync = DatabaseHelper.GetSafeInt(reader, 10),
-                        NewBookName = DatabaseHelper.GetSafeString(reader, 11),
-                        ColorRgb = DatabaseHelper.GetSafeLong(reader, 12),
-                        PageNumber = DatabaseHelper.GetSafeInt(reader, 13)
+                        Id = DatabaseHelper.GetLong(reader, 0),
+                        Content = DatabaseHelper.GetSafeString(reader, 1) ?? throw new InvalidOperationException()
                     };
                 }
             } catch (Exception e) {
@@ -65,7 +53,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM3DB {
                 if (reader.Read()) {
                     return new Clipping {
                         Key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = DatabaseHelper.GetString(reader, 1),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),

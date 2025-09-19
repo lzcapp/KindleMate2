@@ -111,9 +111,21 @@ namespace KindleMate2.Infrastructure.Helpers {
             var s = reader.GetString(ordinal);
             return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
         }
+        
+        public static string GetString(SqliteDataReader reader, int ordinal) {
+            if (reader.IsDBNull(ordinal)) {
+                throw new Exception();
+            }
+            var s = reader.GetString(ordinal);
+            return string.IsNullOrWhiteSpace(s) ? throw new Exception() : s.Trim();
+        }
 
         public static int? GetSafeInt(SqliteDataReader reader, int ordinal) {
             return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+        }
+        
+        public static long GetLong(SqliteDataReader reader, int ordinal) {
+            return reader.IsDBNull(ordinal) ? throw new Exception() : reader.GetInt64(ordinal);
         }
 
         public static long? GetSafeLong(SqliteDataReader reader, int ordinal) {

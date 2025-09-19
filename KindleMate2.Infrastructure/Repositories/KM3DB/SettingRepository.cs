@@ -3,7 +3,7 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
-namespace KindleMate2.Infrastructure.Repositories.KM2DB {
+namespace KindleMate2.Infrastructure.Repositories.KM3DB {
     public class SettingRepository : ISettingRepository {
         private readonly string _connectionString;
 
