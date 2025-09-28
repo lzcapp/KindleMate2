@@ -259,20 +259,25 @@ namespace KindleMate2 {
         private void AddDeviceWatcher() {
             IsKindleConnected();
 
-            const string deviceChangeQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2 OR EventType = 3";
-            using var watcher = new ManagementEventWatcher(deviceChangeQuery);
-            watcher.EventArrived += UsbDeviceEventHandler;
-            watcher.Start();
+            const string usbCrationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
+            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCrationQuery);
+            usbDeviceArrivalWatcher.EventArrived += UsbDeviceEventHandler;
+            usbDeviceArrivalWatcher.Start();
+
+            const string usbDeletionQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 3";
+            using var usbDeviceRemovalWatcher = new ManagementEventWatcher(usbDeletionQuery);
+            usbDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
+            usbDeviceRemovalWatcher.Start();
 
             const string mtpCreationQuery = "SELECT * FROM __InstanceCreationEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
-            using var deviceArrivalWatcher = new ManagementEventWatcher(mtpCreationQuery);
-            deviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
-            deviceArrivalWatcher.Start();
+            using var mtpDeviceArrivalWatcher = new ManagementEventWatcher(mtpCreationQuery);
+            mtpDeviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
+            mtpDeviceArrivalWatcher.Start();
 
             const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
-            using var deviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
-            deviceRemovalWatcher.EventArrived += MtpDeviceEventHandler;
-            deviceRemovalWatcher.Start();
+            using var mtpDeviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
+            mtpDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
+            mtpDeviceRemovalWatcher.Start();
         }
 
         private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
@@ -285,13 +290,24 @@ namespace KindleMate2 {
             DeviceEventHandler(sender);
         }
 
+        private void DeviceRemovedEventHandler(object sender, EventArrivedEventArgs e) {
+            _driveLetter = string.Empty;
+            menuSyncFromKindle.Visible = false;
+            menuKindle.Visible = false;
+            menuKindle.Visible = true;
+        }
+
         private void DeviceEventHandler(object sender) {
-            if (sender is not ManagementEventWatcher watcher) {
-                return;
+            try {
+                if (sender is not ManagementEventWatcher watcher) {
+                    return;
+                }
+                watcher.Stop();
+                IsKindleConnected();
+                watcher.Start();
+            } catch (Exception e) {
+                Console.WriteLine(e);
             }
-            watcher.Stop();
-            IsKindleConnected();
-            watcher.Start();
         }
 
         private string Import(string kindleClippingsPath, string kindleWordsPath) {
@@ -1405,8 +1421,8 @@ namespace KindleMate2 {
 
         private bool HandleMtpDevice() {
             try {
-                var devices = MediaDevice.GetDevices();
-                foreach (MediaDevice? device in devices) {
+                var devices = MediaDevice.GetDevices().ToList();
+                foreach (MediaDevice device in devices) {
                     try {
                         device.Connect();
                         if (!device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) && !device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
@@ -1418,17 +1434,21 @@ namespace KindleMate2 {
                         var files = systemDir.EnumerateFiles(AppConstants.VersionFileName);
                         var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
                         if (mediaFileInfos.Length == 0) {
-                            return false;
+                            device.Disconnect();
+                            continue;
                         }
                         MediaFileInfo? file = mediaFileInfos[0];
                         var memoryStream = new MemoryStream();
+                        if (!device.IsConnected) {
+                            device.Connect();
+                        }
                         device.DownloadFile(file.FullName, memoryStream);
                         memoryStream.Position = 0;
                         using var reader = new StreamReader(memoryStream);
                         var versionText = reader.ReadToEnd();
                         SetKindleVersionText(versionText);
-                        device.Disconnect();
                         _deviceType = Device.Type.MTP;
+                        device.Disconnect();
                         return true;
                     } catch (Exception e) {
                         Console.WriteLine(e);
@@ -1515,7 +1535,7 @@ namespace KindleMate2 {
                         var isPaired = false;
                         foreach (MediaDevice device in devices) {
                             device.Connect();
-                            if (device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
+                            if (!device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) && !device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
                                 device.Disconnect();
                                 continue;
                             }
@@ -1523,6 +1543,7 @@ namespace KindleMate2 {
                             ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
                             device.Disconnect();
                             isPaired = true;
+                            break;
                         }
                         return isPaired;
                     }
