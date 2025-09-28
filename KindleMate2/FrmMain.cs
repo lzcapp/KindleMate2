@@ -403,14 +403,12 @@ namespace KindleMate2 {
 
             foreach (Lookup row in _lookups) {
                 var wordKey = row.WordKey;
-                var word = string.Empty;
                 var stem = string.Empty;
                 var frequency = string.Empty;
                 foreach (Vocab vocab in _vocabs) {
                     if (vocab.WordKey != wordKey) {
                         continue;
                     }
-                    word = vocab.Word;
                     stem = vocab.Stem;
                     frequency = vocab.Frequency.ToString();
                     break;
