@@ -28,7 +28,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 if (reader.Read()) {
                     return new Clipping {
                         Key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = DatabaseHelper.GetSafeString(reader, 1) ?? throw new InvalidOperationException(),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -64,7 +64,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 if (reader.Read()) {
                     return new Clipping {
                         Key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = DatabaseHelper.GetSafeString(reader, 1) ?? throw new InvalidOperationException(),
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -103,9 +103,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    var content = DatabaseHelper.GetSafeString(reader, 1);
+                    if (content == null) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -145,9 +149,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    var content = DatabaseHelper.GetSafeString(reader, 1);
+                    if (content == null) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -191,9 +199,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    var content = DatabaseHelper.GetSafeString(reader, 1);
+                    if (content == null) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -230,9 +242,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    content = DatabaseHelper.GetSafeString(reader, 1) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(content)) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4) ?? 0,
@@ -267,9 +283,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    var content = DatabaseHelper.GetSafeString(reader, 1);
+                    if (content == null) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4) ?? 0,
@@ -306,9 +326,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     if (key == null) {
                         continue;
                     }
+                    var content = DatabaseHelper.GetSafeString(reader, 1);
+                    if (content == null) {
+                        continue;
+                    }
                     results.Add(new Clipping {
                         Key = key,
-                        Content = DatabaseHelper.GetSafeString(reader, 1),
+                        Content = content,
                         BookName = DatabaseHelper.GetSafeString(reader, 2),
                         AuthorName = DatabaseHelper.GetSafeString(reader, 3),
                         BriefType = DatabaseHelper.GetSafeLong(reader, 4),
@@ -377,7 +401,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
                     connection);
                 cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@content", clipping.Content ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@content", clipping.Content);
                 cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
@@ -408,7 +432,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
                         connection);
                     cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
-                    cmd.Parameters.AddWithValue("@content", clipping.Content ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@content", clipping.Content);
                     cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
@@ -440,7 +464,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     "UPDATE clippings SET content = @content, bookname = @bookname, authorname = @authorname, brieftype = @brieftype, clippingtypelocation = @clippingtypelocation, clippingdate = @clippingdate, read = @read, clipping_importdate = @clipping_importdate, tag = @tag, sync = @sync, newbookname = @newbookname, colorRGB = @colorRGB, pagenumber = @pagenumber WHERE key = @key",
                     connection);
                 cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@content", clipping.Content ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@content", clipping.Content);
                 cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);

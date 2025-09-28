@@ -143,7 +143,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                         input = input.Replace(matchLocation.Value, string.Empty);
                     }
                 } catch (Exception e) {
-                    // ignored
+                    Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ParseLocation) + ": match location", e));
                 }
                 Match matchPage = Regex.Match(input, @"(\d+)");
                 if (matchPage.Success) {
@@ -151,7 +151,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     result.Page = page;
                 }
             } catch (Exception e) {
-                Console.WriteLine(e);
+                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ParseLocation), e));
             }
             return result;
         }

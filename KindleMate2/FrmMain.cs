@@ -415,8 +415,7 @@ namespace KindleMate2 {
                     frequency = vocab.Frequency.ToString();
                     break;
                 }
-
-                row.Word = word;
+                
                 row.Stem = stem ?? string.Empty;
                 row.Frequency = frequency ?? string.Empty;
             }

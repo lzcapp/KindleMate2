@@ -16,7 +16,7 @@ namespace KindleMate2.Domain.Entities.MyClippings {
     public class Metadata {
         public BriefType Type { get; set; }
         public int Page { get; set; } = -1;
-        public Location Location { get; set; }
+        public Location Location { get; set; } = new Location();
         public DateTime? DateOfCreation { get; set; }
     }
     

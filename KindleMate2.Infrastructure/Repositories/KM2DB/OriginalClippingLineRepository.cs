@@ -7,7 +7,6 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class OriginalClippingLineRepository : IOriginalClippingLineRepository {
         private readonly string _connectionString;
-        private IOriginalClippingLineRepository _originalClippingLineRepositoryImplementation;
 
         public OriginalClippingLineRepository(string connectionString) {
             _connectionString = connectionString;
