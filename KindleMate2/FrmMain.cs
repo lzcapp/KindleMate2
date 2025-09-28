@@ -851,9 +851,8 @@ namespace KindleMate2 {
                             index = wordStartIndex + word.Length;
                         }
 
-                        index = 0;
-
                         foreach (var book in titleList) {
+                            index = 0;
                             while (index < lblContent.TextLength) {
                                 var wordStartIndex = lblContent.Find(book, index, RichTextBoxFinds.None);
                                 if (wordStartIndex == -1) {
