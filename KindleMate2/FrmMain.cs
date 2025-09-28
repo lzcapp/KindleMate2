@@ -1511,14 +1511,20 @@ namespace KindleMate2 {
                         return true;
                     }
                     case Device.Type.MTP: {
-                        var devices = MediaDevice.GetDevices();
-                        using MediaDevice? device = devices.First(d =>
-                            d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                        device.Connect();
-                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
-                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
-                        device.Disconnect();
-                        return true;
+                        var devices = MediaDevice.GetDevices().ToList();
+                        var isPaired = false;
+                        foreach (MediaDevice device in devices) {
+                            device.Connect();
+                            if (device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) || device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
+                                device.Disconnect();
+                                continue;
+                            }
+                            ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                            ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                            device.Disconnect();
+                            isPaired = true;
+                        }
+                        return isPaired;
                     }
                     case Device.Type.Unknown:
                     default: {
