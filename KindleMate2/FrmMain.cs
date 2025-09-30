@@ -910,9 +910,17 @@ namespace KindleMate2 {
                 lblBookCount.Image = null;
                 lblBookCount.Visible = false;
                 dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
-                dataGridView.Columns[Columns.BookName]!.Visible = true;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = true;
-                dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                
+                // Check if columns exist before accessing them
+                if (dataGridView.Columns.Contains(Columns.BookName)) {
+                    dataGridView.Columns[Columns.BookName]!.Visible = true;
+                }
+                if (dataGridView.Columns.Contains(Columns.AuthorName)) {
+                    dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                }
+                if (dataGridView.Columns.Contains(Columns.ClippingDate)) {
+                    dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                }
             } else {
                 var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                 var filteredBooks = DataTableHelper.ToDataTable(clippings);
@@ -920,11 +928,19 @@ namespace KindleMate2 {
                 lblBookCount.Image = Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
-                dataGridView.Columns[Columns.BookName]!.Visible = false;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
-                dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                
+                // Check if columns exist before accessing them
+                if (dataGridView.Columns.Contains(Columns.BookName)) {
+                    dataGridView.Columns[Columns.BookName]!.Visible = false;
+                    dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                }
+                if (dataGridView.Columns.Contains(Columns.AuthorName)) {
+                    dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                    dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                }
+                if (dataGridView.Columns.Contains(Columns.PageNumber)) {
+                    dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                }
             }
         }
 
