@@ -1138,6 +1138,11 @@ namespace KindleMate2 {
                 return;
             }
 
+            // Check if column index is valid
+            if (e.ColumnIndex >= dataGridView.Columns.Count) {
+                return;
+            }
+
             var index = tabControl.SelectedIndex;
             var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
 
@@ -1151,9 +1156,18 @@ namespace KindleMate2 {
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
                         dataGridView.DataSource = filteredBooks;
-                        dataGridView.Columns[Columns.BookName]!.Visible = false;
-                        dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                        dataGridView.Sort(dataGridView.Columns[Columns.ClippingTypeLocation]!, ListSortDirection.Ascending);
+                        
+                        // Check if columns exist before accessing them
+                        if (dataGridView.Columns.Contains(Columns.BookName)) {
+                            dataGridView.Columns[Columns.BookName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.AuthorName)) {
+                            dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingTypeLocation)) {
+                            dataGridView.Sort(dataGridView.Columns[Columns.ClippingTypeLocation]!, ListSortDirection.Ascending);
+                        }
+                        
                         RefreshData();
                     } else {
                         ShowContentEditDialog();
@@ -1167,14 +1181,27 @@ namespace KindleMate2 {
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
-                        dataGridView.Columns[Columns.Usage]!.Visible = true;
-                        dataGridView.Columns[Columns.Title]!.Visible = true;
-                        dataGridView.Columns[Columns.Authors]!.Visible = true;
-                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
-                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                        dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
+                        
+                        // Check if columns exist before accessing them
+                        if (dataGridView.Columns.Contains(Columns.Usage)) {
+                            dataGridView.Columns[Columns.Usage]!.Visible = true;
+                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Title)) {
+                            dataGridView.Columns[Columns.Title]!.Visible = true;
+                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Authors)) {
+                            dataGridView.Columns[Columns.Authors]!.Visible = true;
+                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Frequency)) {
+                            dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
+                            dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
+                        }
+                        
                         RefreshData();
                     }
                     break;
