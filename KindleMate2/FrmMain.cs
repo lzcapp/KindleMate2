@@ -1866,13 +1866,26 @@ namespace KindleMate2 {
                 lblBookCount.Visible = false;
                 dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
 
-                dataGridView.Columns[Columns.Word]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-                dataGridView.Columns[Columns.Frequency]!.Visible = true;
-
-                dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                // Check if columns exist before accessing them
+                if (dataGridView.Columns.Contains(Columns.Word)) {
+                    dataGridView.Columns[Columns.Word]!.Visible = true;
+                }
+                if (dataGridView.Columns.Contains(Columns.Usage)) {
+                    dataGridView.Columns[Columns.Usage]!.Visible = true;
+                    dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                }
+                if (dataGridView.Columns.Contains(Columns.Title)) {
+                    dataGridView.Columns[Columns.Title]!.Visible = true;
+                    dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                }
+                if (dataGridView.Columns.Contains(Columns.Authors)) {
+                    dataGridView.Columns[Columns.Authors]!.Visible = true;
+                    dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                }
+                if (dataGridView.Columns.Contains(Columns.Frequency)) {
+                    dataGridView.Columns[Columns.Frequency]!.Visible = true;
+                    dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                }
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
@@ -1883,16 +1896,26 @@ namespace KindleMate2 {
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;
 
-                dataGridView.Columns[Columns.Word]!.Visible = false;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-
-                dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                // Check if columns exist before accessing them
+                if (dataGridView.Columns.Contains(Columns.Word)) {
+                    dataGridView.Columns[Columns.Word]!.Visible = false;
+                }
+                if (dataGridView.Columns.Contains(Columns.Usage)) {
+                    dataGridView.Columns[Columns.Usage]!.Visible = true;
+                    dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                }
+                if (dataGridView.Columns.Contains(Columns.Title)) {
+                    dataGridView.Columns[Columns.Title]!.Visible = true;
+                    dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                }
+                if (dataGridView.Columns.Contains(Columns.Authors)) {
+                    dataGridView.Columns[Columns.Authors]!.Visible = true;
+                    dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                }
+                if (dataGridView.Columns.Contains(Columns.Frequency)) {
+                    dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                }
             }
-            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
         }
 
         private void TreeViewWords_MouseDown(object sender, MouseEventArgs e) {
