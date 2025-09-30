@@ -1356,18 +1356,12 @@ namespace KindleMate2 {
         }
 
         private void IsKindleConnected() {
-            var isConnected = false;
-
             try {
-                isConnected = _deviceType switch {
+                var isConnected = _deviceType switch {
                     Device.Type.USB => HandleUsbDevice(),
                     Device.Type.MTP => HandleMtpDevice(),
-                    _ => isConnected
+                    _ => HandleUsbDevice() || HandleMtpDevice()
                 };
-
-                if (!isConnected) {
-                    isConnected = HandleUsbDevice() || HandleMtpDevice();
-                }
 
                 if (!isConnected) {
                     _driveLetter = string.Empty;

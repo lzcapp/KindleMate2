@@ -85,13 +85,6 @@ namespace KindleMate2.Infrastructure.Helpers {
             return className + ": " + Environment.NewLine + e;
         }
 
-        public static string GetExceptionMessage(string className, Exception e, string[] parameters) {
-            var message = className + ": ";
-            message = parameters.Aggregate(message, (current, parameter) => current + (nameof(parameter) + ": " + parameter + ", "));
-            message += Environment.NewLine + e;
-            return message;
-        }
-
         public static string GetRuntimeArchitecture() {
             var is64Bit = Environment.Is64BitProcess;
 
