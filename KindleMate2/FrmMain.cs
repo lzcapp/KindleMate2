@@ -641,10 +641,13 @@ namespace KindleMate2 {
 
                     break;
                 case 1:
-                    if (_vocabs.Count <= 0 || _lookups.Count <= 0) {
+                    if (_vocabs.Count <= 0) {
                         return;
                     }
 
+                    if (_lookups.Count <= 0) {
+                        return;
+                    }
                     dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
 
                     // Check if columns exist before accessing them
