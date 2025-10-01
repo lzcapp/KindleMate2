@@ -259,8 +259,8 @@ namespace KindleMate2 {
         private void AddDeviceWatcher() {
             IsKindleConnected();
 
-            const string usbCrationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
-            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCrationQuery);
+            const string usbCreationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
+            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCreationQuery);
             usbDeviceArrivalWatcher.EventArrived += UsbDeviceEventHandler;
             usbDeviceArrivalWatcher.Start();
 
@@ -499,37 +499,78 @@ namespace KindleMate2 {
 
                         dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
 
-                        dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
-                        dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
-                        dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
-                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
-                        dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
-                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                        // Set headers and properties with column existence checks
+                        if (dataGridView.Columns.Contains(Columns.Content)) {
+                            dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
+                            dataGridView.Columns[Columns.Content]!.Visible = true;
+                            dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.BookName)) {
+                            dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                            dataGridView.Columns[Columns.BookName]!.Visible = true;
+                            dataGridView.Columns[Columns.BookName]!.Width = 100;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.AuthorName)) {
+                            dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                            dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                            dataGridView.Columns[Columns.AuthorName]!.Width = 100;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingDate)) {
+                            dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                            dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
+                            dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.PageNumber)) {
+                            dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
+                            dataGridView.Columns[Columns.PageNumber]!.Visible = true;
+                            dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                            dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
+                        }
+                        
+                        // Set visibility for other columns
+                        if (dataGridView.Columns.Contains(Columns.Key)) {
+                            dataGridView.Columns[Columns.Key]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.BriefType)) {
+                            dataGridView.Columns[Columns.BriefType]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingTypeLocation)) {
+                            dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Read)) {
+                            dataGridView.Columns[Columns.Read]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingImportDate)) {
+                            dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Tag)) {
+                            dataGridView.Columns[Columns.Tag]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Sync)) {
+                            dataGridView.Columns[Columns.Sync]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.NewBookName)) {
+                            dataGridView.Columns[Columns.NewBookName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ColorRgb)) {
+                            dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
+                        }
 
-                        dataGridView.Columns[Columns.Key]!.Visible = false;
-                        dataGridView.Columns[Columns.Content]!.Visible = true;
-                        dataGridView.Columns[Columns.BookName]!.Visible = true;
-                        dataGridView.Columns[Columns.AuthorName]!.Visible = true;
-                        dataGridView.Columns[Columns.BriefType]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
-                        dataGridView.Columns[Columns.Read]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
-                        dataGridView.Columns[Columns.Tag]!.Visible = false;
-                        dataGridView.Columns[Columns.Sync]!.Visible = false;
-                        dataGridView.Columns[Columns.NewBookName]!.Visible = false;
-                        dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
-                        dataGridView.Columns[Columns.PageNumber]!.Visible = true;
-
-                        dataGridView.Columns[Columns.BookName]!.Width = 100;
-                        dataGridView.Columns[Columns.AuthorName]!.Width = 100;
-                        dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-                        dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                        // Sort with column existence check
+                        if (dataGridView.Columns.Contains(Columns.ClippingDate)) {
+                            dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                        }
                     } else {
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        
+                        // Check if filtered clippings list is empty
+                        if (clippings.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            return;
+                        }
+                        
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -537,72 +578,134 @@ namespace KindleMate2 {
 
                         dataGridView.DataSource = filteredBooks;
 
-                        dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
-                        dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
-                        dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
-                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
-                        dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
-                        dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                        // Set headers and properties with column existence checks
+                        if (dataGridView.Columns.Contains(Columns.Content)) {
+                            dataGridView.Columns[Columns.Content]!.HeaderText = Strings.Content;
+                            dataGridView.Columns[Columns.Content]!.Visible = true;
+                            dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.BookName)) {
+                            dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                            dataGridView.Columns[Columns.BookName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.AuthorName)) {
+                            dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
+                            dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingDate)) {
+                            dataGridView.Columns[Columns.ClippingDate]!.HeaderText = Strings.Time;
+                            dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
+                            dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.PageNumber)) {
+                            dataGridView.Columns[Columns.PageNumber]!.HeaderText = Strings.Page;
+                            dataGridView.Columns[Columns.PageNumber]!.Visible = true;
+                            dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                            dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
+                        }
+                        
+                        // Set visibility for other columns
+                        if (dataGridView.Columns.Contains(Columns.Key)) {
+                            dataGridView.Columns[Columns.Key]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.BriefType)) {
+                            dataGridView.Columns[Columns.BriefType]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingTypeLocation)) {
+                            dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Read)) {
+                            dataGridView.Columns[Columns.Read]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ClippingImportDate)) {
+                            dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Tag)) {
+                            dataGridView.Columns[Columns.Tag]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Sync)) {
+                            dataGridView.Columns[Columns.Sync]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.NewBookName)) {
+                            dataGridView.Columns[Columns.NewBookName]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.ColorRgb)) {
+                            dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
+                        }
 
-                        dataGridView.Columns[Columns.Key]!.Visible = false;
-                        dataGridView.Columns[Columns.Content]!.Visible = true;
-                        dataGridView.Columns[Columns.BookName]!.Visible = false;
-                        dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                        dataGridView.Columns[Columns.BriefType]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingTypeLocation]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingDate]!.Visible = true;
-                        dataGridView.Columns[Columns.Read]!.Visible = false;
-                        dataGridView.Columns[Columns.ClippingImportDate]!.Visible = false;
-                        dataGridView.Columns[Columns.Tag]!.Visible = false;
-                        dataGridView.Columns[Columns.Sync]!.Visible = false;
-                        dataGridView.Columns[Columns.NewBookName]!.Visible = false;
-                        dataGridView.Columns[Columns.ColorRgb]!.Visible = false;
-                        dataGridView.Columns[Columns.PageNumber]!.Visible = true;
-
-                        dataGridView.Columns[Columns.ClippingDate]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Content]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-                        dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                        // Sort with column existence check
+                        if (dataGridView.Columns.Contains(Columns.PageNumber)) {
+                            dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                        }
                     }
-
-                    dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
 
                     break;
                 case 1:
-                    if (_vocabs.Count <= 0) {
+                    if (_vocabs.Count <= 0 || _lookups.Count <= 0) {
                         return;
                     }
 
                     dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
 
-                    dataGridView.Columns[Columns.Word]!.DisplayIndex = 0;
-                    dataGridView.Columns[Columns.Stem]!.DisplayIndex = 1;
+                    // Check if columns exist before accessing them
+                    if (dataGridView.Columns.Contains(Columns.Word)) {
+                        dataGridView.Columns[Columns.Word]!.DisplayIndex = 0;
+                    }
+                    if (dataGridView.Columns.Contains(Columns.Stem)) {
+                        dataGridView.Columns[Columns.Stem]!.DisplayIndex = 1;
+                    }
 
                     if (string.IsNullOrWhiteSpace(_selectedWord) || _selectedWord.Equals(Strings.Select_All)) {
                         _selectedWord = Strings.Select_All;
 
-                        dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
-                        dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
-                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                        dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
-
-                        dataGridView.Columns[Columns.Word]!.Visible = true;
-                        dataGridView.Columns[Columns.Stem]!.Visible = true;
-                        dataGridView.Columns[Columns.Frequency]!.Visible = true;
-                        dataGridView.Columns[Columns.WordKey]!.Visible = false;
-                        dataGridView.Columns[Columns.Usage]!.Visible = true;
-                        dataGridView.Columns[Columns.Title]!.Visible = false;
-                        dataGridView.Columns[Columns.Authors]!.Visible = false;
-                        dataGridView.Columns[Columns.Timestamp]!.Visible = true;
-
-                        dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        // Set headers with column existence checks
+                        if (dataGridView.Columns.Contains(Columns.Word)) {
+                            dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
+                            dataGridView.Columns[Columns.Word]!.Visible = true;
+                            dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Stem)) {
+                            dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
+                            dataGridView.Columns[Columns.Stem]!.Visible = true;
+                            dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Frequency)) {
+                            dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                            dataGridView.Columns[Columns.Frequency]!.Visible = true;
+                            dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Usage)) {
+                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                            dataGridView.Columns[Columns.Usage]!.Visible = true;
+                            dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Title)) {
+                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                            dataGridView.Columns[Columns.Title]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Authors)) {
+                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                            dataGridView.Columns[Columns.Authors]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
+                            dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
+                            dataGridView.Columns[Columns.Timestamp]!.Visible = true;
+                            dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.WordKey)) {
+                            dataGridView.Columns[Columns.WordKey]!.Visible = false;
+                        }
                     } else {
                         var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
+                        
+                        // Check if filtered lookups list is empty
+                        if (lookups.Count == 0) {
+                            lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
+                            lblBookCount.Image = Resources.input_latin_uppercase;
+                            lblBookCount.Visible = true;
+                            return;
+                        }
+                        
                         var filteredWords = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                         lblBookCount.Image = Resources.input_latin_uppercase;
@@ -610,31 +713,49 @@ namespace KindleMate2 {
 
                         dataGridView.DataSource = filteredWords;
 
-                        dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
-                        dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
-                        dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
-                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                        dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
-
-                        dataGridView.Columns[Columns.Word]!.Visible = false;
-                        dataGridView.Columns[Columns.Stem]!.Visible = true;
-                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
-                        dataGridView.Columns[Columns.WordKey]!.Visible = false;
-                        dataGridView.Columns[Columns.Usage]!.Visible = true;
-                        dataGridView.Columns[Columns.Title]!.Visible = false;
-                        dataGridView.Columns[Columns.Authors]!.Visible = false;
-                        dataGridView.Columns[Columns.Timestamp]!.Visible = true;
-
-                        dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        // Set headers with column existence checks
+                        if (dataGridView.Columns.Contains(Columns.Word)) {
+                            dataGridView.Columns[Columns.Word]!.HeaderText = Strings.Vocabulary;
+                            dataGridView.Columns[Columns.Word]!.Visible = false;
+                            dataGridView.Columns[Columns.Word]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Stem)) {
+                            dataGridView.Columns[Columns.Stem]!.HeaderText = Strings.Stem;
+                            dataGridView.Columns[Columns.Stem]!.Visible = true;
+                            dataGridView.Columns[Columns.Stem]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Frequency)) {
+                            dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                            dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                            dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Usage)) {
+                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                            dataGridView.Columns[Columns.Usage]!.Visible = true;
+                            dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Title)) {
+                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                            dataGridView.Columns[Columns.Title]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Authors)) {
+                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                            dataGridView.Columns[Columns.Authors]!.Visible = false;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
+                            dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
+                            dataGridView.Columns[Columns.Timestamp]!.Visible = true;
+                            dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        }
+                        if (dataGridView.Columns.Contains(Columns.WordKey)) {
+                            dataGridView.Columns[Columns.WordKey]!.Visible = false;
+                        }
                     }
-                    dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                    dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                    dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
-                    dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
+                    // Sort with column existence check
+                    if (dataGridView.Columns.Contains(Columns.Timestamp)) {
+                        dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
+                    }
 
                     break;
             }
@@ -909,20 +1030,37 @@ namespace KindleMate2 {
                 lblBookCount.Text = string.Empty;
                 lblBookCount.Image = null;
                 lblBookCount.Visible = false;
+                
+                // Check if clippings list is empty first
+                if (_clippings.Count == 0) {
+                    dataGridView.DataSource = null;
+                    return;
+                }
+                
                 dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
                 dataGridView.Columns[Columns.BookName]!.Visible = true;
                 dataGridView.Columns[Columns.AuthorName]!.Visible = true;
                 dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
             } else {
                 var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                
+                // Check if filtered clippings list is empty first
+                if (clippings.Count == 0) {
+                    lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                    lblBookCount.Image = Resources.open_book;
+                    lblBookCount.Visible = true;
+                    dataGridView.DataSource = null;
+                    return;
+                }
+                
                 var filteredBooks = DataTableHelper.ToDataTable(clippings);
                 lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                 lblBookCount.Image = Resources.open_book;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredBooks;
                 dataGridView.Columns[Columns.BookName]!.Visible = false;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
                 dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
+                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
                 dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
                 dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
             }
@@ -1019,6 +1157,11 @@ namespace KindleMate2 {
                 return;
             }
 
+            // Check if column index is valid
+            if (e.ColumnIndex >= dataGridView.Columns.Count) {
+                return;
+            }
+
             var index = tabControl.SelectedIndex;
             var columnName = dataGridView.Columns[e.ColumnIndex].HeaderText;
 
@@ -1027,6 +1170,17 @@ namespace KindleMate2 {
                     if (columnName.Equals(Strings.Books)) {
                         _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value.ToString()!;
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        
+                        // Check if filtered clippings list is empty
+                        if (clippings.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            dataGridView.DataSource = null;
+                            RefreshData();
+                            return;
+                        }
+                        
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -1044,17 +1198,27 @@ namespace KindleMate2 {
                     if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
                         _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value.ToString()!;
                         var lookups = _lookups.Where(row => row.Word == _selectedWord).ToList();
+                        
+                        // Check if filtered lookups list is empty
+                        if (lookups.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            RefreshData();
+                            return;
+                        }
+                        
                         var filteredWord = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
                         dataGridView.Columns[Columns.Usage]!.Visible = true;
-                        dataGridView.Columns[Columns.Title]!.Visible = true;
-                        dataGridView.Columns[Columns.Authors]!.Visible = true;
-                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
                         dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Title]!.Visible = true;
                         dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Authors]!.Visible = true;
                         dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
                         dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
                         RefreshData();
                     }
@@ -1848,35 +2012,51 @@ namespace KindleMate2 {
                 lblBookCount.Text = string.Empty;
                 lblBookCount.Image = null;
                 lblBookCount.Visible = false;
+                
+                // Check if lookups list is empty first
+                if (_lookups.Count == 0) {
+                    dataGridView.DataSource = null;
+                    return;
+                }
+                
                 dataGridView.DataSource = DataTableHelper.ToDataTable(_lookups);
-
                 dataGridView.Columns[Columns.Word]!.Visible = true;
                 dataGridView.Columns[Columns.Usage]!.Visible = true;
+                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
                 dataGridView.Columns[Columns.Title]!.Visible = true;
+                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
                 dataGridView.Columns[Columns.Authors]!.Visible = true;
+                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
                 dataGridView.Columns[Columns.Frequency]!.Visible = true;
-
                 dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
                 var lookups = _lookups.Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase)).ToList();
+                
+                // Check if filtered lookups list is empty first
+                if (lookups.Count == 0) {
+                    lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
+                    lblBookCount.Image = Resources.input_latin_uppercase;
+                    lblBookCount.Visible = true;
+                    dataGridView.DataSource = null;
+                    return;
+                }
+                
                 var filteredWords = DataTableHelper.ToDataTable(lookups);
                 lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                 lblBookCount.Image = Resources.input_latin_uppercase;
                 lblBookCount.Visible = true;
                 dataGridView.DataSource = filteredWords;
-
                 dataGridView.Columns[Columns.Word]!.Visible = false;
                 dataGridView.Columns[Columns.Usage]!.Visible = true;
+                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
                 dataGridView.Columns[Columns.Title]!.Visible = true;
+                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
                 dataGridView.Columns[Columns.Authors]!.Visible = true;
-
+                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
                 dataGridView.Columns[Columns.Frequency]!.Visible = false;
             }
-            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
         }
 
         private void TreeViewWords_MouseDown(object sender, MouseEventArgs e) {
