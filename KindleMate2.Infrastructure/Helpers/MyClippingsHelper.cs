@@ -6,25 +6,42 @@ using System.Text.RegularExpressions;
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class MyClippingsHelper {
+        /// <summary>
+        /// Parses title and author from a header string that may contain parentheses or hyphens.
+        /// </summary>
+        /// <param name="input">The header string containing title and author information</param>
+        /// <returns>A Header object with parsed title and author</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
         public static Header ParseTitleAndAuthor(string input) {
+            if (input == null) {
+                throw new ArgumentNullException(nameof(input));
+            }
+
             try {
                 if (string.IsNullOrEmpty(input)) {
-                    throw new Exception("Input is null or empty.");
+                    throw new ArgumentException("Input is null or empty.", nameof(input));
                 }
 
-                // 2. Check if the string ends with a valid closing parenthesis
+                // Check if the string ends with a valid closing parenthesis
                 if (!input.EndsWith(Symbols.ClosingParenthesis) && !input.EndsWith(Symbols.ClosingParenthesisChinese)) {
                     var indexOfHyphen = input.LastIndexOf(Symbols.Hyphen);
-                    if (indexOfHyphen != -1) {
-                        var author = input.Substring(indexOfHyphen + 1, input.Length - indexOfHyphen - 1).Trim();
+                    if (indexOfHyphen != -1 && indexOfHyphen < input.Length - 1) {
+                        var author = input.Substring(indexOfHyphen + 1).Trim();
                         var book = input[..indexOfHyphen].Trim();
-                        return new Header() {
-                            Title = book,
-                            Author = author,
-                        };
-                    } else {
-                        throw new Exception("No valid author name found.");
+                        
+                        if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
+                            return new Header {
+                                Title = book,
+                                Author = author,
+                            };
+                        }
                     }
+                    
+                    // If hyphen parsing fails, treat entire input as title
+                    return new Header {
+                        Title = input.Trim(),
+                        Author = string.Empty,
+                    };
                 }
 
                 var countNestedChineseParentheses = 0;
@@ -41,66 +58,89 @@ namespace KindleMate2.Infrastructure.Helpers {
                             break;
                     }
 
-                    string author;
-                    string book;
                     if (c == Symbols.OpeningParenthesisChinese) {
                         if (countNestedChineseParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesisChinese)) {
-                            author = input.Substring(i + 1, input.Length - i - 2).Trim();
-                            book = input[..i].Trim();
-                            return new Header() {
-                                Title = book,
-                                Author = author,
-                            };
+                            var author = input.Substring(i + 1, input.Length - i - 2).Trim();
+                            var book = input[..i].Trim();
+                            
+                            if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
+                                return new Header {
+                                    Title = book,
+                                    Author = author,
+                                };
+                            }
                         } else {
                             countNestedChineseParentheses--;
                         }
                     } else if (c == Symbols.OpeningParenthesis) {
                         if (countNestedEnglishParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesis)) {
-                            author = input.Substring(i + 1, input.Length - i - 2).Trim();
-                            book = input[..i].Trim();
-                            return new Header() {
-                                Title = book,
-                                Author = author,
-                            };
+                            var author = input.Substring(i + 1, input.Length - i - 2).Trim();
+                            var book = input[..i].Trim();
+                            
+                            if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
+                                return new Header {
+                                    Title = book,
+                                    Author = author,
+                                };
+                            }
                         } else {
                             countNestedEnglishParentheses--;
                         }
                     }
                 }
-                throw new Exception("No valid author name found.");
-            } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ParseTitleAndAuthor) + " input: " + input, e));
-                return new Header() {
-                    Title = input,
+                
+                // If parsing fails, treat entire input as title
+                return new Header {
+                    Title = input.Trim(),
+                    Author = string.Empty,
+                };
+            } catch (Exception e) when (!(e is ArgumentNullException || e is ArgumentException)) {
+                // For any unexpected errors, return a fallback header instead of logging to console
+                // This provides more resilient behavior while preserving the input
+                return new Header {
+                    Title = input?.Trim() ?? string.Empty,
                     Author = string.Empty,
                 };
             }
         }
 
+        /// <summary>
+        /// Parses metadata information from clipping metadata string.
+        /// </summary>
+        /// <param name="input">The metadata string to parse</param>
+        /// <returns>A Metadata object with parsed information</returns>
         private static Metadata ParseMetadata(string input) {
             var result = new Metadata();
+            
             try {
                 if (string.IsNullOrEmpty(input)) {
-                    throw new Exception("Input is null or empty.");
+                    throw new ArgumentException("Input is null or empty.", nameof(input));
                 }
-                var sections = BriefTypeTranslations.Dividers.Aggregate(input, (str, token) => str.Replace(token, "|")).Split('|').Select(s => s.Trim()).ToList();
+                
+                var sections = BriefTypeTranslations.Dividers
+                    .Aggregate(input, (str, token) => str.Replace(token, "|"))
+                    .Split('|')
+                    .Select(s => s.Trim())
+                    .ToList();
 
                 if (sections.Count < 2) {
-                    throw new Exception($"Invalid metadata entry. Expected a page and/or location and created date entry: {input}");
+                    throw new ArgumentException($"Invalid metadata entry. Expected a page and/or location and created date entry: {input}", nameof(input));
                 }
 
                 var firstSection = sections[0];
-                var secondSection = sections.Count > 1 ? sections[1] : string.Empty;
-
+                
                 result.Type = ParseEntryType(input);
                 result.DateOfCreation = ParseToUtcDate(sections.Last());
 
-                Location location = ParseLocation(firstSection);
+                var location = ParseLocation(firstSection);
                 result.Page = location.Page;
                 result.Location = location;
-            } catch (Exception e) {
-                Console.WriteLine(e);
+            } catch (Exception e) when (!(e is ArgumentException)) {
+                // Re-throw argument exceptions as they have specific meaning
+                // For other exceptions, wrap with context but don't log to console
+                throw new InvalidOperationException($"Failed to parse metadata from input '{input}': {e.Message}", e);
             }
+            
             return result;
         }
 
@@ -130,29 +170,50 @@ namespace KindleMate2.Infrastructure.Helpers {
             return null;
         }
 
+        /// <summary>
+        /// Parses location information from clipping metadata string.
+        /// </summary>
+        /// <param name="input">The input string containing location information</param>
+        /// <returns>A Location object with parsed page and range information</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
         public static Location ParseLocation(string input) {
+            if (input == null) {
+                throw new ArgumentNullException(nameof(input));
+            }
+
             var result = new Location();
+            
+            if (string.IsNullOrWhiteSpace(input)) {
+                return result;
+            }
+
             try {
+                // Parse location range (e.g., "123-456")
                 try {
-                    Match matchLocation = Regex.Match(input, @"(\d+)-(\d+)");
-                    if (matchLocation.Success) {
-                        var from = int.Parse(matchLocation.Groups[1].Value);
-                        var to = int.Parse(matchLocation.Groups[2].Value);
+                    var matchLocation = Regex.Match(input, @"(\d+)-(\d+)", RegexOptions.Compiled);
+                    if (matchLocation.Success && 
+                        int.TryParse(matchLocation.Groups[1].Value, out var from) &&
+                        int.TryParse(matchLocation.Groups[2].Value, out var to)) {
+                        
                         result.From = from;
                         result.To = to;
                         input = input.Replace(matchLocation.Value, string.Empty);
                     }
-                } catch (Exception e) {
-                    Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ParseLocation) + ": match location", e));
+                } catch (RegexMatchTimeoutException ex) {
+                    // Log regex timeout but continue processing
+                    throw new InvalidOperationException($"Regex timeout while parsing location range: {ex.Message}", ex);
                 }
-                Match matchPage = Regex.Match(input, @"(\d+)");
-                if (matchPage.Success) {
-                    var page = int.Parse(matchPage.Groups[1].Value);
+
+                // Parse single page number
+                var matchPage = Regex.Match(input, @"(\d+)", RegexOptions.Compiled);
+                if (matchPage.Success && int.TryParse(matchPage.Groups[1].Value, out var page)) {
                     result.Page = page;
                 }
-            } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ParseLocation), e));
+            } catch (Exception e) when (!(e is ArgumentNullException || e is InvalidOperationException)) {
+                // Wrap and re-throw with more context, but preserve specific exceptions
+                throw new InvalidOperationException($"Failed to parse location from input '{input}': {e.Message}", e);
             }
+            
             return result;
         }
         
