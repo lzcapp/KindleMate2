@@ -190,7 +190,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 // Parse location range (e.g., "123-456")
                 try {
-                    var matchLocation = Regex.Match(input, @"(\d+)-(\d+)", RegexOptions.Compiled);
+                    var matchLocation = Regex.Match(input, AppConstants.LocationRangePattern, RegexOptions.Compiled);
                     if (matchLocation.Success && 
                         int.TryParse(matchLocation.Groups[1].Value, out var from) &&
                         int.TryParse(matchLocation.Groups[2].Value, out var to)) {
@@ -205,7 +205,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 }
 
                 // Parse single page number
-                var matchPage = Regex.Match(input, @"(\d+)", RegexOptions.Compiled);
+                var matchPage = Regex.Match(input, AppConstants.SingleNumberPattern, RegexOptions.Compiled);
                 if (matchPage.Success && int.TryParse(matchPage.Groups[1].Value, out var page)) {
                     result.Page = page;
                 }

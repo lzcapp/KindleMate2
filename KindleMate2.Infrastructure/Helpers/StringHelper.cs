@@ -22,7 +22,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return string.Empty;
             }
 
-            const char BOM = (char)65279; // Extract magic number to named constant
+            const char BOM = AppConstants.ByteOrderMark; // Use constant from AppConstants
             var output = new StringBuilder(input.Length); // Pre-allocate capacity for better performance
             
             foreach (var c in input) {
@@ -139,7 +139,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             string[] sizes = ["B", "KB", "MB", "GB", "TB"];
-            const int BytesInKilobyte = 1024;
+            const int BytesInKilobyte = AppConstants.BytesInKilobyte;
 
             var order = 0;
             double size = fileSize;

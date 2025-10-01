@@ -54,5 +54,17 @@
         public const string BookTitleFormat = " ——《{0}》";
 
         public const string LocationFormat = "{0} - {1}";
+        
+        // Common regex patterns
+        public const string LocationRangePattern = @"(\d+)-(\d+)";
+        public const string SingleNumberPattern = @"(\d+)";
+        
+        // File operation constants
+        public const int DefaultStringBuilderCapacity = 512;
+        public const string BackupTimestampFormat = "yyyyMMdd_HHmmss";
+        
+        // Character constants
+        public const char ByteOrderMark = (char)65279;
+        public const int BytesInKilobyte = 1024;
     }
 }

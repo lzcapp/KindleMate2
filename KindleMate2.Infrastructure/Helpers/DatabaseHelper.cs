@@ -145,7 +145,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             // Create timestamped backup filename to avoid overwrites
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat);
             var backupFileName = Path.GetFileNameWithoutExtension(databaseFileName) + 
                                 $"_backup_{timestamp}" + 
                                 Path.GetExtension(databaseFileName);

@@ -124,7 +124,9 @@ namespace KindleMate2 {
                     _ = new DarkModeCS(this, false);
                 }
             } catch (Exception e) {
-                Console.WriteLine(e);
+                // Theme setting failed, but application should continue
+                // Log the error through a proper logging mechanism if available
+                MessageBox($"Failed to apply dark theme: {e.Message}", Strings.Warning, MessageBoxButtons.OK, MsgIcon.Warning);
             } finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
@@ -306,7 +308,9 @@ namespace KindleMate2 {
                 IsKindleConnected();
                 watcher.Start();
             } catch (Exception e) {
-                Console.WriteLine(e);
+                // Device event handling failed - log but don't crash the application
+                // The device monitoring can continue with reduced functionality
+                // Consider implementing proper logging here instead of console output
             }
         }
 
@@ -314,6 +318,7 @@ namespace KindleMate2 {
             try {
                 var clippingsResult = ImportKindleClippings(kindleClippingsPath);
                 var wordResult = ImportKindleWords(kindleWordsPath);
+                
                 if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
                     return string.Empty;
                 }
@@ -325,8 +330,8 @@ namespace KindleMate2 {
                 }
                 return clippingsResult + Environment.NewLine + wordResult;
             } catch (Exception e) {
-                Console.WriteLine(e);
-                return string.Empty;
+                // Return error message instead of empty string so user knows something went wrong
+                return $"Import failed: {e.Message}";
             }
         }
 
@@ -339,12 +344,13 @@ namespace KindleMate2 {
                     message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
                 } else {
                     var exception = result[AppConstants.Exception];
-                    Console.WriteLine(exception);
+                    // Return error message instead of logging to console
+                    return $"Import failed: {exception}";
                 }
                 return message;
             } catch (Exception e) {
-                Console.WriteLine(e);
-                throw;
+                // Re-throw with more context instead of logging and throwing
+                throw new InvalidOperationException($"Failed to import Kindle clippings from '{clippingsPath}': {e.Message}", e);
             }
         }
 
@@ -374,8 +380,8 @@ namespace KindleMate2 {
                 var exception = result[AppConstants.Exception];
                 return exception;
             } catch (Exception e) {
-                Console.WriteLine(e);
-                throw;
+                // Re-throw with more context instead of logging and throwing
+                throw new InvalidOperationException($"Failed to import Kindle words from '{kindleWordsPath}': {e.Message}", e);
             }
         }
 
