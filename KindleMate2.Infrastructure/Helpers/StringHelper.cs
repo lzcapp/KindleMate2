@@ -302,5 +302,33 @@ namespace KindleMate2.Infrastructure.Helpers {
                 throw new InvalidOperationException($"Failed to build markdown from lookups: {e.Message}", e);
             }
         }
+
+        /// <summary>
+        /// Formats statistics text with proper spacing and punctuation.
+        /// </summary>
+        /// <param name="parts">Array of text parts to join</param>
+        /// <returns>A formatted string with proper spacing</returns>
+        public static string FormatStatisticsText(params string[] parts) {
+            if (parts == null || parts.Length == 0) {
+                return string.Empty;
+            }
+
+            return string.Join("", parts);
+        }
+
+        /// <summary>
+        /// Creates a markdown header with an emoji and title.
+        /// </summary>
+        /// <param name="emoji">The emoji to use</param>
+        /// <param name="title">The title text</param>
+        /// <returns>A formatted markdown header</returns>
+        public static string CreateMarkdownHeader(string emoji, string title) {
+            if (string.IsNullOrWhiteSpace(title)) {
+                return string.Empty;
+            }
+
+            var emojiPart = string.IsNullOrWhiteSpace(emoji) ? "" : emoji + " ";
+            return $"# {emojiPart}{title}";
+        }
     }
 }
