@@ -1043,7 +1043,10 @@ namespace KindleMate2 {
                 dataGridView.DataSource = DataTableHelper.ToDataTable(_clippings);
                 dataGridView.Columns[Columns.BookName]!.Visible = true;
                 dataGridView.Columns[Columns.AuthorName]!.Visible = true;
-                dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                if (dataGridView.Columns.Contains(Columns.ClippingDate))
+                {
+                    dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
+                }
             } else {
                 var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                 
