@@ -562,6 +562,15 @@ namespace KindleMate2 {
                         }
                     } else {
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        
+                        // Check if filtered clippings list is empty
+                        if (clippings == null || clippings.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            return;
+                        }
+                        
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
@@ -632,7 +641,7 @@ namespace KindleMate2 {
 
                     break;
                 case 1:
-                    if (_vocabs.Count <= 0) {
+                    if (_vocabs.Count <= 0 || _lookups.Count <= 0) {
                         return;
                     }
 
@@ -688,6 +697,15 @@ namespace KindleMate2 {
                         }
                     } else {
                         var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
+                        
+                        // Check if filtered lookups list is empty
+                        if (lookups == null || lookups.Count == 0) {
+                            lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
+                            lblBookCount.Image = Resources.input_latin_uppercase;
+                            lblBookCount.Visible = true;
+                            return;
+                        }
+                        
                         var filteredWords = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + filteredWords.Rows.Count + Strings.Space + Strings.X_Lookups;
                         lblBookCount.Image = Resources.input_latin_uppercase;
@@ -1152,23 +1170,25 @@ namespace KindleMate2 {
                     if (columnName.Equals(Strings.Books)) {
                         _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value.ToString()!;
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
+                        
+                        // Check if filtered clippings list is empty
+                        if (clippings == null || clippings.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            dataGridView.DataSource = null;
+                            RefreshData();
+                            return;
+                        }
+                        
                         var filteredBooks = DataTableHelper.ToDataTable(clippings);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredBooks.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
                         dataGridView.DataSource = filteredBooks;
-                        
-                        // Check if columns exist before accessing them
-                        if (dataGridView.Columns.Contains(Columns.BookName)) {
-                            dataGridView.Columns[Columns.BookName]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.AuthorName)) {
-                            dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.ClippingTypeLocation)) {
-                            dataGridView.Sort(dataGridView.Columns[Columns.ClippingTypeLocation]!, ListSortDirection.Ascending);
-                        }
-                        
+                        dataGridView.Columns[Columns.BookName]!.Visible = false;
+                        dataGridView.Columns[Columns.AuthorName]!.Visible = false;
+                        dataGridView.Sort(dataGridView.Columns[Columns.ClippingTypeLocation]!, ListSortDirection.Ascending);
                         RefreshData();
                     } else {
                         ShowContentEditDialog();
@@ -1178,31 +1198,28 @@ namespace KindleMate2 {
                     if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
                         _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value.ToString()!;
                         var lookups = _lookups.Where(row => row.Word == _selectedWord).ToList();
+                        
+                        // Check if filtered lookups list is empty
+                        if (lookups == null || lookups.Count == 0) {
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Image = Resources.open_book;
+                            lblBookCount.Visible = true;
+                            RefreshData();
+                            return;
+                        }
+                        
                         var filteredWord = DataTableHelper.ToDataTable(lookups);
                         lblBookCount.Text = Strings.Total_Clippings + Strings.Space + filteredWord.Rows.Count + Strings.Space + Strings.X_Clippings;
                         lblBookCount.Image = Resources.open_book;
                         lblBookCount.Visible = true;
-                        
-                        // Check if columns exist before accessing them
-                        if (dataGridView.Columns.Contains(Columns.Usage)) {
-                            dataGridView.Columns[Columns.Usage]!.Visible = true;
-                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Title)) {
-                            dataGridView.Columns[Columns.Title]!.Visible = true;
-                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Authors)) {
-                            dataGridView.Columns[Columns.Authors]!.Visible = true;
-                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Frequency)) {
-                            dataGridView.Columns[Columns.Frequency]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
-                            dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
-                        }
-                        
+                        dataGridView.Columns[Columns.Usage]!.Visible = true;
+                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Title]!.Visible = true;
+                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Authors]!.Visible = true;
+                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                        dataGridView.Sort(dataGridView.Columns[Columns.Timestamp]!, ListSortDirection.Descending);
                         RefreshData();
                     }
                     break;
