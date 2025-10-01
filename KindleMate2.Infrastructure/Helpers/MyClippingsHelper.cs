@@ -119,11 +119,29 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         private static DateTime? ParseToUtcDate(string serializedDate) {
-            if (DateTime.TryParse(serializedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date))
+            // Remove common date prefixes from different Kindle language systems
+            var cleanedDate = serializedDate
+                .Replace("Added on", "")
+                .Replace("添加于", "")
+                .Trim();
+            
+            // Remove day of week prefix if present (for English format like "Monday, 19 May 2025")
+            var commaIndex = cleanedDate.IndexOf(',');
+            if (commaIndex > 0 && commaIndex < 20) { // Reasonable day of week length check
+                cleanedDate = cleanedDate.Substring(commaIndex + 1).Trim();
+            }
+            
+            // Remove Chinese day of week text (星期) if present
+            var dayOfWeekIndex = cleanedDate.IndexOf("星期", StringComparison.Ordinal);
+            if (dayOfWeekIndex != -1) {
+                cleanedDate = cleanedDate.Remove(dayOfWeekIndex, 3); // Remove "星期X" (3 characters)
+            }
+            
+            if (DateTime.TryParse(cleanedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date))
                 return date;
 
-            foreach (var culture in new[] { "it-IT", "fr-FR", "es-ES", "pt-PT" }) {
-                if (DateTime.TryParse(serializedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))
+            foreach (var culture in new[] { "en-US", "it-IT", "fr-FR", "es-ES", "pt-PT", "zh-CN" }) {
+                if (DateTime.TryParse(cleanedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))
                     return date;
             }
 
