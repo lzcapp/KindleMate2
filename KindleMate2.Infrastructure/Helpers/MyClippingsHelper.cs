@@ -121,8 +121,12 @@ namespace KindleMate2.Infrastructure.Helpers {
         private static DateTime? ParseToUtcDate(string serializedDate) {
             // Remove common date prefixes from different Kindle language systems
             var cleanedDate = serializedDate
-                .Replace("Added on", "")
-                .Replace("添加于", "")
+                .Replace("Added on", "")           // English
+                .Replace("添加于", "")              // Chinese
+                .Replace("Ajouté le", "")          // French  
+                .Replace("Aggiunto il", "")        // Italian
+                .Replace("Añadido el", "")         // Spanish
+                .Replace("Adicionado em", "")      // Portuguese
                 .Trim();
             
             // Remove day of week prefix if present (for English format like "Monday, 19 May 2025")
