@@ -259,8 +259,8 @@ namespace KindleMate2 {
         private void AddDeviceWatcher() {
             IsKindleConnected();
 
-            const string usbCrationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
-            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCrationQuery);
+            const string usbCreationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
+            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCreationQuery);
             usbDeviceArrivalWatcher.EventArrived += UsbDeviceEventHandler;
             usbDeviceArrivalWatcher.Start();
 
@@ -564,7 +564,7 @@ namespace KindleMate2 {
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                         
                         // Check if filtered clippings list is empty
-                        if (clippings == null || clippings.Count == 0) {
+                        if (clippings.Count == 0) {
                             lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
@@ -699,7 +699,7 @@ namespace KindleMate2 {
                         var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
                         
                         // Check if filtered lookups list is empty
-                        if (lookups == null || lookups.Count == 0) {
+                        if (lookups.Count == 0) {
                             lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
                             lblBookCount.Image = Resources.input_latin_uppercase;
                             lblBookCount.Visible = true;
@@ -1032,7 +1032,7 @@ namespace KindleMate2 {
                 lblBookCount.Visible = false;
                 
                 // Check if clippings list is empty first
-                if (_clippings == null || _clippings.Count == 0) {
+                if (_clippings.Count == 0) {
                     dataGridView.DataSource = null;
                     return;
                 }
@@ -1045,7 +1045,7 @@ namespace KindleMate2 {
                 var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                 
                 // Check if filtered clippings list is empty first
-                if (clippings == null || clippings.Count == 0) {
+                if (clippings.Count == 0) {
                     lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
                     lblBookCount.Image = Resources.open_book;
                     lblBookCount.Visible = true;
@@ -1172,7 +1172,7 @@ namespace KindleMate2 {
                         var clippings = _clippings.Where(row => row.BookName == _selectedBook).ToList();
                         
                         // Check if filtered clippings list is empty
-                        if (clippings == null || clippings.Count == 0) {
+                        if (clippings.Count == 0) {
                             lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
@@ -1200,7 +1200,7 @@ namespace KindleMate2 {
                         var lookups = _lookups.Where(row => row.Word == _selectedWord).ToList();
                         
                         // Check if filtered lookups list is empty
-                        if (lookups == null || lookups.Count == 0) {
+                        if (lookups.Count == 0) {
                             lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
@@ -2014,7 +2014,7 @@ namespace KindleMate2 {
                 lblBookCount.Visible = false;
                 
                 // Check if lookups list is empty first
-                if (_lookups == null || _lookups.Count == 0) {
+                if (_lookups.Count == 0) {
                     dataGridView.DataSource = null;
                     return;
                 }
@@ -2035,7 +2035,7 @@ namespace KindleMate2 {
                 var lookups = _lookups.Where(row => string.Equals(row.Word, _selectedWord, StringComparison.InvariantCultureIgnoreCase)).ToList();
                 
                 // Check if filtered lookups list is empty first
-                if (lookups == null || lookups.Count == 0) {
+                if (lookups.Count == 0) {
                     lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
                     lblBookCount.Image = Resources.input_latin_uppercase;
                     lblBookCount.Visible = true;
