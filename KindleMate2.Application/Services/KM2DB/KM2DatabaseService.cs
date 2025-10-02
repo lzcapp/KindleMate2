@@ -200,6 +200,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                     datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
                     var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
                     if (!isDateParsed) {
+                        // Try English format with day before month (e.g., "19 May 2025 22:06:02")
+                        isDateParsed = DateTime.TryParseExact(datetime, "d MMMM yyyy HH:mm:ss", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
+                    }
+                    if (!isDateParsed) {
                         var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
                         if (dayOfWeekIndex != -1) {
                             datetime = datetime.Remove(dayOfWeekIndex, 3);
