@@ -1,10 +1,32 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using KindleMate2.Shared.Constants;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class DatabaseHelper {
+        /// <summary>
+        /// Creates a new SQLite database with required tables.
+        /// </summary>
+        /// <param name="filePath">Path where the database file will be created</param>
+        /// <param name="exception">Output parameter containing any exception that occurred</param>
+        /// <returns>True if database creation was successful, false otherwise</returns>
+        /// <exception cref="ArgumentNullException">Thrown when filePath is null</exception>
+        /// <exception cref="ArgumentException">Thrown when filePath is empty or whitespace</exception>
         public static bool CreateDatabase(string filePath, out Exception exception) {
+            ArgumentNullException.ThrowIfNull(filePath);
+
+            if (string.IsNullOrWhiteSpace(filePath)) {
+                throw new ArgumentException("File path cannot be empty or whitespace.", nameof(filePath));
+            }
+
             exception = new Exception();
+            
             try {
+                // Ensure directory exists
+                var directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                    Directory.CreateDirectory(directory);
+                }
+
                 using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWriteCreate;");
                 connection.Open();
 
@@ -16,7 +38,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return true;
             } catch (Exception e) {
                 exception = e;
-                Console.WriteLine($"[DatabaseHelper] Database creation failed: {e.Message}");
+                // Remove console logging - let the caller handle the exception
                 return false;
             }
         }
@@ -82,25 +104,74 @@ namespace KindleMate2.Infrastructure.Helpers {
             ];
         }
 
+        /// <summary>
+        /// Backs up a database file to a specified backup location.
+        /// </summary>
+        /// <param name="databasePath">Path to the database directory</param>
+        /// <param name="backupPath">Path to the backup directory</param>
+        /// <param name="databaseFileName">Name of the database file</param>
+        /// <exception cref="ArgumentNullException">Thrown when any parameter is null</exception>
+        /// <exception cref="ArgumentException">Thrown when any parameter is empty or whitespace</exception>
         public static void BackupDatabase(string databasePath, string backupPath, string databaseFileName) {
+            ArgumentNullException.ThrowIfNull(databasePath);
+            ArgumentNullException.ThrowIfNull(backupPath);
+            ArgumentNullException.ThrowIfNull(databaseFileName);
+
+            if (string.IsNullOrWhiteSpace(databasePath)) {
+                throw new ArgumentException("Database path cannot be empty or whitespace.", nameof(databasePath));
+            }
+            if (string.IsNullOrWhiteSpace(backupPath)) {
+                throw new ArgumentException("Backup path cannot be empty or whitespace.", nameof(backupPath));
+            }
+            if (string.IsNullOrWhiteSpace(databaseFileName)) {
+                throw new ArgumentException("Database file name cannot be empty or whitespace.", nameof(databaseFileName));
+            }
+
             var databaseFilePath = Path.Combine(databasePath, databaseFileName);
-            var backupFilePath = Path.Combine(backupPath, databaseFileName);
+            
+            if (!File.Exists(databaseFilePath)) {
+                throw new FileNotFoundException($"Database file not found: {databaseFilePath}");
+            }
 
             if (!Directory.Exists(backupPath)) {
                 Directory.CreateDirectory(backupPath);
             }
 
-            File.Copy(databaseFilePath, backupFilePath, true);
+            // Create timestamped backup filename to avoid overwrites
+            var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat);
+            var backupFileName = Path.GetFileNameWithoutExtension(databaseFileName) + 
+                                $"_backup_{timestamp}" + 
+                                Path.GetExtension(databaseFileName);
+            var backupFilePath = Path.Combine(backupPath, backupFileName);
+
+            File.Copy(databaseFilePath, backupFilePath, overwrite: false);
         }
 
+        /// <summary>
+        /// Vacuums (optimizes) a SQLite database to reclaim space and defragment.
+        /// </summary>
+        /// <param name="filePath">Path to the SQLite database file</param>
+        /// <exception cref="ArgumentNullException">Thrown when filePath is null</exception>
+        /// <exception cref="ArgumentException">Thrown when filePath is empty or whitespace</exception>
+        /// <exception cref="FileNotFoundException">Thrown when database file doesn't exist</exception>
         public static void VacuumDatabase(string filePath) {
+            ArgumentNullException.ThrowIfNull(filePath);
+
+            if (string.IsNullOrWhiteSpace(filePath)) {
+                throw new ArgumentException("File path cannot be empty or whitespace.", nameof(filePath));
+            }
+            
+            if (!File.Exists(filePath)) {
+                throw new FileNotFoundException($"Database file not found: {filePath}");
+            }
+
             try {
                 using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
                 connection.Open();
                 using var command = new SqliteCommand("VACUUM;", connection);
                 command.ExecuteNonQuery();
             } catch (Exception ex) {
-                Console.WriteLine(ex.Message);
+                throw new InvalidOperationException($"Failed to vacuum database '{filePath}': {ex.Message}", ex);
             }
         }
         

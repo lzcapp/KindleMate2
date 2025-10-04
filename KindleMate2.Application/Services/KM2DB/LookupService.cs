@@ -39,19 +39,44 @@ namespace KindleMate2.Application.Services.KM2DB {
             return _repository.GetCount();
         }
 
+        /// <summary>
+        /// Adds a new lookup to the repository.
+        /// </summary>
+        /// <param name="lookup">The lookup to add</param>
+        /// <exception cref="ArgumentNullException">Thrown when lookup is null</exception>
+        /// <exception cref="ArgumentException">Thrown when required fields are missing</exception>
         public void AddLookup(Lookup lookup) {
+            ArgumentNullException.ThrowIfNull(lookup);
+
             if (string.IsNullOrWhiteSpace(lookup.WordKey)) {
-                throw new ArgumentException("[word_key] cannot be empty");
+                throw new ArgumentException("WordKey cannot be null or empty", nameof(lookup));
             }
 
             _repository.Add(lookup);
         }
 
+        /// <summary>
+        /// Updates an existing lookup in the repository.
+        /// </summary>
+        /// <param name="lookup">The lookup to update</param>
+        /// <exception cref="ArgumentNullException">Thrown when lookup is null</exception>
         public void UpdateLookup(Lookup lookup) {
+            ArgumentNullException.ThrowIfNull(lookup);
+
             _repository.Update(lookup);
         }
 
+        /// <summary>
+        /// Deletes a lookup by word key.
+        /// </summary>
+        /// <param name="wordKey">The word key of the lookup to delete</param>
+        /// <returns>True if deletion was successful, false otherwise</returns>
+        /// <exception cref="ArgumentException">Thrown when wordKey is null or empty</exception>
         public bool DeleteLookup(string wordKey) {
+            if (string.IsNullOrWhiteSpace(wordKey)) {
+                throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey));
+            }
+
             return _repository.Delete(wordKey);
         }
 
