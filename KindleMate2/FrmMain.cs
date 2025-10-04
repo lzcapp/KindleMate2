@@ -126,7 +126,7 @@ namespace KindleMate2 {
             } catch (Exception e) {
                 // Theme setting failed, but application should continue
                 // Log the error through a proper logging mechanism if available
-                MessageBox($"Failed to apply dark theme: {e.Message}", Strings.Warning, MessageBoxButtons.OK, MsgIcon.Warning);
+                MessageBox($"Failed to apply dark theme: {e.Message}", Strings.Error, MessageBoxButtons.OK, MsgIcon.Warning);
             } finally {
                 menuTheme.Image = _isDarkTheme ? Resources.sun : Resources.new_moon;
             }
@@ -307,7 +307,8 @@ namespace KindleMate2 {
                 watcher.Stop();
                 IsKindleConnected();
                 watcher.Start();
-            } catch (Exception e) {
+            } catch (Exception) {
+                // TODO
                 // Device event handling failed - log but don't crash the application
                 // The device monitoring can continue with reduced functionality
                 // Consider implementing proper logging here instead of console output
@@ -337,7 +338,7 @@ namespace KindleMate2 {
 
         private string ImportKindleClippings(string clippingsPath) {
             try {
-                var message = string.Empty;
+                string message;
                 if (_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
                     var parsedCount = result[AppConstants.ParsedCount];
                     var insertedCount = result[AppConstants.InsertedCount];

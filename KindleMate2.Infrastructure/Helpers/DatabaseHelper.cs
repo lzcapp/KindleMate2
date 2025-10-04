@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using KindleMate2.Shared.Constants;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class DatabaseHelper {
@@ -11,10 +12,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <exception cref="ArgumentNullException">Thrown when filePath is null</exception>
         /// <exception cref="ArgumentException">Thrown when filePath is empty or whitespace</exception>
         public static bool CreateDatabase(string filePath, out Exception exception) {
-            if (filePath == null) {
-                throw new ArgumentNullException(nameof(filePath));
-            }
-            
+            ArgumentNullException.ThrowIfNull(filePath);
+
             if (string.IsNullOrWhiteSpace(filePath)) {
                 throw new ArgumentException("File path cannot be empty or whitespace.", nameof(filePath));
             }
@@ -114,15 +113,9 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <exception cref="ArgumentNullException">Thrown when any parameter is null</exception>
         /// <exception cref="ArgumentException">Thrown when any parameter is empty or whitespace</exception>
         public static void BackupDatabase(string databasePath, string backupPath, string databaseFileName) {
-            if (databasePath == null) {
-                throw new ArgumentNullException(nameof(databasePath));
-            }
-            if (backupPath == null) {
-                throw new ArgumentNullException(nameof(backupPath));
-            }
-            if (databaseFileName == null) {
-                throw new ArgumentNullException(nameof(databaseFileName));
-            }
+            ArgumentNullException.ThrowIfNull(databasePath);
+            ArgumentNullException.ThrowIfNull(backupPath);
+            ArgumentNullException.ThrowIfNull(databaseFileName);
 
             if (string.IsNullOrWhiteSpace(databasePath)) {
                 throw new ArgumentException("Database path cannot be empty or whitespace.", nameof(databasePath));
@@ -162,10 +155,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <exception cref="ArgumentException">Thrown when filePath is empty or whitespace</exception>
         /// <exception cref="FileNotFoundException">Thrown when database file doesn't exist</exception>
         public static void VacuumDatabase(string filePath) {
-            if (filePath == null) {
-                throw new ArgumentNullException(nameof(filePath));
-            }
-            
+            ArgumentNullException.ThrowIfNull(filePath);
+
             if (string.IsNullOrWhiteSpace(filePath)) {
                 throw new ArgumentException("File path cannot be empty or whitespace.", nameof(filePath));
             }

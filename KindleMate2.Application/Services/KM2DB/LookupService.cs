@@ -46,9 +46,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <exception cref="ArgumentNullException">Thrown when lookup is null</exception>
         /// <exception cref="ArgumentException">Thrown when required fields are missing</exception>
         public void AddLookup(Lookup lookup) {
-            if (lookup == null) {
-                throw new ArgumentNullException(nameof(lookup));
-            }
+            ArgumentNullException.ThrowIfNull(lookup);
 
             if (string.IsNullOrWhiteSpace(lookup.WordKey)) {
                 throw new ArgumentException("WordKey cannot be null or empty", nameof(lookup));
@@ -63,9 +61,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <param name="lookup">The lookup to update</param>
         /// <exception cref="ArgumentNullException">Thrown when lookup is null</exception>
         public void UpdateLookup(Lookup lookup) {
-            if (lookup == null) {
-                throw new ArgumentNullException(nameof(lookup));
-            }
+            ArgumentNullException.ThrowIfNull(lookup);
 
             _repository.Update(lookup);
         }

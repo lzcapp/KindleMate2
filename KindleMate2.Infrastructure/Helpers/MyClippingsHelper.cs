@@ -13,9 +13,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>A Header object with parsed title and author</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
         public static Header ParseTitleAndAuthor(string input) {
-            if (input == null) {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             try {
                 if (string.IsNullOrEmpty(input)) {
@@ -98,7 +96,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 // For any unexpected errors, return a fallback header instead of logging to console
                 // This provides more resilient behavior while preserving the input
                 return new Header {
-                    Title = input?.Trim() ?? string.Empty,
+                    Title = input.Trim(),
                     Author = string.Empty,
                 };
             }
@@ -177,9 +175,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>A Location object with parsed page and range information</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
         public static Location ParseLocation(string input) {
-            if (input == null) {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             var result = new Location();
             

@@ -14,9 +14,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>A cleaned string with control characters removed</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
         public static string RemoveControlChar(string input) {
-            if (input == null) {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (string.IsNullOrEmpty(input)) {
                 return string.Empty;
@@ -41,9 +39,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <exception cref="ArgumentNullException">Thrown when roman is null</exception>
         /// <exception cref="ArgumentException">Thrown when roman contains invalid characters</exception>
         public static int RomanToInteger(string roman) {
-            if (roman == null) {
-                throw new ArgumentNullException(nameof(roman));
-            }
+            ArgumentNullException.ThrowIfNull(roman);
 
             if (string.IsNullOrWhiteSpace(roman)) {
                 return 0;
@@ -106,9 +102,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>A sanitized filename safe for file system use</returns>
         /// <exception cref="ArgumentNullException">Thrown when filename is null</exception>
         public static string SanitizeFilename(string filename) {
-            if (filename == null) {
-                throw new ArgumentNullException(nameof(filename));
-            }
+            ArgumentNullException.ThrowIfNull(filename);
 
             if (string.IsNullOrEmpty(filename)) {
                 return string.Empty;
@@ -159,9 +153,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>Parsed version string</returns>
         /// <exception cref="ArgumentNullException">Thrown when versionText is null</exception>
         public static string ParseKindleVersion(string versionText) {
-            if (versionText == null) {
-                throw new ArgumentNullException(nameof(versionText));
-            }
+            ArgumentNullException.ThrowIfNull(versionText);
 
             return versionText.Trim().Split('(')[0].Replace(AppConstants.Kindle, "", StringComparison.OrdinalIgnoreCase).Trim();
         }
@@ -174,12 +166,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>A formatted exception message string</returns>
         /// <exception cref="ArgumentNullException">Thrown when className or exception is null</exception>
         public static string GetExceptionMessage(string className, Exception e) {
-            if (className == null) {
-                throw new ArgumentNullException(nameof(className));
-            }
-            if (e == null) {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(className);
+            ArgumentNullException.ThrowIfNull(e);
 
             return $"{className}: {Environment.NewLine}{e.Message}{Environment.NewLine}Stack Trace: {e.StackTrace}";
         }
@@ -204,9 +192,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>StringBuilder containing the formatted markdown</returns>
         /// <exception cref="ArgumentNullException">Thrown when clippings is null</exception>
         public static StringBuilder BuildMarkdownWithClippings(List<Clipping> clippings) {
-            if (clippings == null) {
-                throw new ArgumentNullException(nameof(clippings));
-            }
+            ArgumentNullException.ThrowIfNull(clippings);
 
             var markdown = new StringBuilder();
 
@@ -254,9 +240,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <returns>StringBuilder containing the formatted markdown</returns>
         /// <exception cref="ArgumentNullException">Thrown when lookups is null</exception>
         public static StringBuilder BuildMarkdownWithLookups(List<Lookup> lookups) {
-            if (lookups == null) {
-                throw new ArgumentNullException(nameof(lookups));
-            }
+            ArgumentNullException.ThrowIfNull(lookups);
 
             var markdown = new StringBuilder();
 
@@ -309,11 +293,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <param name="parts">Array of text parts to join</param>
         /// <returns>A formatted string with proper spacing</returns>
         public static string FormatStatisticsText(params string[] parts) {
-            if (parts == null || parts.Length == 0) {
-                return string.Empty;
-            }
-
-            return string.Join("", parts);
+            return parts.Length == 0 ? string.Empty : string.Join("", parts);
         }
 
         /// <summary>
