@@ -4,16 +4,10 @@ using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
-    public class WordRepository : IWordRepository {
-        private readonly string _connectionString;
-
-        public WordRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class WordRepository(string connectionString) : IWordRepository {
         public Word? GetById(string id) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS WHERE id = @id", connection);
@@ -44,7 +38,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             var results = new List<Word>();
 
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS", connection);
@@ -74,7 +68,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM WORDS", connection);
@@ -92,7 +86,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Add(Word word) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO WORDS (id, word, stem, lang, category, timestamp, profileid) VALUES (@id, @word, @stem, @lang, @category, @timestamp, @profileid)", connection);
@@ -116,7 +110,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Update(Word word) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE WORDS SET word = @word, stem = @stem, lang = @lang, category = @category, timestamp = @timestamp, profileid = @profileid WHERE id = @id", connection);
@@ -140,7 +134,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Delete(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM WORDS WHERE id = @id", connection);

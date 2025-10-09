@@ -73,12 +73,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     var title = string.Empty;
                     var authors = string.Empty;
-                    foreach (BookInfo bookInfoRow in bookInfos) {
-                        var id = bookInfoRow.Id;
-                        var guid = bookInfoRow.Guid;
-                        if (id != bookKey && guid != bookKey) {
-                            continue;
-                        }
+                    foreach (BookInfo? bookInfoRow in from bookInfoRow in bookInfos let id = bookInfoRow.Id let guid = bookInfoRow.Guid where id == bookKey || guid == bookKey select bookInfoRow) {
                         title = bookInfoRow.Title;
                         authors = bookInfoRow.Authors;
                     }

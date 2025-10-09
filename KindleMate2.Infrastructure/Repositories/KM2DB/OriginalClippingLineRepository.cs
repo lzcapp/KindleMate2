@@ -5,16 +5,10 @@ using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class OriginalClippingLineRepository : IOriginalClippingLineRepository {
-        private readonly string _connectionString;
-
-        public OriginalClippingLineRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class OriginalClippingLineRepository(string connectionString) : IOriginalClippingLineRepository {
         public OriginalClippingLine? GetByKey(string key) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines WHERE key = @key", connection);
@@ -40,7 +34,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<OriginalClippingLine> GetAll() {
             var results = new List<OriginalClippingLine>();
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines", connection);
@@ -66,7 +60,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public HashSet<string> GetAllKeys() {
             var results = new HashSet<string>();
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT key FROM original_clipping_lines", connection);
@@ -85,7 +79,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<OriginalClippingLine> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             var results = new List<OriginalClippingLine>();
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var sql = type switch {
@@ -118,7 +112,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM original_clipping_lines", connection);
@@ -134,7 +128,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Add(OriginalClippingLine originalClippingLine) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
@@ -154,7 +148,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public int Add(List<OriginalClippingLine> listOriginalClippings) {
             var count = 0;
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
@@ -177,7 +171,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Update(OriginalClippingLine originalClippingLine) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE original_clipping_lines SET line1 = @line1, line2 = @line2, line3 = @line3, line4 = @line4, line5 = @line5 WHERE key = @key", connection);
@@ -196,7 +190,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Delete(string key) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM original_clipping_lines WHERE key = @key", connection);
@@ -210,7 +204,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool DeleteAll() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM original_clipping_lines", connection);

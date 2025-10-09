@@ -52,11 +52,13 @@ namespace KindleMate2 {
 
         private bool _isDarkTheme;
 
-        [DllImport("User32.dll")]
-        private static extern bool HideCaret(IntPtr hWnd);
+        [LibraryImport("User32.dll", EntryPoint = "HideCaretA")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial void HideCaret(IntPtr hWnd);
 
-        [DllImport("user32.dll")]
-        private static extern bool DestroyCaret();
+        [LibraryImport("user32.dll", EntryPoint = "DestroyCaretA")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial void DestroyCaret();
 
         public FrmMain() {
             InitializeComponent();
@@ -572,7 +574,7 @@ namespace KindleMate2 {
                         
                         // Check if filtered clippings list is empty
                         if (clippings.Count == 0) {
-                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
                             return;
@@ -684,33 +686,12 @@ namespace KindleMate2 {
                             dataGridView.Columns[Columns.Frequency]!.Visible = true;
                             dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         }
-                        if (dataGridView.Columns.Contains(Columns.Usage)) {
-                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                            dataGridView.Columns[Columns.Usage]!.Visible = true;
-                            dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Title)) {
-                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                            dataGridView.Columns[Columns.Title]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Authors)) {
-                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                            dataGridView.Columns[Columns.Authors]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
-                            dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
-                            dataGridView.Columns[Columns.Timestamp]!.Visible = true;
-                            dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.WordKey)) {
-                            dataGridView.Columns[Columns.WordKey]!.Visible = false;
-                        }
                     } else {
                         var lookups = _lookups.Where(row => row.WordKey?[3..] == _selectedWord).ToList();
                         
                         // Check if filtered lookups list is empty
                         if (lookups.Count == 0) {
-                            lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
+                            lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Lookups;
                             lblBookCount.Image = Resources.input_latin_uppercase;
                             lblBookCount.Visible = true;
                             return;
@@ -739,27 +720,27 @@ namespace KindleMate2 {
                             dataGridView.Columns[Columns.Frequency]!.Visible = false;
                             dataGridView.Columns[Columns.Frequency]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         }
-                        if (dataGridView.Columns.Contains(Columns.Usage)) {
-                            dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                            dataGridView.Columns[Columns.Usage]!.Visible = true;
-                            dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Title)) {
-                            dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                            dataGridView.Columns[Columns.Title]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Authors)) {
-                            dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                            dataGridView.Columns[Columns.Authors]!.Visible = false;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.Timestamp)) {
-                            dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
-                            dataGridView.Columns[Columns.Timestamp]!.Visible = true;
-                            dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                        }
-                        if (dataGridView.Columns.Contains(Columns.WordKey)) {
-                            dataGridView.Columns[Columns.WordKey]!.Visible = false;
-                        }
+                    }
+                    if (dataGridView.Columns.Contains(Columns.Usage)) {
+                        dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
+                        dataGridView.Columns[Columns.Usage]!.Visible = true;
+                        dataGridView.Columns[Columns.Usage]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                    }
+                    if (dataGridView.Columns.Contains(Columns.Title)) {
+                        dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
+                        dataGridView.Columns[Columns.Title]!.Visible = false;
+                    }
+                    if (dataGridView.Columns.Contains(Columns.Authors)) {
+                        dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
+                        dataGridView.Columns[Columns.Authors]!.Visible = false;
+                    }
+                    if (dataGridView.Columns.Contains(Columns.Timestamp)) {
+                        dataGridView.Columns[Columns.Timestamp]!.HeaderText = Strings.Time;
+                        dataGridView.Columns[Columns.Timestamp]!.Visible = true;
+                        dataGridView.Columns[Columns.Timestamp]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                    }
+                    if (dataGridView.Columns.Contains(Columns.WordKey)) {
+                        dataGridView.Columns[Columns.WordKey]!.Visible = false;
                     }
 
                     // Sort with column existence check
@@ -1059,7 +1040,7 @@ namespace KindleMate2 {
                 
                 // Check if filtered clippings list is empty first
                 if (clippings.Count == 0) {
-                    lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                    lblBookCount.Text = Strings.Space + Strings.Total_Clippings + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Clippings;
                     lblBookCount.Image = Resources.open_book;
                     lblBookCount.Visible = true;
                     dataGridView.DataSource = null;
@@ -1186,7 +1167,7 @@ namespace KindleMate2 {
                         
                         // Check if filtered clippings list is empty
                         if (clippings.Count == 0) {
-                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
                             dataGridView.DataSource = null;
@@ -1214,7 +1195,7 @@ namespace KindleMate2 {
                         
                         // Check if filtered lookups list is empty
                         if (lookups.Count == 0) {
-                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + "0" + Strings.Space + Strings.X_Clippings;
+                            lblBookCount.Text = Strings.Total_Clippings + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Clippings;
                             lblBookCount.Image = Resources.open_book;
                             lblBookCount.Visible = true;
                             RefreshData();
@@ -2049,7 +2030,7 @@ namespace KindleMate2 {
                 
                 // Check if filtered lookups list is empty first
                 if (lookups.Count == 0) {
-                    lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + "0" + Strings.Space + Strings.X_Lookups;
+                    lblBookCount.Text = Strings.Totally_Vocabs + Strings.Space + AppConstants.Zero + Strings.Space + Strings.X_Lookups;
                     lblBookCount.Image = Resources.input_latin_uppercase;
                     lblBookCount.Visible = true;
                     dataGridView.DataSource = null;
@@ -2486,7 +2467,7 @@ namespace KindleMate2 {
         private bool SetAutoUpdater() {
             try {
                 var arch = StringHelper.GetRuntimeArchitecture();
-                Console.WriteLine($"Detected architecture: {arch}");
+                Console.WriteLine($@"Detected architecture: {arch}");
 
                 var updateUrl = arch switch {
                     "x64" => "https://github.lzc.app/KindleMate2/update_x64.xml",

@@ -2,7 +2,7 @@
 using System.Reflection;
 
 namespace KindleMate2.Infrastructure.Helpers {
-    public class DataTableHelper {
+    public static class DataTableHelper {
         public static DataTable ToDataTable<T>(IList<T> data) {
             var table = new DataTable(typeof(T).Name);
 

@@ -4,16 +4,10 @@ using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class SettingRepository : ISettingRepository {
-        private readonly string _connectionString;
-
-        public SettingRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class SettingRepository(string connectionString) : ISettingRepository {
         public Setting? GetByName(string name) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT name, value FROM settings WHERE name = @name", connection);
@@ -36,7 +30,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Setting> GetAll() {
             var results = new List<Setting>();
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT name, value FROM settings", connection);
@@ -57,7 +51,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM settings", connection);
@@ -73,7 +67,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Add(Setting setting) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO settings (name, value) VALUES (@name, @value)", connection);
@@ -88,7 +82,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Update(Setting setting) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE settings SET value = @value WHERE name = @name", connection);
@@ -103,7 +97,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Delete(string name) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM settings WHERE name = @name", connection);
@@ -117,7 +111,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool DeleteAll() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM settings", connection);

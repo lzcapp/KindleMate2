@@ -6,16 +6,10 @@ using Version = KindleMate2.Domain.Entities.VocabDB.Version;
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     using Version = Version;
 
-    public class VersionRepository : IVersionRepository {
-        private readonly string _connectionString;
-
-        public VersionRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class VersionRepository(string connectionString) : IVersionRepository {
         public Version? GetById(string id) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, dsname, value FROM VERSION WHERE id = @id", connection);
@@ -42,7 +36,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             var results = new List<Version>();
 
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, dsname, value FROM VERSION", connection);
@@ -67,7 +61,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM VERSION", connection);
@@ -85,7 +79,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Add(Version version) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO VERSION (id, dsname, value) VALUES (@id, @dsname, @value)", connection);
@@ -105,7 +99,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Update(Version version) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE VERSION SET dsname = @dsname, value = @value WHERE id = @id", connection);
@@ -125,7 +119,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Delete(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM VERSION WHERE id = @id", connection);

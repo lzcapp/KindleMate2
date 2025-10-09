@@ -8,35 +8,29 @@ using System.Text;
 using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class LookupService {
-        private readonly ILookupRepository _repository;
-
-        public LookupService(ILookupRepository repository) {
-            _repository = repository;
-        }
-
+    public class LookupService(ILookupRepository repository) {
         public Lookup? GetLookupByWordKey(string wordKey) {
-            return _repository.GetByWordKey(wordKey);
+            return repository.GetByWordKey(wordKey);
         }
 
         public List<Lookup> GetAllLookups() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public List<Lookup> GetLookupsByTimestamp(string timestamp) {
-            return _repository.GetByTimestamp(timestamp);
+            return repository.GetByTimestamp(timestamp);
         }
 
         public List<Lookup> GetByFuzzySearch(string search, AppEntities.SearchType type) {
-            return _repository.GetByFuzzySearch(search, type);
+            return repository.GetByFuzzySearch(search, type);
         }
 
         public List<string> GetWordKeysList() {
-            return _repository.GetWordKeysList();
+            return repository.GetWordKeysList();
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         /// <summary>
@@ -52,7 +46,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 throw new ArgumentException("WordKey cannot be null or empty", nameof(lookup));
             }
 
-            _repository.Add(lookup);
+            repository.Add(lookup);
         }
 
         /// <summary>
@@ -63,7 +57,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         public void UpdateLookup(Lookup lookup) {
             ArgumentNullException.ThrowIfNull(lookup);
 
-            _repository.Update(lookup);
+            repository.Update(lookup);
         }
 
         /// <summary>
@@ -73,22 +67,18 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <returns>True if deletion was successful, false otherwise</returns>
         /// <exception cref="ArgumentException">Thrown when wordKey is null or empty</exception>
         public bool DeleteLookup(string wordKey) {
-            if (string.IsNullOrWhiteSpace(wordKey)) {
-                throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey));
-            }
-
-            return _repository.Delete(wordKey);
+            return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey);
         }
 
-        public bool RenameBook(string originBookname, string bookname, string authorname) {
-            var lookups = _repository.GetByTitle(originBookname);
+        public bool RenameBook(string originBookname, string bookname, string authorName) {
+            var lookups = repository.GetByTitle(originBookname);
             var result = 0;
             foreach (Lookup lookup in lookups) {
                 lookup.Title = bookname;
-                if (!string.IsNullOrWhiteSpace(authorname)) {
-                    lookup.Authors = authorname;
+                if (!string.IsNullOrWhiteSpace(authorName)) {
+                    lookup.Authors = authorName;
                 }
-                if (_repository.Update(lookup)) {
+                if (repository.Update(lookup)) {
                     result++;
                 }
             }
@@ -113,8 +103,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 markdown.AppendLine();
 
-                foreach (var wordKey in GetWordKeysList()) {
-                    var lookups = listLookups.Where(row => row.WordKey != null && row.WordKey.Equals(wordKey)).ToList();
+                foreach (var lookups in GetWordKeysList().Select(wordKey => listLookups.Where(row => row.WordKey != null && row.WordKey.Equals(wordKey)).ToList())) {
                     markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
                 }
             } else {

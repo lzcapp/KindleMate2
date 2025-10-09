@@ -5,16 +5,10 @@ using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class VocabRepository : IVocabRepository {
-        private readonly string _connectionString;
-
-        public VocabRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class VocabRepository(string connectionString) : IVocabRepository {
         public Vocab? GetById(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab WHERE id = @id", connection);
@@ -46,7 +40,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var results = new List<Vocab>();
             
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab", connection);
@@ -82,7 +76,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var results = new List<Vocab>();
 
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var sql = type switch {
@@ -124,7 +118,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<string> GetWordsList() {
             var results = new List<string>();
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT DISTINCT word FROM vocab", connection);
@@ -146,7 +140,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM vocab", connection);
@@ -162,7 +156,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Add(Vocab vocab) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection);
@@ -185,7 +179,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Update(Vocab vocab) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE vocab SET word_key = @word_key, word = @word, stem = @stem, category = @category, translation = @translation, timestamp = @timestamp, frequency = @frequency, sync = @sync, colorRGB = @colorRGB WHERE id = @id", connection);
@@ -208,7 +202,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool UpdateFrequencyByWordKey(Vocab vocab) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key", connection);
@@ -227,7 +221,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Delete(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM vocab WHERE id = @id", connection);
@@ -244,7 +238,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool DeleteByWordKey(string wordKey) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM vocab WHERE word_key = @word_key", connection);
@@ -261,7 +255,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool DeleteAll() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM vocab", connection);

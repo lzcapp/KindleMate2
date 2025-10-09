@@ -66,5 +66,7 @@
         // Character constants
         public const char ByteOrderMark = (char)65279;
         public const int BytesInKilobyte = 1024;
+
+        public const string Zero = "0";
     }
 }

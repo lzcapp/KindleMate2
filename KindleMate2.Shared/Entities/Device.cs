@@ -1,5 +1,5 @@
 ﻿namespace KindleMate2.Shared.Entities {
-    public class Device {
+    public static class Device {
         public enum Type {
             Unknown,
             USB,

@@ -32,7 +32,7 @@ namespace KindleMate2 {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
 
-                return attributes.Length == 0 ? "" : ((AssemblyProductAttribute)attributes[0]).Product;
+                return attributes.Length == 0 ? string.Empty : ((AssemblyProductAttribute)attributes[0]).Product;
             }
         }
 
@@ -41,7 +41,7 @@ namespace KindleMate2 {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
 
-                return attributes.Length == 0 ? "" : ((AssemblyTitleAttribute)attributes[0]).Title;
+                return attributes.Length == 0 ? string.Empty : ((AssemblyTitleAttribute)attributes[0]).Title;
             }
         }
         */
@@ -50,7 +50,7 @@ namespace KindleMate2 {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
 
-                return attributes.Length == 0 ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+                return attributes.Length == 0 ? string.Empty : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
             }
         }
 
@@ -80,7 +80,8 @@ namespace KindleMate2 {
             lblDatabaseText.Text = Strings.Database;
             okButton.Text = Strings.Confirm_Button;
 
-            /*var bw = new BackgroundWorker();
+            /*
+            var bw = new BackgroundWorker();
             bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
             bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
                 if (workerCompletedEventArgs.Result == null) {
@@ -97,7 +98,8 @@ namespace KindleMate2 {
             };
             if (StaticData.IsInternetAvailable()) {
                 bw.RunWorkerAsync();
-            }*/
+            }
+            */
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {

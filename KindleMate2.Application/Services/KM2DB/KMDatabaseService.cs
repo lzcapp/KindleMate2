@@ -55,12 +55,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
             
                 var kmSettings = _kmSettingRepository.GetAll();
-                if (kmSettings.Count > 0) {
-                    foreach (Setting kmSetting in kmSettings.Where(kmSetting => _settingRepository.GetByName(kmSetting.Name) == null)) {
-                        _settingRepository.Add(kmSetting);
-                    }
+                if (kmSettings.Count <= 0) {
+                    return true;
                 }
-                
+                foreach (Setting kmSetting in kmSettings.Where(kmSetting => _settingRepository.GetByName(kmSetting.Name) == null)) {
+                    _settingRepository.Add(kmSetting);
+                }
+
                 return true;
             } catch (Exception e) {
                 Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ImportFromKmDatabase), e));

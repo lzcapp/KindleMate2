@@ -2,23 +2,17 @@
 using KindleMate2.Domain.Interfaces.VocabDB;
 
 namespace KindleMate2.Application.Services.VocabDB {
-    public class DictInfoService {
-        private readonly IDictInfoRepository _repository;
-
-        public DictInfoService(IDictInfoRepository repository) {
-            _repository = repository;
-        }
-
+    public class DictInfoService(IDictInfoRepository repository) {
         public DictInfo? GetDictInfoByWordKey(string id) {
-            return _repository.GetById(id);
+            return repository.GetById(id);
         }
 
         public IEnumerable<DictInfo> GetAllDictInfos() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         public void AddDictInfo(DictInfo dictInfo) {
@@ -26,15 +20,15 @@ namespace KindleMate2.Application.Services.VocabDB {
                 throw new ArgumentException("[id] cannot be empty");
             }
 
-            _repository.Add(dictInfo);
+            repository.Add(dictInfo);
         }
 
         public void UpdateDictInfo(DictInfo dictInfo) {
-            _repository.Update(dictInfo);
+            repository.Update(dictInfo);
         }
 
         public void DeleteDictInfo(string id) {
-            _repository.Delete(id);
+            repository.Delete(id);
         }
     }
 }

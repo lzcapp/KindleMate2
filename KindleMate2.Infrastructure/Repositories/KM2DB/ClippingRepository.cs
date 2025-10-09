@@ -5,16 +5,10 @@ using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class ClippingRepository : IClippingRepository {
-        private readonly string _connectionString;
-
-        public ClippingRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class ClippingRepository(string connectionString) : IClippingRepository {
         public Clipping? GetByKey(string key) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
@@ -51,7 +45,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public Clipping? GetByKeyAndContent(string key, string content) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -88,7 +82,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetByBookNameAndPageNumber(string bookname, int pagenumber) {
             var results = new List<Clipping>();
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -133,7 +127,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetByBookNameAndPageNumberAndBriefType(string bookname, int pagenumber, BriefType brieftype) {
             var results = new List<Clipping>();
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -179,7 +173,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             var results = new List<Clipping>();
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var sql = type switch {
@@ -229,7 +223,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetByContent(string content) {
             var results = new List<Clipping>();
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -272,7 +266,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetAll() {
             var results = new List<Clipping>();
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings ORDER BY bookname, pagenumber, clippingdate", connection);
@@ -313,7 +307,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<Clipping> GetByBookName(string bookname) {
             var results = new List<Clipping>();
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -356,7 +350,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public List<string> GetBookNamesList() {
             var results = new List<string>();
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT DISTINCT bookname FROM clippings", connection);
@@ -378,7 +372,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM clippings", connection);
@@ -394,7 +388,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Add(Clipping clipping) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -424,7 +418,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public int Add(List<Clipping> listClippings) {
             var count = 0;
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 foreach (Clipping clipping in listClippings) {
@@ -457,7 +451,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Update(Clipping clipping) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand(
@@ -486,7 +480,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool UpdateBriefTypeByKey(Clipping clipping) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE clippings SET brieftype = @brieftype WHERE key = @key", connection);
@@ -501,7 +495,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool Delete(string key) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM clippings WHERE key = @key", connection);
@@ -519,7 +513,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         public int Delete(List<Clipping> listClippings) {
             var count = 0;
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 foreach (Clipping clipping in listClippings) {
@@ -541,7 +535,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public bool DeleteAll() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM clippings", connection);

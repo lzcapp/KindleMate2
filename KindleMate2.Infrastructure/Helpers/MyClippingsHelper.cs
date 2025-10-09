@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace KindleMate2.Infrastructure.Helpers {
-    public static class MyClippingsHelper {
+    public static partial class MyClippingsHelper {
         /// <summary>
         /// Parses title and author from a header string that may contain parentheses or hyphens.
         /// </summary>
@@ -17,24 +17,28 @@ namespace KindleMate2.Infrastructure.Helpers {
 
             try {
                 if (string.IsNullOrEmpty(input)) {
-                    throw new ArgumentException("Input is null or empty.", nameof(input));
+                    throw new ArgumentException("[input] is null or empty.", nameof(input));
                 }
 
                 // Check if the string ends with a valid closing parenthesis
                 if (!input.EndsWith(Symbols.ClosingParenthesis) && !input.EndsWith(Symbols.ClosingParenthesisChinese)) {
                     var indexOfHyphen = input.LastIndexOf(Symbols.Hyphen);
-                    if (indexOfHyphen != -1 && indexOfHyphen < input.Length - 1) {
-                        var author = input.Substring(indexOfHyphen + 1).Trim();
-                        var book = input[..indexOfHyphen].Trim();
-                        
-                        if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
-                            return new Header {
-                                Title = book,
-                                Author = author,
-                            };
-                        }
+                    if (indexOfHyphen == -1 || indexOfHyphen >= input.Length - 1) {
+                        return new Header {
+                            Title = input.Trim(),
+                            Author = string.Empty,
+                        };
                     }
-                    
+                    var author = input[(indexOfHyphen + 1)..].Trim();
+                    var book = input[..indexOfHyphen].Trim();
+                        
+                    if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
+                        return new Header {
+                            Title = book,
+                            Author = author,
+                        };
+                    }
+
                     // If hyphen parsing fails, treat entire input as title
                     return new Header {
                         Title = input.Trim(),
@@ -56,8 +60,8 @@ namespace KindleMate2.Infrastructure.Helpers {
                             break;
                     }
 
-                    if (c == Symbols.OpeningParenthesisChinese) {
-                        if (countNestedChineseParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesisChinese)) {
+                    switch (c) {
+                        case Symbols.OpeningParenthesisChinese when countNestedChineseParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesisChinese): {
                             var author = input.Substring(i + 1, input.Length - i - 2).Trim();
                             var book = input[..i].Trim();
                             
@@ -67,11 +71,12 @@ namespace KindleMate2.Infrastructure.Helpers {
                                     Author = author,
                                 };
                             }
-                        } else {
+                            break;
+                        }
+                        case Symbols.OpeningParenthesisChinese:
                             countNestedChineseParentheses--;
-                        }
-                    } else if (c == Symbols.OpeningParenthesis) {
-                        if (countNestedEnglishParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesis)) {
+                            break;
+                        case Symbols.OpeningParenthesis when countNestedEnglishParentheses == 0 && input.EndsWith(Symbols.ClosingParenthesis): {
                             var author = input.Substring(i + 1, input.Length - i - 2).Trim();
                             var book = input[..i].Trim();
                             
@@ -81,9 +86,11 @@ namespace KindleMate2.Infrastructure.Helpers {
                                     Author = author,
                                 };
                             }
-                        } else {
-                            countNestedEnglishParentheses--;
+                            break;
                         }
+                        case Symbols.OpeningParenthesis:
+                            countNestedEnglishParentheses--;
+                            break;
                     }
                 }
                 
@@ -107,12 +114,13 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </summary>
         /// <param name="input">The metadata string to parse</param>
         /// <returns>A Metadata object with parsed information</returns>
+        // ReSharper disable once UnusedMember.Local
         private static Metadata ParseMetadata(string input) {
             var result = new Metadata();
             
             try {
                 if (string.IsNullOrEmpty(input)) {
-                    throw new ArgumentException("Input is null or empty.", nameof(input));
+                    throw new ArgumentException("[input] is null or empty.", nameof(input));
                 }
                 
                 var sections = BriefTypeTranslations.Dividers
@@ -122,7 +130,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     .ToList();
 
                 if (sections.Count < 2) {
-                    throw new ArgumentException($"Invalid metadata entry. Expected a page and/or location and created date entry: {input}", nameof(input));
+                    throw new ArgumentException($@"Invalid metadata entry. Expected a page and/or location and created date entry: {input}", nameof(input));
                 }
 
                 var firstSection = sections[0];
@@ -130,10 +138,10 @@ namespace KindleMate2.Infrastructure.Helpers {
                 result.Type = ParseEntryType(input);
                 result.DateOfCreation = ParseToUtcDate(sections.Last());
 
-                var location = ParseLocation(firstSection);
+                Location location = ParseLocation(firstSection);
                 result.Page = location.Page;
                 result.Location = location;
-            } catch (Exception e) when (!(e is ArgumentException)) {
+            } catch (Exception e) when (e is not ArgumentException) {
                 // Re-throw argument exceptions as they have specific meaning
                 // For other exceptions, wrap with context but don't log to console
                 throw new InvalidOperationException($"Failed to parse metadata from input '{input}': {e.Message}", e);
@@ -157,12 +165,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         private static DateTime? ParseToUtcDate(string serializedDate) {
-            if (DateTime.TryParse(serializedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date))
+            if (DateTime.TryParse(serializedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTime date) || CultureInfoArray.Any(culture => DateTime.TryParse(serializedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))) {
                 return date;
-
-            foreach (var culture in new[] { "it-IT", "fr-FR", "es-ES", "pt-PT" }) {
-                if (DateTime.TryParse(serializedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))
-                    return date;
             }
 
             return null;
@@ -186,7 +190,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 // Parse location range (e.g., "123-456")
                 try {
-                    var matchLocation = Regex.Match(input, AppConstants.LocationRangePattern, RegexOptions.Compiled);
+                    Match matchLocation = LocationRegex().Match(input);
                     if (matchLocation.Success && 
                         int.TryParse(matchLocation.Groups[1].Value, out var from) &&
                         int.TryParse(matchLocation.Groups[2].Value, out var to)) {
@@ -201,11 +205,11 @@ namespace KindleMate2.Infrastructure.Helpers {
                 }
 
                 // Parse single page number
-                var matchPage = Regex.Match(input, AppConstants.SingleNumberPattern, RegexOptions.Compiled);
+                Match matchPage = PageNumberRegex().Match(input);
                 if (matchPage.Success && int.TryParse(matchPage.Groups[1].Value, out var page)) {
                     result.Page = page;
                 }
-            } catch (Exception e) when (!(e is ArgumentNullException || e is InvalidOperationException)) {
+            } catch (Exception e) when (e is not (ArgumentNullException or InvalidOperationException)) {
                 // Wrap and re-throw with more context, but preserve specific exceptions
                 throw new InvalidOperationException($"Failed to parse location from input '{input}': {e.Message}", e);
             }
@@ -218,8 +222,16 @@ namespace KindleMate2.Infrastructure.Helpers {
             "您已达到本内容的剪贴上限"
         ];
         
+        private static readonly string[] CultureInfoArray = ["it-IT", "fr-FR", "es-ES", "pt-PT"];
+
         public static bool IsClippingLimitReached(string content) {
             return ClippingLimitReachedWarning.Any(content.Contains);
         }
+
+        [GeneratedRegex(AppConstants.SingleNumberPattern, RegexOptions.Compiled)]
+        private static partial Regex PageNumberRegex();
+        
+        [GeneratedRegex(AppConstants.LocationRangePattern, RegexOptions.Compiled)]
+        private static partial Regex LocationRegex();
     }
 }

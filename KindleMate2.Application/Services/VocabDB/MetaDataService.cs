@@ -2,23 +2,17 @@
 using KindleMate2.Domain.Interfaces.VocabDB;
 
 namespace KindleMate2.Application.Services.VocabDB {
-    public class MetaDataService {
-        private readonly IMetaDataRepository _repository;
-
-        public MetaDataService(IMetaDataRepository repository) {
-            _repository = repository;
-        }
-
+    public class MetaDataService(IMetaDataRepository repository) {
         public MetaData? GetMetaDataByKey(string id) {
-            return _repository.GetById(id);
+            return repository.GetById(id);
         }
 
         public IEnumerable<MetaData> GetAllMetaDatas() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         public void AddMetaData(MetaData metaData) {
@@ -26,15 +20,15 @@ namespace KindleMate2.Application.Services.VocabDB {
                 throw new ArgumentException("[id] cannot be empty");
             }
 
-            _repository.Add(metaData);
+            repository.Add(metaData);
         }
 
         public void UpdateMetaData(MetaData metaData) {
-            _repository.Update(metaData);
+            repository.Update(metaData);
         }
 
         public void DeleteMetaData(string id) {
-            _repository.Delete(id);
+            repository.Delete(id);
         }
     }
 }

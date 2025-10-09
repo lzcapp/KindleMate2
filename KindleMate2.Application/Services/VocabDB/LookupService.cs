@@ -5,23 +5,17 @@ namespace KindleMate2.Application.Services.VocabDB {
     using Lookup = Lookup;
     using ILookupRepository = ILookupRepository;
 
-    public class LookupService {
-        private readonly ILookupRepository _repository;
-
-        public LookupService(ILookupRepository repository) {
-            _repository = repository;
-        }
-
+    public class LookupService(ILookupRepository repository) {
         public Lookup? GetLookupByKey(string id) {
-            return _repository.GetById(id);
+            return repository.GetById(id);
         }
 
         public IEnumerable<Lookup> GetAllLookups() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         public void AddLookup(Lookup lookup) {
@@ -29,15 +23,15 @@ namespace KindleMate2.Application.Services.VocabDB {
                 throw new ArgumentException("[id] cannot be empty");
             }
 
-            _repository.Add(lookup);
+            repository.Add(lookup);
         }
 
         public void UpdateLookup(Lookup lookup) {
-            _repository.Update(lookup);
+            repository.Update(lookup);
         }
 
         public void DeleteLookup(string id) {
-            _repository.Delete(id);
+            repository.Delete(id);
         }
     }
 }

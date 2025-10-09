@@ -8,43 +8,37 @@ using KindleMate2.Shared.Entities;
 using Markdig;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class ClippingService {
-        private readonly IClippingRepository _repository;
-
-        public ClippingService(IClippingRepository repository) {
-            _repository = repository;
-        }
-
+    public class ClippingService(IClippingRepository repository) {
         public Clipping? GetClippingByKey(string key) {
-            return _repository.GetByKey(key);
+            return repository.GetByKey(key);
         }
 
         public Clipping? GetClippingByKeyAndContent(string key, string content) {
-            return _repository.GetByKeyAndContent(key, content);
+            return repository.GetByKeyAndContent(key, content);
         }
 
         public List<Clipping> GetClippingsByBookNameAndPageNumberAndBriefType(string bookName, int pageNumber, BriefType briefType) {
-            return _repository.GetByBookNameAndPageNumberAndBriefType(bookName, pageNumber, briefType);
+            return repository.GetByBookNameAndPageNumberAndBriefType(bookName, pageNumber, briefType);
         }
 
         public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {
-            return _repository.GetByFuzzySearch(search, type);
+            return repository.GetByFuzzySearch(search, type);
         }
 
         public List<Clipping> GetAllClippings() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public List<Clipping> GetClippingsByBookName(string bookname) {
-            return _repository.GetByBookName(bookname);
+            return repository.GetByBookName(bookname);
         }
 
         public List<string> GetBookNamesList() {
-            return _repository.GetBookNamesList();
+            return repository.GetBookNamesList();
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         public void AddClipping(Clipping clipping) {
@@ -52,28 +46,28 @@ namespace KindleMate2.Application.Services.KM2DB {
                 throw new ArgumentException("[key] cannot be empty");
             }
 
-            _repository.Add(clipping);
+            repository.Add(clipping);
         }
 
         public bool UpdateClipping(Clipping clipping) {
-            return _repository.Update(clipping);
+            return repository.Update(clipping);
         }
 
         public bool DeleteClipping(string key) {
-            return _repository.Delete(key);
+            return repository.Delete(key);
         }
 
         public void DeleteAllClippings() {
-            _repository.DeleteAll();
+            repository.DeleteAll();
         }
 
         private List<Clipping> GetByBookName(string bookname) {
-            return _repository.GetByBookName(bookname);
+            return repository.GetByBookName(bookname);
         }
 
         public List<string> GetClippingsBookTitleList() {
             var list = new List<string>();
-            var clippings = _repository.GetAll();
+            var clippings = repository.GetAll();
             if (clippings.Count <= 0) {
                 return list;
             }
@@ -88,13 +82,12 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public List<string> GetClippingsAuthorList() {
             var list = new List<string>();
-            var clippings = _repository.GetAll();
+            var clippings = repository.GetAll();
             if (clippings.Count <= 0) {
                 return list;
             }
-            foreach (Clipping clipping in clippings) {
-                var bookTitle = clipping.AuthorName;
-                if (!string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle)) {
+            foreach (var bookTitle in clippings.Select(clipping => clipping.AuthorName).Where(bookTitle => !string.IsNullOrEmpty(bookTitle) && !list.Contains(bookTitle))) {
+                if (!string.IsNullOrWhiteSpace(bookTitle)) {
                     list.Add(bookTitle);
                 }
             }
@@ -109,7 +102,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (!string.IsNullOrWhiteSpace(authorname)) {
                     clipping.AuthorName = authorname;
                 }
-                if (_repository.Update(clipping)) {
+                if (repository.Update(clipping)) {
                     result++;
                 }
             }

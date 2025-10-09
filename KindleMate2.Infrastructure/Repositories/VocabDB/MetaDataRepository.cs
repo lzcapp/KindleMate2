@@ -4,16 +4,10 @@ using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
-    public class MetaDataRepository : IMetaDataRepository {
-        private readonly string _connectionString;
-
-        public MetaDataRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class MetaDataRepository(string connectionString) : IMetaDataRepository {
         public MetaData? GetById(string id) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, dsname, sscnt, profileid FROM METADATA WHERE id = @id", connection);
@@ -41,7 +35,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             var results = new List<MetaData>();
             
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, dsname, sscnt, profileid FROM METADATA", connection);
@@ -67,7 +61,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM METADATA", connection);
@@ -85,7 +79,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Add(MetaData metaData) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO METADATA (id, dsname, sscnt, profileid) VALUES (@id, @dsname, @sscnt, @profileid)", connection);
@@ -106,7 +100,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Update(MetaData metaData) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE METADATA SET dsname = @dsname, sscnt = @sscnt, profileid = @profileid WHERE id = @id", connection);
@@ -127,7 +121,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Delete(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM METADATA WHERE id = @id", connection);

@@ -1,5 +1,5 @@
 ﻿namespace KindleMate2.Shared.Constants {
-    public class Columns {
+    public static class Columns {
         public const string Word = "Word";
         public const string Stem = "Stem";
         public const string Timestamp = "Timestamp";

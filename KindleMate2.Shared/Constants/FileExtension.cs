@@ -1,5 +1,5 @@
 ﻿namespace KindleMate2.Shared.Constants {
-    public class FileExtension {
+    public static class FileExtension {
         public const string PNG = ".png";
         public const string DAT = ".dat";
         public const string TXT = ".txt";

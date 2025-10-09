@@ -4,16 +4,10 @@ using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
-    public class LookupRepository : ILookupRepository{
-        private readonly string _connectionString;
-
-        public LookupRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class LookupRepository(string connectionString) : ILookupRepository {
         public Lookup? GetById(string id) {
             try {
-                SqliteConnection connection = new(_connectionString);
+                SqliteConnection connection = new(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word_key, book_key, dict_key, pos, usage, timestamp FROM LOOKUPS WHERE id = @id", connection);
@@ -41,7 +35,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             var results = new List<Lookup>();
 
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT id, word_key, book_key, dict_key, pos, usage, timestamp FROM LOOKUPS", connection);
@@ -70,7 +64,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public int GetCount() {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("SELECT COUNT(*) FROM LOOKUPS", connection);
@@ -88,7 +82,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Add(Lookup lookup) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("INSERT INTO LOOKUPS (id, word_key, book_key, dict_key, pos, usage, timestamp) VALUES (@id, @word_key, @book_key, @dict_key, @pos, @usage, @timestamp)", connection);
@@ -112,7 +106,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Update(Lookup lookup) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("UPDATE LOOKUPS SET word_key = @word_key, book_key = @book_key, dict_key = @dict_key, pos = @pos, usage = @usage, timestamp = @timestamp WHERE id = @id", connection);
@@ -136,7 +130,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
 
         public bool Delete(string id) {
             try {
-                using var connection = new SqliteConnection(_connectionString);
+                using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
                 var cmd = new SqliteCommand("DELETE FROM LOOKUPS WHERE id = @id", connection);

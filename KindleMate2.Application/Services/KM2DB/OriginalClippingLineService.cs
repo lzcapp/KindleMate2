@@ -3,27 +3,21 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class OriginalClippingLineService {
-        private readonly IOriginalClippingLineRepository _repository;
-
-        public OriginalClippingLineService(IOriginalClippingLineRepository repository) {
-            _repository = repository;
-        }
-
+    public class OriginalClippingLineService(IOriginalClippingLineRepository repository) {
         public OriginalClippingLine? GetOriginalClippingLineByKey(string key) {
-            return _repository.GetByKey(key);
+            return repository.GetByKey(key);
         }
 
         public List<OriginalClippingLine> GetAllOriginalClippingLines() {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public List<OriginalClippingLine> GetByFuzzySearch(string search, AppEntities.SearchType type) {
-            return _repository.GetByFuzzySearch(search, type);
+            return repository.GetByFuzzySearch(search, type);
         }
 
         public int GetCount() {
-            return _repository.GetCount();
+            return repository.GetCount();
         }
 
         public void AddOriginalClippingLine(OriginalClippingLine originalClippingLine) {
@@ -31,15 +25,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 throw new ArgumentException("[key] cannot be empty");
             }
 
-            _repository.Add(originalClippingLine);
+            repository.Add(originalClippingLine);
         }
 
         public void UpdateOriginalClippingLine(OriginalClippingLine originalClippingLine) {
-            _repository.Update(originalClippingLine);
+            repository.Update(originalClippingLine);
         }
 
         public void DeleteOriginalClippingLine(string key) {
-            _repository.Delete(key);
+            repository.Delete(key);
         }
 
         public bool Export(string filePath, string fileName, out Exception exception) {

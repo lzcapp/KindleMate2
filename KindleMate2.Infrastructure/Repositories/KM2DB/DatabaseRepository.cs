@@ -2,15 +2,9 @@
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class DatabaseRepository {
-        private readonly string _connectionString;
-
-        public DatabaseRepository(string connectionString) {
-            _connectionString = connectionString;
-        }
-
+    public class DatabaseRepository(string connectionString) {
         public bool IsDatabaseEmpty() {
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             // Get all user-defined tables

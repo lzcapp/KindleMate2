@@ -1,5 +1,5 @@
 ﻿namespace KindleMate2.Shared.Constants {
-    public class Symbols {
+    public static class Symbols {
         public const char Hyphen = '-';
         public const char ClosingParenthesis = ')';
         public const char ClosingParenthesisChinese = '）';

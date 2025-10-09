@@ -8,21 +8,12 @@ using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class Km2DatabaseService {
-        private readonly IClippingRepository _clippingRepository;
-        private readonly ILookupRepository _lookupRepository;
-        private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
-        private readonly ISettingRepository _settingRepository;
-        private readonly IVocabRepository _vocabRepository;
-
-        public Km2DatabaseService(IClippingRepository clippingRepository, ILookupRepository lookupRepository, IOriginalClippingLineRepository originalClippingLineRepository, ISettingRepository settingRepository, IVocabRepository vocabRepository) {
-            _clippingRepository = clippingRepository;
-            _lookupRepository = lookupRepository;
-            _originalClippingLineRepository = originalClippingLineRepository;
-            _settingRepository = settingRepository;
-            _vocabRepository = vocabRepository;
-        }
-
+    public class Km2DatabaseService(
+        IClippingRepository clippingRepository,
+        ILookupRepository lookupRepository,
+        IOriginalClippingLineRepository originalClippingLineRepository,
+        ISettingRepository settingRepository,
+        IVocabRepository vocabRepository) {
         public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
             try {
                 List<string> lines = [
@@ -86,30 +77,26 @@ namespace KindleMate2.Application.Services.KM2DB {
             try {
                 result = new Dictionary<string, string>();
                 
-                var originalClippingLines = _originalClippingLineRepository.GetAll();
+                var originalClippingLines = originalClippingLineRepository.GetAll();
                 if (originalClippingLines.Count <= 0) {
                     throw new Exception(Strings.Database_Empty);
                 }
             
-                _clippingRepository.DeleteAll();
+                clippingRepository.DeleteAll();
             
-                var myClippings = new List<MyClipping>();
-                foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
-                    var line1 = originalClippingLine.line1;
-                    var line2 = originalClippingLine.line2;
-                    var line4 = originalClippingLine.line4;
-                    var line5 = originalClippingLine.line5;
-                    if (string.IsNullOrWhiteSpace(line1) || string.IsNullOrWhiteSpace(line2) || string.IsNullOrWhiteSpace(line4) || string.IsNullOrWhiteSpace(line5)) {
-                        continue;
-                    }
-                    myClippings.Add(new MyClipping {
+                var myClippings = (from originalClippingLine in originalClippingLines
+                    let line1 = originalClippingLine.line1
+                    let line2 = originalClippingLine.line2
+                    let line4 = originalClippingLine.line4
+                    let line5 = originalClippingLine.line5
+                    where !string.IsNullOrWhiteSpace(line1) && !string.IsNullOrWhiteSpace(line2) && !string.IsNullOrWhiteSpace(line4) && !string.IsNullOrWhiteSpace(line5)
+                    select new MyClipping {
                         Header = line1,
                         Metadata = line2,
                         Content = line4,
                         Delimiter = line5
-                    });
-                }
-            
+                    }).ToList();
+
                 var insertedCount = HandleClippings(myClippings, isRebuild: true);
 
                 UpdateFrequency();
@@ -131,9 +118,9 @@ namespace KindleMate2.Application.Services.KM2DB {
         private int HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
             var insertResult = 0;
 
-            var allClippings = _clippingRepository.GetAll();
+            var allClippings = clippingRepository.GetAll();
             var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
-            var originalKeys = _originalClippingLineRepository.GetAllKeys();
+            var originalKeys = originalClippingLineRepository.GetAllKeys();
             
             var listAddClippings = new List<Clipping>();
             var listAddOriginalClippings = new List<OriginalClippingLine>();
@@ -254,11 +241,11 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
 
             if (listAddClippings.Count > 0) {
-                insertResult = _clippingRepository.Add(listAddClippings);
+                insertResult = clippingRepository.Add(listAddClippings);
             }
 
             if (listAddOriginalClippings.Count > 0) {
-                _originalClippingLineRepository.Add(listAddOriginalClippings);
+                originalClippingLineRepository.Add(listAddOriginalClippings);
             }
 
             return insertResult;
@@ -272,7 +259,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         return true;
                 }
 
-                var clippings = _clippingRepository.GetByBookNameAndPageNumber(bookName, pageNumber);
+                var clippings = clippingRepository.GetByBookNameAndPageNumber(bookName, pageNumber);
 
                 if (clippings.Count <= 0) {
                     return false;
@@ -283,7 +270,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (!bookName.Equals(book) || !pageNumber.Equals(page)) {
                     return false;
                 }
-                _clippingRepository.UpdateBriefTypeByKey(new Clipping {
+                clippingRepository.UpdateBriefTypeByKey(new Clipping {
                     Key = clipping.Key,
                     BriefType = (long)BriefType.Hide
                 });
@@ -296,19 +283,19 @@ namespace KindleMate2.Application.Services.KM2DB {
 
         public bool UpdateFrequency() {
             try {
-                var lookups = _lookupRepository.GetAll();
+                var lookups = lookupRepository.GetAll();
                 var frequencyMap = lookups
                     .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
                     .GroupBy(l => l.WordKey!.Trim())
                     .ToDictionary(g => g.Key, g => g.Count());
 
-                var vocabs = _vocabRepository.GetAll();
+                var vocabs = vocabRepository.GetAll();
                 foreach (Vocab vocab in vocabs) {
                     if (vocab.WordKey == null) {
                         continue;
                     }
                     frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
-                    _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
+                    vocabRepository.UpdateFrequencyByWordKey(new Vocab {
                         WordKey = vocab.WordKey,
                         Frequency = frequency,
                         Id = string.Empty,
@@ -323,31 +310,18 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
         
         public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result) {
-            var clippings = _clippingRepository.GetAll();
+            var clippings = clippingRepository.GetAll();
 
             try {
                 var fileInfo = new FileInfo(databaseFilePath);
                 var originFileSize = fileInfo.Length;
                 
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
-                var emptyCount = _clippingRepository.Delete(emptyClippings);
+                var emptyCount = clippingRepository.Delete(emptyClippings);
                 
-                var duplicatedClippings = new List<Clipping>();
+                var duplicatedClippings = (from clipping in clippings let key = clipping.Key let content = clipping.Content where !string.IsNullOrWhiteSpace(key) where clippings.Count(c => c.Content.Contains(content)) > 1 select clipping).ToList();
 
-                foreach (Clipping clipping in clippings) {
-                    var key = clipping.Key;
-                    var content = clipping.Content;
-
-                    if (string.IsNullOrWhiteSpace(key)) {
-                        continue;
-                    }
-                    
-                    if (clippings.Count(c => c.Content.Contains(content))  > 1) {
-                        duplicatedClippings.Add(clipping);
-                    }
-                }
-                
-                var duplicatedCount = _clippingRepository.Delete(duplicatedClippings);
+                var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
                 
                 DatabaseHelper.VacuumDatabase(databaseFilePath);
                 
@@ -376,10 +350,10 @@ namespace KindleMate2.Application.Services.KM2DB {
         public bool IsDatabaseEmpty() {
             try {
                 var result = 0;
-                result += _clippingRepository.GetCount();
-                result += _originalClippingLineRepository.GetCount();
-                result += _lookupRepository.GetCount();
-                result += _vocabRepository.GetCount();
+                result += clippingRepository.GetCount();
+                result += originalClippingLineRepository.GetCount();
+                result += lookupRepository.GetCount();
+                result += vocabRepository.GetCount();
                 return result == 0;
             } catch (Exception e) {
                 Console.WriteLine(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
@@ -390,19 +364,19 @@ namespace KindleMate2.Application.Services.KM2DB {
         public bool DeleteAllData() {
             try {
                 var table = new List<string>();
-                if (!_clippingRepository.DeleteAll()) {
+                if (!clippingRepository.DeleteAll()) {
                     table.Add("clippings");
                 }
-                if (!_lookupRepository.DeleteAll()) {
+                if (!lookupRepository.DeleteAll()) {
                     table.Add("lookups");
                 }
-                if (!_originalClippingLineRepository.DeleteAll()) {
+                if (!originalClippingLineRepository.DeleteAll()) {
                     table.Add("original_clipping_lines");
                 }
-                if (!_settingRepository.DeleteAll()) {
+                if (!settingRepository.DeleteAll()) {
                     table.Add("settings");
                 }
-                if (!_vocabRepository.DeleteAll()) {
+                if (!vocabRepository.DeleteAll()) {
                     table.Add("vocab");
                 }
                 return table.Count == 0 ? true : throw new Exception($"Clear table [{string.Join(", ", table)}] failed.");
