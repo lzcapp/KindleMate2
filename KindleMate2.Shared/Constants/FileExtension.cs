@@ -1,4 +1,5 @@
-﻿namespace KindleMate2.Shared.Constants {
+﻿// ReSharper disable InconsistentNaming
+namespace KindleMate2.Shared.Constants {
     public static class FileExtension {
         public const string PNG = ".png";
         public const string DAT = ".dat";
