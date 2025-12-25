@@ -430,10 +430,7 @@ namespace KindleMate2 {
                 var wordKey = row.WordKey;
                 var stem = string.Empty;
                 var frequency = string.Empty;
-                foreach (Vocab vocab in _vocabs) {
-                    if (vocab.WordKey != wordKey) {
-                        continue;
-                    }
+                foreach (Vocab vocab in _vocabs.Where(vocab => vocab.WordKey == wordKey)) {
                     stem = vocab.Stem;
                     frequency = vocab.Frequency.ToString();
                     break;
@@ -1674,6 +1671,13 @@ namespace KindleMate2 {
         private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception) {
             exception = new Exception();
             try {
+                if (!Directory.Exists(backupClippingsPath)) {
+                    Directory.CreateDirectory(backupClippingsPath);
+                }
+                if (!Directory.Exists(backupWordsPath)) {
+                    Directory.CreateDirectory(backupWordsPath);
+                }
+
                 var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
                 var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
                 switch (_deviceType) {
@@ -2417,6 +2421,14 @@ namespace KindleMate2 {
             try {
                 var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
                 var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
+
+                if (!Directory.Exists(backupClippingsPath)) {
+                    Directory.CreateDirectory(backupClippingsPath);
+                }
+                if (!Directory.Exists(backupWordsPath)) {
+                    Directory.CreateDirectory(backupWordsPath);
+                }
+
                 if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) || !_originalClippingLineService.Export(backupClippingsPath, AppConstants.ClippingsFileName, out exception)) {
                     throw exception;
                 }
