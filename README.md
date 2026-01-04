@@ -18,7 +18,7 @@
 
 - **最低**: `Windows 7` 或更高版本 / `Windows 2008 R2 SP1` 或更高版本
 - **推荐**: `Windows 11`
-- **架构**: `x86` 或 `x64`.
+- **架构**: `x86` 或 `x64` 或 `ARM64`
 
 依赖运行时（runtime）的版本需要安装 [.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) 。
 
