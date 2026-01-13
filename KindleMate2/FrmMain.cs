@@ -298,7 +298,6 @@ namespace KindleMate2 {
             _driveLetter = string.Empty;
             menuSyncFromKindle.Visible = false;
             menuKindle.Visible = false;
-            menuKindle.Visible = true;
         }
 
         private void DeviceEventHandler(object sender) {
