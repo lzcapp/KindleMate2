@@ -158,12 +158,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var pageNumber = -1;
                     var pagePattern = @"\d+(-\d+)?";
                     var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
+                    Match pageMatch = Regex.Match(pageStr, pagePattern);
                     var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
                     var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
                     var isPageParsed = false;
-                    if (isPageMatched) {
-                        var regex = new Regex(pagePattern);
-                        var strMatched = regex.Matches(pageStr)[0].Value;
+                    if (isPageMatched && pageMatch.Success) {
+                        var strMatched = pageMatch.Value;
                         var split = strMatched.Split("-");
                         if (split.Length > 1) {
                             strMatched = strMatched.Split("-")[1];
