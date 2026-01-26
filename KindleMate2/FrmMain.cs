@@ -298,6 +298,19 @@ namespace KindleMate2 {
             _driveLetter = string.Empty;
             menuSyncFromKindle.Visible = false;
             menuKindle.Visible = false;
+            try {
+                if (sender is not ManagementEventWatcher watcher) {
+                    return;
+                }
+                watcher.Stop();
+                IsKindleConnected();
+                watcher.Start();
+            } catch (Exception) {
+                // TODO
+                // Device event handling failed - log but don't crash the application
+                // The device monitoring can continue with reduced functionality
+                // Consider implementing proper logging here instead of console output
+            }
         }
 
         private void DeviceEventHandler(object sender) {
