@@ -1629,11 +1629,8 @@ namespace KindleMate2 {
                 var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
                 var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
 
-                if (!Directory.Exists(backupClippingsPath)) {
-                    Directory.CreateDirectory(backupClippingsPath);
-                }
-                if (!Directory.Exists(backupWordsPath)) {
-                    Directory.CreateDirectory(backupWordsPath);
+                if (!Directory.Exists(_backupPath)) {
+                    Directory.CreateDirectory(_backupPath);
                 }
 
                 var backupClippingsFilePath = Path.Combine(backupClippingsPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
@@ -1670,13 +1667,6 @@ namespace KindleMate2 {
         private bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception) {
             exception = new Exception();
             try {
-                //if (!Directory.Exists(backupClippingsPath)) {
-                //    Directory.CreateDirectory(backupClippingsPath);
-                //}
-                //if (!Directory.Exists(backupWordsPath)) {
-                //    Directory.CreateDirectory(backupWordsPath);
-                //}
-
                 var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
                 var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
                 switch (_deviceType) {
@@ -2421,11 +2411,8 @@ namespace KindleMate2 {
                 var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
                 var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
 
-                if (!Directory.Exists(backupClippingsPath)) {
-                    Directory.CreateDirectory(backupClippingsPath);
-                }
-                if (!Directory.Exists(backupWordsPath)) {
-                    Directory.CreateDirectory(backupWordsPath);
+                if (!Directory.Exists(_backupPath)) {
+                    Directory.CreateDirectory(_backupPath);
                 }
 
                 if (!ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) || !_originalClippingLineService.Export(backupClippingsPath, AppConstants.ClippingsFileName, out exception)) {
