@@ -2490,15 +2490,5 @@ namespace KindleMate2 {
                 return false;
             }
         }
-
-        protected override void Dispose(bool disposing) {
-            if (disposing) {
-                _usbDeviceArrivalWatcher?.Dispose();
-                _usbDeviceRemovalWatcher?.Dispose();
-                _mtpDeviceArrivalWatcher?.Dispose();
-                _mtpDeviceRemovalWatcher?.Dispose();
-            }
-            base.Dispose(disposing);
-        }
     }
 }
