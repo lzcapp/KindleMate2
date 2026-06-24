@@ -22,7 +22,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 var delimiterIndex = new List<int>();
 
-                for (var i = 0; i < lines.Count; i++) {
+                for (var i = 2; i < lines.Count; i++) {
                     lines[i] = StringHelper.RemoveControlChar(lines[i]);
                     if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
                         delimiterIndex.Add(i);
@@ -39,13 +39,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var line2 = lines[ceilDelimiter + 2].Trim();
                     //  line3 should be empty
                     var line4 = lines[ceilDelimiter + 4].Trim();
-                    if (ceilDelimiter + 5 == ceilDelimiter) {
-                        // then line4 is the rest
-                        for (var index = ceilDelimiter + 3; index < florDelimiter; index++) {
-                            line4 += lines[index];
-                            if (index < florDelimiter - 1) {
-                                line4 += Environment.NewLine;
-                            }
+                    if (florDelimiter > ceilDelimiter + 5) {
+                        // then line4 is the rest (multiline content)
+                        for (var index = ceilDelimiter + 5; index < florDelimiter; index++) {
+                            line4 += Environment.NewLine + lines[index].Trim();
                         }
                     }
                     var line5 = lines[florDelimiter].Trim(); // line 5 is "=========="

@@ -13,7 +13,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
                 var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
                     connection);
-                if (!string.IsNullOrWhiteSpace(key)) {
+                if (string.IsNullOrWhiteSpace(key)) {
                     throw new InvalidOperationException();
                 }
                 cmd.Parameters.AddWithValue("@key", key);
@@ -421,27 +421,34 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 using var connection = new SqliteConnection(connectionString);
                 connection.Open();
 
-                foreach (Clipping clipping in listClippings) {
-                    var cmd = new SqliteCommand(
-                        "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
-                        connection);
-                    cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
-                    cmd.Parameters.AddWithValue("@content", clipping.Content);
-                    cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@sync", clipping.Sync ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
-                    if (cmd.ExecuteNonQuery() > 0) {
-                        count++;
+                using var transaction = connection.BeginTransaction();
+                try {
+                    foreach (Clipping clipping in listClippings) {
+                        var cmd = new SqliteCommand(
+                            "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
+                            connection, transaction);
+                        cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
+                        cmd.Parameters.AddWithValue("@content", clipping.Content);
+                        cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@sync", clipping.Sync ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
+                        if (cmd.ExecuteNonQuery() > 0) {
+                            count++;
+                        }
                     }
+                    transaction.Commit();
+                } catch {
+                    transaction.Rollback();
+                    throw;
                 }
             } catch (Exception e) {
                 Console.WriteLine(e);

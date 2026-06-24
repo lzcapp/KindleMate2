@@ -41,6 +41,11 @@ namespace KindleMate2 {
 
         private string _driveLetter = string.Empty;
 
+        private ManagementEventWatcher? _usbDeviceArrivalWatcher;
+        private ManagementEventWatcher? _usbDeviceRemovalWatcher;
+        private ManagementEventWatcher? _mtpDeviceArrivalWatcher;
+        private ManagementEventWatcher? _mtpDeviceRemovalWatcher;
+
         private readonly string _programPath, _tempPath, _backupPath, _importPath, _databaseFilePath, _versionFilePath;
 
         private string _selectedBook, _selectedWord;
@@ -101,7 +106,7 @@ namespace KindleMate2 {
             lblContent.LostFocus += LblContent_LostFocus;
 
             if (!File.Exists(_databaseFilePath)) {
-                if (DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception exception)) {
+                if (!DatabaseHelper.CreateDatabase(_databaseFilePath, out Exception exception)) {
                     var message = MessageHelper.BuildMessage(Strings.Create_Database_Failed, exception);
                     _ = MessageBox(message, Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
                     Environment.Exit(0);
@@ -264,24 +269,24 @@ namespace KindleMate2 {
             IsKindleConnected();
 
             const string usbCreationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
-            using var usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCreationQuery);
-            usbDeviceArrivalWatcher.EventArrived += UsbDeviceEventHandler;
-            usbDeviceArrivalWatcher.Start();
+            _usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCreationQuery);
+            _usbDeviceArrivalWatcher.EventArrived += UsbDeviceEventHandler;
+            _usbDeviceArrivalWatcher.Start();
 
             const string usbDeletionQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 3";
-            using var usbDeviceRemovalWatcher = new ManagementEventWatcher(usbDeletionQuery);
-            usbDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
-            usbDeviceRemovalWatcher.Start();
+            _usbDeviceRemovalWatcher = new ManagementEventWatcher(usbDeletionQuery);
+            _usbDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
+            _usbDeviceRemovalWatcher.Start();
 
             const string mtpCreationQuery = "SELECT * FROM __InstanceCreationEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
-            using var mtpDeviceArrivalWatcher = new ManagementEventWatcher(mtpCreationQuery);
-            mtpDeviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
-            mtpDeviceArrivalWatcher.Start();
+            _mtpDeviceArrivalWatcher = new ManagementEventWatcher(mtpCreationQuery);
+            _mtpDeviceArrivalWatcher.EventArrived += MtpDeviceEventHandler;
+            _mtpDeviceArrivalWatcher.Start();
 
             const string mtpDeletionQuery = "SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_PnPEntity'";
-            using var mtpDeviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
-            mtpDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
-            mtpDeviceRemovalWatcher.Start();
+            _mtpDeviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
+            _mtpDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
+            _mtpDeviceRemovalWatcher.Start();
         }
 
         private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
@@ -406,8 +411,8 @@ namespace KindleMate2 {
                 SetDataGridView();
                 SetSelection();
                 CountRows();
-            } catch (Exception) {
-                // ignored
+            } catch (Exception ex) {
+                Console.WriteLine($"[RefreshData] {ex}");
             }
         }
 
@@ -2183,7 +2188,8 @@ namespace KindleMate2 {
         private bool ClippingsToMarkdown(string bookname = "") {
             try {
                 return _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
-            } catch (Exception) {
+            } catch (Exception ex) {
+                Console.WriteLine($"[ClippingsToMarkdown] {ex}");
                 return false;
             }
         }
@@ -2191,7 +2197,8 @@ namespace KindleMate2 {
         private bool VocabsToMarkdown(string word = "") {
             try {
                 return _lookupService.LookupsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), word);
-            } catch (Exception) {
+            } catch (Exception ex) {
+                Console.WriteLine($"[VocabsToMarkdown] {ex}");
                 return false;
             }
         }
@@ -2482,6 +2489,16 @@ namespace KindleMate2 {
                 Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetAutoUpdater), e));
                 return false;
             }
+        }
+
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                _usbDeviceArrivalWatcher?.Dispose();
+                _usbDeviceRemovalWatcher?.Dispose();
+                _mtpDeviceArrivalWatcher?.Dispose();
+                _mtpDeviceRemovalWatcher?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }
