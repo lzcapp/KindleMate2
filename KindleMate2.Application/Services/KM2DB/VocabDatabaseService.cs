@@ -126,10 +126,17 @@ namespace KindleMate2.Application.Services.KM2DB {
             try {
                 var vocabs = _vocabRepository.GetAll();
                 var lookups = _km2DbLookupRepository.GetAll();
+                var frequencyMap = lookups
+                    .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
+                    .GroupBy(l => l.WordKey!.Trim())
+                    .ToDictionary(g => g.Key, g => g.Count());
 
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.WordKey;
-                    var frequency = lookups.Count(lookupsRow => lookupsRow.WordKey?.Trim() == wordKey);
+                    if (wordKey == null) {
+                        continue;
+                    }
+                    frequencyMap.TryGetValue(wordKey, out var frequency);
                     _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
                         WordKey = wordKey,
                         Frequency = frequency,

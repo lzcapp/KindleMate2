@@ -88,20 +88,19 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.Parameters.AddWithValue("@title", title);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
-            if (!reader.Read()) {
-                return results;
+            while (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    continue;
+                }
+                results.Add(new Lookup {
+                    WordKey = wordKey,
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
+                });
             }
-            var wordKey = DatabaseHelper.GetSafeString(reader, 0);
-            if (string.IsNullOrWhiteSpace(wordKey)) {
-                throw new InvalidOperationException();
-            }
-            results.Add(new Lookup {
-                WordKey = wordKey,
-                Usage = DatabaseHelper.GetSafeString(reader, 1),
-                Title = DatabaseHelper.GetSafeString(reader, 2),
-                Authors = DatabaseHelper.GetSafeString(reader, 3),
-                Timestamp = DatabaseHelper.GetSafeString(reader, 4)
-            });
             return results;
         }
 
