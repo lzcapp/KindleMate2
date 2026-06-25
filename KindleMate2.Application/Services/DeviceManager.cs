@@ -9,7 +9,7 @@ namespace KindleMate2.Application.Services;
 /// <summary>
 /// Manages Kindle device detection via USB and MTP, including connection monitoring.
 /// </summary>
-public class DeviceManager : IDisposable {
+public class DeviceManager : IDeviceManager {
     private ManagementEventWatcher? _usbDeviceArrivalWatcher;
     private ManagementEventWatcher? _usbDeviceRemovalWatcher;
     private ManagementEventWatcher? _mtpDeviceArrivalWatcher;

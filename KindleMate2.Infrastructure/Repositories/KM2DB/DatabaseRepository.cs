@@ -1,8 +1,9 @@
-﻿using KindleMate2.Infrastructure.Helpers;
+﻿using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class DatabaseRepository(string connectionString) {
+    public class DatabaseRepository(string connectionString) : IDatabaseRepository {
         public bool IsDatabaseEmpty() {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();

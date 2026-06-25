@@ -8,17 +8,17 @@ namespace KindleMate2.Application.Services;
 /// <summary>
 /// Manages data export operations: Markdown export and sync back to Kindle device.
 /// </summary>
-public class ExportManager {
-    private readonly ClippingService _clippingService;
-    private readonly LookupService _lookupService;
-    private readonly OriginalClippingLineService _originalClippingLineService;
-    private readonly DeviceManager _deviceManager;
+public class ExportManager : IExportManager {
+    private readonly IClippingService _clippingService;
+    private readonly ILookupService _lookupService;
+    private readonly IOriginalClippingLineService _originalClippingLineService;
+    private readonly IDeviceManager _deviceManager;
     private readonly string _programPath;
     private readonly string _backupPath;
     private readonly string _tempPath;
 
-    public ExportManager(ClippingService clippingService, LookupService lookupService,
-        OriginalClippingLineService originalClippingLineService, DeviceManager deviceManager,
+    public ExportManager(IClippingService clippingService, ILookupService lookupService,
+        IOriginalClippingLineService originalClippingLineService, IDeviceManager deviceManager,
         string programPath, string backupPath, string tempPath) {
         _clippingService = clippingService;
         _lookupService = lookupService;

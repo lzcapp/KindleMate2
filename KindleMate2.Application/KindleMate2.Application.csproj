@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
   </ItemGroup>
 
 </Project>

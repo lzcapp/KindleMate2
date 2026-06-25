@@ -10,29 +10,27 @@ using KindleMate2.Application.Services;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
-using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Properties;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
-using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
 
 namespace KindleMate2 {
     public partial class FrmMain : Form {
-        private readonly ClippingService _clippingService;
-        private readonly LookupService _lookupService;
-        private readonly OriginalClippingLineService _originalClippingLineService;
-        private readonly SettingService _settingService;
-        private readonly VocabService _vocabService;
-        private readonly ThemeService _themeService;
-        private readonly DatabaseService _databaseService;
-        private readonly Km2DatabaseService _km2DatabaseService;
+        private readonly IClippingService _clippingService;
+        private readonly ILookupService _lookupService;
+        private readonly IOriginalClippingLineService _originalClippingLineService;
+        private readonly ISettingService _settingService;
+        private readonly IVocabService _vocabService;
+        private readonly IThemeService _themeService;
+        private readonly IDatabaseService _databaseService;
+        private readonly IKm2DatabaseService _km2DatabaseService;
 
-        private readonly DeviceManager _deviceManager;
-        private readonly ImportManager _importManager;
-        private readonly DataDisplayService _dataDisplayService;
-        private readonly ContentDetailService _contentDetailService;
-        private readonly ExportManager _exportManager;
+        private readonly IDeviceManager _deviceManager;
+        private readonly IImportManager _importManager;
+        private readonly IDataDisplayService _dataDisplayService;
+        private readonly IContentDetailService _contentDetailService;
+        private readonly IExportManager _exportManager;
 
         private readonly string _programPath, _tempPath, _backupPath, _importPath, _databaseFilePath, _versionFilePath;
 
@@ -50,30 +48,36 @@ namespace KindleMate2 {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void DestroyCaret();
 
-        public FrmMain() {
+        public FrmMain(
+            IClippingService clippingService,
+            ILookupService lookupService,
+            IOriginalClippingLineService originalClippingLineService,
+            ISettingService settingService,
+            IVocabService vocabService,
+            IThemeService themeService,
+            IDatabaseService databaseService,
+            IKm2DatabaseService km2DatabaseService,
+            IDeviceManager deviceManager,
+            IImportManager importManager,
+            IDataDisplayService dataDisplayService,
+            IContentDetailService contentDetailService,
+            IExportManager exportManager) {
             InitializeComponent();
 
-            var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
-            _clippingService = new ClippingService(clippingRepository);
+            _clippingService = clippingService;
+            _lookupService = lookupService;
+            _originalClippingLineService = originalClippingLineService;
+            _settingService = settingService;
+            _vocabService = vocabService;
+            _themeService = themeService;
+            _databaseService = databaseService;
+            _km2DatabaseService = km2DatabaseService;
 
-            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
-            _lookupService = new LookupService(lookupRepository);
-
-            var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
-            _originalClippingLineService = new OriginalClippingLineService(originalClippingLineRepository);
-
-            var settingRepository = new SettingRepository(AppConstants.ConnectionString);
-            _settingService = new SettingService(settingRepository);
-            _themeService = new ThemeService(settingRepository);
-
-            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
-            _vocabService = new VocabService(vocabRepository);
-
-            var databaseRepository = new DatabaseRepository(AppConstants.ConnectionString);
-            _databaseService = new DatabaseService(databaseRepository);
-
-            _km2DatabaseService = new Km2DatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository,
-                settingRepository, vocabRepository);
+            _deviceManager = deviceManager;
+            _importManager = importManager;
+            _dataDisplayService = dataDisplayService;
+            _contentDetailService = contentDetailService;
+            _exportManager = exportManager;
 
             _programPath = Environment.CurrentDirectory;
             _databaseFilePath = Path.Combine(_programPath, AppConstants.DatabaseFileName);
@@ -81,15 +85,6 @@ namespace KindleMate2 {
             _tempPath = Path.Combine(_programPath, AppConstants.TempPathName);
             _backupPath = Path.Combine(_programPath, AppConstants.BackupsPathName);
             _importPath = Path.Combine(_programPath, AppConstants.ImportsPathName);
-
-            _deviceManager = new DeviceManager(_versionFilePath);
-            _importManager = new ImportManager(_km2DatabaseService, _clippingService, _vocabService,
-                _originalClippingLineService, _lookupService, _importPath);
-            _dataDisplayService = new DataDisplayService(_clippingService, _originalClippingLineService,
-                _vocabService, _lookupService);
-            _contentDetailService = new ContentDetailService(_clippingService);
-            _exportManager = new ExportManager(_clippingService, _lookupService, _originalClippingLineService,
-                _deviceManager, _programPath, _backupPath, _tempPath);
 
             _selectedBook = Strings.Select_All;
             _selectedWord = Strings.Select_All;

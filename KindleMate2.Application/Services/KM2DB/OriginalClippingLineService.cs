@@ -3,7 +3,7 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class OriginalClippingLineService(IOriginalClippingLineRepository repository) {
+    public class OriginalClippingLineService(IOriginalClippingLineRepository repository) : IOriginalClippingLineService {
         public OriginalClippingLine? GetOriginalClippingLineByKey(string key) {
             return repository.GetByKey(key);
         }

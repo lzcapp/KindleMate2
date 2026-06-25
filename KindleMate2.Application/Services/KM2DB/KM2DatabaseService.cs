@@ -13,7 +13,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         ILookupRepository lookupRepository,
         IOriginalClippingLineRepository originalClippingLineRepository,
         ISettingRepository settingRepository,
-        IVocabRepository vocabRepository) {
+        IVocabRepository vocabRepository) : IKm2DatabaseService {
         public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
             try {
                 List<string> lines = [

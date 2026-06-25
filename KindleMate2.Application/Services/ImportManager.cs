@@ -12,16 +12,16 @@ namespace KindleMate2.Application.Services;
 /// <summary>
 /// Centralizes all data import operations: Kindle clippings, Kindle words, and KM database imports.
 /// </summary>
-public class ImportManager {
-    private readonly Km2DatabaseService _km2DatabaseService;
-    private readonly ClippingService _clippingService;
-    private readonly VocabService _vocabService;
-    private readonly OriginalClippingLineService _originalClippingLineService;
-    private readonly LookupService _lookupService;
+public class ImportManager : IImportManager {
+    private readonly IKm2DatabaseService _km2DatabaseService;
+    private readonly IClippingService _clippingService;
+    private readonly IVocabService _vocabService;
+    private readonly IOriginalClippingLineService _originalClippingLineService;
+    private readonly ILookupService _lookupService;
     private readonly string _importPath;
 
-    public ImportManager(Km2DatabaseService km2DatabaseService, ClippingService clippingService, VocabService vocabService,
-        OriginalClippingLineService originalClippingLineService, LookupService lookupService, string importPath) {
+    public ImportManager(IKm2DatabaseService km2DatabaseService, IClippingService clippingService, IVocabService vocabService,
+        IOriginalClippingLineService originalClippingLineService, ILookupService lookupService, string importPath) {
         _km2DatabaseService = km2DatabaseService;
         _clippingService = clippingService;
         _vocabService = vocabService;

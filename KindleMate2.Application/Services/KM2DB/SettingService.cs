@@ -2,7 +2,7 @@
 using KindleMate2.Domain.Interfaces.KM2DB;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class SettingService(ISettingRepository repository) {
+    public class SettingService(ISettingRepository repository) : ISettingService {
         public Setting? GetSettingByName(string name) {
             return repository.GetByName(name);
         }

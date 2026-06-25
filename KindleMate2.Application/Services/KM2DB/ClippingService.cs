@@ -8,7 +8,7 @@ using KindleMate2.Shared.Entities;
 using Markdig;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class ClippingService(IClippingRepository repository) {
+    public class ClippingService(IClippingRepository repository) : IClippingService {
         public Clipping? GetClippingByKey(string key) {
             return repository.GetByKey(key);
         }

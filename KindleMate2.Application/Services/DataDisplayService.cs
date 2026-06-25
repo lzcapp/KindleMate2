@@ -12,19 +12,19 @@ namespace KindleMate2.Application.Services;
 /// Manages data querying, display data preparation, and tree/grid population for the main UI.
 /// Separates data retrieval and formatting from UI controls.
 /// </summary>
-public class DataDisplayService {
-    private readonly ClippingService _clippingService;
-    private readonly OriginalClippingLineService _originalClippingLineService;
-    private readonly VocabService _vocabService;
-    private readonly LookupService _lookupService;
+public class DataDisplayService : IDataDisplayService {
+    private readonly IClippingService _clippingService;
+    private readonly IOriginalClippingLineService _originalClippingLineService;
+    private readonly IVocabService _vocabService;
+    private readonly ILookupService _lookupService;
 
     public List<Clipping> Clippings { get; private set; } = [];
     public List<OriginalClippingLine> OriginClippings { get; private set; } = [];
     public List<Vocab> Vocabs { get; private set; } = [];
     public List<Lookup> Lookups { get; private set; } = [];
 
-    public DataDisplayService(ClippingService clippingService, OriginalClippingLineService originalClippingLineService,
-        VocabService vocabService, LookupService lookupService) {
+    public DataDisplayService(IClippingService clippingService, IOriginalClippingLineService originalClippingLineService,
+        IVocabService vocabService, ILookupService lookupService) {
         _clippingService = clippingService;
         _originalClippingLineService = originalClippingLineService;
         _vocabService = vocabService;

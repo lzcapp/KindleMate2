@@ -8,7 +8,7 @@ using System.Text;
 using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class LookupService(ILookupRepository repository) {
+    public class LookupService(ILookupRepository repository) : ILookupService {
         public Lookup? GetLookupByWordKey(string wordKey) {
             return repository.GetByWordKey(wordKey);
         }

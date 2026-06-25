@@ -11,10 +11,10 @@ namespace KindleMate2.Application.Services;
 /// Prepares content detail display data for the bottom detail panel.
 /// Handles lookup/clipping aggregation, word highlighting, and book title formatting.
 /// </summary>
-public class ContentDetailService {
-    private readonly ClippingService _clippingService;
+public class ContentDetailService : IContentDetailService {
+    private readonly IClippingService _clippingService;
 
-    public ContentDetailService(ClippingService clippingService) {
+    public ContentDetailService(IClippingService clippingService) {
         _clippingService = clippingService;
     }
 
