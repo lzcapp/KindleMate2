@@ -23,7 +23,10 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             // Check each table for rows
             foreach (var table in tableNames) {
-                using var cmdCount = new SqliteCommand($"SELECT COUNT(*) FROM {table};", connection);
+                // Sanity check: skip invalid table names to prevent SQL injection
+                if (string.IsNullOrWhiteSpace(table) || table.Contains('"'))
+                    continue;
+                using var cmdCount = new SqliteCommand($"SELECT COUNT(*) FROM \"{table}\";", connection);
                 if (Convert.ToInt32(cmdCount.ExecuteScalar()) > 0) {
                     return false; // Found data in a table, database is not empty
                 }
