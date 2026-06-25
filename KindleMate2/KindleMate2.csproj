@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateResourceWarnOnBinaryFormatterUse>false</GenerateResourceWarnOnBinaryFormatterUse>
 		<ApplicationIcon>bookmark.ico</ApplicationIcon>
 		<StartupObject>KindleMate2.Program</StartupObject>
 		<PackageIcon>bookmark.ico</PackageIcon>
@@ -229,7 +230,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
+	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" SetTargetFramework="TargetFramework=net8.0-windows" />
 	  <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />

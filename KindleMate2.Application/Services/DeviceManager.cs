@@ -2,6 +2,8 @@ using System.Management;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Entities;
+using KindleMate2.Infrastructure.Helpers;
 using MediaDevices;
 
 namespace KindleMate2.Application.Services;
@@ -53,22 +55,25 @@ public class DeviceManager : IDeviceManager {
         _mtpDeviceRemovalWatcher.Start();
     }
 
+    private readonly object _lockObj = new object();
+
     public bool IsKindleConnected() {
-        try {
-            var isConnected = _deviceType switch {
-                Device.Type.USB => HandleUsbDevice(),
-                Device.Type.MTP => HandleMtpDevice(),
-                _ => HandleUsbDevice() || HandleMtpDevice()
-            };
+        lock (_lockObj) {
+            try {
+                var isConnected = HandleUsbDevice();
+            if (!isConnected) {
+                isConnected = HandleMtpDevice();
+            }
 
             if (!isConnected) {
                 _driveLetter = string.Empty;
             }
 
             return isConnected;
-        } catch (Exception ex) {
-            Console.WriteLine($"[IsKindleConnected] {ex}");
-            return false;
+            } catch (Exception ex) {
+                Console.WriteLine($"[IsKindleConnected] {ex}");
+                return false;
+            }
         }
     }
 
@@ -91,31 +96,30 @@ public class DeviceManager : IDeviceManager {
     }
 
     private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
-        _deviceType = Device.Type.USB;
         DeviceEventHandler(sender);
     }
 
     private void MtpDeviceEventHandler(object sender, EventArrivedEventArgs e) {
-        _deviceType = Device.Type.MTP;
         DeviceEventHandler(sender);
     }
 
     private void DeviceRemovedEventHandler(object sender, EventArrivedEventArgs e) {
-        var wasConnected = IsConnected;
-        _driveLetter = string.Empty;
-        if (wasConnected) {
-            ConnectionChanged?.Invoke(false);
+        DeviceEventHandler(sender);
+    }
+
+    private System.Threading.Timer? _debounceTimer;
+
+    private void DeviceEventHandler(object sender) {
+        if (_debounceTimer == null) {
+            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, 2500, System.Threading.Timeout.Infinite);
+        } else {
+            _debounceTimer.Change(2500, System.Threading.Timeout.Infinite);
         }
     }
 
-    private void DeviceEventHandler(object sender) {
+    private void OnDebounceTimerElapsed(object? state) {
         try {
-            if (sender is not ManagementEventWatcher watcher) {
-                return;
-            }
-            watcher.Stop();
             IsKindleConnected();
-            watcher.Start();
             ConnectionChanged?.Invoke(IsConnected);
         } catch (Exception ex) {
             Console.WriteLine($"[HandleUsbDeviceEvent] {ex}");

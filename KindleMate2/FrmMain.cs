@@ -40,7 +40,7 @@ namespace KindleMate2 {
         private int _selectedTreeIndex, _selectedDataGridIndex;
         private bool _isDarkTheme;
 
-        [LibraryImport("User32.dll", EntryPoint = "HideCaretA")]
+        [LibraryImport("User32.dll", EntryPoint = "HideCaret")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void HideCaret(IntPtr hWnd);
 
@@ -265,6 +265,19 @@ namespace KindleMate2 {
 
             _deviceManager.StartWatching();
             OnDeviceConnectionChanged(_deviceManager.IsConnected);
+            dataGridView.CellFormatting += DataGridView_CellFormatting;
+        }
+
+        private void DataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e) {
+            if (e.ColumnIndex >= 0 && dataGridView.Columns[e.ColumnIndex].Name == Columns.BriefType && e.Value != null) {
+                if (e.Value.ToString() == ((int)BriefType.Highlight).ToString()) {
+                    e.Value = Strings.Clipping;
+                    e.FormattingApplied = true;
+                } else if (e.Value.ToString() == ((int)BriefType.Note).ToString()) {
+                    e.Value = Strings.Note;
+                    e.FormattingApplied = true;
+                }
+            }
         }
 
         #endregion
@@ -386,8 +399,14 @@ namespace KindleMate2 {
                 dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
             }
+            if (dataGridView.Columns.Contains(Columns.BriefType)) {
+                dataGridView.Columns[Columns.BriefType]!.HeaderText = Strings.Type_Column;
+                dataGridView.Columns[Columns.BriefType]!.Visible = true;
+                dataGridView.Columns[Columns.BriefType]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                dataGridView.Columns[Columns.BriefType]!.DisplayIndex = 5;
+            }
             // Hide internal columns
-            foreach (var col in new[] { Columns.Key, Columns.BriefType, Columns.ClippingTypeLocation,
+            foreach (var col in new[] { Columns.Key, Columns.ClippingTypeLocation,
                          Columns.Read, Columns.ClippingImportDate, Columns.Tag, Columns.Sync,
                          Columns.NewBookName, Columns.ColorRgb }) {
                 if (dataGridView.Columns.Contains(col)) dataGridView.Columns[col]!.Visible = false;
@@ -527,8 +546,7 @@ namespace KindleMate2 {
                     return;
                 }
                 dataGridView.DataSource = _dataDisplayService.ClippingsToDataTable();
-                dataGridView.Columns[Columns.BookName]!.Visible = true;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                ConfigureClippingColumns(showBook: true, showAuthor: true);
                 if (dataGridView.Columns.Contains(Columns.ClippingDate))
                     dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
             } else {
@@ -540,11 +558,9 @@ namespace KindleMate2 {
                 }
                 dataGridView.DataSource = _dataDisplayService.ClippingsToDataTable(filtered);
                 ShowBookCountLabel(Strings.Total_Clippings, filtered.Count, Strings.X_Clippings, Resources.open_book);
-                dataGridView.Columns[Columns.BookName]!.Visible = false;
-                dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
-                dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                ConfigureClippingColumns(showBook: false, showAuthor: false);
+                if (dataGridView.Columns.Contains(Columns.PageNumber))
+                    dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
             }
         }
 
@@ -560,15 +576,7 @@ namespace KindleMate2 {
                     return;
                 }
                 dataGridView.DataSource = _dataDisplayService.LookupsToDataTable();
-                dataGridView.Columns[Columns.Word]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                dataGridView.Columns[Columns.Frequency]!.Visible = true;
-                dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                ConfigureVocabColumns(showWord: true);
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
@@ -580,14 +588,7 @@ namespace KindleMate2 {
                 }
                 dataGridView.DataSource = _dataDisplayService.LookupsToDataTable(filtered);
                 ShowBookCountLabel(Strings.Totally_Vocabs, filtered.Count, Strings.X_Lookups, Resources.input_latin_uppercase);
-                dataGridView.Columns[Columns.Word]!.Visible = false;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                ConfigureVocabColumns(showWord: false);
             }
         }
 
@@ -818,11 +819,13 @@ namespace KindleMate2 {
 
         private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
             try {
-                DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
-                if (hitTestInfo.RowIndex < 0) return;
-                dataGridView.ClearSelection();
-                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
-                _selectedDataGridIndex = hitTestInfo.RowIndex;
+                if (e.Button == MouseButtons.Right) {
+                    DataGridView.HitTestInfo hitTestInfo = dataGridView.HitTest(e.X, e.Y);
+                    if (hitTestInfo.RowIndex >= 0 && !dataGridView.Rows[hitTestInfo.RowIndex].Selected) {
+                        dataGridView.ClearSelection();
+                        dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+                    }
+                }
             } catch (Exception ex) {
                 Console.WriteLine(ex);
             }
@@ -837,7 +840,18 @@ namespace KindleMate2 {
             if (dataGridView.SelectedRows.Count <= 0) return;
 
             var bookName = lblBook.Text;
-            var content = lblContent.Text;
+            var key = dataGridView.SelectedRows[0].Cells[Columns.Key].Value.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key)) return;
+
+            Clipping? clipping = _clippingService.GetClippingByKey(key);
+            if (clipping == null) return;
+
+            if (clipping.BriefType != (long)BriefType.Note) {
+                MessageBox(Strings.Edit_Notes_Only, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var content = clipping.Content;
 
             var fields = new List<KeyValue> {
                 new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
@@ -849,9 +863,6 @@ namespace KindleMate2 {
                 if (string.IsNullOrWhiteSpace(fValue)) e.Cancel = true;
             };
 
-            var key = dataGridView.SelectedRows[0].Cells[Columns.Key].Value.ToString() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(key)) return;
-
             if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, string.Empty, ref fields,
                     MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) return;
 
@@ -859,11 +870,13 @@ namespace KindleMate2 {
             if (string.IsNullOrWhiteSpace(dialogContent)) return;
             if (dialogContent.Equals(content)) return;
 
-            Clipping? clipping = _clippingService.GetClippingByKey(key);
-            if (clipping == null) return;
-
             clipping.Content = dialogContent;
             if (_clippingService.UpdateClipping(clipping)) {
+                var originalLine = _originalClippingLineService.GetOriginalClippingLineByKey(key);
+                if (originalLine != null) {
+                    originalLine.Line4 = dialogContent;
+                    _originalClippingLineService.UpdateOriginalClippingLine(originalLine);
+                }
                 MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -902,6 +915,7 @@ namespace KindleMate2 {
                     var key = row.Cells[Columns.Key].Value.ToString() ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(key)) return;
                     if (_clippingService.DeleteClipping(key)) {
+                        _originalClippingLineService.DeleteOriginalClippingLine(key);
                         dataGridView.Rows.Remove(row);
                     } else {
                         MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -954,14 +968,23 @@ namespace KindleMate2 {
             if (treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
                 var result = MessageBox(Strings.Confirm_Clear_Clippings, Strings.Confirm,
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (result == DialogResult.Yes) _clippingService.DeleteAllClippings();
+                if (result == DialogResult.Yes) {
+                    _clippingService.DeleteAllClippings();
+                    _originalClippingLineService.DeleteAllOriginalClippingLines();
+                }
             } else {
                 var result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm,
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result == DialogResult.Yes) {
                     var bookname = treeViewBooks.SelectedNode.Text;
                     var clippings = _clippingService.GetClippingsByBookName(bookname);
-                    var deletedCount = clippings.Count(clipping => _clippingService.DeleteClipping(clipping.Key));
+                    var deletedCount = clippings.Count(clipping => {
+                        if (_clippingService.DeleteClipping(clipping.Key)) {
+                            _originalClippingLineService.DeleteOriginalClippingLine(clipping.Key);
+                            return true;
+                        }
+                        return false;
+                    });
                     if (deletedCount == 0)
                         MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     _selectedBook = Strings.Select_All;
@@ -1166,6 +1189,7 @@ namespace KindleMate2 {
                 var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
 
                 if (!Directory.Exists(_backupPath)) Directory.CreateDirectory(_backupPath);
+                if (!Directory.Exists(backupClippingsPath)) Directory.CreateDirectory(backupClippingsPath);
 
                 var backupClippingsFilePath = Path.Combine(backupClippingsPath,
                     "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
@@ -1597,14 +1621,6 @@ namespace KindleMate2 {
                 Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetAutoUpdater), e));
                 return false;
             }
-        }
-
-        protected override void Dispose(bool disposing) {
-            if (disposing) {
-                _deviceManager?.Dispose();
-                components?.Dispose();
-            }
-            base.Dispose(disposing);
         }
 
         #endregion

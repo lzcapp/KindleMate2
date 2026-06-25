@@ -1,5 +1,6 @@
 namespace KindleMate2.Application.Services;
 
+using KindleMate2.Shared.Entities;
 public interface IDeviceManager : IDisposable {
     Device.Type DeviceType { get; }
     string DriveLetter { get; }

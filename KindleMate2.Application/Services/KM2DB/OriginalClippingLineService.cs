@@ -1,4 +1,4 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Shared.Entities;
 
@@ -36,6 +36,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             repository.Delete(key);
         }
 
+        public void DeleteAllOriginalClippingLines() {
+            repository.DeleteAll();
+        }
+
         public bool Export(string filePath, string fileName, out Exception? exception) {
             try {
                 var originalClippingLines = GetAllOriginalClippingLines();
@@ -55,9 +59,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
                     writer.WriteLine(originalClippingLine.Line1);
                     writer.WriteLine(originalClippingLine.Line2);
-                    writer.WriteLine(originalClippingLine.Line3);
+                    writer.WriteLine(originalClippingLine.Line3 ?? string.Empty);
                     writer.WriteLine(originalClippingLine.Line4);
-                    writer.WriteLine(originalClippingLine.Line5);
+                    writer.WriteLine(originalClippingLine.Line5 ?? "==========");
                 }
 
                 exception = null;
