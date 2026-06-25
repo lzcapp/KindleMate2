@@ -98,7 +98,7 @@ public class DataDisplayService : IDataDisplayService {
     /// Gets lookups filtered by word key suffix.
     /// </summary>
     public List<Lookup> GetLookupsByWordKeySuffix(string wordKeySuffix) {
-        return Lookups.Where(row => row.WordKey?[3..] == wordKeySuffix).ToList();
+        return Lookups.Where(row => row.WordKey?.Length >= 3 && row.WordKey[3..] == wordKeySuffix).ToList();
     }
 
     /// <summary>
