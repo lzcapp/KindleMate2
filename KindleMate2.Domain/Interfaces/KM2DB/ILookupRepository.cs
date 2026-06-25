@@ -19,6 +19,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool Add(Lookup lookup);
 
+        int Add(List<Lookup> lookups);
+
         bool Update(Lookup lookup);
 
         bool Delete(string wordKey);

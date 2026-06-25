@@ -31,9 +31,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var bookInfos = _bookInfoRepository.GetAll();
 
                 var lookupCount = lookups.Count;
-                var insertedLookupCount = 0;
                 var insertedVocabCount = 0;
+                var insertedLookupCount = 0;
+
+                var bookInfoMap = bookInfos.ToDictionary(b => b.Id ?? string.Empty, StringComparer.OrdinalIgnoreCase);
                 
+                var newVocabs = new List<Vocab>();
                 foreach (Word item in words) {
                     var id = item.Id;
                     var word = item.WordText;
@@ -41,7 +44,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var category = item.Category;
                     var timestamp = item.Timestamp;
 
-                    if (timestamp == null) {
+                    if (timestamp == null || word == null) {
                         continue;
                     }
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
@@ -51,7 +54,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     if (_vocabRepository.GetById(word + timestamp) != null) {
                         continue;
                     }
-                    var isAdded = word != null && _vocabRepository.Add(new Vocab {
+                    newVocabs.Add(new Vocab {
                         Id = word + timestamp,
                         WordKey = id,
                         Word = word,
@@ -60,11 +63,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Timestamp = formattedDateTime,
                         Frequency = 0
                     });
-                    if (isAdded) {
-                        insertedVocabCount += 1;
-                    }
+                }
+                if (newVocabs.Count > 0) {
+                    insertedVocabCount = _vocabRepository.Add(newVocabs);
                 }
 
+                var newLookups = new List<Domain.Entities.KM2DB.Lookup>();
                 foreach (Lookup item in lookups) {
                     var wordKey = item.WordKey;
                     var bookKey = item.BookKey;
@@ -73,9 +77,9 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     var title = string.Empty;
                     var authors = string.Empty;
-                    foreach (BookInfo? bookInfoRow in from bookInfoRow in bookInfos let id = bookInfoRow.Id let guid = bookInfoRow.Guid where id == bookKey || guid == bookKey select bookInfoRow) {
-                        title = bookInfoRow.Title;
-                        authors = bookInfoRow.Authors;
+                    if (bookKey != null && bookInfoMap.TryGetValue(bookKey, out var bookInfo)) {
+                        title = bookInfo.Title;
+                        authors = bookInfo.Authors;
                     }
 
                     if (timestamp == null) {
@@ -88,16 +92,16 @@ namespace KindleMate2.Application.Services.KM2DB {
                     if (_km2DbLookupRepository.GetByTimestamp(formattedDateTime).Count != 0) {
                         continue;
                     }
-                    var isAdded = _km2DbLookupRepository.Add(new Domain.Entities.KM2DB.Lookup {
+                    newLookups.Add(new Domain.Entities.KM2DB.Lookup {
                         WordKey = wordKey,
                         Usage = usage,
                         Title = title,
                         Authors = authors,
                         Timestamp = formattedDateTime
                     });
-                    if (isAdded) {
-                        insertedLookupCount += 1;
-                    }
+                }
+                if (newLookups.Count > 0) {
+                    insertedLookupCount = _km2DbLookupRepository.Add(newLookups);
                 }
 
                 UpdateFrequency();

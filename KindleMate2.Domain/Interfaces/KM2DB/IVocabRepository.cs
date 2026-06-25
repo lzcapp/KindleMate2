@@ -15,6 +15,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool Add(Vocab vocab);
 
+        int Add(List<Vocab> vocabs);
+
         bool Update(Vocab vocab);
 
         bool UpdateFrequencyByWordKey(Vocab vocab);

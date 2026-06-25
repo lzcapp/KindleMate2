@@ -191,6 +191,32 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public int Add(List<Lookup> lookups) {
+            var count = 0;
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try {
+                foreach (Lookup lookup in lookups) {
+                    var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection, transaction);
+                    cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@authors", lookup.Authors ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp ?? (object)DBNull.Value);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+                transaction.Commit();
+            } catch {
+                transaction.Rollback();
+                throw;
+            }
+            return count;
+        }
+
         public bool Update(Lookup lookup) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();

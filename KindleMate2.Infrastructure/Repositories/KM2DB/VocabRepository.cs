@@ -149,6 +149,37 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public int Add(List<Vocab> vocabs) {
+            var count = 0;
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try {
+                foreach (Vocab vocab in vocabs) {
+                    var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection, transaction);
+                    cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@stem", vocab.Stem ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@category", vocab.Category ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@translation", vocab.Translation ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@frequency", vocab.Frequency ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@sync", vocab.Sync ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb ?? (object)DBNull.Value);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+                transaction.Commit();
+            } catch {
+                transaction.Rollback();
+                throw;
+            }
+            return count;
+        }
+
         public bool Update(Vocab vocab) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
