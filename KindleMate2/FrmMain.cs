@@ -846,11 +846,6 @@ namespace KindleMate2 {
             Clipping? clipping = _clippingService.GetClippingByKey(key);
             if (clipping == null) return;
 
-            if (clipping.BriefType != (long)BriefType.Note) {
-                MessageBox(Strings.Edit_Notes_Only, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             var content = clipping.Content;
 
             var fields = new List<KeyValue> {
