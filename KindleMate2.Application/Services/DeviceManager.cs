@@ -103,11 +103,7 @@ public class DeviceManager : IDeviceManager {
     }
 
     private void DeviceRemovedEventHandler(object sender, EventArrivedEventArgs e) {
-        var wasConnected = IsConnected;
-        _driveLetter = string.Empty;
-        if (wasConnected) {
-            ConnectionChanged?.Invoke(false);
-        }
+        DeviceEventHandler(sender);
     }
 
     private void DeviceEventHandler(object sender) {
@@ -116,6 +112,7 @@ public class DeviceManager : IDeviceManager {
                 return;
             }
             watcher.Stop();
+            System.Threading.Thread.Sleep(1500);
             IsKindleConnected();
             watcher.Start();
             ConnectionChanged?.Invoke(IsConnected);

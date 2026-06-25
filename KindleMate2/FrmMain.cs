@@ -400,7 +400,7 @@ namespace KindleMate2 {
                 dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
             }
             if (dataGridView.Columns.Contains(Columns.BriefType)) {
-                dataGridView.Columns[Columns.BriefType]!.HeaderText = "类型";
+                dataGridView.Columns[Columns.BriefType]!.HeaderText = Strings.Type_Column;
                 dataGridView.Columns[Columns.BriefType]!.Visible = true;
                 dataGridView.Columns[Columns.BriefType]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 dataGridView.Columns[Columns.BriefType]!.DisplayIndex = 5;
@@ -847,7 +847,7 @@ namespace KindleMate2 {
             if (clipping == null) return;
 
             if (clipping.BriefType != (long)BriefType.Note) {
-                MessageBox(Strings.Note + " Only", Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox(Strings.Edit_Notes_Only, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
