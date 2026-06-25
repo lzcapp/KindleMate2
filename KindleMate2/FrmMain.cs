@@ -313,11 +313,8 @@ namespace KindleMate2 {
                 watcher.Stop();
                 IsKindleConnected();
                 watcher.Start();
-            } catch (Exception) {
-                // TODO
-                // Device event handling failed - log but don't crash the application
-                // The device monitoring can continue with reduced functionality
-                // Consider implementing proper logging here instead of console output
+            } catch (Exception ex) {
+                Console.WriteLine($"[HandleUsbDeviceEvent] {ex}");
             }
         }
 
@@ -413,6 +410,7 @@ namespace KindleMate2 {
                 CountRows();
             } catch (Exception ex) {
                 Console.WriteLine($"[RefreshData] {ex}");
+                MessageBox(MessageHelper.BuildMessage(Strings.Failed, ex), Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
             }
         }
 
@@ -1532,8 +1530,8 @@ namespace KindleMate2 {
                 }
 
                 menuKindle.Enabled = isConnected;
-            } catch (Exception e) {
-                Console.WriteLine(e);
+            } catch (Exception ex) {
+                Console.WriteLine($"[IsKindleConnected] {ex}");
             }
         }
 
@@ -2190,6 +2188,7 @@ namespace KindleMate2 {
                 return _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookname);
             } catch (Exception ex) {
                 Console.WriteLine($"[ClippingsToMarkdown] {ex}");
+                MessageBox(MessageHelper.BuildMessage(Strings.Failed, ex), Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
                 return false;
             }
         }
@@ -2199,6 +2198,7 @@ namespace KindleMate2 {
                 return _lookupService.LookupsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), word);
             } catch (Exception ex) {
                 Console.WriteLine($"[VocabsToMarkdown] {ex}");
+                MessageBox(MessageHelper.BuildMessage(Strings.Failed, ex), Strings.Error, MessageBoxButtons.OK, MsgIcon.Error);
                 return false;
             }
         }

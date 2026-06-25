@@ -110,55 +110,51 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool ClippingsToMarkdown(string filePath, string bookName = "") {
-            try {
-                string filename;
+            string filename;
 
-                var listClippings = GetAllClippings();
+            var listClippings = GetAllClippings();
 
-                var markdown = new StringBuilder();
+            var markdown = new StringBuilder();
 
-                markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
+            markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
+
+            markdown.AppendLine();
+
+            if (string.IsNullOrWhiteSpace(bookName) || bookName.Equals(Strings.Select_All)) {
+                filename = "Clippings";
+                
+                markdown.AppendLine("[TOC]");
 
                 markdown.AppendLine();
 
-                if (string.IsNullOrWhiteSpace(bookName) || bookName.Equals(Strings.Select_All)) {
-                    filename = "Clippings";
-                    
-                    markdown.AppendLine("[TOC]");
-
-                    markdown.AppendLine();
-
-                    foreach (var name in GetBookNamesList()) {
-                        bookName = name;
-                        var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
-                        markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
-                    }
-                } else {
-                    filename = StringHelper.SanitizeFilename(bookName);
-
+                foreach (var name in GetBookNamesList()) {
+                    bookName = name;
                     var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
                     markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
                 }
+            } else {
+                filename = StringHelper.SanitizeFilename(bookName);
 
-                if (!Directory.Exists(filePath)) {
-                    Directory.CreateDirectory(filePath);
-                }
-
-                File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
-
-                var htmlContent = AppConstants.HtmlBegin;
-                MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
-                htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
-                htmlContent += AppConstants.HtmlEnd;
-
-                File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
-
-                File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
-
-                return true;
-            } catch (Exception) {
-                return false;
+                var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+                markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
             }
+
+            if (!Directory.Exists(filePath)) {
+                Directory.CreateDirectory(filePath);
+            }
+
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
+
+            var htmlContent = AppConstants.HtmlBegin;
+            MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
+            htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
+            htmlContent += AppConstants.HtmlEnd;
+
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
+
+            File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
+
+            return true;
         }
     }
 }

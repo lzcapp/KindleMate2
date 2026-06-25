@@ -6,25 +6,20 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class SettingRepository(string connectionString) : ISettingRepository {
         public Setting? GetByName(string name) {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("SELECT name, value FROM settings WHERE name = @name", connection);
-                cmd.Parameters.AddWithValue("@name", name);
+            var cmd = new SqliteCommand("SELECT name, value FROM settings WHERE name = @name", connection);
+            cmd.Parameters.AddWithValue("@name", name);
 
-                using SqliteDataReader reader = cmd.ExecuteReader();
-                if (reader.Read()) {
-                    return new Setting {
-                        Name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                        value = DatabaseHelper.GetSafeString(reader, 1)
-                    };
-                }
-                return null;
-            } catch (Exception ex) {
-                Console.WriteLine(ex);
-                return null;
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            if (reader.Read()) {
+                return new Setting {
+                    Name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                    value = DatabaseHelper.GetSafeString(reader, 1)
+                };
             }
+            return null;
         }
 
         public List<Setting> GetAll() {
@@ -50,76 +45,50 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public int GetCount() {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("SELECT COUNT(*) FROM settings", connection);
-                var result = cmd.ExecuteScalar();
+            var cmd = new SqliteCommand("SELECT COUNT(*) FROM settings", connection);
+            var result = cmd.ExecuteScalar();
 
-                // ExecuteScalar returns object, so convert to int
-                return Convert.ToInt32(result);
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return 0;
-            }
+            return Convert.ToInt32(result);
         }
 
         public bool Add(Setting setting) {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("INSERT INTO settings (name, value) VALUES (@name, @value)", connection);
-                cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
-                return cmd.ExecuteNonQuery() > 0;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return false;
-            }
+            var cmd = new SqliteCommand("INSERT INTO settings (name, value) VALUES (@name, @value)", connection);
+            cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         public bool Update(Setting setting) {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("UPDATE settings SET value = @value WHERE name = @name", connection);
-                cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
-                return cmd.ExecuteNonQuery() > 0;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return false;
-            }
+            var cmd = new SqliteCommand("UPDATE settings SET value = @value WHERE name = @name", connection);
+            cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         public bool Delete(string name) {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("DELETE FROM settings WHERE name = @name", connection);
-                cmd.Parameters.AddWithValue("@name", name);
-                return cmd.ExecuteNonQuery() > 0;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return false;
-            }
+            var cmd = new SqliteCommand("DELETE FROM settings WHERE name = @name", connection);
+            cmd.Parameters.AddWithValue("@name", name);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         public bool DeleteAll() {
-            try {
-                using var connection = new SqliteConnection(connectionString);
-                connection.Open();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-                var cmd = new SqliteCommand("DELETE FROM settings", connection);
-                return cmd.ExecuteNonQuery() > 0;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                return false;
-            }
+            var cmd = new SqliteCommand("DELETE FROM settings", connection);
+            return cmd.ExecuteNonQuery() > 0;
         }
     }
 }

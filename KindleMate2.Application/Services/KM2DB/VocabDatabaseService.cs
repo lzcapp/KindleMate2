@@ -100,9 +100,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                 }
 
-                if (!UpdateFrequency(out Exception exception)) {
-                    throw exception;
-                }
+                UpdateFrequency();
 
                 result = new Dictionary<string, string> {
                     { AppConstants.LookupCount, lookupCount.ToString() },
@@ -121,33 +119,26 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
 
-        private bool UpdateFrequency(out Exception exception) {
-            exception = new Exception();
-            try {
-                var vocabs = _vocabRepository.GetAll();
-                var lookups = _km2DbLookupRepository.GetAll();
-                var frequencyMap = lookups
-                    .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
-                    .GroupBy(l => l.WordKey!.Trim())
-                    .ToDictionary(g => g.Key, g => g.Count());
+        private void UpdateFrequency() {
+            var vocabs = _vocabRepository.GetAll();
+            var lookups = _km2DbLookupRepository.GetAll();
+            var frequencyMap = lookups
+                .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
+                .GroupBy(l => l.WordKey!.Trim())
+                .ToDictionary(g => g.Key, g => g.Count());
 
-                foreach (Vocab vocab in vocabs) {
-                    var wordKey = vocab.WordKey;
-                    if (wordKey == null) {
-                        continue;
-                    }
-                    frequencyMap.TryGetValue(wordKey, out var frequency);
-                    _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
-                        WordKey = wordKey,
-                        Frequency = frequency,
-                        Id = string.Empty,
-                        Word = string.Empty
-                    });
+            foreach (Vocab vocab in vocabs) {
+                var wordKey = vocab.WordKey;
+                if (wordKey == null) {
+                    continue;
                 }
-                return true;
-            } catch (Exception e) {
-                exception = e;
-                return false;
+                frequencyMap.TryGetValue(wordKey, out var frequency);
+                _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
+                    WordKey = wordKey,
+                    Frequency = frequency,
+                    Id = vocab.Id,
+                    Word = vocab.Word
+                });
             }
         }
     }

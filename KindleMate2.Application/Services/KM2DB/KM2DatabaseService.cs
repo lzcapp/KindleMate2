@@ -279,31 +279,26 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool UpdateFrequency() {
-            try {
-                var lookups = lookupRepository.GetAll();
-                var frequencyMap = lookups
-                    .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
-                    .GroupBy(l => l.WordKey!.Trim())
-                    .ToDictionary(g => g.Key, g => g.Count());
+            var lookups = lookupRepository.GetAll();
+            var frequencyMap = lookups
+                .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
+                .GroupBy(l => l.WordKey!.Trim())
+                .ToDictionary(g => g.Key, g => g.Count());
 
-                var vocabs = vocabRepository.GetAll();
-                foreach (Vocab vocab in vocabs) {
-                    if (vocab.WordKey == null) {
-                        continue;
-                    }
-                    frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
-                    vocabRepository.UpdateFrequencyByWordKey(new Vocab {
-                        WordKey = vocab.WordKey,
-                        Frequency = frequency,
-                        Id = string.Empty,
-                        Word = string.Empty, // frequency will be 0 if key not found
-                    });
+            var vocabs = vocabRepository.GetAll();
+            foreach (Vocab vocab in vocabs) {
+                if (vocab.WordKey == null) {
+                    continue;
                 }
-                return true;
-            } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(UpdateFrequency), e));
-                return false;
+                frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
+                vocabRepository.UpdateFrequencyByWordKey(new Vocab {
+                    WordKey = vocab.WordKey,
+                    Frequency = frequency,
+                    Id = vocab.Id,
+                    Word = vocab.Word,
+                });
             }
+            return true;
         }
         
         public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result) {

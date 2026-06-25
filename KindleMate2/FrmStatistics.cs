@@ -82,104 +82,94 @@ namespace KindleMate2 {
         }
 
         private bool SetBookTab() {
-            try {
-                if (_clippings.Count == 0) {
-                    return false;
-                }
-
-                var validClippings = _clippings.Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => ParseDateTime(row.ClippingDate!)).ToList();
-
-                var listClippingsByDate = validClippings.GroupBy(date => new {
-                    date.Year,
-                    date.Month,
-                    date.Day
-                }).Select(group => new {
-                    group.Key.Year,
-                    group.Key.Month,
-                    group.Key.Day,
-                    Count = group.Count()
-                }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
-
-                foreach (var dataPoint in listClippingsByDate) {
-                    var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
-                    chartBooksHistory.Series[0].Points.AddXY(label, dataPoint.Count);
-                }
-
-                var listClippingsByHour = validClippings.GroupBy(date => date.Hour).Select(group => new {
-                    ClippingHour = group.Key,
-                    ClippingCount = group.Count()
-                }).OrderBy(x => x.ClippingHour).ToList();
-
-                foreach (var dataPoint in listClippingsByHour) {
-                    chartBooksTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
-                }
-
-                var listClippingsByWeekday = validClippings.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
-                    Weekday = group.Key,
-                    ClippingCount = group.Count()
-                }).OrderBy(x => x.Weekday).ToList();
-
-                foreach (var dataPoint in listClippingsByWeekday) {
-                    var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
-                    chartBooksWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
-                }
-
-                return true;
-            } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetBookTab), e));
+            if (_clippings.Count == 0) {
                 return false;
             }
+
+            var validClippings = _clippings.Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => ParseDateTime(row.ClippingDate!)).ToList();
+
+            var listClippingsByDate = validClippings.GroupBy(date => new {
+                date.Year,
+                date.Month,
+                date.Day
+            }).Select(group => new {
+                group.Key.Year,
+                group.Key.Month,
+                group.Key.Day,
+                Count = group.Count()
+            }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
+
+            foreach (var dataPoint in listClippingsByDate) {
+                var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
+                chartBooksHistory.Series[0].Points.AddXY(label, dataPoint.Count);
+            }
+
+            var listClippingsByHour = validClippings.GroupBy(date => date.Hour).Select(group => new {
+                ClippingHour = group.Key,
+                ClippingCount = group.Count()
+            }).OrderBy(x => x.ClippingHour).ToList();
+
+            foreach (var dataPoint in listClippingsByHour) {
+                chartBooksTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
+            }
+
+            var listClippingsByWeekday = validClippings.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
+                Weekday = group.Key,
+                ClippingCount = group.Count()
+            }).OrderBy(x => x.Weekday).ToList();
+
+            foreach (var dataPoint in listClippingsByWeekday) {
+                var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
+                chartBooksWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
+            }
+
+            return true;
         }
 
         private bool SetVocabTab() {
-            try {
-                if (_vocabs.Count == 0) {
-                    tabControl.TabPages.Remove(tabPageVocabs);
-                    return false;
-                }
-
-                var validVocabs = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
-
-                var listVocabsByDate = validVocabs.GroupBy(date => new {
-                    date.Year,
-                    date.Month,
-                    date.Day
-                }).Select(group => new {
-                    group.Key.Year,
-                    group.Key.Month,
-                    group.Key.Day,
-                    Count = group.Count()
-                }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
-                
-                foreach (var dataPoint in listVocabsByDate) {
-                    var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
-                    chartVocabsHistory.Series[0].Points.AddXY(label, dataPoint.Count);
-                }
-
-                var listVocabsByHour = validVocabs.GroupBy(date => date.Hour).Select(group => new {
-                    ClippingHour = group.Key,
-                    ClippingCount = group.Count()
-                }).OrderBy(x => x.ClippingHour).ToList();
-
-                foreach (var dataPoint in listVocabsByHour) {
-                    chartVocabsTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
-                }
-                
-                var listVocabsByWeekday = validVocabs.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
-                    Weekday = group.Key,
-                    ClippingCount = group.Count()
-                }).OrderBy(x => x.Weekday).ToList();
-
-                foreach (var dataPoint in listVocabsByWeekday) {
-                    var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
-                    chartVocabsWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
-                }
-                
-                return true;
-            } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetVocabTab), e));
+            if (_vocabs.Count == 0) {
+                tabControl.TabPages.Remove(tabPageVocabs);
                 return false;
             }
+
+            var validVocabs = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
+
+            var listVocabsByDate = validVocabs.GroupBy(date => new {
+                date.Year,
+                date.Month,
+                date.Day
+            }).Select(group => new {
+                group.Key.Year,
+                group.Key.Month,
+                group.Key.Day,
+                Count = group.Count()
+            }).OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ToList();
+            
+            foreach (var dataPoint in listVocabsByDate) {
+                var label = $"{dataPoint.Year}.{dataPoint.Month}.{dataPoint.Day}";
+                chartVocabsHistory.Series[0].Points.AddXY(label, dataPoint.Count);
+            }
+
+            var listVocabsByHour = validVocabs.GroupBy(date => date.Hour).Select(group => new {
+                ClippingHour = group.Key,
+                ClippingCount = group.Count()
+            }).OrderBy(x => x.ClippingHour).ToList();
+
+            foreach (var dataPoint in listVocabsByHour) {
+                chartVocabsTime.Series[0].Points.AddXY(dataPoint.ClippingHour, dataPoint.ClippingCount);
+            }
+            
+            var listVocabsByWeekday = validVocabs.GroupBy(date => (int)date.DayOfWeek).Select(group => new {
+                Weekday = group.Key,
+                ClippingCount = group.Count()
+            }).OrderBy(x => x.Weekday).ToList();
+
+            foreach (var dataPoint in listVocabsByWeekday) {
+                var label = DateTimeFormatInfo.CurrentInfo.AbbreviatedDayNames[dataPoint.Weekday];
+                chartVocabsWeek.Series[0].Points.AddXY(label, dataPoint.ClippingCount);
+            }
+            
+            return true;
         }
 
         private static DateTime ParseDateTime(string field) {
