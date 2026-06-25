@@ -818,11 +818,13 @@ namespace KindleMate2 {
 
         private void DataGridView_MouseDown(object sender, MouseEventArgs e) {
             try {
-                DataGridView.HitTestInfo? hitTestInfo = dataGridView.HitTest(e.X, e.Y);
-                if (hitTestInfo.RowIndex < 0) return;
-                dataGridView.ClearSelection();
-                dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
-                _selectedDataGridIndex = hitTestInfo.RowIndex;
+                if (e.Button == MouseButtons.Right) {
+                    DataGridView.HitTestInfo hitTestInfo = dataGridView.HitTest(e.X, e.Y);
+                    if (hitTestInfo.RowIndex >= 0 && !dataGridView.Rows[hitTestInfo.RowIndex].Selected) {
+                        dataGridView.ClearSelection();
+                        dataGridView.Rows[hitTestInfo.RowIndex].Selected = true;
+                    }
+                }
             } catch (Exception ex) {
                 Console.WriteLine(ex);
             }
