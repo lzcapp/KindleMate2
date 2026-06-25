@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
@@ -82,10 +82,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clippingRepository.DeleteAll();
             
                 var myClippings = (from originalClippingLine in originalClippingLines
-                    let line1 = originalClippingLine.line1
-                    let line2 = originalClippingLine.line2
-                    let line4 = originalClippingLine.line4
-                    let line5 = originalClippingLine.line5
+                    let line1 = originalClippingLine.Line1
+                    let line2 = originalClippingLine.Line2
+                    let line4 = originalClippingLine.Line4
+                    let line5 = originalClippingLine.Line5
                     where !string.IsNullOrWhiteSpace(line1) && !string.IsNullOrWhiteSpace(line2) && !string.IsNullOrWhiteSpace(line4) && !string.IsNullOrWhiteSpace(line5)
                     select new MyClipping {
                         Header = line1,

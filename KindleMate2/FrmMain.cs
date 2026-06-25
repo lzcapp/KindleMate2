@@ -1599,14 +1599,6 @@ namespace KindleMate2 {
             }
         }
 
-        protected override void Dispose(bool disposing) {
-            if (disposing) {
-                _deviceManager?.Dispose();
-                components?.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-
         #endregion
     }
 }

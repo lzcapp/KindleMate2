@@ -2,6 +2,8 @@ using System.Management;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Entities;
+using KindleMate2.Infrastructure.Helpers;
 using MediaDevices;
 
 namespace KindleMate2.Application.Services;
