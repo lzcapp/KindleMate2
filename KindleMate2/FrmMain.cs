@@ -513,8 +513,8 @@ namespace KindleMate2 {
                     dataGridView.FirstDisplayedScrollingRowIndex = _selectedDataGridIndex;
                     dataGridView.Rows[_selectedDataGridIndex].Selected = true;
                     var selectedRow = dataGridView.SelectedRows[0];
-                    lblBook.Text = selectedRow.Cells[Columns.BookName].Value.ToString();
-                    var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString();
+                    lblBook.Text = selectedRow.Cells[Columns.BookName].Value?.ToString();
+                    var authorName = selectedRow.Cells[Columns.AuthorName].Value?.ToString();
                     lblAuthor.Text = authorName != string.Empty ? Strings.Left_Parenthesis + authorName + Strings.Right_Parenthesis : string.Empty;
                     break;
                 case 1:
@@ -635,13 +635,13 @@ namespace KindleMate2 {
         }
 
         private void DisplayClippingDetail(DataGridViewRow selectedRow) {
-            var bookName = selectedRow.Cells[Columns.BookName].Value.ToString() ?? string.Empty;
-            var authorName = selectedRow.Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
-            _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value.ToString() ?? string.Empty, out var pageNumber);
-            var content = selectedRow.Cells[Columns.Content].Value.ToString()
+            var bookName = selectedRow.Cells[Columns.BookName].Value?.ToString() ?? string.Empty;
+            var authorName = selectedRow.Cells[Columns.AuthorName].Value?.ToString() ?? string.Empty;
+            _ = int.TryParse(selectedRow.Cells[Columns.PageNumber].Value?.ToString() ?? string.Empty, out var pageNumber);
+            var content = selectedRow.Cells[Columns.Content].Value?.ToString()
                 ?.Replace(AppConstants.SpaceForNewLine, Environment.NewLine) ?? string.Empty;
-            var briefType = selectedRow.Cells[Columns.BriefType].Value.ToString() ?? string.Empty;
-            var key = selectedRow.Cells[Columns.Key].Value.ToString() ?? string.Empty;
+            var briefType = selectedRow.Cells[Columns.BriefType].Value?.ToString() ?? string.Empty;
+            var key = selectedRow.Cells[Columns.Key].Value?.ToString() ?? string.Empty;
 
             var detail = _contentDetailService.BuildClippingDetail(bookName, authorName, pageNumber, content, briefType, key);
 
@@ -754,7 +754,7 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     if (columnName.Equals(Strings.Books)) {
-                        _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value.ToString()!;
+                        _selectedBook = dataGridView.Rows[e.RowIndex].Cells[Columns.BookName].Value?.ToString() ?? string.Empty;
                         var clippings = _dataDisplayService.GetClippingsByBook(_selectedBook);
                         if (clippings.Count == 0) {
                             ShowBookCountLabel(Strings.Total_Clippings, 0, Strings.X_Clippings, Resources.open_book);
@@ -773,8 +773,8 @@ namespace KindleMate2 {
                     }
                     break;
                 case 1:
-                    if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode.Index == 0) {
-                        _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value.ToString()!;
+                    if (columnName.Equals(Strings.Vocabulary) && treeViewWords.SelectedNode != null && treeViewWords.SelectedNode.Index == 0) {
+                        _selectedWord = dataGridView.Rows[e.RowIndex].Cells[Columns.Word].Value?.ToString() ?? string.Empty;
                         var lookups = _dataDisplayService.GetLookupsByWord(_selectedWord);
                         if (lookups.Count == 0) {
                             ShowBookCountLabel(Strings.Total_Clippings, 0, Strings.X_Clippings, Resources.open_book);
@@ -907,7 +907,7 @@ namespace KindleMate2 {
 
             try {
                 foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                    var key = row.Cells[Columns.Key].Value.ToString() ?? string.Empty;
+                    var key = row.Cells[Columns.Key].Value?.ToString() ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(key)) return;
                     if (_clippingService.DeleteClipping(key)) {
                         _originalClippingLineService.DeleteOriginalClippingLine(key);
@@ -928,7 +928,7 @@ namespace KindleMate2 {
 
             try {
                 foreach (DataGridViewRow row in dataGridView.SelectedRows) {
-                    var timestamp = row.Cells[Columns.Timestamp].Value.ToString() ?? string.Empty;
+                    var timestamp = row.Cells[Columns.Timestamp].Value?.ToString() ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(timestamp)) continue;
                     var lookups = _lookupService.GetLookupsByTimestamp(timestamp);
                     foreach (Lookup lookup in lookups) {
@@ -1063,8 +1063,11 @@ namespace KindleMate2 {
         }
 
         private string GetBooknameFromContent() {
-            return !string.IsNullOrWhiteSpace(lblBook.Text) ? lblBook.Text :
-                dataGridView.Rows[0].Cells[Columns.BookName].Value.ToString() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(lblBook.Text))
+                return lblBook.Text;
+            if (dataGridView.Rows.Count == 0)
+                return string.Empty;
+            return dataGridView.Rows[0].Cells[Columns.BookName].Value?.ToString() ?? string.Empty;
         }
 
         private string GetAuthorNameFromContent() {
@@ -1074,8 +1077,10 @@ namespace KindleMate2 {
                 var startIndex = authorName.IndexOf(Strings.Left_Parenthesis, StringComparison.Ordinal) + 1;
                 var endIndex = authorName.LastIndexOf(Strings.Right_Parenthesis, StringComparison.Ordinal) - 1;
                 authorName = authorName.Substring(startIndex, endIndex - startIndex + 1);
+            } else if (dataGridView.Rows.Count > 0) {
+                authorName = dataGridView.Rows[0].Cells[Columns.AuthorName].Value?.ToString() ?? string.Empty;
             } else {
-                authorName = dataGridView.Rows[0].Cells[Columns.AuthorName].Value.ToString() ?? string.Empty;
+                authorName = string.Empty;
             }
             return authorName;
         }

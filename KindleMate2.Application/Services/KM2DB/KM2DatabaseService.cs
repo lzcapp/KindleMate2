@@ -316,7 +316,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 
-                var duplicatedClippings = (from clipping in clippings let key = clipping.Key let content = clipping.Content where !string.IsNullOrWhiteSpace(key) where clippings.Count(c => c.Content.Contains(content)) > 1 select clipping).ToList();
+                var duplicatedClippings = clippings
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
+                    .Where(c => clippings.Count(x => x.Content != null && x.Content.Contains(c.Content!)) > 1)
+                    .ToList();
 
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
                 
