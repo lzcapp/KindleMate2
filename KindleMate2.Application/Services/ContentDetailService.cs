@@ -56,7 +56,9 @@ public class ContentDetailService : IContentDetailService {
             ClippingEntries = []
         };
 
-        var isChinese = Encoding.UTF8.GetBytes(word).Length > word.Length;
+        // Non-ASCII characters (CJK, accented letters, etc.) don't have reliable word boundaries,
+        // so we use substring matching instead of \b regex.
+        var isNonAscii = Encoding.UTF8.GetBytes(word).Length > word.Length;
 
         var lookups = allLookups.OrderBy(x => x.Timestamp);
         foreach (Lookup lookup in lookups) {
@@ -66,7 +68,7 @@ public class ContentDetailService : IContentDetailService {
                 continue;
             }
 
-            if (!isChinese) {
+            if (!isNonAscii) {
                 if (lookup.Word.Equals(stem, StringComparison.InvariantCultureIgnoreCase)) {
                     info.BookTitles.Add(title);
                     info.LookupEntries.Add(usage + title + Environment.NewLine);
@@ -74,7 +76,7 @@ public class ContentDetailService : IContentDetailService {
                 }
             }
             if (!string.Equals(lookup.WordKey, wordKey, StringComparison.InvariantCultureIgnoreCase)) {
-                if (!isChinese) {
+                if (!isNonAscii) {
                     if (!Regex.IsMatch(usage, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                         continue;
                     }
@@ -93,7 +95,7 @@ public class ContentDetailService : IContentDetailService {
                 if (string.IsNullOrWhiteSpace(strContent)) {
                     continue;
                 }
-                if (!isChinese) {
+                if (!isNonAscii) {
                     if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
                         continue;
                     }

@@ -9,6 +9,6 @@ public interface IDeviceManager : IDisposable {
     void StartWatching();
     bool IsKindleConnected();
     string GetKindleVersionText();
-    bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception);
+    bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception);
     void SyncFileToDevice(string exportedFilePath, string targetFileName);
 }

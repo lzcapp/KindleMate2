@@ -78,7 +78,7 @@ public class ExportManager : IExportManager {
             Directory.CreateDirectory(_backupPath);
         }
 
-        if (!_deviceManager.ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) ||
+        if (!_deviceManager.ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception? exception) ||
             !_originalClippingLineService.Export(_tempPath, AppConstants.ClippingsFileName, out exception)) {
             throw exception;
         }

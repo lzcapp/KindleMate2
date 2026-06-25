@@ -65,9 +65,10 @@ public class DataDisplayService : IDataDisplayService {
     /// </summary>
     public List<string> GetDistinctBookNames() {
         return Clippings.Select(row => row.BookName)
+            .Where(name => name != null)
             .Distinct()
             .OrderBy(book => book)
-            .ToList();
+            .ToList()!;
     }
 
     /// <summary>
@@ -75,9 +76,10 @@ public class DataDisplayService : IDataDisplayService {
     /// </summary>
     public List<string> GetDistinctWordNames() {
         return Vocabs.Select(row => row.Word)
+            .Where(w => w != null)
             .Distinct()
             .OrderBy(word => word)
-            .ToList();
+            .ToList()!;
     }
 
     /// <summary>

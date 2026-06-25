@@ -1196,7 +1196,7 @@ namespace KindleMate2 {
                 var backupWordsFilePath = Path.Combine(backupWordsPath,
                     "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
 
-                if (!_deviceManager.ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception exception))
+                if (!_deviceManager.ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception? exception))
                     throw exception;
 
                 SetProgressBar(true);

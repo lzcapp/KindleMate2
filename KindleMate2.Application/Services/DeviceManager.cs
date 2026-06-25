@@ -89,8 +89,8 @@ public class DeviceManager : IDeviceManager {
                 using var reader = new StreamReader(kindleVersionPath);
                 versionText = reader.ReadToEnd();
             }
-        } catch {
-            // Ignore version read errors
+        } catch (Exception ex) {
+            Console.WriteLine($"[GetKindleVersionText] {ex}");
         }
         return versionText;
     }
@@ -186,6 +186,11 @@ public class DeviceManager : IDeviceManager {
                     return true;
                 } catch (Exception e) {
                     Console.WriteLine(e);
+                    // Reset partial state if _driveLetter was set before failure
+                    if (string.Equals(_driveLetter, @"\Internal Storage\", StringComparison.Ordinal)) {
+                        _driveLetter = string.Empty;
+                    }
+                    try { device.Disconnect(); } catch { /* best effort */ }
                 }
             }
             return false;
@@ -198,8 +203,8 @@ public class DeviceManager : IDeviceManager {
     /// <summary>
     /// Copies files from the connected Kindle device to local backup paths.
     /// </summary>
-    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception exception) {
-        exception = new Exception();
+    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception) {
+        exception = null;
         try {
             var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
             var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
@@ -219,11 +224,14 @@ public class DeviceManager : IDeviceManager {
                             device.Disconnect();
                             continue;
                         }
-                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
-                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
-                        device.Disconnect();
-                        isPaired = true;
-                        break;
+                        try {
+                            ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                            ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                            isPaired = true;
+                            break;
+                        } finally {
+                            device.Disconnect();
+                        }
                     }
                     return isPaired;
                 }
@@ -295,6 +303,7 @@ public class DeviceManager : IDeviceManager {
     }
 
     public void Dispose() {
+        _debounceTimer?.Dispose();
         _usbDeviceArrivalWatcher?.Stop();
         _usbDeviceArrivalWatcher?.Dispose();
         _usbDeviceRemovalWatcher?.Stop();
