@@ -79,7 +79,7 @@ public class ExportManager : IExportManager {
         }
 
         if (!_deviceManager.ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception exception) ||
-            !_originalClippingLineService.Export(backupClippingsPath, AppConstants.ClippingsFileName, out exception)) {
+            !_originalClippingLineService.Export(_tempPath, AppConstants.ClippingsFileName, out exception)) {
             throw exception;
         }
 

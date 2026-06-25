@@ -1166,6 +1166,7 @@ namespace KindleMate2 {
                 var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
 
                 if (!Directory.Exists(_backupPath)) Directory.CreateDirectory(_backupPath);
+                if (!Directory.Exists(backupClippingsPath)) Directory.CreateDirectory(backupClippingsPath);
 
                 var backupClippingsFilePath = Path.Combine(backupClippingsPath,
                     "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
