@@ -47,18 +47,16 @@ public class DataDisplayService : IDataDisplayService {
             Lookups = _lookupService.GetByFuzzySearch(searchText, searchType);
         }
 
-        // Enrich lookups with stem and frequency from vocabs
+        // Enrich lookups with stem and frequency from vocabs (O(n+m) via dictionary lookup)
+        var vocabMap = Vocabs
+            .Where(v => v.WordKey != null)
+            .GroupBy(v => v.WordKey!)
+            .ToDictionary(g => g.Key, g => g.First());
         foreach (Lookup row in Lookups) {
-            var wordKey = row.WordKey;
-            var stem = string.Empty;
-            var frequency = string.Empty;
-            foreach (Vocab vocab in Vocabs.Where(vocab => vocab.WordKey == wordKey)) {
-                stem = vocab.Stem;
-                frequency = vocab.Frequency.ToString();
-                break;
+            if (row.WordKey != null && vocabMap.TryGetValue(row.WordKey, out var vocab)) {
+                row.Stem = vocab.Stem ?? string.Empty;
+                row.Frequency = vocab.Frequency?.ToString() ?? string.Empty;
             }
-            row.Stem = stem ?? string.Empty;
-            row.Frequency = frequency ?? string.Empty;
         }
     }
 
