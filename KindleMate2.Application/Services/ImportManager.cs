@@ -1,0 +1,144 @@
+using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Infrastructure.Repositories.VocabDB;
+using KindleMate2.Shared;
+using KindleMate2.Shared.Constants;
+using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
+using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
+
+namespace KindleMate2.Application.Services;
+
+/// <summary>
+/// Centralizes all data import operations: Kindle clippings, Kindle words, and KM database imports.
+/// </summary>
+public class ImportManager {
+    private readonly Km2DatabaseService _km2DatabaseService;
+    private readonly ClippingService _clippingService;
+    private readonly VocabService _vocabService;
+    private readonly OriginalClippingLineService _originalClippingLineService;
+    private readonly LookupService _lookupService;
+    private readonly string _importPath;
+
+    public ImportManager(Km2DatabaseService km2DatabaseService, ClippingService clippingService, VocabService vocabService,
+        OriginalClippingLineService originalClippingLineService, LookupService lookupService, string importPath) {
+        _km2DatabaseService = km2DatabaseService;
+        _clippingService = clippingService;
+        _vocabService = vocabService;
+        _originalClippingLineService = originalClippingLineService;
+        _lookupService = lookupService;
+        _importPath = importPath;
+    }
+
+    /// <summary>
+    /// Imports both Kindle clippings and Kindle words from file paths.
+    /// </summary>
+    public string Import(string kindleClippingsPath, string kindleWordsPath) {
+        try {
+            var clippingsResult = ImportKindleClippings(kindleClippingsPath);
+            var wordResult = ImportKindleWords(kindleWordsPath);
+
+            if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
+                return string.Empty;
+            }
+            if (string.IsNullOrWhiteSpace(clippingsResult)) {
+                return wordResult;
+            }
+            if (string.IsNullOrWhiteSpace(wordResult)) {
+                return clippingsResult;
+            }
+            return clippingsResult + Environment.NewLine + wordResult;
+        } catch (Exception e) {
+            return $"Import failed: {e.Message}";
+        }
+    }
+
+    public string ImportKindleClippings(string clippingsPath) {
+        try {
+            string message;
+            if (_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+                var parsedCount = result[AppConstants.ParsedCount];
+                var insertedCount = result[AppConstants.InsertedCount];
+                message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                          Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+            } else {
+                var exception = result[AppConstants.Exception];
+                return $"Import failed: {exception}";
+            }
+            return message;
+        } catch (Exception e) {
+            throw new InvalidOperationException($"Failed to import Kindle clippings from '{clippingsPath}': {e.Message}", e);
+        }
+    }
+
+    public string ImportKindleWords(string kindleWordsPath) {
+        try {
+            if (!File.Exists(kindleWordsPath)) {
+                return string.Empty;
+            }
+
+            var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
+
+            var bookInfoRepository = new BookInfoRepository(connectionString);
+            var vocabLookupRepository = new VocabLookupRepository(connectionString);
+            var wordRepository = new WordRepository(connectionString);
+            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+            var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
+
+            if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
+                var lookupCount = result[AppConstants.LookupCount];
+                var insertedLookupCount = result[AppConstants.InsertedLookupCount];
+                var insertedVocabCount = result[AppConstants.InsertedVocabCount];
+                return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma +
+                       Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups + Strings.Space +
+                       Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
+            }
+            var exception = result[AppConstants.Exception];
+            return exception;
+        } catch (Exception e) {
+            throw new InvalidOperationException($"Failed to import Kindle words from '{kindleWordsPath}': {e.Message}", e);
+        }
+    }
+
+    public string ImportKmDatabase(string filePath) {
+        var kmConnectionString = DatabaseHelper.GetConnectionString(filePath);
+
+        var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
+        var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
+        var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
+        var settingRepository = new SettingRepository(AppConstants.ConnectionString);
+        var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
+
+        var kmClippingRepository = new ClippingRepository(kmConnectionString);
+        var kmLookupRepository = new LookupRepository(kmConnectionString);
+        var kmOriginalClippingLineRepository = new OriginalClippingLineRepository(kmConnectionString);
+        var kmSettingRepository = new SettingRepository(kmConnectionString);
+        var kmVocabRepository = new VocabRepository(kmConnectionString);
+
+        var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository,
+            vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
+
+        var clippingsCount = _clippingService.GetCount();
+        var vocabCount = _vocabService.GetCount();
+
+        if (File.Exists(filePath)) {
+            var backupFilePath = Path.Combine(_importPath, "KM_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
+            File.Copy(filePath, backupFilePath, true);
+        }
+
+        if (!kmDatabaseService.ImportFromKmDatabase()) {
+            return string.Empty;
+        }
+
+        _km2DatabaseService.CleanDatabase(string.Empty, out _);
+        _km2DatabaseService.UpdateFrequency();
+
+        clippingsCount = _clippingService.GetCount() - clippingsCount;
+        vocabCount = _vocabService.GetCount() - vocabCount;
+        var message = Strings.Parsed_X + Strings.Space + (clippingsCount + vocabCount) + Strings.Space + Strings.X_Records + Strings.Symbol_Comma +
+                      Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                      vocabCount + Strings.Space + Strings.X_Vocabs;
+        return message;
+    }
+}
