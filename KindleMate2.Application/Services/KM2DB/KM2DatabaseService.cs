@@ -226,10 +226,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     if (!isRebuild) {
                         listAddOriginalClippings.Add(new OriginalClippingLine {
-                            key = key, 
-                            line1 = header, 
-                            line2 = metadata,
-                            line4 = content
+                            Key = key, 
+                            Line1 = header, 
+                            Line2 = metadata,
+                            Line4 = content
                         });
                     }
                 } catch (Exception e) {

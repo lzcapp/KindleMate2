@@ -6,16 +6,16 @@ namespace KindleMate2.Application.Services.KM2DB {
     public class ThemeService(ISettingRepository settingsRepository) {
         public bool IsDarkTheme() {
             Setting? theme = settingsRepository.GetByName("theme"); // read from DB
-            if (theme != null && !string.IsNullOrWhiteSpace(theme.value)) {
-                if (theme.value.Equals("dark", StringComparison.OrdinalIgnoreCase)) return true;
-                if (theme.value.Equals("light", StringComparison.OrdinalIgnoreCase)) return false;
+            if (theme != null && !string.IsNullOrWhiteSpace(theme.Value)) {
+                if (theme.Value.Equals("dark", StringComparison.OrdinalIgnoreCase)) return true;
+                if (theme.Value.Equals("light", StringComparison.OrdinalIgnoreCase)) return false;
             }
 
             // fallback to OS setting
             var isWindowsDarkTheme = ThemeHelper.IsWindowsDarkTheme();
             settingsRepository.Add(new Setting {
                 Name = "theme",
-                value = isWindowsDarkTheme ? "dark" : "light"
+                Value = isWindowsDarkTheme ? "dark" : "light"
             });
             return isWindowsDarkTheme;
         }

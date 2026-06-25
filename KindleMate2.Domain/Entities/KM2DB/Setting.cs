@@ -3,7 +3,7 @@
         private string? _value;
         public required string Name { get; set; }
 
-        public string? value {
+        public string? Value {
             get => _value;
             set => _value = value ?? string.Empty;
         }

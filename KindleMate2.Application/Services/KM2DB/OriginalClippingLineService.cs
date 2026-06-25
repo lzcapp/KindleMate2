@@ -21,8 +21,8 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public void AddOriginalClippingLine(OriginalClippingLine originalClippingLine) {
-            if (string.IsNullOrWhiteSpace(originalClippingLine.key)) {
-                throw new ArgumentException("[key] cannot be empty");
+            if (string.IsNullOrWhiteSpace(originalClippingLine.Key)) {
+                throw new ArgumentException("[Key] cannot be empty");
             }
 
             repository.Add(originalClippingLine);
@@ -53,11 +53,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 using var fileStream = new FileStream(exportFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                 using var writer = new StreamWriter(fileStream);
                 foreach (OriginalClippingLine originalClippingLine in originalClippingLines) {
-                    writer.WriteLine(originalClippingLine.line1);
-                    writer.WriteLine(originalClippingLine.line2);
-                    writer.WriteLine(originalClippingLine.line3);
-                    writer.WriteLine(originalClippingLine.line4);
-                    writer.WriteLine(originalClippingLine.line5);
+                    writer.WriteLine(originalClippingLine.Line1);
+                    writer.WriteLine(originalClippingLine.Line2);
+                    writer.WriteLine(originalClippingLine.Line3);
+                    writer.WriteLine(originalClippingLine.Line4);
+                    writer.WriteLine(originalClippingLine.Line5);
                 }
 
                 exception = null;

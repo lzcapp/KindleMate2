@@ -19,9 +19,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             if (reader.Read()) {
                 return new MetaData {
                     Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                    Dsname = DatabaseHelper.GetSafeString(reader, 1),
-                    Sscnt = DatabaseHelper.GetSafeLong(reader, 2),
-                    Profileid = DatabaseHelper.GetSafeString(reader, 3)
+                    DsName = DatabaseHelper.GetSafeString(reader, 1),
+                    SsCnt = DatabaseHelper.GetSafeLong(reader, 2),
+                    ProfileId = DatabaseHelper.GetSafeString(reader, 3)
                 };
             }
             return null;
@@ -43,9 +43,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 }
                 results.Add(new MetaData {
                     Id = id,
-                    Dsname = DatabaseHelper.GetSafeString(reader, 1),
-                    Sscnt = DatabaseHelper.GetSafeLong(reader, 2),
-                    Profileid = DatabaseHelper.GetSafeString(reader, 3)
+                    DsName = DatabaseHelper.GetSafeString(reader, 1),
+                    SsCnt = DatabaseHelper.GetSafeLong(reader, 2),
+                    ProfileId = DatabaseHelper.GetSafeString(reader, 3)
                 });
             }
             return results;
@@ -73,9 +73,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@id", id);
-            cmd.Parameters.AddWithValue("@dsname", metaData.Dsname ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@sscnt", metaData.Sscnt ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@profileid", metaData.Profileid ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@dsname", metaData.DsName ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@sscnt", metaData.SsCnt ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@profileid", metaData.ProfileId ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -89,9 +89,9 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@id", id);
-            cmd.Parameters.AddWithValue("@dsname", metaData.Dsname ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@sscnt", metaData.Sscnt ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@profileid", metaData.Profileid ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@dsname", metaData.DsName ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@sscnt", metaData.SsCnt ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@profileid", metaData.ProfileId ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 

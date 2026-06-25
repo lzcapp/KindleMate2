@@ -141,10 +141,10 @@ namespace KindleMate2 {
 
         private void SetLang() {
             Setting? cultureSetting = _settingService.GetSettingByName("lang");
-            if (cultureSetting == null || string.IsNullOrWhiteSpace(cultureSetting.value)) {
+            if (cultureSetting == null || string.IsNullOrWhiteSpace(cultureSetting.Value)) {
                 return;
             }
-            var cultureName = cultureSetting.value;
+            var cultureName = cultureSetting.Value;
             if (!string.IsNullOrWhiteSpace(cultureName)) {
                 var culture = new CultureInfo(cultureName);
                 Thread.CurrentThread.CurrentUICulture = culture;

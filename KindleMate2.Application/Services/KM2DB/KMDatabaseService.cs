@@ -38,7 +38,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     foreach (Clipping kmClipping in kmClippings.Where(kmClipping => !string.IsNullOrEmpty(kmClipping.Content) && (_clippingRepository.GetByKey(kmClipping.Key) == null || _clippingRepository.GetByContent(kmClipping.Content).Count > 0))) {
                         _clippingRepository.Add(kmClipping);
                     }
-                    foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines.Where(kmOriginalClippingLine => _originalClippingLineRepository.GetByKey(kmOriginalClippingLine.key) == null)) {
+                    foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines.Where(kmOriginalClippingLine => _originalClippingLineRepository.GetByKey(kmOriginalClippingLine.Key) == null)) {
                         _originalClippingLineRepository.Add(kmOriginalClippingLine);
                     }
                 }

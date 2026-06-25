@@ -16,7 +16,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             if (reader.Read()) {
                 return new Setting {
                     Name = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                    value = DatabaseHelper.GetSafeString(reader, 1)
+                    Value = DatabaseHelper.GetSafeString(reader, 1)
                 };
             }
             return null;
@@ -38,7 +38,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 }
                 results.Add(new Setting {
                     Name = name,
-                    value = DatabaseHelper.GetSafeString(reader, 1)
+                    Value = DatabaseHelper.GetSafeString(reader, 1)
                 });
             }
             return results;
@@ -60,7 +60,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("INSERT INTO settings (name, value) VALUES (@name, @value)", connection);
             cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@value", setting.Value ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -70,7 +70,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("UPDATE settings SET value = @value WHERE name = @name", connection);
             cmd.Parameters.AddWithValue("@name", setting.Name ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@value", setting.value ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@value", setting.Value ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 

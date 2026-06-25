@@ -20,8 +20,8 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 return new DictInfo {
                     Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
                     Asin = DatabaseHelper.GetSafeString(reader, 1),
-                    Langin = DatabaseHelper.GetSafeString(reader, 2),
-                    Langout = DatabaseHelper.GetSafeString(reader, 3)
+                    LangIn = DatabaseHelper.GetSafeString(reader, 2),
+                    LangOut = DatabaseHelper.GetSafeString(reader, 3)
                 };
             }
             return null;
@@ -44,8 +44,8 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 results.Add(new DictInfo {
                     Id = id,
                     Asin = DatabaseHelper.GetSafeString(reader, 1),
-                    Langin = DatabaseHelper.GetSafeString(reader, 2),
-                    Langout = DatabaseHelper.GetSafeString(reader, 3)
+                    LangIn = DatabaseHelper.GetSafeString(reader, 2),
+                    LangOut = DatabaseHelper.GetSafeString(reader, 3)
                 });
             }
             return results;
@@ -74,8 +74,8 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             }
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@asin", dictInfo.Asin ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@langin", dictInfo.Langin ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@langout", dictInfo.Langout ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@langin", dictInfo.LangIn ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@langout", dictInfo.LangOut ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -90,8 +90,8 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             }
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@asin", dictInfo.Asin ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@langin", dictInfo.Langin ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@langout", dictInfo.Langout ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@langin", dictInfo.LangIn ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@langout", dictInfo.LangOut ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 

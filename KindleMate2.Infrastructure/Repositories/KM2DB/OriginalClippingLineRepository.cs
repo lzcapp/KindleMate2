@@ -16,12 +16,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using SqliteDataReader reader = cmd.ExecuteReader();
             if (reader.Read()) {
                 return new OriginalClippingLine {
-                    key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                    line1 = DatabaseHelper.GetSafeString(reader, 1),
-                    line2 = DatabaseHelper.GetSafeString(reader, 2),
-                    line3 = DatabaseHelper.GetSafeString(reader, 3),
-                    line4 = DatabaseHelper.GetSafeString(reader, 4),
-                    line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    Key = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
+                    Line1 = DatabaseHelper.GetSafeString(reader, 1),
+                    Line2 = DatabaseHelper.GetSafeString(reader, 2),
+                    Line3 = DatabaseHelper.GetSafeString(reader, 3),
+                    Line4 = DatabaseHelper.GetSafeString(reader, 4),
+                    Line5 = DatabaseHelper.GetSafeString(reader, 5)
                 };
             }
             return null;
@@ -42,12 +42,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     continue;
                 }
                 results.Add(new OriginalClippingLine {
-                    key = key,
-                    line1 = DatabaseHelper.GetSafeString(reader, 1),
-                    line2 = DatabaseHelper.GetSafeString(reader, 2),
-                    line3 = DatabaseHelper.GetSafeString(reader, 3),
-                    line4 = DatabaseHelper.GetSafeString(reader, 4),
-                    line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    Key = key,
+                    Line1 = DatabaseHelper.GetSafeString(reader, 1),
+                    Line2 = DatabaseHelper.GetSafeString(reader, 2),
+                    Line3 = DatabaseHelper.GetSafeString(reader, 3),
+                    Line4 = DatabaseHelper.GetSafeString(reader, 4),
+                    Line5 = DatabaseHelper.GetSafeString(reader, 5)
                 });
             }
             return results;
@@ -95,12 +95,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     continue;
                 }
                 results.Add(new OriginalClippingLine {
-                    key = key,
-                    line1 = DatabaseHelper.GetSafeString(reader, 1),
-                    line2 = DatabaseHelper.GetSafeString(reader, 2),
-                    line3 = DatabaseHelper.GetSafeString(reader, 3),
-                    line4 = DatabaseHelper.GetSafeString(reader, 4),
-                    line5 = DatabaseHelper.GetSafeString(reader, 5)
+                    Key = key,
+                    Line1 = DatabaseHelper.GetSafeString(reader, 1),
+                    Line2 = DatabaseHelper.GetSafeString(reader, 2),
+                    Line3 = DatabaseHelper.GetSafeString(reader, 3),
+                    Line4 = DatabaseHelper.GetSafeString(reader, 4),
+                    Line5 = DatabaseHelper.GetSafeString(reader, 5)
                 });
             }
             return results;
@@ -121,12 +121,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
-            cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@key", originalClippingLine.Key ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@line1", originalClippingLine.Line1 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line2", originalClippingLine.Line2 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line3", originalClippingLine.Line3 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line4", originalClippingLine.Line4 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line5", originalClippingLine.Line5 ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -137,12 +137,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
                 var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
-                cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@key", originalClippingLine.Key ?? throw new InvalidOperationException());
+                cmd.Parameters.AddWithValue("@line1", originalClippingLine.Line1 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line2", originalClippingLine.Line2 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line3", originalClippingLine.Line3 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line4", originalClippingLine.Line4 ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@line5", originalClippingLine.Line5 ?? (object)DBNull.Value);
                 if (cmd.ExecuteNonQuery() > 0) {
                     count++;
                 }
@@ -155,12 +155,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("UPDATE original_clipping_lines SET line1 = @line1, line2 = @line2, line3 = @line3, line4 = @line4, line5 = @line5 WHERE key = @key", connection);
-            cmd.Parameters.AddWithValue("@key", originalClippingLine.key ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@line1", originalClippingLine.line1 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line2", originalClippingLine.line2 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line3", originalClippingLine.line3 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line4", originalClippingLine.line4 ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@line5", originalClippingLine.line5 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@key", originalClippingLine.Key ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@line1", originalClippingLine.Line1 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line2", originalClippingLine.Line2 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line3", originalClippingLine.Line3 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line4", originalClippingLine.Line4 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line5", originalClippingLine.Line5 ?? (object)DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
 
