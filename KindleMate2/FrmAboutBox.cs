@@ -36,16 +36,6 @@ namespace KindleMate2 {
             }
         }
 
-        /*
-        private static string AssemblyTitle {
-            get {
-                var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
-
-                return attributes.Length == 0 ? string.Empty : ((AssemblyTitleAttribute)attributes[0]).Title;
-            }
-        }
-        */
-
         private static string AssemblyCopyright {
             get {
                 var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
@@ -61,7 +51,6 @@ namespace KindleMate2 {
         private void FrmAboutBox_Load(object sender, EventArgs e) {
             Text = Strings.About + Strings.Space + AssemblyProduct;
 
-            //lblProductName.Text = AssemblyTitle;
             var assemblyVersion = string.IsNullOrWhiteSpace(AssemblyVersion) ? string.Empty : AssemblyVersion;
             var assemblyCopyright = string.IsNullOrWhiteSpace(AssemblyCopyright) ? string.Empty : AssemblyCopyright;
             lblVersion.Text = assemblyVersion;
@@ -80,30 +69,10 @@ namespace KindleMate2 {
             lblDatabaseText.Text = Strings.Database;
             okButton.Text = Strings.Confirm_Button;
 
-            /*
-            var bw = new BackgroundWorker();
-            bw.DoWork += (_, workEventArgs) => { workEventArgs.Result = StaticData.GetRepoInfo(); };
-            bw.RunWorkerCompleted += (_, workerCompletedEventArgs) => {
-                if (workerCompletedEventArgs.Result == null) {
-                    return;
-                }
-                var release = (GitHubRelease)workerCompletedEventArgs.Result;
-                if (string.IsNullOrWhiteSpace(assemblyVersion)) {
-                    return;
-                }
-                var tagName = string.IsNullOrWhiteSpace(release.tag_name) ? string.Empty : release.tag_name;
-                var toolTip = new ToolTip();
-                toolTip.SetToolTip(pictureBox1, Strings.New_Version + tagName);
-                pictureBox1.Visible = StaticData.IsUpdate(assemblyVersion, tagName);
-            };
-            if (StaticData.IsInternetAvailable()) {
-                bw.RunWorkerAsync();
-            }
-            */
         }
 
         private void pictureBox1_Click(object sender, EventArgs e) {
-            /*StaticData.CheckUpdate();*/
+            
         }
     }
 }

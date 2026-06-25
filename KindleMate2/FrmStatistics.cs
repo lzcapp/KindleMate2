@@ -52,9 +52,6 @@ namespace KindleMate2 {
             Text = Strings.Statistics;
             tabPageBooks.Text = Strings.Clippings;
             tabPageVocabs.Text = Strings.Vocabulary_List;
-
-            tabPageBooks.Text = Strings.Clippings;
-            tabPageVocabs.Text = Strings.Vocabulary_List;
         }
 
         private static bool SetControlColor(Chart chart) {
