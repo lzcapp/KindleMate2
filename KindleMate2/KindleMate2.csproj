@@ -209,9 +209,6 @@
 		<None Update="KM2.db">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="KM2.db">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 		<None Update="LICENSE">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
@@ -227,15 +224,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EditorConfigFiles Remove="C:\Coding\KindleMate2\KindleMate2\DarkModeForms\.editorconfig" />
+	  <EditorConfigFiles Remove="DarkModeForms\.editorconfig" />
 	</ItemGroup>
 
 	<ItemGroup>
