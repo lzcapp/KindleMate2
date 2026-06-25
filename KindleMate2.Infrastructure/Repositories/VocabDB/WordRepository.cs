@@ -19,7 +19,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             if (reader.Read()) {
                 return new Word {
                     Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                    Word = DatabaseHelper.GetSafeString(reader, 1),
+                    WordText = DatabaseHelper.GetSafeString(reader, 1),
                     Stem = DatabaseHelper.GetSafeString(reader, 2),
                     Lang = DatabaseHelper.GetSafeString(reader, 3),
                     Category = DatabaseHelper.GetSafeLong(reader, 4),
@@ -46,7 +46,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 }
                 results.Add(new Word {
                     Id = id,
-                    Word = DatabaseHelper.GetSafeString(reader, 1),
+                    WordText = DatabaseHelper.GetSafeString(reader, 1),
                     Stem = DatabaseHelper.GetSafeString(reader, 2),
                     Lang = DatabaseHelper.GetSafeString(reader, 3),
                     Category = DatabaseHelper.GetSafeLong(reader, 4),
@@ -80,7 +80,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@id", id);
-            cmd.Parameters.AddWithValue("@word", word.Word ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@word", word.WordText ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@stem", word.Stem ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);
@@ -99,7 +99,7 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@id", id);
-            cmd.Parameters.AddWithValue("@word", word.Word ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@word", word.WordText ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@stem", word.Stem ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@lang", word.Lang ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@category", word.Category ?? (object)DBNull.Value);

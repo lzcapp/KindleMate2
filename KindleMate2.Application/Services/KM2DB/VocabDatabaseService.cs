@@ -36,7 +36,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 
                 foreach (Word item in words) {
                     var id = item.Id;
-                    var word = item.word;
+                    var word = item.WordText;
                     var stem = item.Stem;
                     var category = item.Category;
                     var timestamp = item.Timestamp;
