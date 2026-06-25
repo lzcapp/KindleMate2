@@ -258,11 +258,8 @@ namespace KindleMate2.Application.Services.KM2DB {
         
         private bool SetClippingsBriefTypeHide(string bookName, int pageNumber) {
             try {
-                switch (bookName) {
-                    case null:
-                    case "":
-                        return true;
-                }
+                if (string.IsNullOrEmpty(bookName))
+                    return true;
 
                 var clippings = clippingRepository.GetByBookNameAndPageNumber(bookName, pageNumber);
 
