@@ -4,6 +4,7 @@ using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Infrastructure.Repositories.VocabDB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using Microsoft.Data.Sqlite;
 using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
 using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
 
@@ -77,7 +78,11 @@ public class ImportManager : IImportManager {
                 return string.Empty;
             }
 
-            var connectionString = "Data Source=" + kindleWordsPath + ";Cache=Shared;Mode=ReadWrite;";
+            var connectionString = new SqliteConnectionStringBuilder {
+                DataSource = kindleWordsPath,
+                Mode = SqliteOpenMode.ReadWrite,
+                Cache = SqliteCacheMode.Shared
+            }.ToString();
 
             var bookInfoRepository = new BookInfoRepository(connectionString);
             var vocabLookupRepository = new VocabLookupRepository(connectionString);
