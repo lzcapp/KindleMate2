@@ -32,7 +32,7 @@ public class ContentDetailService : IContentDetailService {
         };
 
         if (info.IsNote) {
-            var noteClippings = _clippingService.GetClippingsByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Note);
+            var noteClippings = _clippingService.GetClippingsByBookNameAndPageNumberAndBriefType(bookName, pageNumber, BriefType.Highlight);
             if (noteClippings.Count > 0) {
                 info.NoteClippingContent = noteClippings[0].Content;
             }
