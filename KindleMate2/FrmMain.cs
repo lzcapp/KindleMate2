@@ -265,6 +265,19 @@ namespace KindleMate2 {
 
             _deviceManager.StartWatching();
             OnDeviceConnectionChanged(_deviceManager.IsConnected);
+            dataGridView.CellFormatting += DataGridView_CellFormatting;
+        }
+
+        private void DataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e) {
+            if (e.ColumnIndex >= 0 && dataGridView.Columns[e.ColumnIndex].Name == Columns.BriefType && e.Value != null) {
+                if (e.Value.ToString() == ((int)BriefType.Highlight).ToString()) {
+                    e.Value = Strings.Clipping;
+                    e.FormattingApplied = true;
+                } else if (e.Value.ToString() == ((int)BriefType.Note).ToString()) {
+                    e.Value = Strings.Note;
+                    e.FormattingApplied = true;
+                }
+            }
         }
 
         #endregion
@@ -386,8 +399,14 @@ namespace KindleMate2 {
                 dataGridView.Columns[Columns.PageNumber]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 dataGridView.Columns[Columns.PageNumber]!.DisplayIndex = 4;
             }
+            if (dataGridView.Columns.Contains(Columns.BriefType)) {
+                dataGridView.Columns[Columns.BriefType]!.HeaderText = "类型";
+                dataGridView.Columns[Columns.BriefType]!.Visible = true;
+                dataGridView.Columns[Columns.BriefType]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                dataGridView.Columns[Columns.BriefType]!.DisplayIndex = 5;
+            }
             // Hide internal columns
-            foreach (var col in new[] { Columns.Key, Columns.BriefType, Columns.ClippingTypeLocation,
+            foreach (var col in new[] { Columns.Key, Columns.ClippingTypeLocation,
                          Columns.Read, Columns.ClippingImportDate, Columns.Tag, Columns.Sync,
                          Columns.NewBookName, Columns.ColorRgb }) {
                 if (dataGridView.Columns.Contains(col)) dataGridView.Columns[col]!.Visible = false;
@@ -839,7 +858,18 @@ namespace KindleMate2 {
             if (dataGridView.SelectedRows.Count <= 0) return;
 
             var bookName = lblBook.Text;
-            var content = lblContent.Text;
+            var key = dataGridView.SelectedRows[0].Cells[Columns.Key].Value.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key)) return;
+
+            Clipping? clipping = _clippingService.GetClippingByKey(key);
+            if (clipping == null) return;
+
+            if (clipping.BriefType != BriefType.Note) {
+                MessageBox(Strings.Note + " Only", Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var content = clipping.Content;
 
             var fields = new List<KeyValue> {
                 new(Strings.Content, content, KeyValue.ValueTypes.Multiline)
@@ -851,9 +881,6 @@ namespace KindleMate2 {
                 if (string.IsNullOrWhiteSpace(fValue)) e.Cancel = true;
             };
 
-            var key = dataGridView.SelectedRows[0].Cells[Columns.Key].Value.ToString() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(key)) return;
-
             if (Messenger.InputBox(Strings.Edit_Clippings + Strings.Space + bookName, string.Empty, ref fields,
                     MsgIcon.Edit, MessageBoxButtons.OKCancel, _isDarkTheme) != DialogResult.OK) return;
 
@@ -861,11 +888,13 @@ namespace KindleMate2 {
             if (string.IsNullOrWhiteSpace(dialogContent)) return;
             if (dialogContent.Equals(content)) return;
 
-            Clipping? clipping = _clippingService.GetClippingByKey(key);
-            if (clipping == null) return;
-
             clipping.Content = dialogContent;
             if (_clippingService.UpdateClipping(clipping)) {
+                var originalLine = _originalClippingLineService.GetOriginalClippingLineByKey(key);
+                if (originalLine != null) {
+                    originalLine.Line4 = dialogContent;
+                    _originalClippingLineService.UpdateOriginalClippingLine(originalLine);
+                }
                 MessageBox(Strings.Clippings_Revised, Strings.Successful, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
                 MessageBox(Strings.Clippings_Revised_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
