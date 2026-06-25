@@ -44,7 +44,7 @@ namespace KindleMate2 {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void HideCaret(IntPtr hWnd);
 
-        [LibraryImport("user32.dll", EntryPoint = "DestroyCaretA")]
+        [LibraryImport("user32.dll", EntryPoint = "DestroyCaret")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void DestroyCaret();
 
