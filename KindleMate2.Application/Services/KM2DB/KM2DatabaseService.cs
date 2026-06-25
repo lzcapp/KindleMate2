@@ -117,6 +117,11 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             var allClippings = clippingRepository.GetAll();
             var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
+            // Pre-build key→contents map for O(1) dedup lookup instead of O(n) Any() per item
+            var contentByKey = allClippings
+                .Where(c => c.Content != null)
+                .GroupBy(c => c.Key)
+                .ToDictionary(g => g.Key, g => g.Select(c => c.Content!).ToList());
             var originalKeys = originalClippingLineRepository.GetAllKeys();
             
             var listAddClippings = new List<Clipping>();
@@ -208,7 +213,8 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     clipping.Key = key;
 
-                    if (allClippings.Any(c => c.Key.Equals(key) && c.Content.Contains(content))) {
+                    if (contentByKey.TryGetValue(key, out var contents) && 
+                        contents.Any(c => c.Contains(content))) {
                         continue;
                     }
                 
