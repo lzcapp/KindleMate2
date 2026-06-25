@@ -173,13 +173,13 @@ public class DeviceManager : IDeviceManager {
                         continue;
                     }
                     MediaFileInfo? file = mediaFileInfos[0];
-                    var memoryStream = new MemoryStream();
+                    using var memoryStream = new MemoryStream();
                     if (!device.IsConnected) {
                         device.Connect();
                     }
                     device.DownloadFile(file.FullName, memoryStream);
                     memoryStream.Position = 0;
-                    using var reader = new StreamReader(memoryStream);
+                    using var reader = new StreamReader(memoryStream, leaveOpen: true);
                     reader.ReadToEnd(); // Version read for validation only
                     _deviceType = Device.Type.MTP;
                     device.Disconnect();
@@ -270,7 +270,7 @@ public class DeviceManager : IDeviceManager {
             return;
         }
         MediaFileInfo file = fileInfos[0];
-        var memoryStream = new MemoryStream();
+        using var memoryStream = new MemoryStream();
         device.DownloadFile(file.FullName, memoryStream);
         memoryStream.Position = 0;
         try {

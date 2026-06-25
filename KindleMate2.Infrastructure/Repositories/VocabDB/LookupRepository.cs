@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     public class LookupRepository(string connectionString) : ILookupRepository {
         public Lookup? GetById(string id) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT id, word_key, book_key, dict_key, pos, usage, timestamp FROM LOOKUPS WHERE id = @id", connection);

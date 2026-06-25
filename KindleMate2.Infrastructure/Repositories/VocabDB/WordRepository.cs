@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     public class WordRepository(string connectionString) : IWordRepository {
         public Word? GetById(string id) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT id, word, stem, lang, category, timestamp, profileid FROM WORDS WHERE id = @id", connection);

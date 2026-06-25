@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class ClippingRepository(string connectionString) : IClippingRepository {
         public Clipping? GetByKey(string key) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings WHERE key = @key",
@@ -40,7 +40,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         public Clipping? GetByKeyAndContent(string key, string content) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand(
@@ -73,7 +73,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public List<Clipping> GetByBookNameAndPageNumber(string bookname, int pagenumber) {
             var results = new List<Clipping>();
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand(
@@ -114,7 +114,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public List<Clipping> GetByBookNameAndPageNumberAndBriefType(string bookname, int pagenumber, BriefType brieftype) {
             var results = new List<Clipping>();
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand(
@@ -156,7 +156,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public List<Clipping> GetByFuzzySearch(string search, AppEntities.SearchType type) {
             var results = new List<Clipping>();
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var sql = type switch {
@@ -202,7 +202,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public List<Clipping> GetByContent(string content) {
             var results = new List<Clipping>();
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand(
