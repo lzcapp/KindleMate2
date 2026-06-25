@@ -63,8 +63,6 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM WORDS", connection);
-
-            using SqliteDataReader reader = cmd.ExecuteReader();
             var result = cmd.ExecuteScalar();
 
             return Convert.ToInt32(result);
