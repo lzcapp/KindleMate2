@@ -21,7 +21,7 @@
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFrameworks>net8.0-windows</TargetFrameworks>
 		<Version>2025.10.06</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
@@ -230,7 +230,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
+	  <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" SetTargetFramework="TargetFramework=net8.0-windows" />
 	  <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
 	  <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
