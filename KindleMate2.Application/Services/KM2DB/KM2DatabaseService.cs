@@ -35,6 +35,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
                     var florDelimiter = delimiterIndex[i];
 
+                    // Guard against malformed file: ensure enough lines for header + metadata + content
+                    if (ceilDelimiter + 4 >= lines.Count)
+                        continue;
+
                     var line1 = lines[ceilDelimiter + 1].Trim();
                     var line2 = lines[ceilDelimiter + 2].Trim();
                     //  line3 should be empty
