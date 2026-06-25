@@ -40,7 +40,7 @@ namespace KindleMate2 {
         private int _selectedTreeIndex, _selectedDataGridIndex;
         private bool _isDarkTheme;
 
-        [LibraryImport("User32.dll", EntryPoint = "HideCaretA")]
+        [LibraryImport("User32.dll", EntryPoint = "HideCaret")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void HideCaret(IntPtr hWnd);
 
