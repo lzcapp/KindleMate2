@@ -242,21 +242,35 @@ public class DeviceManager : IDeviceManager {
     /// Syncs exported clippings file back to the connected Kindle device.
     /// </summary>
     public void SyncFileToDevice(string exportedFilePath, string targetFileName) {
+        if (!IsConnected) {
+            throw new Exception(Strings.Kindle_Connect_Failed);
+        }
         var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
         switch (_deviceType) {
             case Device.Type.USB:
                 File.Copy(exportedFilePath, Path.Combine(documentPath, targetFileName), true);
                 break;
             case Device.Type.MTP: {
-                var devices = MediaDevice.GetDevices();
-                using MediaDevice? device = devices.First(d =>
-                    d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
-                    d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                device.Connect();
-                using var sr = new StreamReader(exportedFilePath);
-                device.DeleteFile(Path.Combine(documentPath, targetFileName));
-                device.UploadFile(sr.BaseStream, Path.Combine(documentPath, targetFileName));
-                device.Disconnect();
+                MediaDevice? device = null;
+                try {
+                    var devices = MediaDevice.GetDevices().ToList();
+                    device = devices.FirstOrDefault(d =>
+                        d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
+                        d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                    if (device == null) {
+                        throw new Exception(Strings.Kindle_Connect_Failed);
+                    }
+                    device.Connect();
+                    var targetPath = Path.Combine(documentPath, targetFileName);
+                    try { device.DeleteFile(targetPath); } catch { /* file may not exist on first sync */ }
+                    using var fileStream = File.OpenRead(exportedFilePath);
+                    device.UploadFile(fileStream, targetPath);
+                } finally {
+                    if (device is { IsConnected: true }) {
+                        device.Disconnect();
+                    }
+                    device?.Dispose();
+                }
                 break;
             }
         }
