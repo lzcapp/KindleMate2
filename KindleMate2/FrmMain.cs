@@ -546,8 +546,7 @@ namespace KindleMate2 {
                     return;
                 }
                 dataGridView.DataSource = _dataDisplayService.ClippingsToDataTable();
-                dataGridView.Columns[Columns.BookName]!.Visible = true;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = true;
+                ConfigureClippingColumns(showBook: true, showAuthor: true);
                 if (dataGridView.Columns.Contains(Columns.ClippingDate))
                     dataGridView.Sort(dataGridView.Columns[Columns.ClippingDate]!, ListSortDirection.Descending);
             } else {
@@ -559,11 +558,9 @@ namespace KindleMate2 {
                 }
                 dataGridView.DataSource = _dataDisplayService.ClippingsToDataTable(filtered);
                 ShowBookCountLabel(Strings.Total_Clippings, filtered.Count, Strings.X_Clippings, Resources.open_book);
-                dataGridView.Columns[Columns.BookName]!.Visible = false;
-                dataGridView.Columns[Columns.BookName]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.AuthorName]!.Visible = false;
-                dataGridView.Columns[Columns.AuthorName]!.HeaderText = Strings.Author;
-                dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
+                ConfigureClippingColumns(showBook: false, showAuthor: false);
+                if (dataGridView.Columns.Contains(Columns.PageNumber))
+                    dataGridView.Sort(dataGridView.Columns[Columns.PageNumber]!, ListSortDirection.Ascending);
             }
         }
 
@@ -579,15 +576,7 @@ namespace KindleMate2 {
                     return;
                 }
                 dataGridView.DataSource = _dataDisplayService.LookupsToDataTable();
-                dataGridView.Columns[Columns.Word]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                dataGridView.Columns[Columns.Frequency]!.Visible = true;
-                dataGridView.Columns[Columns.Frequency]!.HeaderText = Strings.Frequency;
+                ConfigureVocabColumns(showWord: true);
             } else {
                 splitContainerDetail.Panel1Collapsed = true;
 
@@ -599,14 +588,7 @@ namespace KindleMate2 {
                 }
                 dataGridView.DataSource = _dataDisplayService.LookupsToDataTable(filtered);
                 ShowBookCountLabel(Strings.Totally_Vocabs, filtered.Count, Strings.X_Lookups, Resources.input_latin_uppercase);
-                dataGridView.Columns[Columns.Word]!.Visible = false;
-                dataGridView.Columns[Columns.Usage]!.Visible = true;
-                dataGridView.Columns[Columns.Usage]!.HeaderText = Strings.Content;
-                dataGridView.Columns[Columns.Title]!.Visible = true;
-                dataGridView.Columns[Columns.Title]!.HeaderText = Strings.Books;
-                dataGridView.Columns[Columns.Authors]!.Visible = true;
-                dataGridView.Columns[Columns.Authors]!.HeaderText = Strings.Author;
-                dataGridView.Columns[Columns.Frequency]!.Visible = false;
+                ConfigureVocabColumns(showWord: false);
             }
         }
 
@@ -864,7 +846,7 @@ namespace KindleMate2 {
             Clipping? clipping = _clippingService.GetClippingByKey(key);
             if (clipping == null) return;
 
-            if (clipping.BriefType != BriefType.Note) {
+            if (clipping.BriefType != (long)BriefType.Note) {
                 MessageBox(Strings.Note + " Only", Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -933,6 +915,7 @@ namespace KindleMate2 {
                     var key = row.Cells[Columns.Key].Value.ToString() ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(key)) return;
                     if (_clippingService.DeleteClipping(key)) {
+                        _originalClippingLineService.DeleteOriginalClippingLine(key);
                         dataGridView.Rows.Remove(row);
                     } else {
                         MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -985,14 +968,23 @@ namespace KindleMate2 {
             if (treeViewBooks.SelectedNode.Text.Equals(Strings.Select_All)) {
                 var result = MessageBox(Strings.Confirm_Clear_Clippings, Strings.Confirm,
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (result == DialogResult.Yes) _clippingService.DeleteAllClippings();
+                if (result == DialogResult.Yes) {
+                    _clippingService.DeleteAllClippings();
+                    _originalClippingLineService.DeleteAllOriginalClippingLines();
+                }
             } else {
                 var result = MessageBox(Strings.Confirm_Delete_Clippings_Book, Strings.Confirm,
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result == DialogResult.Yes) {
                     var bookname = treeViewBooks.SelectedNode.Text;
                     var clippings = _clippingService.GetClippingsByBookName(bookname);
-                    var deletedCount = clippings.Count(clipping => _clippingService.DeleteClipping(clipping.Key));
+                    var deletedCount = clippings.Count(clipping => {
+                        if (_clippingService.DeleteClipping(clipping.Key)) {
+                            _originalClippingLineService.DeleteOriginalClippingLine(clipping.Key);
+                            return true;
+                        }
+                        return false;
+                    });
                     if (deletedCount == 0)
                         MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     _selectedBook = Strings.Select_All;

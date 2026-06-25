@@ -229,7 +229,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                             Key = key, 
                             Line1 = header, 
                             Line2 = metadata,
-                            Line4 = content
+                            Line3 = string.Empty,
+                            Line4 = content,
+                            Line5 = myClipping.Delimiter
                         });
                     }
                 } catch (Exception e) {

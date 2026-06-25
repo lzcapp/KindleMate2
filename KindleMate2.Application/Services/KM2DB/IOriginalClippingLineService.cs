@@ -11,5 +11,6 @@ public interface IOriginalClippingLineService {
     void AddOriginalClippingLine(OriginalClippingLine originalClippingLine);
     void UpdateOriginalClippingLine(OriginalClippingLine originalClippingLine);
     void DeleteOriginalClippingLine(string key);
+    void DeleteAllOriginalClippingLines();
     bool Export(string filePath, string fileName, out Exception? exception);
 }
