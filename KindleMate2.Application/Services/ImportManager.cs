@@ -1,12 +1,7 @@
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
-using KindleMate2.Infrastructure.Repositories.KM2DB;
-using KindleMate2.Infrastructure.Repositories.VocabDB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
-using Microsoft.Data.Sqlite;
-using LookupRepository = KindleMate2.Infrastructure.Repositories.KM2DB.LookupRepository;
-using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.LookupRepository;
 
 namespace KindleMate2.Application.Services;
 
@@ -19,15 +14,21 @@ public class ImportManager : IImportManager {
     private readonly IVocabService _vocabService;
     private readonly IOriginalClippingLineService _originalClippingLineService;
     private readonly ILookupService _lookupService;
+    private readonly IVocabDatabaseServiceFactory _vocabDatabaseServiceFactory;
+    private readonly IKmDatabaseServiceFactory _kmDatabaseServiceFactory;
     private readonly string _importPath;
 
     public ImportManager(IKm2DatabaseService km2DatabaseService, IClippingService clippingService, IVocabService vocabService,
-        IOriginalClippingLineService originalClippingLineService, ILookupService lookupService, string importPath) {
+        IOriginalClippingLineService originalClippingLineService, ILookupService lookupService,
+        IVocabDatabaseServiceFactory vocabDatabaseServiceFactory, IKmDatabaseServiceFactory kmDatabaseServiceFactory,
+        string importPath) {
         _km2DatabaseService = km2DatabaseService;
         _clippingService = clippingService;
         _vocabService = vocabService;
         _originalClippingLineService = originalClippingLineService;
         _lookupService = lookupService;
+        _vocabDatabaseServiceFactory = vocabDatabaseServiceFactory;
+        _kmDatabaseServiceFactory = kmDatabaseServiceFactory;
         _importPath = importPath;
     }
 
@@ -78,18 +79,7 @@ public class ImportManager : IImportManager {
                 return string.Empty;
             }
 
-            var connectionString = new SqliteConnectionStringBuilder {
-                DataSource = kindleWordsPath,
-                Mode = SqliteOpenMode.ReadWrite,
-                Cache = SqliteCacheMode.Shared
-            }.ToString();
-
-            var bookInfoRepository = new BookInfoRepository(connectionString);
-            var vocabLookupRepository = new VocabLookupRepository(connectionString);
-            var wordRepository = new WordRepository(connectionString);
-            var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
-            var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
-            var vocabDatabaseService = new VocabDatabaseService(bookInfoRepository, vocabLookupRepository, wordRepository, lookupRepository, vocabRepository);
+            var vocabDatabaseService = _vocabDatabaseServiceFactory.Create(kindleWordsPath);
 
             if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
                 var lookupCount = result[AppConstants.LookupCount];
@@ -107,22 +97,7 @@ public class ImportManager : IImportManager {
     }
 
     public string ImportKmDatabase(string filePath) {
-        var kmConnectionString = DatabaseHelper.GetConnectionString(filePath);
-
-        var clippingRepository = new ClippingRepository(AppConstants.ConnectionString);
-        var lookupRepository = new LookupRepository(AppConstants.ConnectionString);
-        var originalClippingLineRepository = new OriginalClippingLineRepository(AppConstants.ConnectionString);
-        var settingRepository = new SettingRepository(AppConstants.ConnectionString);
-        var vocabRepository = new VocabRepository(AppConstants.ConnectionString);
-
-        var kmClippingRepository = new ClippingRepository(kmConnectionString);
-        var kmLookupRepository = new LookupRepository(kmConnectionString);
-        var kmOriginalClippingLineRepository = new OriginalClippingLineRepository(kmConnectionString);
-        var kmSettingRepository = new SettingRepository(kmConnectionString);
-        var kmVocabRepository = new VocabRepository(kmConnectionString);
-
-        var kmDatabaseService = new KmDatabaseService(clippingRepository, lookupRepository, originalClippingLineRepository, settingRepository,
-            vocabRepository, kmClippingRepository, kmLookupRepository, kmOriginalClippingLineRepository, kmSettingRepository, kmVocabRepository);
+        var kmDatabaseService = _kmDatabaseServiceFactory.Create(filePath);
 
         var clippingsCount = _clippingService.GetCount();
         var vocabCount = _vocabService.GetCount();
