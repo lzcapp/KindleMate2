@@ -186,7 +186,7 @@ namespace KindleMate2 {
                 btnSave.Visible = false;
                 WindowState = FormWindowState.Maximized;
 
-                var bitmap = new Bitmap(Width, Height);
+                using var bitmap = new Bitmap(Width, Height);
                 DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
                 var directoryPath = Path.Combine(Environment.CurrentDirectory, AppConstants.StatisticsPathName);
                 var filePath = Path.Combine(directoryPath, DateTimeHelper.GetCurrentTimestamp() + FileExtension.PNG);
@@ -195,7 +195,6 @@ namespace KindleMate2 {
                 }
 
                 bitmap.Save(filePath, ImageFormat.Png);
-                bitmap.Dispose();
 
                 btnSave.Visible = true;
                 WindowState = FormWindowState.Normal;
