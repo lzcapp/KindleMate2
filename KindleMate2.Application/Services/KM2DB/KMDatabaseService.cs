@@ -47,8 +47,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                         if (string.IsNullOrEmpty(kmClipping.Content)) {
                             continue;
                         }
-                        if (!targetClippingKeys.Contains(kmClipping.Key) ||
-                            targetClippingContents.Contains(kmClipping.Content)) {
+                        if (!targetClippingKeys.Contains(kmClipping.Key) &&
+                            !targetClippingContents.Contains(kmClipping.Content)) {
                             _clippingRepository.Add(kmClipping);
                         }
                     }
