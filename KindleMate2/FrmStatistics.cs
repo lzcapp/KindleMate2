@@ -135,7 +135,7 @@ namespace KindleMate2 {
                 tabControl.TabPages.Add(tabPageVocabs);
             }
 
-            var validVocabs = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
+            var validVocabs = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => ParseDateTime(row.Timestamp!)).ToList();
 
             var listVocabsByDate = validVocabs.GroupBy(date => new {
                 date.Year,
@@ -180,7 +180,7 @@ namespace KindleMate2 {
                 if (string.IsNullOrWhiteSpace(field)) {
                     return DateTime.MinValue;
                 }
-                DateTime date = DateTime.Parse(field);
+                DateTime date = DateTime.Parse(field, CultureInfo.InvariantCulture);
                 return date;
             } catch (Exception) {
                 return DateTime.MinValue;
@@ -237,7 +237,7 @@ namespace KindleMate2 {
                         var clippings = _clippings.Count;
                         var books = _clippings.Select(row => row.BookName).Distinct().Count();
                         var authors = _clippings.Select(row => row.AuthorName).Distinct().Count();
-                        var bookTimes = _clippings.Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => DateTime.Parse(row.ClippingDate!)).ToList();
+                        var bookTimes = _clippings.Where(row => !string.IsNullOrEmpty(row.ClippingDate)).Select(row => ParseDateTime(row.ClippingDate!)).ToList();
                         var bookDays = (bookTimes.Max() - bookTimes.Min()).Days;
                         text = Strings.In + Strings.Space + bookDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + clippings + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
                                books + Strings.Space + Strings.X_Books + Strings.Symbol_Comma + authors + Strings.Space + Strings.X_Authors;
@@ -247,7 +247,7 @@ namespace KindleMate2 {
                     if (_vocabs.Count > 0) {
                         var lookups = _vocabs.Sum(row => Convert.ToInt32(row.Frequency));
                         var words = _vocabs.Select(row => row.Word).Distinct().Count();
-                        var vocabTimes = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
+                        var vocabTimes = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => ParseDateTime(row.Timestamp!)).ToList();
                         var vocabDays = (vocabTimes.Max() - vocabTimes.Min()).Days;
                         text = lblStatistics.Text = Strings.In + Strings.Space + vocabDays + Strings.Space + Strings.X_Days + Strings.Symbol_Comma + Strings.Totally + Strings.Space + lookups + Strings.Space + Strings.X_Lookups +
                                                     Strings.Symbol_Comma + words + Strings.Space + Strings.X_Vocabs;
