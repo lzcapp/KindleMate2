@@ -125,8 +125,14 @@ namespace KindleMate2 {
 
         private bool SetVocabTab() {
             if (_vocabs.Count == 0) {
-                tabControl.TabPages.Remove(tabPageVocabs);
+                if (tabControl.TabPages.Contains(tabPageVocabs)) {
+                    tabControl.TabPages.Remove(tabPageVocabs);
+                }
                 return false;
+            }
+
+            if (!tabControl.TabPages.Contains(tabPageVocabs)) {
+                tabControl.TabPages.Add(tabPageVocabs);
             }
 
             var validVocabs = _vocabs.Where(row => !string.IsNullOrEmpty(row.Timestamp)).Select(row => DateTime.Parse(row.Timestamp!)).ToList();
