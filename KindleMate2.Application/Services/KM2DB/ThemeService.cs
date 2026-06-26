@@ -13,10 +13,17 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             // fallback to OS setting
             var isWindowsDarkTheme = ThemeHelper.IsWindowsDarkTheme();
-            settingsRepository.Add(new Setting {
+            var newSetting = new Setting {
                 Name = "theme",
                 Value = isWindowsDarkTheme ? "dark" : "light"
-            });
+            };
+
+            if (theme == null) {
+                settingsRepository.Add(newSetting);
+            } else {
+                settingsRepository.Update(newSetting);
+            }
+
             return isWindowsDarkTheme;
         }
     }
