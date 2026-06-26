@@ -26,8 +26,9 @@ namespace KindleMate2.Application.Services.KM2DB {
         public void UpdateSetting(Setting setting) {
             if (GetSettingByName(setting.Name) == null) {
                 repository.Add(setting);
+            } else {
+                repository.Update(setting);
             }
-            repository.Update(setting);
         }
 
         public void DeleteSetting(string name) {
