@@ -155,45 +155,38 @@ public class DeviceManager : IDeviceManager {
 
     private bool HandleMtpDevice() {
         try {
-            var devices = MediaDevice.GetDevices().ToList();
-            foreach (MediaDevice device in devices) {
-                try {
-                    device.Connect();
-                    if (!device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) &&
-                        !device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
-                        device.Disconnect();
-                        continue;
-                    }
-                    _driveLetter = @"\Internal Storage\";
-                    MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, AppConstants.SystemPathName));
-                    var files = systemDir.EnumerateFiles(AppConstants.VersionFileName);
-                    var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
-                    if (mediaFileInfos.Length == 0) {
-                        device.Disconnect();
-                        continue;
-                    }
-                    MediaFileInfo? file = mediaFileInfos[0];
-                    using var memoryStream = new MemoryStream();
-                    if (!device.IsConnected) {
-                        device.Connect();
-                    }
-                    device.DownloadFile(file.FullName, memoryStream);
-                    memoryStream.Position = 0;
-                    using var reader = new StreamReader(memoryStream, leaveOpen: true);
-                    reader.ReadToEnd(); // Version read for validation only
-                    _deviceType = Device.Type.MTP;
-                    device.Disconnect();
-                    return true;
-                } catch (Exception e) {
-                    Console.WriteLine(e);
-                    // Reset partial state if _driveLetter was set before failure
-                    if (string.Equals(_driveLetter, @"\Internal Storage\", StringComparison.Ordinal)) {
-                        _driveLetter = string.Empty;
-                    }
-                    try { device.Disconnect(); } catch { /* best effort */ }
-                }
+            var device = FindKindleDevice();
+            if (device == null) {
+                return false;
             }
-            return false;
+
+            try {
+                device.Connect();
+                _driveLetter = @"\Internal Storage\";
+                MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, AppConstants.SystemPathName));
+                var files = systemDir.EnumerateFiles(AppConstants.VersionFileName);
+                var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
+                if (mediaFileInfos.Length == 0) {
+                    return false;
+                }
+                MediaFileInfo? file = mediaFileInfos[0];
+                using var memoryStream = new MemoryStream();
+                device.DownloadFile(file.FullName, memoryStream);
+                memoryStream.Position = 0;
+                using var reader = new StreamReader(memoryStream, leaveOpen: true);
+                reader.ReadToEnd(); // Version read for validation only
+                _deviceType = Device.Type.MTP;
+                return true;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                // Reset partial state if _driveLetter was set before failure
+                if (string.Equals(_driveLetter, @"\Internal Storage\", StringComparison.Ordinal)) {
+                    _driveLetter = string.Empty;
+                }
+                return false;
+            } finally {
+                try { device.Disconnect(); } catch { /* best effort */ }
+            }
         } catch (Exception e) {
             Console.WriteLine(e);
             return false;
@@ -215,25 +208,20 @@ public class DeviceManager : IDeviceManager {
                     return true;
                 }
                 case Device.Type.MTP: {
-                    var devices = MediaDevice.GetDevices().ToList();
-                    var isPaired = false;
-                    foreach (MediaDevice device in devices) {
-                        device.Connect();
-                        if (!device.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) &&
-                            !device.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase)) {
-                            device.Disconnect();
-                            continue;
-                        }
-                        try {
-                            ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
-                            ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
-                            isPaired = true;
-                            break;
-                        } finally {
-                            device.Disconnect();
-                        }
+                    var device = FindKindleDevice();
+                    if (device == null) {
+                        return false;
                     }
-                    return isPaired;
+                    try {
+                        device.Connect();
+                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                        return true;
+                    } catch {
+                        return false;
+                    } finally {
+                        try { device.Disconnect(); } catch { /* best effort */ }
+                    }
                 }
                 case Device.Type.Unknown:
                 default: {
@@ -259,15 +247,11 @@ public class DeviceManager : IDeviceManager {
                 File.Copy(exportedFilePath, Path.Combine(documentPath, targetFileName), true);
                 break;
             case Device.Type.MTP: {
-                MediaDevice? device = null;
+                var device = FindKindleDevice();
+                if (device == null) {
+                    throw new Exception(Strings.Kindle_Connect_Failed);
+                }
                 try {
-                    var devices = MediaDevice.GetDevices().ToList();
-                    device = devices.FirstOrDefault(d =>
-                        d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
-                        d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
-                    if (device == null) {
-                        throw new Exception(Strings.Kindle_Connect_Failed);
-                    }
                     device.Connect();
                     var targetPath = Path.Combine(documentPath, targetFileName);
                     try { device.DeleteFile(targetPath); } catch { /* file may not exist on first sync */ }
@@ -277,11 +261,22 @@ public class DeviceManager : IDeviceManager {
                     if (device is { IsConnected: true }) {
                         device.Disconnect();
                     }
-                    device?.Dispose();
+                    device.Dispose();
                 }
                 break;
             }
         }
+    }
+
+    /// <summary>
+    /// Find the first Kindle MTP device without connecting to every device.
+    /// FriendlyName / Model are available before Connect().
+    /// </summary>
+    private static MediaDevice? FindKindleDevice() {
+        return MediaDevice.GetDevices()
+            .FirstOrDefault(d =>
+                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
+                d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private static void ReadMtpFile(MediaDevice device, string path, string fileName, string filePath) {
