@@ -1197,7 +1197,7 @@ namespace KindleMate2 {
                     "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
 
                 if (!_deviceManager.ImportFilesFromDevice(backupClippingsFilePath, backupWordsFilePath, out Exception? exception))
-                    throw exception;
+                    throw exception!;
 
                 SetProgressBar(true);
                 menuKindle.Enabled = false;
@@ -1281,7 +1281,7 @@ namespace KindleMate2 {
             if (_dataDisplayService.Clippings.Count <= 0) {
                 MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
             } else {
-                if (_exportManager.BackupClippings(out Exception exception)) {
+                if (_exportManager.BackupClippings(out Exception? exception)) {
                     DialogResult result = MessageBox(Strings.Backup_Successful + Strings.Open_Folder, Strings.Successful,
                         MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes)

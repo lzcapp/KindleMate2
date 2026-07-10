@@ -56,14 +56,14 @@ public class ExportManager : IExportManager {
     /// <summary>
     /// Exports original clippings for backup.
     /// </summary>
-    public bool BackupClippings(out Exception exception) {
+    public bool BackupClippings(out Exception? exception) {
         return _originalClippingLineService.Export(_backupPath, AppConstants.DatabaseFileName, out exception);
     }
 
     /// <summary>
     /// Exports original clippings to a specific path.
     /// </summary>
-    public bool ExportOriginalClippings(string path, string fileName, out Exception exception) {
+    public bool ExportOriginalClippings(string path, string fileName, out Exception? exception) {
         return _originalClippingLineService.Export(path, fileName, out exception);
     }
 
@@ -80,7 +80,7 @@ public class ExportManager : IExportManager {
 
         if (!_deviceManager.ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception? exception) ||
             !_originalClippingLineService.Export(_tempPath, AppConstants.ClippingsFileName, out exception)) {
-            throw exception;
+            throw exception!;
         }
 
         var exportedClippingsPath = Path.Combine(_tempPath, AppConstants.ClippingsFileName);
