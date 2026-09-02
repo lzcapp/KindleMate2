@@ -134,7 +134,7 @@ namespace KindleMate2 {
             menuStrip.BackgroundImageLayout = ImageLayout.None;
             menuStrip.Font = new Font("微软雅黑", 9F);
             menuStrip.GripMargin = new Padding(0);
-            menuStrip.ImageScalingSize = new Size(32, 32);
+            menuStrip.ImageScalingSize = new Size(24, 24);
             menuStrip.Items.AddRange(new ToolStripItem[] { menuFile, menuManage, menuHelp, menuKindle, menuTheme, menuLang, toolStripMenuItem1 });
             menuStrip.Location = new Point(0, 0);
             menuStrip.Name = "menuStrip";
