@@ -1,0 +1,35 @@
+name: build
+
+on:
+  push:
+    branches: [main, 'dev-*']
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore KindleMate2.sln
+
+      # Clean full build (no incremental cache): mirrors the project rule that
+      # incremental "0 errors" is not proof of a healthy build (CS0542 and a
+      # missing interface file were previously masked by obj/ caches for months).
+      - name: Build Debug (full, no incremental)
+        run: dotnet build KindleMate2.sln -c Debug --no-restore --no-incremental
+
+      - name: Build Release (full, no incremental)
+        run: dotnet build KindleMate2.sln -c Release --no-restore --no-incremental
+
+      - name: Run tests
+        run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore
