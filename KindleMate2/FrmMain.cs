@@ -935,15 +935,16 @@ namespace KindleMate2 {
 
             try {
                 foreach (DataGridViewRow row in dataGridView.SelectedRows) {
+                    var wordKey = row.Cells[Columns.WordKey].Value?.ToString() ?? string.Empty;
                     var timestamp = row.Cells[Columns.Timestamp].Value?.ToString() ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(timestamp)) continue;
-                    var lookups = _lookupService.GetLookupsByTimestamp(timestamp);
-                    foreach (Lookup lookup in lookups) {
-                        if (lookup.WordKey != null && _lookupService.DeleteLookup(lookup.WordKey)) {
-                            dataGridView.Rows.Remove(row);
-                        } else {
-                            MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                    // Each grid row maps to one lookup identified by (word_key, timestamp);
+                    // lookups have no primary key, so delete by the exact pair rather than
+                    // by word_key alone (which would remove every history row of that word).
+                    if (string.IsNullOrWhiteSpace(wordKey) || string.IsNullOrWhiteSpace(timestamp)) continue;
+                    if (_lookupService.DeleteLookup(wordKey, timestamp)) {
+                        dataGridView.Rows.Remove(row);
+                    } else {
+                        MessageBox(Strings.Delete_Failed, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             } catch (Exception ex) {

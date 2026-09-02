@@ -13,6 +13,11 @@ public interface ILookupService {
     void AddLookup(Lookup lookup);
     void UpdateLookup(Lookup lookup);
     bool DeleteLookup(string wordKey);
+
+    /// <summary>
+    /// Deletes exactly one lookup row identified by (word_key, timestamp).
+    /// </summary>
+    bool DeleteLookup(string wordKey, string timestamp);
     bool RenameBook(string originBookname, string bookname, string authorName);
     bool LookupsToMarkdown(string filePath, string word = "");
 }

@@ -70,6 +70,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey);
         }
 
+        public bool DeleteLookup(string wordKey, string timestamp) {
+            return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey, timestamp);
+        }
+
         public bool RenameBook(string originBookname, string bookname, string authorName) {
             var lookups = repository.GetByTitle(originBookname);
             var result = 0;

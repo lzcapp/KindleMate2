@@ -32,6 +32,13 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool Delete(string wordKey);
 
+        /// <summary>
+        /// Deletes the single lookup identified by (word_key, timestamp).
+        /// lookups have no primary key and word_key alone is not unique (the same word can be
+        /// looked up many times), so deleting by the exact pair targets just the selected row.
+        /// </summary>
+        bool Delete(string wordKey, string timestamp);
+
         bool DeleteAll();
     }
 }

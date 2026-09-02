@@ -163,8 +163,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
                     var pageNumber = -1;
                     var pagePattern = @"\d+(-\d+)?";
-                    var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
                     Match pageMatch = Regex.Match(pageStr, pagePattern);
+                    var isPageMatched = pageMatch.Success;
                     var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
                     var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
                     var isPageParsed = false;
