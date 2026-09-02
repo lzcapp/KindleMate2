@@ -34,66 +34,53 @@ public class ImportManager : IImportManager {
 
     /// <summary>
     /// Imports both Kindle clippings and Kindle words from file paths.
+    /// On any failure, throws <see cref="InvalidOperationException"/> with the underlying message —
+    /// the UI layer distinguishes success/failure by result presence vs thrown exception.
     /// </summary>
     public string Import(string kindleClippingsPath, string kindleWordsPath) {
-        try {
-            var clippingsResult = ImportKindleClippings(kindleClippingsPath);
-            var wordResult = ImportKindleWords(kindleWordsPath);
+        var clippingsResult = ImportKindleClippings(kindleClippingsPath);
+        var wordResult = ImportKindleWords(kindleWordsPath);
 
-            if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
-                return string.Empty;
-            }
-            if (string.IsNullOrWhiteSpace(clippingsResult)) {
-                return wordResult;
-            }
-            if (string.IsNullOrWhiteSpace(wordResult)) {
-                return clippingsResult;
-            }
-            return clippingsResult + Environment.NewLine + wordResult;
-        } catch (Exception e) {
-            return $"Import failed: {e.Message}";
+        if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
+            return string.Empty;
         }
+        if (string.IsNullOrWhiteSpace(clippingsResult)) {
+            return wordResult;
+        }
+        if (string.IsNullOrWhiteSpace(wordResult)) {
+            return clippingsResult;
+        }
+        return clippingsResult + Environment.NewLine + wordResult;
     }
 
     public string ImportKindleClippings(string clippingsPath) {
-        try {
-            string message;
-            if (_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
-                var parsedCount = result[AppConstants.ParsedCount];
-                var insertedCount = result[AppConstants.InsertedCount];
-                message = Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
-                          Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
-            } else {
-                var exception = result[AppConstants.Exception];
-                return $"Import failed: {exception}";
-            }
-            return message;
-        } catch (Exception e) {
-            throw new InvalidOperationException($"Failed to import Kindle clippings from '{clippingsPath}': {e.Message}", e);
+        if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+            var exception = result[AppConstants.Exception];
+            throw new InvalidOperationException(exception);
         }
+        var parsedCount = result[AppConstants.ParsedCount];
+        var insertedCount = result[AppConstants.InsertedCount];
+        return Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+               Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
     }
 
     public string ImportKindleWords(string kindleWordsPath) {
-        try {
-            if (!File.Exists(kindleWordsPath)) {
-                return string.Empty;
-            }
-
-            var vocabDatabaseService = _vocabDatabaseServiceFactory.Create(kindleWordsPath);
-
-            if (vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
-                var lookupCount = result[AppConstants.LookupCount];
-                var insertedLookupCount = result[AppConstants.InsertedLookupCount];
-                var insertedVocabCount = result[AppConstants.InsertedVocabCount];
-                return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma +
-                       Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups + Strings.Space +
-                       Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
-            }
-            var exception = result[AppConstants.Exception];
-            return exception;
-        } catch (Exception e) {
-            throw new InvalidOperationException($"Failed to import Kindle words from '{kindleWordsPath}': {e.Message}", e);
+        if (!File.Exists(kindleWordsPath)) {
+            return string.Empty;
         }
+
+        var vocabDatabaseService = _vocabDatabaseServiceFactory.Create(kindleWordsPath);
+
+        if (!vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result)) {
+            var exception = result[AppConstants.Exception];
+            throw new InvalidOperationException(exception);
+        }
+        var lookupCount = result[AppConstants.LookupCount];
+        var insertedLookupCount = result[AppConstants.InsertedLookupCount];
+        var insertedVocabCount = result[AppConstants.InsertedVocabCount];
+        return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma +
+               Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups + Strings.Space +
+               Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
     }
 
     public string ImportKmDatabase(string filePath) {

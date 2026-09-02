@@ -1577,7 +1577,12 @@ namespace KindleMate2 {
             var bw = new BackgroundWorker();
             bw.DoWork += (_, e) => { e.Result = work(); };
             bw.RunWorkerCompleted += (_, e) => {
-                if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
+                if (e.Error != null) {
+                    // Worker threw — surface the real message under the failure title with the error icon.
+                    var detail = e.Error.InnerException?.Message ?? e.Error.Message;
+                    MessageBox($"{failureTitle}{Environment.NewLine}{detail}", failureTitle,
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                } else if (e.Result != null && !string.IsNullOrWhiteSpace(e.Result.ToString())) {
                     MessageBox(e.Result.ToString() ?? string.Empty, successTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else {
                     MessageBox(failureTitle, failureTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
