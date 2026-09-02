@@ -9,6 +9,13 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         List<Lookup> GetByTimestamp(string timeStamp);
 
+        /// <summary>
+        /// True when a lookup with the given word key and formatted timestamp already exists.
+        /// Used as the idempotency check during vocab.db import — (word_key, timestamp) is
+        /// the semantic identity of a lookup, unlike timestamp alone.
+        /// </summary>
+        bool ExistsByWordKeyAndTimestamp(string wordKey, string timestamp);
+
         List<Lookup> GetByTitle(string title);
 
         List<Lookup> GetByFuzzySearch(string search, AppEntities.SearchType type);

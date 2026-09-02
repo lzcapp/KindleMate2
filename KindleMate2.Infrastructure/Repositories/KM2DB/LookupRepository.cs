@@ -78,6 +78,17 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return results;
         }
 
+        public bool ExistsByWordKeyAndTimestamp(string wordKey, string timestamp) {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT COUNT(*) FROM lookups WHERE word_key = @word_key AND timestamp = @timestamp", connection);
+            cmd.Parameters.AddWithValue("@word_key", wordKey);
+            cmd.Parameters.AddWithValue("@timestamp", timestamp);
+
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
+
         public List<Lookup> GetByTitle(string title) {
             var results = new List<Lookup>();
             

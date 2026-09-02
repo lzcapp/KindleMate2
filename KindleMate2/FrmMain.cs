@@ -103,6 +103,13 @@ namespace KindleMate2 {
                 }
             }
 
+            // One-time, idempotent migration: legacy lookups.timestamp UNIQUE → UNIQUE(word_key, timestamp).
+            try {
+                DatabaseHelper.MigrateLookupsSchemaIfNeeded(_databaseFilePath);
+            } catch (Exception e) {
+                _ = MessageBox($"Lookups schema migration failed: {e.Message}", Strings.Error, MessageBoxButtons.OK, MsgIcon.Warning);
+            }
+
             AppDomain.CurrentDomain.ProcessExit += (_, _) => {
                 DatabaseHelper.BackupDatabase(_programPath, _backupPath, AppConstants.DatabaseFileName);
             };

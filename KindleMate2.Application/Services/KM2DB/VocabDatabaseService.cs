@@ -69,11 +69,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
 
                 var newLookups = new List<Domain.Entities.KM2DB.Lookup>();
-                // KM2DB.lookups.timestamp is TEXT UNIQUE, but the source vocab.db allows multiple
-                // rows sharing the same formatted timestamp (different word lookups in the same second
-                // all collide). Dedup in-memory so a single Import pass doesn't trip the UNIQUE
-                // constraint and roll back the entire batch.
-                var seenTimestamps = new HashSet<string>(StringComparer.Ordinal);
+                // KM2DB.lookups enforces UNIQUE(word_key, timestamp): several words looked
+                // up within the same second are legitimate, but the same word looked up at
+                // the exact same formatted timestamp must not be inserted twice. Dedup
+                // in-memory on that composite key so a single import pass never trips the
+                // constraint and rolls back the whole batch.
+                var seenLookupKeys = new HashSet<string>(StringComparer.Ordinal);
                 foreach (Lookup item in lookups) {
                     var wordKey = item.WordKey;
                     var bookKey = item.BookKey;
@@ -94,12 +95,17 @@ namespace KindleMate2.Application.Services.KM2DB {
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    if (!seenTimestamps.Add(formattedDateTime)) {
-                        // Same-second duplicate within the current batch — schema forbids it.
+                    if (string.IsNullOrWhiteSpace(wordKey)) {
+                        // Rows without a word key cannot be linked to vocabulary — skip.
                         continue;
                     }
 
-                    if (_km2DbLookupRepository.GetByTimestamp(formattedDateTime).Count != 0) {
+                    var lookupKey = wordKey + "\u0000" + formattedDateTime;
+                    if (!seenLookupKeys.Add(lookupKey)) {
+                        continue;
+                    }
+
+                    if (_km2DbLookupRepository.ExistsByWordKeyAndTimestamp(wordKey, formattedDateTime)) {
                         continue;
                     }
                     newLookups.Add(new Domain.Entities.KM2DB.Lookup {
