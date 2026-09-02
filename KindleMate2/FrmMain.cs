@@ -32,7 +32,7 @@ namespace KindleMate2 {
         private readonly IContentDetailService _contentDetailService;
         private readonly IExportManager _exportManager;
 
-        private readonly string _programPath, _tempPath, _backupPath, _importPath, _databaseFilePath, _versionFilePath;
+        private readonly string _programPath, _tempPath, _backupPath, _databaseFilePath, _versionFilePath;
 
         private string _selectedBook, _selectedWord;
         private string _searchText;
@@ -84,7 +84,6 @@ namespace KindleMate2 {
             _versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
             _tempPath = Path.Combine(_programPath, AppConstants.TempPathName);
             _backupPath = Path.Combine(_programPath, AppConstants.BackupsPathName);
-            _importPath = Path.Combine(_programPath, AppConstants.ImportsPathName);
 
             _selectedBook = Strings.Select_All;
             _selectedWord = Strings.Select_All;

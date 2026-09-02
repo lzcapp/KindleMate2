@@ -208,8 +208,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
+                using var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection, transaction);
                 foreach (Lookup lookup in lookups) {
-                    var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection, transaction);
+                    cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
                     cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
@@ -258,6 +259,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             var cmd = new SqliteCommand("DELETE FROM lookups WHERE word_key = @word_key AND timestamp = @timestamp", connection);
             if (string.IsNullOrWhiteSpace(wordKey)) {
+                throw new InvalidOperationException();
+            }
+            if (string.IsNullOrWhiteSpace(timestamp)) {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@word_key", wordKey);

@@ -48,6 +48,8 @@ public static class DependencyInjection {
         });
         services.AddSingleton<IImportManager>(sp => {
             var importPath = Path.Combine(Environment.CurrentDirectory, AppConstants.ImportsPathName);
+            // Ensure the backup/import directory exists before ImportManager writes to it.
+            Directory.CreateDirectory(importPath);
             return new ImportManager(
                 sp.GetRequiredService<IKm2DatabaseService>(),
                 sp.GetRequiredService<IClippingService>(),

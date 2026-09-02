@@ -156,8 +156,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
+                using var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection, transaction);
                 foreach (Vocab vocab in vocabs) {
-                    var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection, transaction);
+                    cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
                     cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());

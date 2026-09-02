@@ -77,7 +77,7 @@ public class ContentDetailService : IContentDetailService {
             }
             if (!string.Equals(lookup.WordKey, wordKey, StringComparison.InvariantCultureIgnoreCase)) {
                 if (!isNonAscii) {
-                    if (!Regex.IsMatch(usage, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
+                    if (!Regex.IsMatch(usage, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase)) {
                         continue;
                     }
                 } else if (!usage.Contains(word, StringComparison.InvariantCultureIgnoreCase)) {
@@ -96,7 +96,7 @@ public class ContentDetailService : IContentDetailService {
                     continue;
                 }
                 if (!isNonAscii) {
-                    if (!Regex.IsMatch(strContent, $"\\b{word}\\b", RegexOptions.IgnoreCase)) {
+                    if (!Regex.IsMatch(strContent, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase)) {
                         continue;
                     }
                 } else {

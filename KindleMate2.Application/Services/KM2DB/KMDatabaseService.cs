@@ -49,13 +49,20 @@ namespace KindleMate2.Application.Services.KM2DB {
                         }
                         if (!targetClippingKeys.Contains(kmClipping.Key) &&
                             !targetClippingContents.Contains(kmClipping.Content)) {
-                            _clippingRepository.Add(kmClipping);
+                            if (_clippingRepository.Add(kmClipping)) {
+                                // Keep the dedup sets in sync so a duplicate key/content later
+                                // in the same source file cannot trip the PRIMARY KEY constraint.
+                                targetClippingKeys.Add(kmClipping.Key);
+                                targetClippingContents.Add(kmClipping.Content);
+                            }
                         }
                     }
                     var targetOriginalKeys = _originalClippingLineRepository.GetAllKeys();
                     foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines) {
                         if (!targetOriginalKeys.Contains(kmOriginalClippingLine.Key)) {
-                            _originalClippingLineRepository.Add(kmOriginalClippingLine);
+                            if (_originalClippingLineRepository.Add(kmOriginalClippingLine)) {
+                                targetOriginalKeys.Add(kmOriginalClippingLine.Key);
+                            }
                         }
                     }
                 }
@@ -69,12 +76,16 @@ namespace KindleMate2.Application.Services.KM2DB {
                     foreach (Lookup kmLookup in kmLookups) {
                         if (!string.IsNullOrWhiteSpace(kmLookup.WordKey) &&
                             !targetLookupWordKeys.Contains(kmLookup.WordKey)) {
-                            _lookupRepository.Add(kmLookup);
+                            if (_lookupRepository.Add(kmLookup)) {
+                                targetLookupWordKeys.Add(kmLookup.WordKey);
+                            }
                         }
                     }
                     foreach (Vocab kmVocab in kmVocabs) {
                         if (!targetVocabIds.Contains(kmVocab.Id)) {
-                            _vocabRepository.Add(kmVocab);
+                            if (_vocabRepository.Add(kmVocab)) {
+                                targetVocabIds.Add(kmVocab.Id);
+                            }
                         }
                     }
                 }
