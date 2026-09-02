@@ -35,31 +35,73 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var kmClippings = _kmClippingRepository.GetAll();
                 var kmOriginalClippingLines = _kmOriginalClippingLineRepository.GetAll();
                 if (kmClippings.Count > 0 || kmOriginalClippingLines.Count > 0) {
-                    foreach (Clipping kmClipping in kmClippings.Where(kmClipping => !string.IsNullOrEmpty(kmClipping.Content) && (_clippingRepository.GetByKey(kmClipping.Key) == null || _clippingRepository.GetByContent(kmClipping.Content).Count > 0))) {
-                        _clippingRepository.Add(kmClipping);
+                    // Pre-fetch target data for O(1) in-memory dedup checks
+                    var targetClippings = _clippingRepository.GetAll();
+                    var targetClippingKeys = targetClippings.Select(c => c.Key).ToHashSet();
+                    var targetClippingContents = targetClippings
+                        .Where(c => c.Content != null)
+                        .Select(c => c.Content!)
+                        .ToHashSet();
+
+                    foreach (Clipping kmClipping in kmClippings) {
+                        if (string.IsNullOrEmpty(kmClipping.Content)) {
+                            continue;
+                        }
+                        if (!targetClippingKeys.Contains(kmClipping.Key) &&
+                            !targetClippingContents.Contains(kmClipping.Content)) {
+                            if (_clippingRepository.Add(kmClipping)) {
+                                // Keep the dedup sets in sync so a duplicate key/content later
+                                // in the same source file cannot trip the PRIMARY KEY constraint.
+                                targetClippingKeys.Add(kmClipping.Key);
+                                targetClippingContents.Add(kmClipping.Content);
+                            }
+                        }
                     }
-                    foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines.Where(kmOriginalClippingLine => _originalClippingLineRepository.GetByKey(kmOriginalClippingLine.Key) == null)) {
-                        _originalClippingLineRepository.Add(kmOriginalClippingLine);
+                    var targetOriginalKeys = _originalClippingLineRepository.GetAllKeys();
+                    foreach (OriginalClippingLine kmOriginalClippingLine in kmOriginalClippingLines) {
+                        if (!targetOriginalKeys.Contains(kmOriginalClippingLine.Key)) {
+                            if (_originalClippingLineRepository.Add(kmOriginalClippingLine)) {
+                                targetOriginalKeys.Add(kmOriginalClippingLine.Key);
+                            }
+                        }
                     }
                 }
             
                 var kmLookups = _kmLookupRepository.GetAll();
                 var kmVocabs = _kmVocabRepository.GetAll();
                 if (kmLookups.Count > 0 || kmVocabs.Count > 0) {
-                    foreach (Lookup kmLookup in kmLookups.Where(kmLookup => !string.IsNullOrWhiteSpace(kmLookup.WordKey) && _lookupRepository.GetByWordKey(kmLookup.WordKey) == null)) {
-                        _lookupRepository.Add(kmLookup);
+                    var targetLookupWordKeys = _lookupRepository.GetWordKeysList().ToHashSet();
+                    var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
+
+                    foreach (Lookup kmLookup in kmLookups) {
+                        if (!string.IsNullOrWhiteSpace(kmLookup.WordKey) &&
+                            !targetLookupWordKeys.Contains(kmLookup.WordKey)) {
+                            if (_lookupRepository.Add(kmLookup)) {
+                                targetLookupWordKeys.Add(kmLookup.WordKey);
+                            }
+                        }
                     }
-                    foreach (Vocab kmVocab in kmVocabs.Where(kmVocab => _vocabRepository.GetById(kmVocab.Id) == null)) {
-                        _vocabRepository.Add(kmVocab);
+                    foreach (Vocab kmVocab in kmVocabs) {
+                        if (!targetVocabIds.Contains(kmVocab.Id)) {
+                            if (_vocabRepository.Add(kmVocab)) {
+                                targetVocabIds.Add(kmVocab.Id);
+                            }
+                        }
                     }
                 }
             
                 var kmSettings = _kmSettingRepository.GetAll();
-                if (kmSettings.Count <= 0) {
-                    return true;
-                }
-                foreach (Setting kmSetting in kmSettings.Where(kmSetting => _settingRepository.GetByName(kmSetting.Name) == null)) {
-                    _settingRepository.Add(kmSetting);
+                if (kmSettings.Count > 0) {
+                    var targetSettingNames = _settingRepository.GetAll()
+                        .Where(s => s.Name != null)
+                        .Select(s => s.Name!)
+                        .ToHashSet();
+
+                    foreach (Setting kmSetting in kmSettings) {
+                        if (!targetSettingNames.Contains(kmSetting.Name)) {
+                            _settingRepository.Add(kmSetting);
+                        }
+                    }
                 }
 
                 return true;

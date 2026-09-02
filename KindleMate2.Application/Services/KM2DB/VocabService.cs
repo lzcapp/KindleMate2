@@ -3,7 +3,7 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class VocabService(IVocabRepository repository) {
+    public class VocabService(IVocabRepository repository) : IVocabService {
         public Vocab? GetVocabByName(string id) {
             return repository.GetById(id);
         }

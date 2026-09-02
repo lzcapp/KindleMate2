@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -548,5 +548,11 @@
   </data>
   <data name="Import_Successful" xml:space="preserve">
 	  <value>導入成功</value>
+  </data>
+  <data name="Type_Column" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="Edit_Notes_Only" xml:space="preserve">
+    <value>僅支持編輯筆記。</value>
   </data>
 </root>

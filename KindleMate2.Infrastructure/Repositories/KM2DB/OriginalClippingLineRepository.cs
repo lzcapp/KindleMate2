@@ -134,6 +134,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var count = 0;
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
+            using var transaction = connection.BeginTransaction();
 
             foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
                 var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection);
@@ -147,6 +148,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     count++;
                 }
             }
+
+            transaction.Commit();
             return count;
         }
 

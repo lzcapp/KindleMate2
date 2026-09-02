@@ -546,3 +546,5 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .DS_Store
+/.workbuddy
+/.vscode

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
@@ -13,7 +13,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         ILookupRepository lookupRepository,
         IOriginalClippingLineRepository originalClippingLineRepository,
         ISettingRepository settingRepository,
-        IVocabRepository vocabRepository) {
+        IVocabRepository vocabRepository) : IKm2DatabaseService {
         public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
             try {
                 List<string> lines = [
@@ -34,6 +34,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 for (var i = 0; i < delimiterIndex.Count; i++) {
                     var ceilDelimiter = i == 0 ? -1 : delimiterIndex[i - 1];
                     var florDelimiter = delimiterIndex[i];
+
+                    // Guard against malformed file: ensure enough lines for header + metadata + content
+                    if (ceilDelimiter + 4 >= lines.Count)
+                        continue;
 
                     var line1 = lines[ceilDelimiter + 1].Trim();
                     var line2 = lines[ceilDelimiter + 2].Trim();
@@ -82,10 +86,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 clippingRepository.DeleteAll();
             
                 var myClippings = (from originalClippingLine in originalClippingLines
-                    let line1 = originalClippingLine.line1
-                    let line2 = originalClippingLine.line2
-                    let line4 = originalClippingLine.line4
-                    let line5 = originalClippingLine.line5
+                    let line1 = originalClippingLine.Line1
+                    let line2 = originalClippingLine.Line2
+                    let line4 = originalClippingLine.Line4
+                    let line5 = originalClippingLine.Line5
                     where !string.IsNullOrWhiteSpace(line1) && !string.IsNullOrWhiteSpace(line2) && !string.IsNullOrWhiteSpace(line4) && !string.IsNullOrWhiteSpace(line5)
                     select new MyClipping {
                         Header = line1,
@@ -117,6 +121,11 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             var allClippings = clippingRepository.GetAll();
             var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
+            // Pre-build key→contents map for O(1) dedup lookup instead of O(n) Any() per item
+            var contentByKey = allClippings
+                .Where(c => c.Content != null)
+                .GroupBy(c => c.Key)
+                .ToDictionary(g => g.Key, g => g.Select(c => c.Content!).ToList());
             var originalKeys = originalClippingLineRepository.GetAllKeys();
             
             var listAddClippings = new List<Clipping>();
@@ -154,8 +163,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
                     var pageNumber = -1;
                     var pagePattern = @"\d+(-\d+)?";
-                    var isPageMatched = Regex.IsMatch(pageStr, pagePattern);
                     Match pageMatch = Regex.Match(pageStr, pagePattern);
+                    var isPageMatched = pageMatch.Success;
                     var pageRomanPattern = @"^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
                     var isRomanMatched = Regex.IsMatch(pageStr, pageRomanPattern);
                     var isPageParsed = false;
@@ -208,7 +217,8 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     clipping.Key = key;
 
-                    if (allClippings.Any(c => c.Key.Equals(key) && c.Content.Contains(content))) {
+                    if (contentByKey.TryGetValue(key, out var contents) && 
+                        contents.Any(c => c.Contains(content))) {
                         continue;
                     }
                 
@@ -229,7 +239,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                             Key = key, 
                             Line1 = header, 
                             Line2 = metadata,
-                            Line4 = content
+                            Line3 = string.Empty,
+                            Line4 = content,
+                            Line5 = myClipping.Delimiter
                         });
                     }
                 } catch (Exception e) {
@@ -250,11 +262,8 @@ namespace KindleMate2.Application.Services.KM2DB {
         
         private bool SetClippingsBriefTypeHide(string bookName, int pageNumber) {
             try {
-                switch (bookName) {
-                    case null:
-                    case "":
-                        return true;
-                }
+                if (string.IsNullOrEmpty(bookName))
+                    return true;
 
                 var clippings = clippingRepository.GetByBookNameAndPageNumber(bookName, pageNumber);
 
@@ -311,7 +320,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 
-                var duplicatedClippings = (from clipping in clippings let key = clipping.Key let content = clipping.Content where !string.IsNullOrWhiteSpace(key) where clippings.Count(c => c.Content.Contains(content)) > 1 select clipping).ToList();
+                var duplicatedClippings = clippings
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
+                    .Where(c => clippings.Count(x => x.Content != null && x.Content.Contains(c.Content!)) > 1)
+                    .ToList();
 
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
                 

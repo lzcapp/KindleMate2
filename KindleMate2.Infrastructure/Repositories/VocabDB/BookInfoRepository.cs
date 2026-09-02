@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     public class BookInfoRepository(string connectionString) : IBookInfoRepository {
         public BookInfo? GetById(string id) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT id, asin, guid, lang, title, authors FROM BOOK_INFO WHERE id = @id", connection);
@@ -60,8 +60,6 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM BOOK_INFO", connection);
-
-            using SqliteDataReader reader = cmd.ExecuteReader();
             var result = cmd.ExecuteScalar();
 
             return Convert.ToInt32(result);

@@ -1,8 +1,9 @@
-﻿using KindleMate2.Infrastructure.Helpers;
+﻿using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
-    public class DatabaseRepository(string connectionString) {
+    public class DatabaseRepository(string connectionString) : IDatabaseRepository {
         public bool IsDatabaseEmpty() {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
@@ -22,7 +23,10 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             // Check each table for rows
             foreach (var table in tableNames) {
-                using var cmdCount = new SqliteCommand($"SELECT COUNT(*) FROM {table};", connection);
+                // Sanity check: skip invalid table names to prevent SQL injection
+                if (string.IsNullOrWhiteSpace(table) || table.Contains('"'))
+                    continue;
+                using var cmdCount = new SqliteCommand($"SELECT COUNT(*) FROM \"{table}\";", connection);
                 if (Convert.ToInt32(cmdCount.ExecuteScalar()) > 0) {
                     return false; // Found data in a table, database is not empty
                 }

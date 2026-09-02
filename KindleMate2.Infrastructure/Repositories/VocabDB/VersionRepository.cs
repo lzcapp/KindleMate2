@@ -6,7 +6,7 @@ using Version = KindleMate2.Domain.Entities.VocabDB.Version;
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     public class VersionRepository(string connectionString) : IVersionRepository {
         public Version? GetById(string id) {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT id, dsname, value FROM VERSION WHERE id = @id", connection);
@@ -54,8 +54,6 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             connection.Open();
 
             var cmd = new SqliteCommand("SELECT COUNT(*) FROM VERSION", connection);
-
-            using SqliteDataReader reader = cmd.ExecuteReader();
             var result = cmd.ExecuteScalar();
 
             return Convert.ToInt32(result);

@@ -8,7 +8,7 @@ using System.Text;
 using KindleMate2.Shared;
 
 namespace KindleMate2.Application.Services.KM2DB {
-    public class LookupService(ILookupRepository repository) {
+    public class LookupService(ILookupRepository repository) : ILookupService {
         public Lookup? GetLookupByWordKey(string wordKey) {
             return repository.GetByWordKey(wordKey);
         }
@@ -68,6 +68,10 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <exception cref="ArgumentException">Thrown when wordKey is null or empty</exception>
         public bool DeleteLookup(string wordKey) {
             return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey);
+        }
+
+        public bool DeleteLookup(string wordKey, string timestamp) {
+            return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey, timestamp);
         }
 
         public bool RenameBook(string originBookname, string bookname, string authorName) {

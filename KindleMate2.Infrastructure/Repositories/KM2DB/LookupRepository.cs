@@ -53,7 +53,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
         public List<Lookup> GetByTimestamp(string timeStamp) {
             var results = new List<Lookup>();
-            
+
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
@@ -61,21 +61,31 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             cmd.Parameters.AddWithValue("@timeStamp", timeStamp);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
-            if (!reader.Read()) {
-                return results;
+            while (reader.Read()) {
+                var wordKey = DatabaseHelper.GetSafeString(reader, 0);
+                if (string.IsNullOrWhiteSpace(wordKey)) {
+                    continue;
+                }
+                results.Add(new Lookup {
+                    WordKey = wordKey,
+                    Usage = DatabaseHelper.GetSafeString(reader, 1),
+                    Title = DatabaseHelper.GetSafeString(reader, 2),
+                    Authors = DatabaseHelper.GetSafeString(reader, 3),
+                    Timestamp = DatabaseHelper.GetSafeString(reader, 4)
+                });
             }
-            var wordKey = DatabaseHelper.GetSafeString(reader, 0);
-            if (string.IsNullOrWhiteSpace(wordKey)) {
-                throw new InvalidOperationException();
-            }
-            results.Add(new Lookup {
-                WordKey = wordKey,
-                Usage = DatabaseHelper.GetSafeString(reader, 1),
-                Title = DatabaseHelper.GetSafeString(reader, 2),
-                Authors = DatabaseHelper.GetSafeString(reader, 3),
-                Timestamp = DatabaseHelper.GetSafeString(reader, 4)
-            });
             return results;
+        }
+
+        public bool ExistsByWordKeyAndTimestamp(string wordKey, string timestamp) {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("SELECT COUNT(*) FROM lookups WHERE word_key = @word_key AND timestamp = @timestamp", connection);
+            cmd.Parameters.AddWithValue("@word_key", wordKey);
+            cmd.Parameters.AddWithValue("@timestamp", timestamp);
+
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
         }
 
         public List<Lookup> GetByTitle(string title) {
@@ -191,6 +201,33 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public int Add(List<Lookup> lookups) {
+            var count = 0;
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try {
+                using var cmd = new SqliteCommand("INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)", connection, transaction);
+                foreach (Lookup lookup in lookups) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
+                    cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@authors", lookup.Authors ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp ?? (object)DBNull.Value);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
+                }
+                transaction.Commit();
+            } catch {
+                transaction.Rollback();
+                throw;
+            }
+            return count;
+        }
+
         public bool Update(Lookup lookup) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
@@ -213,6 +250,22 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 throw new InvalidOperationException();
             }
             cmd.Parameters.AddWithValue("@word_key", wordKey);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        public bool Delete(string wordKey, string timestamp) {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var cmd = new SqliteCommand("DELETE FROM lookups WHERE word_key = @word_key AND timestamp = @timestamp", connection);
+            if (string.IsNullOrWhiteSpace(wordKey)) {
+                throw new InvalidOperationException();
+            }
+            if (string.IsNullOrWhiteSpace(timestamp)) {
+                throw new InvalidOperationException();
+            }
+            cmd.Parameters.AddWithValue("@word_key", wordKey);
+            cmd.Parameters.AddWithValue("@timestamp", timestamp);
             return cmd.ExecuteNonQuery() > 0;
         }
 

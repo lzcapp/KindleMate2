@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateResourceWarnOnBinaryFormatterUse>false</GenerateResourceWarnOnBinaryFormatterUse>
 		<ApplicationIcon>bookmark.ico</ApplicationIcon>
 		<StartupObject>KindleMate2.Program</StartupObject>
 		<PackageIcon>bookmark.ico</PackageIcon>
@@ -16,12 +17,12 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<Title>Kindle Mate 2</Title>
 		<Authors>RainySummer</Authors>
-		<Copyright>Copyright © 2024-2025 RainySummer</Copyright>
+		<Copyright>Copyright © 2024-2026 RainySummer</Copyright>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<LangVersion>latest</LangVersion>
 		<PackageLicenseUrl>https://github.com/lzcapp/KindleMate2/blob/main/LICENSE</PackageLicenseUrl>
-		<TargetFrameworks>net8.0-windows</TargetFrameworks>
-		<Version>2025.10.06</Version>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Version>2026.06.26</Version>
 		<Deterministic>false</Deterministic>
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
@@ -147,6 +148,7 @@
 		<PackageReference Include="System.Management" Version="9.0.9" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>

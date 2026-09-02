@@ -69,7 +69,8 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [usage] TEXT, 
                     [title] TEXT, 
                     [authors] TEXT, 
-                    [timestamp] TEXT UNIQUE
+                    [timestamp] TEXT,
+                    CONSTRAINT [uq_lookups_word_key_timestamp] UNIQUE ([word_key], [timestamp])
                 );",
 
                 @"
@@ -175,6 +176,107 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
         }
         
+        /// <summary>
+        /// Idempotent one-time schema migration for the [lookups] table.
+        /// Legacy databases were created with a single-column UNIQUE on [timestamp],
+        /// which rejects legitimate duplicates (e.g. several words looked up within
+        /// the same second). SQLite cannot drop a column constraint via ALTER TABLE,
+        /// so the table is rebuilt with uniqueness moved to (word_key, timestamp).
+        /// Safe to call on every startup: it no-ops once the new schema is in place.
+        /// </summary>
+        /// <param name="filePath">Path to the SQLite database file</param>
+        public static void MigrateLookupsSchemaIfNeeded(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return;
+            }
+
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+
+                if (!NeedsLookupsSchemaMigration(connection)) {
+                    return;
+                }
+
+                using var transaction = connection.BeginTransaction();
+                try {
+                    using var command = connection.CreateCommand();
+                    command.Transaction = transaction;
+
+                    command.CommandText = @"
+                        CREATE TABLE [lookups_migrated] (
+                            [word_key] TEXT, 
+                            [usage] TEXT, 
+                            [title] TEXT, 
+                            [authors] TEXT, 
+                            [timestamp] TEXT,
+                            CONSTRAINT [uq_lookups_word_key_timestamp] UNIQUE ([word_key], [timestamp])
+                        );";
+                    command.ExecuteNonQuery();
+
+                    command.CommandText = @"INSERT INTO [lookups_migrated] ([word_key], [usage], [title], [authors], [timestamp])
+                                            SELECT [word_key], [usage], [title], [authors], [timestamp] FROM [lookups];";
+                    command.ExecuteNonQuery();
+
+                    command.CommandText = "DROP TABLE [lookups];";
+                    command.ExecuteNonQuery();
+
+                    command.CommandText = "ALTER TABLE [lookups_migrated] RENAME TO [lookups];";
+                    command.ExecuteNonQuery();
+
+                    transaction.Commit();
+                } catch {
+                    transaction.Rollback();
+                    throw;
+                }
+            } catch (Exception e) {
+                throw new InvalidOperationException($"Failed to migrate lookups schema in '{filePath}': {e.Message}", e);
+            }
+        }
+
+        /// <summary>
+        /// Detects the legacy lookups schema: a UNIQUE index on the single [timestamp] column.
+        /// </summary>
+        private static bool NeedsLookupsSchemaMigration(SqliteConnection connection) {
+            try {
+                // Collect unique index names first so index_info can be queried after the reader is disposed.
+                var uniqueIndexNames = new List<string>();
+                using (var listCommand = connection.CreateCommand()) {
+                    listCommand.CommandText = "PRAGMA index_list('lookups');";
+                    using var reader = listCommand.ExecuteReader();
+                    while (reader.Read()) {
+                        var isUnique = !reader.IsDBNull(2) && reader.GetInt64(2) == 1;
+                        if (isUnique) {
+                            uniqueIndexNames.Add(reader.GetString(1));
+                        }
+                    }
+                }
+
+                foreach (var indexName in uniqueIndexNames) {
+                    using var infoCommand = connection.CreateCommand();
+                    infoCommand.CommandText = $"PRAGMA index_info('{indexName}');";
+                    using var reader = infoCommand.ExecuteReader();
+
+                    var columns = new List<string>();
+                    while (reader.Read()) {
+                        if (!reader.IsDBNull(2)) {
+                            columns.Add(reader.GetString(2));
+                        }
+                    }
+
+                    // Legacy: exactly one unique column "timestamp" → must rebuild.
+                    if (columns.Count == 1 && columns[0].Equals("timestamp", StringComparison.OrdinalIgnoreCase)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            } catch (Exception) {
+                // If the schema cannot be inspected, leave the table untouched.
+                return false;
+            }
+        }
+
         public static string? GetSafeString(SqliteDataReader reader, int ordinal) {
             if (reader.IsDBNull(ordinal)) {
                 return null;
