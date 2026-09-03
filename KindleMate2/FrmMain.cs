@@ -1331,6 +1331,10 @@ namespace KindleMate2 {
         }
 
         private void MenuRebuild_Click(object sender, EventArgs e) {
+            if (_km2DatabaseService.IsDatabaseEmpty()) {
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             DialogResult result = MessageBox(Strings.Confirm_Rebuild_Database, Strings.Confirm,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) return;
