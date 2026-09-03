@@ -1244,7 +1244,7 @@ namespace KindleMate2 {
 
             // Both sides empty — refuse to show a misleading "Successful" dialog.
             if (!clippingsOk && !vocabsOk) {
-                MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox(Strings.Database_Empty, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
