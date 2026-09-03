@@ -1191,6 +1191,13 @@ namespace KindleMate2 {
         }
 
         private void ImportFromKindle() {
+            // Same check as SyncToKindle: surface the "not connected" state up front.
+            if (!_deviceManager.IsKindleConnected()) {
+                MessageBox(Strings.Kindle_Not_Connected, Strings.Prompt,
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try {
                 var backupClippingsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
                 var backupWordsPath = Path.Combine(_backupPath, AppConstants.ImportsPathName);
@@ -1232,7 +1239,14 @@ namespace KindleMate2 {
             var path = Path.Combine(_programPath, AppConstants.ExportsPathName);
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
-            if (!_exportManager.ExportClippingsToMarkdown() || !_exportManager.ExportVocabsToMarkdown()) return;
+            bool clippingsOk = _exportManager.ExportClippingsToMarkdown();
+            bool vocabsOk = _exportManager.ExportVocabsToMarkdown();
+
+            // Both sides empty — refuse to show a misleading "Successful" dialog.
+            if (!clippingsOk && !vocabsOk) {
+                MessageBox(Strings.No_Data_To_Backup, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
             ShowExportSuccessDialog();
         }
@@ -1242,12 +1256,20 @@ namespace KindleMate2 {
             switch (index) {
                 case 0:
                     if (treeViewBooks.SelectedNode is null) return;
-                    if (!_exportManager.ExportClippingsToMarkdown(treeViewBooks.SelectedNode.Text.Trim())) return;
+                    if (!_exportManager.ExportClippingsToMarkdown(treeViewBooks.SelectedNode.Text.Trim())) {
+                        MessageBox(Strings.Empty_Clippings_Data, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
                     break;
                 case 1:
                     if (treeViewWords.SelectedNode is null) return;
-                    if (!_exportManager.ExportVocabsToMarkdown(treeViewWords.SelectedNode.Text.Trim())) return;
+                    if (!_exportManager.ExportVocabsToMarkdown(treeViewWords.SelectedNode.Text.Trim())) {
+                        MessageBox(Strings.Empty_Lookups_Data, Strings.Prompt, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
                     break;
+                default:
+                    return;
             }
             ShowExportSuccessDialog();
         }
@@ -1264,6 +1286,14 @@ namespace KindleMate2 {
         }
 
         private void SyncToKindle() {
+            // Re-probe USB/MTP before showing the confirm dialog so a clearly-disconnected
+            // Kindle does not reach "确认同步" only to fail with a generic error.
+            if (!_deviceManager.IsKindleConnected()) {
+                MessageBox(Strings.Kindle_Not_Connected, Strings.Prompt,
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             DialogResult dialogResult = MessageBox(Strings.Confirm_Sync_To_Kindle, Strings.Confirm,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dialogResult != DialogResult.Yes) return;

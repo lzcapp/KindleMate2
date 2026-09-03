@@ -94,6 +94,11 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             var listLookups = GetAllLookups();
 
+            // Refuse to export when there is nothing to write — callers should not see "Export Successful".
+            if (listLookups is null || listLookups.Count == 0) {
+                return false;
+            }
+
             var markdown = new StringBuilder();
 
             markdown.AppendLine("# \ud83d\udcda " + Strings.Vocabulary_List);
@@ -102,7 +107,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             if (string.IsNullOrWhiteSpace(word) || word.Equals(Strings.Select_All)) {
                 filename = "Vocabs";
-                    
+
                 markdown.AppendLine("[TOC]");
 
                 markdown.AppendLine();
@@ -114,6 +119,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 filename = StringHelper.SanitizeFilename(word);
 
                 var lookups = listLookups.Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
+                // Per-word export must also bail out when the selected word has no lookups.
+                if (lookups.Count == 0) {
+                    return false;
+                }
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 

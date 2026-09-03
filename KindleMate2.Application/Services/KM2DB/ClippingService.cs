@@ -114,6 +114,11 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             var listClippings = GetAllClippings();
 
+            // Refuse to export when there is nothing to write — callers should not see "Export Successful".
+            if (listClippings is null || listClippings.Count == 0) {
+                return false;
+            }
+
             var markdown = new StringBuilder();
 
             markdown.AppendLine("# \ud83d\udcda " + Strings.Books);
@@ -122,7 +127,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             if (string.IsNullOrWhiteSpace(bookName) || bookName.Equals(Strings.Select_All)) {
                 filename = "Clippings";
-                
+
                 markdown.AppendLine("[TOC]");
 
                 markdown.AppendLine();
@@ -136,6 +141,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 filename = StringHelper.SanitizeFilename(bookName);
 
                 var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+                // Per-book export must also bail out when the selected book has no clippings.
+                if (clippings.Count == 0) {
+                    return false;
+                }
                 markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
             }
 

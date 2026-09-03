@@ -543,6 +543,9 @@
   <data name="Kindle_Connect_Failed" xml:space="preserve">
 	  <value>Failed to connected to Kindle</value>
   </data>
+  <data name="Kindle_Not_Connected" xml:space="preserve">
+	  <value>No Kindle device is connected. Please connect your Kindle first.</value>
+  </data>
   <data name="Import_Successful" xml:space="preserve">
 	  <value>Import Successful</value>
   </data>

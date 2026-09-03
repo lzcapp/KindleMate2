@@ -797,6 +797,15 @@ namespace KindleMate2.Shared {
                 return ResourceManager.GetString("Kindle_Connect_Failed", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 未连接Kindle设备，请先将设备连接至电脑 的本地化字符串。
+        /// </summary>
+        public static string Kindle_Not_Connected {
+            get {
+                return ResourceManager.GetString("Kindle_Not_Connected", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 您连接了Kindle设备，需要从Kindle中导入数据吗？ 的本地化字符串。
