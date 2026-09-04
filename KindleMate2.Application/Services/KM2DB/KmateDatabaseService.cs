@@ -47,7 +47,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
 
                 if (data.Clippings.Count > 0 || data.OriginalClippingLines.Count > 0) {
-                    // Pre-fetch target data for O(1) in-memory dedup checks.
+                    // Pre-fetch target data for O(1) in-memory dedup checks, then write in one
+                    // transaction per table via the repositories' batched Add overloads.
                     var targetClippings = _clippingRepository.GetAll();
                     var targetClippingKeys = targetClippings.Select(c => c.Key).ToHashSet();
                     var targetClippingContents = targetClippings
@@ -55,21 +56,25 @@ namespace KindleMate2.Application.Services.KM2DB {
                         .Select(c => c.Content!)
                         .ToHashSet();
 
+                    var clippingCandidates = new List<Clipping>();
                     foreach (Clipping kmClipping in data.Clippings) {
                         if (string.IsNullOrEmpty(kmClipping.Content)) {
                             continue;
                         }
                         if (!targetClippingKeys.Contains(kmClipping.Key) &&
                             !targetClippingContents.Contains(kmClipping.Content)) {
-                            if (_clippingRepository.Add(kmClipping)) {
-                                // Keep the dedup sets in sync so a duplicate key/content later
-                                // in the same source file cannot trip the PRIMARY KEY constraint.
-                                targetClippingKeys.Add(kmClipping.Key);
-                                targetClippingContents.Add(kmClipping.Content);
-                            }
+                            clippingCandidates.Add(kmClipping);
+                            // Keep the dedup sets in sync so duplicates later in the same source
+                            // cannot be added twice (the batched INSERT runs in one transaction).
+                            targetClippingKeys.Add(kmClipping.Key);
+                            targetClippingContents.Add(kmClipping.Content);
                         }
                     }
+                    if (clippingCandidates.Count > 0) {
+                        _clippingRepository.Add(clippingCandidates);
+                    }
 
+                    var lineCandidates = new List<OriginalClippingLine>();
                     var targetOriginalKeys = _originalClippingLineRepository.GetAllKeys().ToHashSet();
                     foreach (OriginalClippingLine kmLine in data.OriginalClippingLines) {
                         // Skip orphan lines whose key was removed from clippings by KMate's cleanup.
@@ -77,10 +82,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                             continue;
                         }
                         if (!targetOriginalKeys.Contains(kmLine.Key)) {
-                            if (_originalClippingLineRepository.Add(kmLine)) {
-                                targetOriginalKeys.Add(kmLine.Key);
-                            }
+                            lineCandidates.Add(kmLine);
+                            targetOriginalKeys.Add(kmLine.Key);
                         }
+                    }
+                    if (lineCandidates.Count > 0) {
+                        _originalClippingLineRepository.Add(lineCandidates);
                     }
                 }
 
@@ -90,31 +97,37 @@ namespace KindleMate2.Application.Services.KM2DB {
                         .Select(l => ComposePair(l.WordKey!, l.Timestamp))
                         .ToHashSet();
 
+                    var lookupCandidates = new List<Lookup>();
                     foreach (Lookup kmLookup in data.Lookups) {
                         if (string.IsNullOrWhiteSpace(kmLookup.WordKey)) {
                             continue;
                         }
                         var pair = ComposePair(kmLookup.WordKey, kmLookup.Timestamp);
                         if (!targetLookupPairs.Contains(pair)) {
-                            if (_lookupRepository.Add(kmLookup)) {
-                                targetLookupPairs.Add(pair);
-                            }
+                            lookupCandidates.Add(kmLookup);
+                            targetLookupPairs.Add(pair);
                         }
+                    }
+                    if (lookupCandidates.Count > 0) {
+                        _lookupRepository.Add(lookupCandidates);
                     }
                 }
 
                 if (data.Vocabs.Count > 0) {
                     var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
 
+                    var vocabCandidates = new List<Vocab>();
                     foreach (Vocab kmVocab in data.Vocabs) {
                         if (string.IsNullOrWhiteSpace(kmVocab.Id)) {
                             continue;
                         }
                         if (!targetVocabIds.Contains(kmVocab.Id)) {
-                            if (_vocabRepository.Add(kmVocab)) {
-                                targetVocabIds.Add(kmVocab.Id);
-                            }
+                            vocabCandidates.Add(kmVocab);
+                            targetVocabIds.Add(kmVocab.Id);
                         }
+                    }
+                    if (vocabCandidates.Count > 0) {
+                        _vocabRepository.Add(vocabCandidates);
                     }
                 }
 
