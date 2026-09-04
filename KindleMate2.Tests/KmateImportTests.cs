@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Xunit;
 using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
 
@@ -109,7 +110,7 @@ public sealed class KmateImportTests : IDisposable {
         var targetLineRepo = new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb));
         var targetLookupRepo = new LookupRepository(DatabaseHelper.GetConnectionString(targetDb));
         var targetVocabRepo = new VocabRepository(DatabaseHelper.GetConnectionString(targetDb));
-        var svc = new KmateDatabaseService(targetClipRepo, targetLookupRepo, targetLineRepo, targetVocabRepo, kmateDb);
+        var svc = new KmateDatabaseService(targetClipRepo, targetLookupRepo, targetLineRepo, targetVocabRepo, kmateDb, DatabaseHelper.GetConnectionString(targetDb));
 
         Assert.True(svc.ImportFromKmateDatabase(), "import should succeed");
 
@@ -150,7 +151,8 @@ public sealed class KmateImportTests : IDisposable {
             new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
             lineRepo,
             new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
-            kmateDb);
+            kmateDb,
+            DatabaseHelper.GetConnectionString(targetDb));
 
         Assert.True(svc.ImportFromKmateDatabase());
         Assert.Equal(3, clipRepo.GetAll().Count); // cross-book same content kept (2) + unique (1)
@@ -177,7 +179,7 @@ public sealed class KmateImportTests : IDisposable {
         var lineRepo = new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb));
         var lookupRepo = new LookupRepository(DatabaseHelper.GetConnectionString(targetDb));
         var vocabRepo = new VocabRepository(DatabaseHelper.GetConnectionString(targetDb));
-        var svc = new KmateDatabaseService(clipRepo, lookupRepo, lineRepo, vocabRepo, kmateDb);
+        var svc = new KmateDatabaseService(clipRepo, lookupRepo, lineRepo, vocabRepo, kmateDb, DatabaseHelper.GetConnectionString(targetDb));
 
         Assert.True(svc.ImportFromKmateDatabase());
         Assert.Single(clipRepo.GetAll());
@@ -188,5 +190,36 @@ public sealed class KmateImportTests : IDisposable {
         Assert.Single(lineRepo.GetAllKeys());
         Assert.Single(lookupRepo.GetAll());
         Assert.Single(vocabRepo.GetAll());
+    }
+
+    [Fact]
+    public void KmateAtomicWriter_ConflictRollsBackAllTables() {
+        var targetDb = NewDb("kt-atomic.db");
+        var targetConn = DatabaseHelper.GetConnectionString(targetDb);
+        var clipRepo = new ClippingRepository(targetConn);
+        var vocabRepo = new VocabRepository(targetConn);
+
+        // Pre-existing row whose key collides with one of the incoming candidates.
+        var existing = new Vocab { Id = "en:dup", Word = "dup", WordKey = "en:dup" };
+        Assert.True(vocabRepo.Add(existing));
+
+        var conflictVocab = new Vocab { Id = "en:dup", Word = "dup-2", WordKey = "en:dup" };
+        var goodClipping = new Clipping {
+            Key = "dddd1111222233334444555566667777",
+            Content = "a highlight",
+            BookName = "Atomic Book",
+            AuthorName = "Author"
+        };
+
+        // The vocab insert conflicts -> whole batch must roll back, including clippings.
+        Assert.ThrowsAny<Exception>(() => KmateAtomicWriter.WriteAll(
+            targetConn,
+            new[] { goodClipping },
+            Array.Empty<OriginalClippingLine>(),
+            Array.Empty<Lookup>(),
+            new[] { conflictVocab }));
+
+        Assert.Empty(clipRepo.GetAll());
+        Assert.Single(vocabRepo.GetAll()); // only the pre-existing row remains
     }
 }

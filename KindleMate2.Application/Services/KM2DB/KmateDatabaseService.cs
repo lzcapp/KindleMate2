@@ -9,8 +9,9 @@ namespace KindleMate2.Application.Services.KM2DB {
     /// </summary>
     /// <remarks>
     /// Source rows are mapped by <see cref="KmateSourceReader"/> (the km3 schema differs from the KM2
-    /// target schema, so the shared repositories cannot read it directly). Target writes go through the
-    /// regular KM2 repositories. Deduplication mirrors <see cref="KmDatabaseService"/> with three
+    /// target schema, so the shared repositories cannot read it directly). Target reads (dedup pre-fetch)
+    /// use the regular KM2 repositories; target writes go through <see cref="KmateAtomicWriter"/> in a
+    /// single transaction (all-or-nothing). Deduplication mirrors <see cref="KmDatabaseService"/> with three
     /// km3-specific corrections:
     /// <list type="bullet">
     /// <item><c>original_clipping_lines</c> are only imported when their key belongs to an accepted
@@ -26,18 +27,21 @@ namespace KindleMate2.Application.Services.KM2DB {
         private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
         private readonly IVocabRepository _vocabRepository;
         private readonly string _sourcePath;
+        private readonly string _targetConnectionString;
 
         public KmateDatabaseService(
             IClippingRepository clippingRepository,
             ILookupRepository lookupRepository,
             IOriginalClippingLineRepository originalClippingLineRepository,
             IVocabRepository vocabRepository,
-            string sourcePath) {
+            string sourcePath,
+            string targetConnectionString) {
             _clippingRepository = clippingRepository;
             _lookupRepository = lookupRepository;
             _originalClippingLineRepository = originalClippingLineRepository;
             _vocabRepository = vocabRepository;
             _sourcePath = sourcePath;
+            _targetConnectionString = targetConnectionString;
         }
 
         public bool ImportFromKmateDatabase() {
@@ -46,9 +50,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                     return false;
                 }
 
+                var clippingCandidates = new List<Clipping>();
+                var lineCandidates = new List<OriginalClippingLine>();
+                var lookupCandidates = new List<Lookup>();
+                var vocabCandidates = new List<Vocab>();
+
                 if (data.Clippings.Count > 0 || data.OriginalClippingLines.Count > 0) {
-                    // Pre-fetch target data for O(1) in-memory dedup checks, then write in one
-                    // transaction per table via the repositories' batched Add overloads.
+                    // Pre-fetch target data for O(1) in-memory dedup checks.
                     var targetClippings = _clippingRepository.GetAll();
                     var targetClippingKeys = targetClippings.Select(c => c.Key).ToHashSet();
                     // Dedup scope is per (book, author, content), not global content: the same
@@ -57,7 +65,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // device/cloud/source) still shares book+author+content and is skipped.
                     var targetBookContents = targetClippings.Select(ComposeBookContentKey).ToHashSet();
 
-                    var clippingCandidates = new List<Clipping>();
                     foreach (Clipping kmClipping in data.Clippings) {
                         if (string.IsNullOrEmpty(kmClipping.Content)) {
                             continue;
@@ -66,16 +73,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                             !targetBookContents.Contains(ComposeBookContentKey(kmClipping))) {
                             clippingCandidates.Add(kmClipping);
                             // Keep the dedup sets in sync so duplicates later in the same source
-                            // cannot be added twice (the batched INSERT runs in one transaction).
+                            // cannot end up in the candidate list twice.
                             targetClippingKeys.Add(kmClipping.Key);
                             targetBookContents.Add(ComposeBookContentKey(kmClipping));
                         }
                     }
-                    if (clippingCandidates.Count > 0) {
-                        _clippingRepository.Add(clippingCandidates);
-                    }
 
-                    var lineCandidates = new List<OriginalClippingLine>();
                     var targetOriginalKeys = _originalClippingLineRepository.GetAllKeys().ToHashSet();
                     foreach (OriginalClippingLine kmLine in data.OriginalClippingLines) {
                         // Skip orphan lines whose key was removed from clippings by KMate's cleanup.
@@ -87,9 +90,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                             targetOriginalKeys.Add(kmLine.Key);
                         }
                     }
-                    if (lineCandidates.Count > 0) {
-                        _originalClippingLineRepository.Add(lineCandidates);
-                    }
                 }
 
                 if (data.Lookups.Count > 0) {
@@ -98,7 +98,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                         .Select(l => ComposePair(l.WordKey!, l.Timestamp))
                         .ToHashSet();
 
-                    var lookupCandidates = new List<Lookup>();
                     foreach (Lookup kmLookup in data.Lookups) {
                         if (string.IsNullOrWhiteSpace(kmLookup.WordKey)) {
                             continue;
@@ -109,15 +108,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                             targetLookupPairs.Add(pair);
                         }
                     }
-                    if (lookupCandidates.Count > 0) {
-                        _lookupRepository.Add(lookupCandidates);
-                    }
                 }
 
                 if (data.Vocabs.Count > 0) {
                     var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
 
-                    var vocabCandidates = new List<Vocab>();
                     foreach (Vocab kmVocab in data.Vocabs) {
                         if (string.IsNullOrWhiteSpace(kmVocab.Id)) {
                             continue;
@@ -127,10 +122,16 @@ namespace KindleMate2.Application.Services.KM2DB {
                             targetVocabIds.Add(kmVocab.Id);
                         }
                     }
-                    if (vocabCandidates.Count > 0) {
-                        _vocabRepository.Add(vocabCandidates);
-                    }
                 }
+
+                // All-or-nothing: candidates are written in a single connection + single transaction,
+                // so a failure anywhere rolls the whole import back (no partial migration).
+                KmateAtomicWriter.WriteAll(
+                    _targetConnectionString,
+                    clippingCandidates,
+                    lineCandidates,
+                    lookupCandidates,
+                    vocabCandidates);
 
                 return true;
             } catch (Exception e) {

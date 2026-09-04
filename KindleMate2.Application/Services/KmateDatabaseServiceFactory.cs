@@ -1,5 +1,6 @@
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Application.Services;
 
@@ -27,6 +28,7 @@ public class KmateDatabaseServiceFactory : IKmateDatabaseServiceFactory {
             _lookupRepository,
             _originalClippingLineRepository,
             _vocabRepository,
-            km3DbPath);
+            km3DbPath,
+            AppConstants.ConnectionString);
     }
 }
