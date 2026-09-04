@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMate 技术侦察报告 · 安装技术栈与数据格式详解</title>
+<style>
+  :root{
+    --bg:#101418; --bg2:#161c22; --card:#1a2129; --line:#2b3542;
+    --ink:#e8e2d6; --ink-dim:#a8a293; --ink-faint:#7a7a70;
+    --gold:#c9a35f; --gold-soft:#e0c287; --green:#8fbf9f; --amber:#d9b36a;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--serif); line-height:1.75; font-size:15px; padding:0 0 80px;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 32px;}
+  header.hero{padding:72px 0 44px; border-bottom:1px solid var(--line); background:radial-gradient(ellipse at 50% -20%, rgba(201,163,95,.14), transparent 60%);}
+  .kicker{letter-spacing:.35em; color:var(--gold); font-size:12px; text-transform:uppercase; margin-bottom:18px;}
+  h1{font-size:34px; font-weight:600; letter-spacing:.02em; line-height:1.35; margin-bottom:14px;}
+  h1 .sub{display:block; font-size:19px; color:var(--ink-dim); font-weight:400; margin-top:10px;}
+  .meta{color:var(--ink-faint); font-size:13px; margin-top:8px;}
+  .meta b{color:var(--ink-dim); font-weight:600;}
+  h2{font-size:22px; margin:56px 0 8px; color:var(--gold-soft); font-weight:600; letter-spacing:.02em;}
+  h2 .no{color:var(--gold); font-family:Georgia,serif; margin-right:12px; font-size:18px;}
+  .lede{color:var(--ink-dim); font-size:13.5px; border-left:2px solid var(--gold); padding-left:14px; margin-bottom:24px;}
+  h3{font-size:16.5px; margin:28px 0 10px; color:var(--ink); font-weight:600;}
+  p{margin:10px 0; text-align:justify;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 24px; margin:16px 0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px;}
+  .stat{background:var(--bg2); border:1px solid var(--line); border-radius:8px; padding:14px 16px;}
+  .stat .n{font-size:22px; color:var(--gold-soft); font-family:Georgia,serif; line-height:1.2;}
+  .stat .l{font-size:12px; color:var(--ink-faint); margin-top:4px; letter-spacing:.03em;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13px;}
+  th{background:#1f2731; color:var(--gold-soft); font-weight:600; text-align:left; padding:8px 11px; border:1px solid var(--line); white-space:nowrap;}
+  td{padding:7px 11px; border:1px solid var(--line); vertical-align:top;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+  td.k{white-space:nowrap; color:var(--ink-dim); font-weight:600;}
+  ul,ol{margin:8px 0 8px 22px;}
+  li{margin:5px 0;}
+  blockquote{border-left:3px solid var(--gold); background:rgba(201,163,95,.06); padding:12px 18px; margin:16px 0; color:var(--ink-dim); border-radius:0 6px 6px 0;}
+  .src{color:var(--ink-faint); font-size:12px;}
+  .toc{columns:2; column-gap:40px; font-size:14px; margin:10px 0;}
+  .toc a{color:var(--ink-dim); text-decoration:none; display:block; padding:3px 0;}
+  .toc a:hover{color:var(--gold-soft);}
+  .pill{display:inline-block; background:rgba(201,163,95,.12); color:var(--gold-soft); border:1px solid rgba(201,163,95,.4); border-radius:4px; padding:0 8px; font-size:12px; margin-right:6px; letter-spacing:.08em;}
+  footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:12.5px;}
+  .hr-gold{height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); border:0; margin:36px 0;}
+  .big{font-size:16px;}
+  code{font-family:Consolas,Menlo,monospace; font-size:12.5px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:4px; color:var(--gold-soft);}
+  pre{font-family:Consolas,Menlo,monospace; font-size:12px; background:#0c0f13; border:1px solid var(--line); border-radius:8px; padding:14px 18px; overflow-x:auto; color:#c9d2dc; line-height:1.6; margin:12px 0;}
+  pre b{color:var(--gold-soft); font-weight:600;}
+  @media(max-width:720px){ .toc{columns:1;} .wrap{padding:0 18px;} h1{font-size:26px;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Technical Reconnaissance · 逆向技术侦察(静态)</div>
+    <h1>KMate 技术侦察报告
+      <span class="sub">Windows 桌面版 3.8.16 · 安装技术栈 / 数据目录 / km3.dat 数据格式 / 行为情报 / 迁移对照</span>
+    </h1>
+    <div class="meta">报告日期 <b>2026-09-05</b> · 侦察对象:本机安装(MSIX)与用户数据目录 · 方法:<b>文件级静态观察,未执行程序、未反编译、未复制任何代码</b></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="no">◆</span>报告摘要</h2>
+  <div class="card">
+    <ul>
+      <li><b>KMate Windows 桌面版 = Python 3.12 + PyInstaller 打包</b>,核心业务 mypyc 编译为原生 <code>.pyd</code>;UI 为 <b>wxPython 外壳 + WebView2 渲染 HTML 视图</b>。</li>
+      <li>数据极简:<b>一个 SQLite 主库 <code>km3.dat</code></b> + 两个 JSON 配置 + 缓存/日志骨架;应用视角路径 <code>%LOCALAPPDATA%\KMate\</code>(MSIX 重定向至 Packages 目录)。</li>
+      <li><b>km3.dat 与旧 KM2.dat / KindleMate2 同源</b>:表名与列名几乎一致,新增 <code>source / note_parent_key / ck_synced / pagenumber</code> 及书目、标签、闪卡状态结构。</li>
+      <li>行为情报:Windows“云同步”实为<b>把库绑定到云盘路径做文件级同步</b>;微信读书导入 = WebView2 内嵌登录页轮询;词典含自研 MDict(mdx)解析(minilzo)。</li>
+      <li>工程含义:KindleMate2 做“导入 KMate 数据”<b>可直接读 km3.dat 走 SQL 迁移</b>,主要差异点是 <code>key</code>(32 位 hex)与 <code>source</code> 语义。</li>
+    </ul>
+  </div>
+
+  <div class="grid">
+    <div class="stat"><div class="n">3.8.16</div><div class="l">桌面版本(2026-08-21)</div></div>
+    <div class="stat"><div class="n">Python 3.12</div><div class="l">运行时 + PyInstaller onedir</div></div>
+    <div class="stat"><div class="n">km3.dat</div><div class="l">SQLite 3 · 主库(7.4 MB 实测)</div></div>
+    <div class="stat"><div class="n">9 张表</div><div class="l">无触发器 · 索引齐备</div></div>
+  </div>
+
+  <hr class="hr-gold">
+
+  <h2><span class="no">◆</span>目录</h2>
+  <div class="toc">
+    <a href="#s1">一、侦察范围与方法</a>
+    <a href="#s2">二、安装技术栈(程序目录)</a>
+    <a href="#s3">三、数据目录结构</a>
+    <a href="#s4">四、主库 km3.dat 数据格式详解</a>
+    <a href="#s5">五、配置与行为情报</a>
+    <a href="#s6">六、与 KindleMate2(KM2 格式)迁移对照</a>
+    <a href="#s7">七、结论与工程建议</a>
+    <a href="#s8">附录:观察清单与局限</a>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 一 -->
+  <h2 id="s1"><span class="no">01</span>侦察范围与方法</h2>
+  <p class="lede">只读静态观察;所有结论来自文件名字、目录结构与数据库元数据,不构成对内部实现的完整断言。</p>
+  <table>
+    <thead><tr><th>对象</th><th>位置</th></tr></thead>
+    <tbody>
+      <tr><td class="k">安装目录</td><td><code>C:\Program Files\WindowsApps\KMateTeam.KMate-KindleClippingsVocabulary_3.8.16.0_neutral__nmhyc6rsazbye</code>(MSIX,含 AppxManifest.xml)</td></tr>
+      <tr><td class="k">数据目录</td><td><code>C:\Users\Rainy\AppData\Local\Packages\KMateTeam.KMate-KindleClippingsVocabulary_nmhyc6rsazbye\LocalCache\Local\KMate\</code>(应用视角 = <code>%LOCALAPPDATA%\KMate\</code>)</td></tr>
+      <tr><td class="k">包标识</td><td>PackageFamilyName <code>KMateTeam.KMate-KindleClippingsVocabulary_nmhyc6rsazbye</code>;商店 SKU 0010(full)/0011(trial);发布者 CN=7C98EFA7-…</td></tr>
+      <tr><td class="k">时间</td><td>2026-09-05(安装/数据写入 2026-09-04 23:59 – 09-05 00:08)</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="hr-gold">
+
+  <!-- 二 -->
+  <h2 id="s2"><span class="no">02</span>安装技术栈(程序目录)</h2>
+  <p class="lede">一句话:<b>不是 .NET 程序,而是 Python 3.12 + PyInstaller 打包的桌面应用</b>,核心逻辑 mypyc 编译,UI 走 wxPython + WebView2(HTML)混合架构。</p>
+
+  <h3>2.1 分层技术栈</h3>
+  <table>
+    <thead><tr><th>层</th><th>技术</th><th>证据(安装目录)</th><th>解读</th></tr></thead>
+    <tbody>
+      <tr><td class="k">分发</td><td>MSIX(微软商店)</td><td>AppxManifest.xml:Windows.Desktop、runFullTrust、ProcessorArchitecture=neutral、7 语言资源</td><td>全信任 Win32 打包(非 UWP),单包分发</td></tr>
+      <tr><td class="k">运行时</td><td>Python 3.12</td><td>python312.dll、base_library.zip、_internal 目录布局</td><td>PyInstaller onedir 模式</td></tr>
+      <tr><td class="k">核心逻辑</td><td>mypyc 编译</td><td><code>81d243bd…__mypyc.cp312-win_amd64.pyd</code></td><td>业务代码编译为原生扩展:性能 + 反逆向</td></tr>
+      <tr><td class="k">UI 框架</td><td>wxPython 4.x</td><td>_internal/wx:wxmsw32u_core / webview / richtext / html / dataview + svg 扩展</td><td>原生窗口外壳与控件</td></tr>
+      <tr><td class="k">渲染层</td><td>WebView2(Edge)</td><td>WebView2Loader.dll、wxmsw32u_webview、modules/**/templates + static(HTML/CSS/JS)</td><td>阅读/详情/统计等视图用 HTML 渲染(Jinja2 风格模板)</td></tr>
+      <tr><td class="k">存储</td><td>SQLite</td><td>_sqlite3.pyd + sqlite3.dll</td><td>本地单文件库(km3.dat)</td></tr>
+      <tr><td class="k">设备连接</td><td>WinRT + libusb</td><td>winsdk/_winrt.pyd、libusb-1.0.dll</td><td>Kindle MTP/USB 识别与同步</td></tr>
+      <tr><td class="k">词典引擎</td><td>自研 mdx 插件</td><td>modules/dict_management/mdx_plugin/minilzo.dll</td><td>MDict 格式解压(minilzo)内嵌实现</td></tr>
+      <tr><td class="k">辅助库</td><td>lxml / numpy / PIL</td><td>lxml、numpy-2.4.4 + numpy.libs、PIL</td><td>解析 / 数据处理 / 封面图像</td></tr>
+      <tr><td class="k">网络</td><td>OpenSSL + requests 系</td><td>libssl-3 / libcrypto-3、certifi、charset_normalizer、dateutil</td><td>在线词典 / AI 查词 / Amazon 云端导入</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 业务模块划分(由打包资源反推)</h3>
+  <div class="card">
+    <p style="margin:0"><span class="pill">modules/note_view</span><span class="pill">modules/vocab_view</span><span class="pill">modules/reading_mode_note</span><span class="pill">modules/dict_management</span><span class="pill">modules/detail_view</span><span class="pill">note_markdown.css/js</span></p>
+    <p style="margin:8px 0 0; font-size:13px" class="src">标注视图(note_detail / note_reading_mode / note_empty_data / note_placeholder / note_new_book)、生词视图(vocab_detail 等)、阅读模式(reading_mode_note,含 global_stats 统计页)、词典管理(mdx_plugin)、详情静态资源。代码按“视图”垂直切片,与官网“数据库模式 / 阅读模式”双模式对应。</p>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 三 -->
+  <h2 id="s3"><span class="no">03</span>数据目录结构</h2>
+  <p class="lede">MSIX 将应用写盘重定向到 Packages 目录;数据本体极为精简。</p>
+  <pre>
+LocalCache\Local\KMate\                    <b>← 核心(应用视角 %LOCALAPPDATA%\KMate)</b>
+├─ km3.dat                 主库 SQLite3(命名延续旧 KM2.dat)
+├─ km_cfg.json             主配置 ≈5.8 KB
+├─ dict_cfg.json           词典配置 160 B
+├─ Backup\                 备份目录(空)
+├─ Cache\
+│  ├─ dictionaries\indices\     词典检索索引(如 mdx 全文)
+│  ├─ dictionaries\resources\   词典资源(图片/音频等)
+│  ├─ reading_mode\covers\      阅读模式书籍封面
+│  ├─ reading_mode\stats\       统计缓存
+│  ├─ print_cards\              打印卡片
+│  ├─ webview_pages\            WebView 页面
+│  └─ maintenance\.last_cleanup
+└─ logs\
+   ├─ kmate.log            主日志(级别 ERROR,常态为空)
+   └─ weread_import.log    微信读书导入日志
+
+LocalCache\Roaming\KMate\WebView2Data\EBWebView\   <b>← WebView2(Chromium)数据</b>
+  </pre>
+  <p class="src">实测 Cache 各子目录当前为空骨架(未安装词典、未用标签/封面)。数据规模:km3.dat 7.4 MB(clippings 5,988 / lines 5,991 / vocab 172 / lookups 175)。</p>
+
+  <hr class="hr-gold">
+
+  <!-- 四 -->
+  <h2 id="s4"><span class="no">04</span>主库 km3.dat 数据格式详解</h2>
+  <p class="lede"><code>user_version=0</code>;9 张表,无触发器,索引齐备。列语义为按列名与样本推断。</p>
+
+  <h3>4.1 表总览</h3>
+  <table>
+    <thead><tr><th>表</th><th>实测行数</th><th>作用</th><th>关键索引</th></tr></thead>
+    <tbody>
+      <tr><td class="k">clippings</td><td>5,988</td><td>标注/笔记主表</td><td>key、bookname、authorname、date、read、tag、sync、<b>ck_synced</b>、created_at_date、note_parent_key、book_author_date</td></tr>
+      <tr><td class="k">original_clipping_lines</td><td>5,991</td><td>My Clippings 原始行(每条 ≤5 行)</td><td>key</td></tr>
+      <tr><td class="k">vocab</td><td>172</td><td>生词主表(含闪卡学习状态)</td><td>word_key、word、timestamp、frequency、category、tag、<b>ck_synced</b>、created_at</td></tr>
+      <tr><td class="k">lookups</td><td>175</td><td>词典查询记录(例句/词频源)</td><td>word_key、title、timestamp、<b>ck_synced</b>、unique_norm</td></tr>
+      <tr><td class="k">books</td><td>0</td><td>书目独立表(封面/元数据)</td><td>title_author</td></tr>
+      <tr><td class="k">tags_clippings / tags_vocab</td><td>0</td><td>标签定义表(标注/生词分域)</td><td>—</td></tr>
+      <tr><td class="k">pending_deletions</td><td>0</td><td>云同步删除队列</td><td>record_type</td></tr>
+      <tr><td class="k">sqlite_sequence</td><td>2</td><td>自增序列</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 clippings 列语义(与旧 KM2 格式对照)</h3>
+  <table>
+    <thead><tr><th>列</th><th>类型/形态(实测)</th><th>语义推断</th><th>KM2 对照</th></tr></thead>
+    <tbody>
+      <tr><td class="k">key</td><td>32 位 hex 唯一键</td><td>疑似 MD5(内容/书/时间组合);主键</td><td>主键格式不同,需核对</td></tr>
+      <tr><td class="k">content</td><td>标注正文</td><td>高亮/笔记文本</td><td>同列</td></tr>
+      <tr><td class="k">bookname / authorname</td><td>文本</td><td>书名/作者(原始)</td><td>同列</td></tr>
+      <tr><td class="k">brieftype</td><td>0 / 1</td><td>0=标注 5,967 / 1=笔记 21</td><td>枚举需核对</td></tr>
+      <tr><td class="k">clippingdate</td><td><code>2016-06-16 13:47:27</code></td><td>标注时间(本地时间字符串)</td><td>同</td></tr>
+      <tr><td class="k">source</td><td>文本;样本全为 <code>Kindle</code></td><td>来源:Kindle / 微信读书 / Apple Books / KMate…</td><td><b>新增</b></td></tr>
+      <tr><td class="k">note_parent_key</td><td>空(设备导入)</td><td>笔记↔所属标注关联(指向另一条 key)</td><td><b>新增</b></td></tr>
+      <tr><td class="k">read / sync</td><td>0/1</td><td>状态位(旧版遗留,仍参与过滤/同步)</td><td>遗留列(现仍用)</td></tr>
+      <tr><td class="k">tag</td><td>NULL</td><td>旧文本标签列(新版标签走 tags_* 关联表)</td><td>遗留列</td></tr>
+      <tr><td class="k">newbookname</td><td>NULL</td><td>改名映射后的新书名</td><td>遗留列(现为“名称映射”功能)</td></tr>
+      <tr><td class="k">colorRGB</td><td>''</td><td>Kindle App 彩色标注色值</td><td>遗留列</td></tr>
+      <tr><td class="k">pagenumber</td><td>16 / 80…</td><td>页码(设备导入)</td><td><b>新增</b></td></tr>
+      <tr><td class="k">ck_synced</td><td>0/1</td><td>云同步标记(配 idx_*_ck_synced)</td><td><b>新增</b></td></tr>
+      <tr><td class="k">created_at / updated_at</td><td>时间</td><td>审计时间戳</td><td>同</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 其余表要点</h3>
+  <ul>
+    <li><b>original_clipping_lines</b>(id, key, line1…line5):My Clippings 逐行原文;行数 5,991 &gt; clippings 5,988,去重合并时原行被保留到保留条目(需在迁移时验证此规则)。</li>
+    <li><b>vocab</b>:word 显示词、stem 词干、translation(富文本)与 translation_plain(纯文本)、dict_source(词典来源)、frequency(词频);<b>last_reviewed / review_count / word_level = 闪卡学习状态字段</b>;colorRGB 同标注表。</li>
+    <li><b>lookups</b>:word_key 带<b>语言前缀</b>(样本 <code>zh:潜龙勿用</code>,英文为 <code>en:…</code>);usage 存原句、title/authors 记录所在书;idx_lookups_unique_norm 提供规范化去重。</li>
+    <li><b>books</b>:title/author/isbn/language/genre/publication_year + image_data(BLOB 封面)/image_url;是“书目编辑 + 名称映射 + Apple Books 书目”的落点(当前 0 行)。</li>
+      <li><b>tags_* / pending_deletions</b>:标签与同步删除队列结构已建,待使用。</li>
+    </ul>
+
+  <h3>4.4 完整结构清单(列 × 索引速查)</h3>
+  <p class="src">由原 <code>docs/KMate_数据格式情报.md</code> 并入(该文件已删除);<code>*</code> = 唯一索引/主键。</p>
+  <table>
+    <thead><tr><th>表</th><th>列</th><th>索引</th></tr></thead>
+    <tbody>
+      <tr><td class="k">clippings</td><td>key*, content, bookname, authorname, brieftype, clippingdate, read, tag, source, note_parent_key, sync, ck_synced, newbookname, colorRGB, pagenumber, created_at, updated_at</td><td>idx_key / bookname / authorname / date / read / tag / sync / ck_synced / created_at_date / note_parent_key / book_author_date</td></tr>
+      <tr><td class="k">original_clipping_lines</td><td>id*, key, line1, line2, line3, line4, line5, created_at, updated_at</td><td>idx_key</td></tr>
+      <tr><td class="k">vocab</td><td>id*, word_key, word, stem, category, translation, translation_plain, dict_source, timestamp, frequency, sync, ck_synced, colorRGB, last_reviewed, review_count, word_level, created_at, updated_at</td><td>idx_word_key / word / timestamp / frequency / category / tag / ck_synced / created_at</td></tr>
+      <tr><td class="k">lookups</td><td>id*, word_key, usage, title, authors, timestamp, ck_synced</td><td>idx_word_key / title / timestamp / ck_synced / <b>unique_norm</b>(规范化去重)</td></tr>
+      <tr><td class="k">books</td><td>id*, title, author, isbn, language, genre, publication_year, created_at, updated_at, image_data(BLOB), image_url</td><td>idx_title_author</td></tr>
+      <tr><td class="k">tags_clippings / tags_vocab</td><td>id*, name, color, description, created_at, updated_at</td><td>(主键)</td></tr>
+      <tr><td class="k">pending_deletions</td><td>record_name*, record_type, deleted_at</td><td>idx_record_type</td></tr>
+      <tr><td class="k">sqlite_sequence</td><td>name, seq</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p class="src">观察:三张内容主表均配 <code>idx_*_ck_synced</code>(同步批次查询);clippings/original_clipping_lines 共享 key 关联;lookups 的 unique_norm 承担“同一词条唯一化”。</p>
+
+  <hr class="hr-gold">
+
+  <!-- 五 -->
+  <h2 id="s5"><span class="no">05</span>配置与行为情报</h2>
+
+  <h3>5.1 km_cfg.json 解读</h3>
+  <table>
+    <thead><tr><th>配置段</th><th>关键内容与情报</th></tr></thead>
+    <tbody>
+      <tr><td class="k">database</td><td><code>database_path</code> = 应用视角 <code>%LOCALAPPDATA%\KMate\km3.dat</code>;database_version "3.0";migration_completed 标志</td></tr>
+      <tr><td class="k">database.云同步</td><td><code>use_cloud_sync + cloud_sync_path + cloud_sync_server_change_token + cloud_sync_last_bound_path/baseline_*</code> —— <b>Windows“云同步”= 把库绑定到云盘文件夹做文件级同步</b>(配合向移动端移交库),并非服务端账号同步</td></tr>
+      <tr><td class="k">kindle_device</td><td>授权根路径与书签(安全作用域)、authorization_schema_version=2、最近连接 Kindle 卷名</td></tr>
+      <tr><td class="k">ui_state</td><td>阅读模式 <code>reading_view_mode</code>(card/list/article)、侧栏 <code>cover</code>、<code>detail_markdown_enabled</code>、<code>detail_inline_tags_enabled</code>、树分组模式、窗口/分栏几何与列宽</td></tr>
+      <tr><td class="k">font / app</td><td>系统字体(微软雅黑)、字号表;app.version=3.8.16、theme、ignore_deleted_imports、restore_last_view</td></tr>
+      <tr><td class="k">export_settings</td><td>导出内容开关(content/bookname/clippingdate/…)、间隔 <code>interval_type=empty_line</code>、<code>kindle_app_color</code>(Kindle App 彩色标注)、show_related_notes</td></tr>
+      <tr><td class="k">anki_settings</td><td><b>Anki 卡片设计:正面 = word + usage + bookname + timestamp;背面 = definition</b>;<code>anki_definition_use_raw_html</code>、export_vocab_tags</td></tr>
+      <tr><td class="k">dict_*</td><td>词典管理对话框列宽与排序状态(dict_column_widths: enable/name/format/count)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 dict_cfg.json</h3>
+  <p><code>dictionaries.dictionary_path</code>(默认空,词典存本机目录)、<code>dictionary_version</code>(形如 20260905)、<code>default_dictionary_id</code>、<code>dictionary_list[]</code>。</p>
+
+  <h3>5.3 日志揭示的微信读书导入机制</h3>
+  <blockquote>weread_import.log 显示:WebView2 打开 <code>weread.qq.com</code> → 轮询 <code>logged_in</code> / <code>total_books</code> → 呈现二维码(<code>auth_qr_ready</code>,带会话 uid)→ 登录后抓取。<b>无独立 API 凭据,依赖网页登录态</b>——这也是应用必须内置 Chromium 的原因之一。</blockquote>
+
+  <hr class="hr-gold">
+
+  <!-- 六 -->
+  <h2 id="s6"><span class="no">06</span>与 KindleMate2(KM2 格式)迁移对照</h2>
+  <p class="lede">两库同源、列名基本一致,迁移可走 SQL 级搬运;风险点集中标注如下。</p>
+  <table>
+    <thead><tr><th>km3 表</th><th>目标(KM2 侧)</th><th>注意点</th></tr></thead>
+    <tbody>
+      <tr><td class="k">clippings</td><td>clippings</td><td><code>key</code>(32 hex)与 KM2 主键格式不同:<b>建议保留原 key 到独立列,目标主键重建</b>;brieftype 0/1 枚举需与 KM2 定义核对;source 落新列或前缀;note_parent_key 关系需随迁并重建索引;忽略 read/sync/ck_synced 或置默认</td></tr>
+      <tr><td class="k">original_clipping_lines</td><td>original_clipping_lines</td><td>按 key 关联搬运;行数 &gt; clippings 的现象需在迁移逻辑中容忍(保留行映射)</td></tr>
+      <tr><td class="k">vocab</td><td>vocab</td><td><code>word_key</code> 语言前缀(zh:/en:)需兼容;translation_plain/dict_source 若 KM2 无对应列可忽略或并入 translation;学习状态列(last_reviewed/review_count/word_level)可直接保留以备将来</td></tr>
+      <tr><td class="k">lookups</td><td>lookups</td><td>word_key 前缀同上;usage/title 直接搬</td></tr>
+      <tr><td class="k">books</td><td>(KM2 无独立书目表)</td><td>可选:新建书目表,或并入“书名规范/改名”功能复用</td></tr>
+      <tr><td class="k">tags_* / pending_deletions</td><td>(无)</td><td>暂忽略;标签可在 KM2 引入标签后迁移</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card">
+    <p style="margin:0"><b>工程量判断(2026-09-05 本机样本 dry-run 实测):</b>按目标 schema 在内存中逐行回放,<b>clippings 5,988 / lines 5,991 / lookups 175 / vocab 172 全部插入成功、零冲突</b>。要点:</p>
+    <ul style="margin-top:6px">
+      <li>源 <code>key</code> 全部为 32-hex 且库内唯一 → 可直接作为目标主键;<code>clippings</code> 各列数值/时间格式与目标完全兼容(非标准时间 0、colorRGB 空 → -1 转换 0 失败)。</li>
+      <li><code>vocab</code>:源 INTEGER id 不能直搬,改用<b> word_key 派生 TEXT id</b>(样本 word_key 全唯一,0 冲突)即可。</li>
+      <li><code>original_clipping_lines</code> 比 clippings 多 <b>3 条孤儿行</b>(key 已被 KMate 去重清理):迁移时需按 <code>key ∈ clippings</code> 过滤。</li>
+      <li>需丢弃的字段/表:source / note_parent_key / ck_synced / created_at·updated_at / translation_plain / dict_source / 闪卡三列 / books / tags_* / pending_deletions(目标暂无对应结构)。</li>
+      <li>总体:属<b>中低工作量</b>的标准 SQLite 只读 → 目标库回放;风险集中在目标应用层去重/类型枚举,而非读取。</li>
+    </ul>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 七 -->
+  <h2 id="s7"><span class="no">07</span>结论与工程建议</h2>
+  <ul>
+    <li><b>“读 km3.dat 直接迁”成立</b>:KMate 数据库未加密、无自定义页编码、标准 SQLite,KindleMate2 的 Microsoft.Data.Sqlite 可直接只读打开。</li>
+    <li>建议实现<b>“导入 KMate 数据库(km3.dat)”</b>入口,与既有 KM2.dat 导入并列,复用去重与事务框架;导入同时记录 source,为将来的“来源分组”铺路。</li>
+    <li>迁移对账口径:clippings 按 (bookname, content 归一, clippingdate) 与 KM2 既存数据去重;生词按 word_key 归一。</li>
+    <li>本报告的工程细节版(含全部列清单与索引)见仓库 <code>docs/KMate_数据格式情报.md</code>。</li>
+  </ul>
+
+  <hr class="hr-gold">
+
+  <!-- 附录 -->
+  <h2 id="s8"><span class="no">08</span>附录:观察清单与局限</h2>
+  <h3>8.1 观察清单</h3>
+  <ul>
+    <li>AppxManifest.xml(包标识/能力/语言);_internal 顶层文件与目录(wx / winsdk / assets / modules 等)。</li>
+    <li>modules 业务资源(note_view / vocab_view / reading_mode_note / dict_management / detail_view 的 templates + static)。</li>
+    <li>用户数据目录结构、km_cfg.json / dict_cfg.json 全文、日志文件名与 weread_import.log 流程。</li>
+    <li>km3.dat:PRAGMA user_version、sqlite_master(表/索引/触发器)、各表行数与列清单、代表性样例行(内容截断)。</li>
+  </ul>
+  <h3>8.2 局限与声明</h3>
+  <ul>
+    <li>全部为<b>静态文件观察</b>:未运行程序、未反编译 pyd、未复制或分发任何第三方代码。</li>
+    <li>列语义按列名/样本推断;brieftype 枚举、key 生成算法、note_parent_key 非空形态(sample 为空)需对照 KMate 行为进一步验证。</li>
+    <li>本机样本仅 Kindle 来源、无标签/书目/Apple Books 数据,source 其它取值与 books/tags 表的实际数据形态未观测到。</li>
+    <li>本报告仅用于 KindleMate2 工程对标与个人学习,不用于绕过授权或再分发 KMate 内容。</li>
+  </ul>
+
+  <footer>
+    KindleMate2 仓库内部技术报告 · 由 WorkBuddy 于 2026-09-05 生成 · 数据格式情报已于同日并入本报告(§4.4)<br>
+    配套文档:<code>docs/KMate_vs_KindleMate2_分析报告.html</code>(产品与战略分析)
+  </footer>
+</div>
+</body>
+</html>

@@ -270,6 +270,15 @@
   <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
     <value>Import Kindle Mate's Database File</value>
   </data>
+  <data name="Import_KMate_Database" xml:space="preserve">
+    <value>Import KMate Database</value>
+  </data>
+  <data name="Import_KMate_Database_File" xml:space="preserve">
+    <value>Import KMate Database File</value>
+  </data>
+  <data name="KMate_Database_File" xml:space="preserve">
+    <value>KMate Database File</value>
+  </data>
   <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
     <value>Are you sure you want to delete the selected clipping(s)?</value>
   </data>

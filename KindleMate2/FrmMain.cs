@@ -198,6 +198,7 @@ namespace KindleMate2 {
             menuImportKindle.Text = Strings.Import_Kindle_Clippings;
             menuImportKindleWords.Text = Strings.Import_Kindle_Vocabs;
             menuImportKindleMate.Text = Strings.Import_Kindle_Mate_Database;
+            menuImportKmateDatabase.Text = Strings.Import_KMate_Database;
             menuSyncFromKindle.Text = Strings.Import_Kindle_Clippings_From_Kindle;
             menuSyncToKindle.Text = Strings.Sync_To_Kindle;
             menuExportMd.Text = Strings.Export_To_Markdown;
@@ -1183,6 +1184,20 @@ namespace KindleMate2 {
 
             RunBackgroundTask(
                 () => _importManager.ImportKmDatabase(fileDialog.FileName),
+                Strings.Successful, Strings.Import_Failed);
+        }
+
+        private void MenuImportKmateDatabase_Click(object sender, EventArgs e) {
+            var fileDialog = new OpenFileDialog {
+                Title = Strings.Import_KMate_Database_File + Strings.Space + @"(km3.dat)",
+                CheckFileExists = true, CheckPathExists = true, DefaultExt = "dat",
+                Filter = Strings.KMate_Database_File + Strings.Space + @"(*.dat)|*.dat",
+                FilterIndex = 2, RestoreDirectory = true, ReadOnlyChecked = true, ShowReadOnly = true
+            };
+            if (fileDialog.ShowDialog() != DialogResult.OK) return;
+
+            RunBackgroundTask(
+                () => _importManager.ImportKmateDatabase(fileDialog.FileName),
                 Strings.Successful, Strings.Import_Failed);
         }
 

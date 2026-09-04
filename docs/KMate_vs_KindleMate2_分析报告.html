@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMate 竞品深度分析报告 · 与 KindleMate2 全面对比</title>
+<style>
+  :root{
+    --bg:#101418; --bg2:#161c22; --card:#1a2129; --line:#2b3542;
+    --ink:#e8e2d6; --ink-dim:#a8a293; --ink-faint:#7a7a70;
+    --gold:#c9a35f; --gold-soft:#e0c287; --red:#e08a7a; --green:#8fbf9f; --amber:#d9b36a;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--serif); line-height:1.75; font-size:15px; padding:0 0 80px;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 32px;}
+  header.hero{padding:72px 0 44px; border-bottom:1px solid var(--line); background:radial-gradient(ellipse at 50% -20%, rgba(201,163,95,.14), transparent 60%);}
+  .kicker{letter-spacing:.35em; color:var(--gold); font-size:12px; text-transform:uppercase; margin-bottom:18px;}
+  h1{font-size:34px; font-weight:600; letter-spacing:.02em; line-height:1.35; margin-bottom:14px;}
+  h1 .sub{display:block; font-size:19px; color:var(--ink-dim); font-weight:400; margin-top:10px;}
+  .meta{color:var(--ink-faint); font-size:13px; margin-top:8px;}
+  .meta b{color:var(--ink-dim); font-weight:600;}
+  h2{font-size:22px; margin:56px 0 8px; color:var(--gold-soft); font-weight:600; letter-spacing:.02em;}
+  h2 .no{color:var(--gold); font-family:Georgia,serif; margin-right:12px; font-size:18px;}
+  .lede{color:var(--ink-dim); font-size:13.5px; border-left:2px solid var(--gold); padding-left:14px; margin-bottom:24px;}
+  h3{font-size:16.5px; margin:28px 0 10px; color:var(--ink); font-weight:600;}
+  p{margin:10px 0; text-align:justify;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 24px; margin:16px 0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .stat{background:var(--bg2); border:1px solid var(--line); border-radius:8px; padding:14px 16px;}
+  .stat .n{font-size:26px; color:var(--gold-soft); font-family:Georgia,serif; line-height:1.2;}
+  .stat .l{font-size:12.5px; color:var(--ink-faint); margin-top:4px; letter-spacing:.05em;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px;}
+  th{background:#1f2731; color:var(--gold-soft); font-weight:600; text-align:left; padding:9px 12px; border:1px solid var(--line); white-space:nowrap;}
+  td{padding:8px 12px; border:1px solid var(--line); vertical-align:top;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+  td.k{white-space:nowrap; color:var(--ink-dim); font-weight:600;}
+  .tag{display:inline-block; font-size:11.5px; padding:1px 9px; border-radius:20px; border:1px solid; margin-right:4px; letter-spacing:.04em; white-space:nowrap;}
+  .tag.lead{color:#6fae87; border-color:#3b6b50; background:rgba(63,148,98,.12);}
+  .tag.par{color:var(--amber); border-color:#6b5833; background:rgba(217,179,106,.10);}
+  .tag.gap{color:#c98a8a; border-color:#7a4545; background:rgba(224,138,122,.10);}
+  .tag.miss{color:#d9a1a1; border-color:#8a4f4f; background:rgba(217,120,120,.14);}
+  .pill{display:inline-block; background:rgba(201,163,95,.12); color:var(--gold-soft); border:1px solid rgba(201,163,95,.4); border-radius:4px; padding:0 8px; font-size:12px; margin-right:6px; letter-spacing:.08em;}
+  .p0{color:#e08a7a; font-weight:700;} .p1{color:var(--gold-soft); font-weight:700;} .p2{color:#8fbf9f; font-weight:700;}
+  ul,ol{margin:8px 0 8px 22px;}
+  li{margin:5px 0;}
+  blockquote{border-left:3px solid var(--gold); background:rgba(201,163,95,.06); padding:12px 18px; margin:16px 0; color:var(--ink-dim); border-radius:0 6px 6px 0;}
+  .src{color:var(--ink-faint); font-size:12px;}
+  .src a{color:var(--gold); text-decoration:none;}
+  .toc{columns:2; column-gap:40px; font-size:14px; margin:10px 0;}
+  .toc a{color:var(--ink-dim); text-decoration:none; display:block; padding:3px 0; border-bottom:1px dashed transparent;}
+  .toc a:hover{color:var(--gold-soft);}
+  footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:12.5px;}
+  .hr-gold{height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); border:0; margin:36px 0;}
+  .big{font-size:16px;}
+  code{font-family:Consolas,Menlo,monospace; font-size:12.5px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:4px; color:var(--gold-soft);}
+  @media(max-width:720px){ .toc{columns:1;} .wrap{padding:0 18px;} h1{font-size:26px;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Competitive Intelligence · 竞品深度分析</div>
+    <h1>KMate 深度分析报告
+      <span class="sub">原 Kindle Mate 复活版 · 三端产品 / 定价 / 技术栈全景 &amp; 与 KindleMate2 的差距与机会</span>
+    </h1>
+    <div class="meta">报告日期 <b>2026-09-05</b> · 数据截至 <b>2026-09-04/05</b>(官网 kmate.io + Apple/Microsoft 商店官方 API + 本机安装目录实测)· 分析对象:<b>KMate 3.8.16(桌面)/ 2.3.0(移动)</b> vs <b>KindleMate2(本仓库)</b></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 执行摘要 -->
+  <h2><span class="no">◆</span>执行摘要</h2>
+  <div class="card">
+    <p class="big"><b>KMate 是原“Kindle Mate”在 2026 年的复活重做版</b>(版权 ©2015–2026 KMate Team,开发者署名“军 黄”)。它没有停在 Windows 小工具时代,而是重建成<b>三端产品家族</b>:Windows + macOS 桌面端 + iPhone/iPad 移动端,并引入微信读书、Apple Books 导入与 iCloud 同步,脱离 Kindle 单一生态。</p>
+    <ul>
+      <li><b>定位变了:</b>从“Kindle 标注导出工具”升级为“跨来源阅读知识库(导入→整理→复习→掌握)”。</li>
+      <li><b>商业化了:</b>Windows <b>¥58 一次性买断</b>(15 天完整试用);Mac 免费(限最近 1,000 条)+ Pro <b>终身 ¥168 / 年 ¥68 / 月 ¥12</b>;iOS 免费 + Pro 内购。个人开发者独立运营。</li>
+      <li><b>技术栈意外:</b>Windows 桌面版实测为 <b>Python 3.12 + PyInstaller + mypyc 编译</b>,UI 用 <b>wxPython + WebView2(HTML)渲染</b>——并非 .NET/WPF。</li>
+      <li><b>对你项目的最大含义:</b>KindleMate2 的立身叙事“Kindle Mate 停更后的替代品”<b>已过时</b>;新的差异化空间是 <b>免费开源 + 零门槛 + 轻快原生 + 本地优先</b>,恰好承接 KMate 商业化后流失的免费老用户。</li>
+      <li><b>差距焦点:</b>KMate 领先在词典(含 AI)、闪卡复习、Anki/PDF/Office 导出、标签与阅读模式;KindleMate2 的成熟底盘(解析/去重/Markdown 导出/统计/设备同步)依然扎实,建议按 P0/P1/P2 补短板(见 §6)。</li>
+    </ul>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 目录 -->
+  <h2><span class="no">◆</span>目录</h2>
+  <div class="toc">
+    <a href="#s1">一、KMate 是什么:复活简史与产品画像</a>
+    <a href="#s2">二、三端产品矩阵与商业模式</a>
+    <a href="#s3">三、功能全景</a>
+    <a href="#s4">四、技术栈解剖(安装目录实测)</a>
+    <a href="#s5">五、KindleMate2 现状快照</a>
+    <a href="#s6">六、功能对比矩阵</a>
+    <a href="#s7">七、差距、机会与 P0/P1/P2 路线</a>
+    <a href="#s8">八、结论</a>
+    <a href="#s9">附录:信息来源与说明</a>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 一 -->
+  <h2 id="s1"><span class="no">01</span>KMate 是什么:复活简史与产品画像</h2>
+  <p class="lede">一句话:它回来了,而且不再只是“Kindle 伴侣”。</p>
+
+  <h3>1.1 沿革</h3>
+  <p>Kindle Mate 是一款服务 Kindle 读者 10 年以上的标注/生词管理工具(版权信息 <b>©2015–2026 KMate Team</b>,官网与商店署名开发者“军 黄”,bundle id <code>io.kmate.kindlemate</code>)。它曾长期停更,KindleMate2 仓库正是当年为“停更后的替代”而生(README 原文)。2026 年 8 月,它以 <b>KMate</b> 品牌回归:新官网 kmate.io、Windows 上架 Microsoft Store、新增 macOS 与 iOS 端,版本推进到 <b>桌面 v3.8.16</b>。</p>
+
+  <h3>1.2 官方自述定位</h3>
+  <blockquote>“把每一次摘录与查词,变成真正留下的知识。KMate 把 Kindle 标注、笔记与生词汇集到一个专注的工作空间:桌面端深度整理与阅读,iPhone 与 iPad 随时复习回顾。”<br>
+  <span class="src">—— kmate.io/zh 首页标语“让每次阅读,都有回响”</span></blockquote>
+
+  <h3>1.3 关键数字(官网口径)</h3>
+  <div class="grid">
+    <div class="stat"><div class="n">10+ 年</div><div class="l">持续服务 Kindle 读者</div></div>
+    <div class="stat"><div class="n">100,000+</div><div class="l">海量内容流畅管理</div></div>
+    <div class="stat"><div class="n">13</div><div class="l">覆盖所有 Kindle 标注语言解析</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">App 收集的数据</div></div>
+    <div class="stat"><div class="n">7</div><div class="l">界面语言(简中/繁中/英/日/德/法/波兰)</div></div>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 二 -->
+  <h2 id="s2"><span class="no">02</span>三端产品矩阵与商业模式</h2>
+  <p class="lede">每个平台独立版本号、独立商店、独立免费/付费策略——这是理解 KMate 的关键。</p>
+
+  <table>
+    <thead><tr><th>维度</th><th>Windows(桌面)</th><th>macOS(桌面)</th><th>iPhone / iPad(移动)</th></tr></thead>
+    <tbody>
+      <tr><td class="k">商店名称</td><td>KMate: Kindle标注笔记与生词本管理工具</td><td>KMate: 标注笔记与生词本管理助手</td><td>KMate: 标注笔记生词本学习</td></tr>
+      <tr><td class="k">版本(截至 9/4)</td><td><b>3.8.16</b>(2026-08-21 更新)</td><td><b>3.8.16</b>(2026-08-20 发布)</td><td><b>2.3.0</b>(2026-08-20 发布)</td></tr>
+      <tr><td class="k">最低系统</td><td>Windows 10 / 11(商店包要求 ≥1809)</td><td>macOS 10.13+(Intel 与 Apple Silicon)</td><td>iOS / iPadOS 17.0+</td></tr>
+      <tr><td class="k">包体积</td><td>安装目录约 350 MB(含 Python 运行时)</td><td>约 64 MB(Mac App Store)</td><td>约 12 MB(App Store)</td></tr>
+      <tr><td class="k">定价模式</td><td><b>¥58 一次性买断</b>,完整 Pro 功能 + <b>15 天免费试用</b>,无订阅</td><td>免费下载(全功能但<b>仅显示最近 1,000 条</b>);Pro 内购:<b>终身 ¥168 / 年 ¥68 / 月 ¥12</b></td><td>免费(含 Kindle/Amazon 导入、无限浏览与闪卡、TXT/Anki 导出);Pro 解锁高级主题/字体、Markdown/PDF 导出、打印、无限统计</td></tr>
+      <tr><td class="k">商店评分</td><td>暂无(新上架)</td><td>暂无(新上架)</td><td>5.0(仅 1 条,新上架)</td></tr>
+      <tr><td class="k">同步方式</td><td>本机数据库 → 手动导入 KMate Mobile</td><td colspan="2">个人 iCloud 自动同步(免费,iOS 用 Mac 时同步免费)</td></tr>
+    </tbody>
+  </table>
+  <p class="src">价格来源:Microsoft Store 产品 API(¥58.00,SKU 0010 full)+ App Store 中国大陆区页面(¥168/¥68/¥12);均为 2026-09-04 抓取。iOS 端内购具体金额以商店页为准(未单独核实)。</p>
+
+  <h3>2.1 商业模式解读</h3>
+  <ul>
+    <li><b>“免费试用/免费额度 + 解锁”双轨:</b>Windows 用“15 天完整试用 + 买断”;Apple 生态用“永久免费额度(1,000 条)”制造升级动机——额度限制比功能限制更“钝感”,不易劝退,但长期使用必触发付费。</li>
+    <li><b>iCloud 作为锁定层:</b>Mac/iOS 用户数据进入个人 iCloud,迁移成本随数据量上升而上升。</li>
+    <li><b>个人开发者</b>(“军 黄”,非公司主体):意味着无融资压力、更新节奏自主;同时意味着售后、长期维护与跨平台质量存在个人产能上限。</li>
+  </ul>
+
+  <hr class="hr-gold">
+
+  <!-- 三 -->
+  <h2 id="s3"><span class="no">03</span>功能全景</h2>
+  <p class="lede">按“导入 → 整理 → 词典 → 复习 → 统计 → 阅读 → 导出 → 同步/隐私”八条线展开。</p>
+
+  <h3>3.1 导入源(横向扩张是这轮更新的主轴)</h3>
+  <ul>
+    <li><b>Kindle 全系设备</b>(Paperwhite / Colorsoft / Scribe / Touch / Voyage / Oasis 等):自动识别、一键导入标注、笔记与生词本,含 Kindle 占用冲突提示。</li>
+    <li><b>Kindle App 与 Amazon Kindle 云端</b>、<b>微信读书</b>(多端笔记)桌面导入。</li>
+    <li><b>Apple Books</b>(仅 Mac,v3.8 新增):保留书名、作者、颜色标记与来源,可在数据库/阅读模式按来源独立管理。</li>
+    <li>旧 <b>KMate / KM2 数据库</b>整库导入(继承老用户)。</li>
+    <li>解析能力:13 种语言标注;重复标注自动清理(含 Kindle Scribe 场景)。</li>
+  </ul>
+
+  <h3>3.2 整理</h3>
+  <ul>
+    <li>智能去重合并(多端合并同一本书);按 <b>Kindle / 微信读书 / Apple Books / KMate 来源分组</b>。</li>
+    <li>分组维度:名称、作者、书籍语言、日历、学习状态;标签、颜色、多语言排序。</li>
+    <li>书名/作者<b>双击编辑 + 名称映射</b>:改名后后续导入与 iCloud 同步自动沿用(避免旧名复现)。</li>
+    <li>全文与通配符搜索(面向大型资料库,10 万+ 内容)。</li>
+  </ul>
+
+  <h3>3.3 词典与查词(差异化最重的一块)</h3>
+  <ul>
+    <li><b>本地词典:</b>桌面端 StarDict(.tar.gz)、MDict(.mdx/.mdd)、MOBI/PRC、三列 TSV、纯文本;移动端另支持 AZW。</li>
+    <li><b>在线释义:</b>Google 翻译、Bing 翻译、金山词霸在线、DeepL / FreeDictionary API。</li>
+    <li><b>AI 查词:</b>Gemini / DeepSeek——生词条目可并列本地 + 在线 + AI 释义。</li>
+    <li>生词来源:Kindle Vocabulary Builder,保留原始用法例句与词频。</li>
+  </ul>
+
+  <h3>3.4 复习 / 学习</h3>
+  <ul>
+    <li>卡片或列表阅读;随机与渐进式<b>闪卡复习</b>(移动端优化了卡片布局:用法/释义分栏显示、切换动画)。</li>
+    <li>学习状态管理 + 活动趋势(日历热力图,按日/月/年;可直接按日期筛内容)。</li>
+    <li>统计洞察覆盖标注、生词、掌握度、书籍层面;移动端 Pro 含“无限统计洞察”。</li>
+  </ul>
+
+  <h3>3.5 阅读模式</h3>
+  <ul>
+    <li>数据库整理 ↔ <b>阅读模式</b>(快捷键 Ctrl+R):卡片 / 列表 / 文章视图,书籍封面、护眼主题、字体、自动折叠、快捷编辑。</li>
+    <li>文章视图内嵌 Markdown 笔记、关联标注、独立书籍笔记;支持打印与卡片导出。</li>
+  </ul>
+
+  <h3>3.6 导出</h3>
+  <ul>
+    <li>Markdown / PDF / Word / Excel / CSV / TXT;桌面 + 移动覆盖面不同(Mac/iOS 的 Markdown/PDF 属 Pro)。</li>
+    <li><b>Anki 导出</b>(v3.8 更新):支持正反面字段、卡片风格、原始 HTML 或精简释义。</li>
+  </ul>
+
+  <h3>3.7 同步与隐私</h3>
+  <ul>
+    <li>数据库默认存本机;Mac ↔ iOS 用<b>个人 iCloud</b>(免费);Windows 通过数据库文件移交到移动端。</li>
+    <li>隐私口径:“App 收集的数据 = 0”;Amazon 导入按需读取;在线词典仅发送当前查询词。</li>
+  </ul>
+
+  <hr class="hr-gold">
+
+  <!-- 四 -->
+  <h2 id="s4"><span class="no">04</span>技术栈解剖(安装目录实测)</h2>
+  <p class="lede">基于用户本机安装目录 <code>C:\Program Files\WindowsApps\KMateTeam.KMate-KindleClippingsVocabulary_3.8.16.0_neutral__nmhyc6rsazbye</code> 的文件级观察(2026-09-05)。</p>
+
+  <h3>4.1 一句话结论</h3>
+  <p><b>Windows 桌面版不是 .NET 程序,而是 Python 3.12 + PyInstaller 打包的桌面应用</b>,核心业务用 mypyc 编译成原生扩展保护,UI 走“wxPython 外壳 + WebView2 渲染 HTML 视图”的混合架构。</p>
+
+  <table>
+    <thead><tr><th>层</th><th>技术</th><th>证据(安装目录)</th><th>解读</th></tr></thead>
+    <tbody>
+      <tr><td class="k">分发</td><td>MSIX(微软商店)</td><td>AppxManifest.xml:Windows.Desktop、runFullTrust、ProcessorArchitecture=neutral</td><td>全信任 Win32 打包(非 UWP);7 语言资源</td></tr>
+      <tr><td class="k">运行时</td><td>Python 3.12</td><td>python312.dll、base_library.zip、_internal 结构</td><td>PyInstaller onedir 模式</td></tr>
+      <tr><td class="k">核心逻辑</td><td>mypyc 编译</td><td>81d243bd…__mypyc.cp312-win_amd64.pyd</td><td>业务代码编译为原生 .pyd:性能 + 反逆向</td></tr>
+      <tr><td class="k">UI 框架</td><td>wxPython 4.x</td><td>_internal/wx:wxmsw32u_core/webview/richtext/html/dataview + svg</td><td>原生窗口外壳</td></tr>
+      <tr><td class="k">渲染层</td><td>WebView2(Edge)</td><td>WebView2Loader.dll、wxmsw32u_webview、modules/**/templates+static(HTML)</td><td>阅读/详情/统计等用 HTML+CSS+JS 渲染(带 Jinja2 风格模板)</td></tr>
+      <tr><td class="k">存储</td><td>SQLite</td><td>_sqlite3.pyd + sqlite3.dll</td><td>本地库</td></tr>
+      <tr><td class="k">设备连接</td><td>WinRT + libusb</td><td>winsdk/_winrt.pyd、libusb-1.0.dll</td><td>Kindle MTP/USB 识别同步</td></tr>
+      <tr><td class="k">词典引擎</td><td>自研 mdx 插件</td><td>modules/dict_management/mdx_plugin/minilzo.dll</td><td>MDict 解压算法(minilzo)内嵌</td></tr>
+      <tr><td class="k">辅助库</td><td>lxml / numpy / PIL</td><td>lxml、numpy-2.4.4、PIL 目录</td><td>解析 / 数据处理 / 封面图像</td></tr>
+      <tr><td class="k">网络</td><td>OpenSSL + requests 系</td><td>libssl-3/libcrypto-3、certifi、charset_normalizer、dateutil</td><td>在线词典 / AI / Amazon 云端</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 业务模块划分(由打包目录反推)</h3>
+  <div class="card">
+    <p style="margin:0"><span class="pill">modules/note_view</span><span class="pill">modules/vocab_view</span><span class="pill">modules/reading_mode_note</span><span class="pill">modules/dict_management</span><span class="pill">modules/detail_view</span><span class="pill">note_markdown.css/js</span></p>
+    <p style="margin:8px 0 0; font-size:13px" class="src">标注视图(详情/空态/新建书籍/阅读模式 HTML)、生词视图、阅读模式 + global_stats 统计页、词典管理(MDX 插件)、详情静态资源——代码按“视图”垂直切片,与官网“数据库模式 / 阅读模式”双模式呼应。</p>
+  </div>
+
+  <h3>4.3 对 KindleMate2 的三点启示</h3>
+  <ol>
+    <li><b>阅读/详情视图 = 桌面壳 + WebView2 HTML</b> 是省力路径:WinForms/WPF 嵌 WebView2 完全同构,不必等 WPF 重写即可获得排版/护眼主题能力。</li>
+    <li><b>MDict 接入的门槛就是 minilzo</b>:KMate 证明了“桌面端自己做 mdx 解压”可行且代码量可控。</li>
+    <li><b>“Python + Chromium”是它的重量包袱</b>(数百 MB、启动慢、内存高);KindleMate2 的 .NET 8 原生 WinForms“轻、快、免运行时”是实打实的差异化卖点,README 定位更新时应正面利用。</li>
+  </ol>
+
+  <hr class="hr-gold">
+
+  <!-- 五 -->
+  <h2 id="s5"><span class="no">05</span>KindleMate2 现状快照</h2>
+  <p class="lede">来自本仓库源码盘点(README + 分层项目结构 + 关键类梳理,2026-09-04)。</p>
+  <div class="grid">
+    <div class="stat"><div class="n">.NET 8</div><div class="l">WinForms · x86/x64/ARM64</div></div>
+    <div class="stat"><div class="n">SQLite</div><div class="l">KM2.dat · clippings/lookups/vocab 等表</div></div>
+    <div class="stat"><div class="n">Win7+</div><div class="l">兼容下限(推荐 Win11)</div></div>
+    <div class="stat"><div class="n">MIT</div><div class="l">开源 · GitHub lzcapp/KindleMate2</div></div>
+  </div>
+  <table>
+    <thead><tr><th>能力面</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="k">导入解析</td><td><span class="tag lead">成熟</span></td><td>My Clippings.txt(Highlight/Note/Bookmark/Cut、中英多语言日期页号)、Kindle vocab.db、旧 KM2.dat</td></tr>
+      <tr><td class="k">去重</td><td><span class="tag lead">成熟</span></td><td>复合键(时间+位置)+ 内容包含去重、原子回滚;单测覆盖 5000/3000 行批量场景</td></tr>
+      <tr><td class="k">分组/浏览</td><td><span class="tag lead">成熟</span></td><td>按书/按词 TreeView;书名/作者批量重命名;状态栏计数</td></tr>
+      <tr><td class="k">搜索</td><td><span class="tag par">部分</span></td><td>SQL LIKE + 类型过滤 + 自动补全;无 FTS、无标签(tag 列仅残留)</td></tr>
+      <tr><td class="k">导出</td><td><span class="tag par">部分</span></td><td>Markdown + HTML(带 TOC)较完整;无 Anki/PDF/Word/Excel/CSV</td></tr>
+      <tr><td class="k">词典/查词</td><td><span class="tag miss">缺失</span></td><td>无(DictInfo 仅为 Kindle 内部词典元数据)</td></tr>
+      <tr><td class="k">复习/闪卡</td><td><span class="tag miss">缺失</span></td><td>read/sync/colorRGB 列是旧版遗留骨架</td></tr>
+      <tr><td class="k">统计</td><td><span class="tag lead">较完整</span></td><td>FrmStatistics:标注/生词按日、时、星期 6 图 + 摘要,可存 PNG</td></tr>
+      <tr><td class="k">阅读模式</td><td><span class="tag miss">缺失</span></td><td>仅底部 RichTextBox 详情面板</td></tr>
+      <tr><td class="k">设备同步</td><td><span class="tag lead">成熟</span></td><td>Kindle MTP/USB 双向文件同步(DeviceManager)</td></tr>
+      <tr><td class="k">主题/语言</td><td><span class="tag lead">成熟</span></td><td>DarkModeForms 深色主题、明暗 MessageBox;中/英/繁</td></tr>
+      <tr><td class="k">测试</td><td><span class="tag par">窄而实</span></td><td>xUnit 数据层回归(批量插入/去重/删除/导入)</td></tr>
+      <tr><td class="k">其他</td><td><span class="tag par">进行中</span></td><td>分层重构(.NET 8, Application/Domain/Infrastructure);WPF 计划未落地(无源码);Updater 已接 AutoUpdaterDotNET</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="hr-gold">
+
+  <!-- 六 -->
+  <h2 id="s6"><span class="no">06</span>功能对比矩阵</h2>
+  <p class="lede">逐功能点对齐;标签含义:<span class="tag lead">领先</span><span class="tag par">相当/部分</span><span class="tag gap">落后</span><span class="tag miss">缺失</span>(以 KindleMate2 视角)。</p>
+
+  <table>
+    <thead><tr><th style="width:13%">功能域</th><th style="width:38%">KMate 3.8.16(商业)</th><th style="width:38%">KindleMate2(开源)</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td class="k">导入源</td><td>Kindle 设备/App/云端、微信读书、Apple Books(Mac)、旧 KM 库</td><td>My Clippings.txt、vocab.db、旧 KM2.dat</td><td><span class="tag gap">落后</span></td></tr>
+      <tr><td class="k">标注解析</td><td>13 种语言、Scribe 去重清理</td><td>中英多语言、页号/日期、Bookmark/Cut 全类型</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">去重</td><td>智能去重 + 多端合并</td><td>复合键 + 内容包含去重(单测覆盖)</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">来源分组</td><td>Kindle/微信/Apple Books/KMate 分组 + 来源图标</td><td>按书/按词 TreeView</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">标签/颜色</td><td>标签、颜色、状态、多语言排序</td><td>无(tag/colorRGB 遗留)</td><td><span class="tag miss">缺失</span></td></tr>
+      <tr><td class="k">搜索</td><td>全文 + 通配符(FTS 级)</td><td>LIKE 模糊 + 类型过滤</td><td><span class="tag gap">落后</span></td></tr>
+      <tr><td class="k">书目管理</td><td>双击改名 + 名称映射自动沿用</td><td>批量重命名</td><td><span class="tag gap">落后</span></td></tr>
+      <tr><td class="k">词典</td><td>MDict/StarDict/MOBI/TSV/文本 + 在线 + Gemini/DeepSeek AI</td><td>无</td><td><span class="tag miss">缺失</span></td></tr>
+      <tr><td class="k">生词例句/词频</td><td>Vocabulary Builder 全量 + lookup 聚合</td><td>lookup 例句聚合、加粗高亮</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">复习/闪卡</td><td>卡片/列表 + 渐进闪卡 + 学习状态</td><td>无</td><td><span class="tag miss">缺失</span></td></tr>
+      <tr><td class="k">统计洞察</td><td>日历热力图(日/月/年)+ 多维趋势</td><td>日/时/星期分布 6 图 + 摘要</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">阅读模式</td><td>卡片/列表/文章视图 + 封面/护眼/字体</td><td>无</td><td><span class="tag miss">缺失</span></td></tr>
+      <tr><td class="k">Markdown 导出</td><td>有(含自定义)</td><td>有(TOC + styles.css)</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">Anki/PDF/Office/CSV</td><td>Anki(正反字段/HTML)、PDF、Word、Excel、CSV、TXT</td><td>无</td><td><span class="tag miss">缺失</span></td></tr>
+      <tr><td class="k">设备同步</td><td>Kindle 授权/识别/占用提示</td><td>Kindle MTP/USB 双向</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">云同步</td><td>iCloud(Mac+iOS)/ 库移交(Windows→移动)</td><td>无(纯本机)</td><td><span class="tag gap">落后</span></td></tr>
+      <tr><td class="k">平台覆盖</td><td>Windows / macOS / iOS / iPadOS</td><td>仅 Windows(Win7+)</td><td><span class="tag gap">落后</span></td></tr>
+      <tr><td class="k">深色主题/多语言</td><td>护眼主题 + 7 语言</td><td>DarkModeForms + 中英繁</td><td><span class="tag par">相当</span></td></tr>
+      <tr><td class="k">商业模式</td><td>试用/额度 + 买断或订阅(收费)</td><td>MIT 免费开源</td><td><span class="tag lead">领先</span></td></tr>
+      <tr><td class="k">性能/体积</td><td>Python + Chromium,数百 MB</td><td>.NET 原生,轻快免运行时</td><td><span class="tag lead">领先</span></td></tr>
+    </tbody>
+  </table>
+
+  <hr class="hr-gold">
+
+  <!-- 七 -->
+  <h2 id="s7"><span class="no">07</span>差距、机会与 P0/P1/P2 路线</h2>
+  <p class="lede">先谈战略(定位被“复活”这件事改写),再谈功能补短板。</p>
+
+  <h3>7.1 战略层:KindleMate2 的叙事必须更新</h3>
+  <blockquote>
+    README 现状写的是 “Kindle Mate 停止更新后提供的替代方案”(2023 年视角)。<b>2026 年 KMate 复活了</b>,这句已过时,而且继续写会显得项目“跟着别人节奏走”。
+  </blockquote>
+  <ul>
+    <li><b>新定位建议:</b>“免费、开源、无试用限制的 Kindle 标注管理工具——KMate/同类商业软件的轻快替代”。承接的正是 KMate 商业化(¥58 买断 / ¥168 终身)后不愿付费的存量用户。</li>
+    <li><b>命名风险提示:</b>KMate 商标与品牌已复归活跃,KindleMate2 与 “Kindle Mate” 高度相近;建议在 README 明示“与 KMate(kmate.io)/ Amazon 无关联”,避免混淆与商标纠纷隐患。</li>
+    <li><b>护城河:</b>MIT 开源 + 本地优先(零遥测)+ 原生轻快 + Windows 7–11 广兼容。KMate 的 Python+WebView2 栈决定了它“重”;你的 .NET 原生栈是结构性优势,应在 README/首页强调。</li>
+  </ul>
+
+  <h3>7.2 P0 —— 基本盘(低成本、高感知)</h3>
+  <ol>
+    <li><span class="p0">P0 · 更新 README 定位表述</span>:删除“停更替代”过时叙事,改为上述新定位,并加“与 KMate 无关联”声明。</li>
+    <li><span class="p0">P0 · 补 CSV / Excel 导出</span>:办公与数据迁移高频格式;基于现有 Markdown 导出管线扩展,工作量小、对标缺口立减。</li>
+    <li><span class="p0">P0 · CSV 通用导入(可选)</span>:让用户能把 KMate/其他工具导出的 CSV 拉进来,直接降低“从 KMate 迁移到 KindleMate2”的换血成本——这是承接竞品流失用户的关键钩子。</li>
+  </ol>
+
+  <h3>7.3 P1 —— 体验补强(中等投入)</h3>
+  <ol>
+    <li><span class="p1">P1 · 标签与 SQLite FTS5 全文搜索</span>:tag 列已存在,补 UI 即可;LIKE → FTS5 是 SQLite 原生能力,查询体验质变。</li>
+    <li><span class="p1">P1 · 阅读/详情视图(WebView2 路线)</span>:用 WinForms 内嵌 WebView2 渲染 Markdown 阅读模式——KMate 已证明此架构可行,不必等 WPF。</li>
+    <li><span class="p1">P1 · 在线释义接入</span>:哪怕先接 1 个免费源(如有道/FreeDictionary),生词详情立即“活”起来;后续再考虑 MDict(minilzo 算法已明确)。</li>
+  </ol>
+
+  <h3>7.4 P2 —— 重投入,建议观望/不做</h3>
+  <ol>
+    <li><span class="p2">闪卡/复习与 Anki 导出</span>:Anki 生态自带工具;可引导用户走 CSV→Anki 导入,先不做原生闪卡。</li>
+    <li><span class="p2">移动端 / 云同步</span>:与 iCloud 生态的正面竞争投入产出比低;守住“Windows 桌面最佳”即可。</li>
+    <li><span class="p2">WPF 重写</span>:README 已划线搁置;除非学习目的,不建议重启。</li>
+  </ol>
+
+  <hr class="hr-gold">
+
+  <!-- 八 -->
+  <h2 id="s8"><span class="no">08</span>结论</h2>
+  <div class="card">
+    <p class="big">KMate 的复活对 KindleMate2 不是“敌人回来了”,而是<b>“你当初存在的理由变了,但新的理由更清晰了”</b>。</p>
+    <p style="margin-bottom:6px">KMate 选择了一条“重而全”的路线(跨平台 + 多来源 + AI + 订阅/买断);KindleMate2 的合理身位是<b>“轻而诚”</b>:</p>
+    <ul>
+      <li><b>诚实</b>:免费开源、本机存储、零遥测,把“不收集数据”从口号变成代码事实;</li>
+      <li><b>轻快</b>:原生 .NET、秒开、无 Chromium 负担,兼容 Windows 7–11;</li>
+      <li><b>会补课</b>:按 P0/P1 补齐导出格式、标签/FTS、阅读视图与在线释义,把“够用”推进到“好用”,同时专注服务好愿意留在桌面的深度用户。</li>
+    </ul>
+    <p style="margin-top:10px" class="src">一句话给维护者:改 README → 补导出 → 接 WebView2 阅读视图 → 用“免费/轻快/本地优先”正面承接 KMate 商业化后的市场缝隙。</p>
+  </div>
+
+  <hr class="hr-gold">
+
+  <!-- 附录 -->
+  <h2 id="s9"><span class="no">09</span>附录:信息来源与说明</h2>
+  <h3>9.1 信息源与采集时间</h3>
+  <table>
+    <thead><tr><th>来源</th><th>内容</th><th>时间</th></tr></thead>
+    <tbody>
+      <tr><td class="k">kmate.io/zh(官网)</td><td>产品定位、三端介绍、更新日志入口、10+年/100,000+/13 语言/0 数据</td><td>2026-09-04</td></tr>
+      <tr><td class="k">Microsoft Store 产品 API(storeedgefd)</td><td>Windows 版 ¥58.00 买断、15 天试用、SKU/包名、更新 2026-08-21、功能长描述、系统要求</td><td>2026-09-05</td></tr>
+      <tr><td class="k">App Store Lookup API(CN)</td><td>Mac/iOS 版本、发布日期、体积、最低系统、更新日志全文</td><td>2026-09-05</td></tr>
+      <tr><td class="k">App Store CN 页面(搜索缓存)</td><td>Mac Pro 内购:终身 ¥168 / 年 ¥68 / 月 ¥12;FAQ 全文(免费/Pro 差异、词典格式、系统要求、隐私)</td><td>2026-09-04</td></tr>
+      <tr><td class="k">本机安装目录实测</td><td>技术栈(§4):文件级观察,未执行程序、未反编译、未复制任何代码</td><td>2026-09-05</td></tr>
+      <tr><td class="k">本仓库源码盘点</td><td>KindleMate2 现状(§5):README + 分层项目结构 + 关键类梳理</td><td>2026-09-04</td></tr>
+    </tbody>
+  </table>
+  <h3>9.2 局限与声明</h3>
+  <ul>
+    <li>官网子页(whatsnew/features)有浏览器反爬,细节以商店页更新日志与 FAQ 为准;iOS 端 Pro 内购金额未单独核实,以商店为准。</li>
+    <li>商店评分均为新上架初值(Mac/Win 暂无、iOS 5.0×1),不代表长期口碑。</li>
+    <li>技术栈判断基于打包目录文件名与结构,属静态观察;不构成对 KMate 内部实现的完整断言。</li>
+    <li>本报告仅作产品与工程对标参考,不涉及对第三方软件的代码复制或再分发。</li>
+  </ul>
+
+  <footer>
+    KindleMate2 仓库内部报告 · 由 WorkBuddy 于 2026-09-05 生成 · 供产品决策与开发排期参考
+  </footer>
+</div>
+</body>
+</html>

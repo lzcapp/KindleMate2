@@ -16,11 +16,13 @@ public class ImportManager : IImportManager {
     private readonly ILookupService _lookupService;
     private readonly IVocabDatabaseServiceFactory _vocabDatabaseServiceFactory;
     private readonly IKmDatabaseServiceFactory _kmDatabaseServiceFactory;
+    private readonly IKmateDatabaseServiceFactory _kmateDatabaseServiceFactory;
     private readonly string _importPath;
 
     public ImportManager(IKm2DatabaseService km2DatabaseService, IClippingService clippingService, IVocabService vocabService,
         IOriginalClippingLineService originalClippingLineService, ILookupService lookupService,
         IVocabDatabaseServiceFactory vocabDatabaseServiceFactory, IKmDatabaseServiceFactory kmDatabaseServiceFactory,
+        IKmateDatabaseServiceFactory kmateDatabaseServiceFactory,
         string importPath) {
         _km2DatabaseService = km2DatabaseService;
         _clippingService = clippingService;
@@ -29,6 +31,7 @@ public class ImportManager : IImportManager {
         _lookupService = lookupService;
         _vocabDatabaseServiceFactory = vocabDatabaseServiceFactory;
         _kmDatabaseServiceFactory = kmDatabaseServiceFactory;
+        _kmateDatabaseServiceFactory = kmateDatabaseServiceFactory;
         _importPath = importPath;
     }
 
@@ -95,6 +98,32 @@ public class ImportManager : IImportManager {
         }
 
         if (!kmDatabaseService.ImportFromKmDatabase()) {
+            return string.Empty;
+        }
+
+        _km2DatabaseService.CleanDatabase(string.Empty, out _);
+        _km2DatabaseService.UpdateFrequency();
+
+        clippingsCount = _clippingService.GetCount() - clippingsCount;
+        vocabCount = _vocabService.GetCount() - vocabCount;
+        var message = Strings.Parsed_X + Strings.Space + (clippingsCount + vocabCount) + Strings.Space + Strings.X_Records + Strings.Symbol_Comma +
+                      Strings.Imported_X + Strings.Space + clippingsCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
+                      vocabCount + Strings.Space + Strings.X_Vocabs;
+        return message;
+    }
+
+    public string ImportKmateDatabase(string filePath) {
+        var kmateDatabaseService = _kmateDatabaseServiceFactory.Create(filePath);
+
+        var clippingsCount = _clippingService.GetCount();
+        var vocabCount = _vocabService.GetCount();
+
+        if (File.Exists(filePath)) {
+            var backupFilePath = Path.Combine(_importPath, "KMate_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
+            File.Copy(filePath, backupFilePath, true);
+        }
+
+        if (!kmateDatabaseService.ImportFromKmateDatabase()) {
             return string.Empty;
         }
 
