@@ -127,6 +127,40 @@ public sealed class KmateImportTests : IDisposable {
     }
 
     [Fact]
+    public void ImportKmateDatabase_CrossBookSameContent_KeepsBothRows() {
+        var targetDb = NewDb("kt-crossbook.db");
+        var kmateDb = NewKmateDb("kt-crossbook-kmate.db");
+
+        using (var conn = new SqliteConnection($"Data Source={kmateDb};Mode=ReadWrite;")) {
+            conn.Open();
+            // Identical sentence highlighted in TWO different books: both are distinct highlights
+            // and must be kept (dedup scope is per book+author+content, not global content).
+            Execute(conn, "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingdate, source) VALUES ('aaaa1111222233334444555566667777', 'a shared quote', 'Book A', 'Author A', 0, '2026-08-21 09:00:00', 'Kindle')");
+            Execute(conn, "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingdate, source) VALUES ('bbbb1111222233334444555566667777', 'a shared quote', 'Book B', 'Author B', 0, '2026-08-21 09:00:05', 'Kindle')");
+            // …and a genuine duplicate within the SAME book (same key, same content) stays skipped.
+            Execute(conn, "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingdate, source) VALUES ('cccc1111222233334444555566667777', 'unique line', 'Book A', 'Author A', 0, '2026-08-21 09:00:10', 'Kindle')");
+            Execute(conn, "INSERT INTO original_clipping_lines (key, line1) VALUES ('aaaa1111222233334444555566667777', 'Book A (Author A)')");
+            Execute(conn, "INSERT INTO original_clipping_lines (key, line1) VALUES ('bbbb1111222233334444555566667777', 'Book B (Author B)')");
+            Execute(conn, "INSERT INTO original_clipping_lines (key, line1) VALUES ('cccc1111222233334444555566667777', 'Book A (Author A)')");
+        }
+
+        var clipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var lineRepo = new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = new KmateDatabaseService(clipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            lineRepo,
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            kmateDb);
+
+        Assert.True(svc.ImportFromKmateDatabase());
+        Assert.Equal(3, clipRepo.GetAll().Count); // cross-book same content kept (2) + unique (1)
+        Assert.Equal(3, lineRepo.GetAllKeys().Count);
+
+        Assert.True(svc.ImportFromKmateDatabase()); // idempotent
+        Assert.Equal(3, clipRepo.GetAll().Count);
+    }
+
+    [Fact]
     public void ImportKmateDatabase_SecondRun_IsIdempotent() {
         var targetDb = NewDb("kt-target2.db");
         var kmateDb = NewKmateDb("kt-kmate2.db");
