@@ -51,10 +51,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // transaction per table via the repositories' batched Add overloads.
                     var targetClippings = _clippingRepository.GetAll();
                     var targetClippingKeys = targetClippings.Select(c => c.Key).ToHashSet();
-                    var targetClippingContents = targetClippings
-                        .Where(c => c.Content != null)
-                        .Select(c => c.Content!)
-                        .ToHashSet();
+                    // Dedup scope is per (book, author, content), not global content: the same
+                    // sentence highlighted in two different books are two distinct highlights and
+                    // must both be kept. A true duplicate import (same book re-imported from a
+                    // device/cloud/source) still shares book+author+content and is skipped.
+                    var targetBookContents = targetClippings.Select(ComposeBookContentKey).ToHashSet();
 
                     var clippingCandidates = new List<Clipping>();
                     foreach (Clipping kmClipping in data.Clippings) {
@@ -62,12 +63,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                             continue;
                         }
                         if (!targetClippingKeys.Contains(kmClipping.Key) &&
-                            !targetClippingContents.Contains(kmClipping.Content)) {
+                            !targetBookContents.Contains(ComposeBookContentKey(kmClipping))) {
                             clippingCandidates.Add(kmClipping);
                             // Keep the dedup sets in sync so duplicates later in the same source
                             // cannot be added twice (the batched INSERT runs in one transaction).
                             targetClippingKeys.Add(kmClipping.Key);
-                            targetClippingContents.Add(kmClipping.Content);
+                            targetBookContents.Add(ComposeBookContentKey(kmClipping));
                         }
                     }
                     if (clippingCandidates.Count > 0) {
@@ -141,6 +142,13 @@ namespace KindleMate2.Application.Services.KM2DB {
         private static string ComposePair(string wordKey, string? timestamp) {
             // \u0001 is used as a separator that cannot appear in a word_key.
             return wordKey + "\u0001" + (timestamp ?? string.Empty);
+        }
+
+        private static string ComposeBookContentKey(Clipping clipping) {
+            // (book, author, content) scope; an empty author degrades to (book, "", content).
+            return (clipping.BookName ?? string.Empty) + "\u0001" +
+                   (clipping.AuthorName ?? string.Empty) + "\u0001" +
+                   clipping.Content;
         }
     }
 }
