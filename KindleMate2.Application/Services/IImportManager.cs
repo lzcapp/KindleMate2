@@ -5,4 +5,5 @@ public interface IImportManager {
     string ImportKindleClippings(string clippingsPath);
     string ImportKindleWords(string kindleWordsPath);
     string ImportKmDatabase(string filePath);
+    string ImportKmateDatabase(string filePath);
 }

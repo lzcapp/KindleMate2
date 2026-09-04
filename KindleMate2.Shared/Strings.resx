@@ -270,6 +270,15 @@
   <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
     <value>导入Kindle Mate数据库文件</value>
   </data>
+  <data name="Import_KMate_Database" xml:space="preserve">
+    <value>导入KMate数据库</value>
+  </data>
+  <data name="Import_KMate_Database_File" xml:space="preserve">
+    <value>导入KMate数据库文件</value>
+  </data>
+  <data name="KMate_Database_File" xml:space="preserve">
+    <value>KMate数据库文件</value>
+  </data>
   <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
     <value>确认要删除选中的标注吗？</value>
   </data>

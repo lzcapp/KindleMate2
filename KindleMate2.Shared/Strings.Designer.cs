@@ -736,6 +736,33 @@ namespace KindleMate2.Shared {
         }
         
         /// <summary>
+        ///   查找类似 导入KMate数据库 的本地化字符串。
+        /// </summary>
+        public static string Import_KMate_Database {
+            get {
+                return ResourceManager.GetString("Import_KMate_Database", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导入KMate数据库文件 的本地化字符串。
+        /// </summary>
+        public static string Import_KMate_Database_File {
+            get {
+                return ResourceManager.GetString("Import_KMate_Database_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 KMate数据库文件 的本地化字符串。
+        /// </summary>
+        public static string KMate_Database_File {
+            get {
+                return ResourceManager.GetString("KMate_Database_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入Kindle生词本文件 的本地化字符串。
         /// </summary>
         public static string Import_Kindle_Vocab_File {
