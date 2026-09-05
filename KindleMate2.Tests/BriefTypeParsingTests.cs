@@ -43,6 +43,9 @@ public sealed class BriefTypeParsingTests {
     [InlineData("- отрывок | Стр. 12 | 19 мая 2025 г., 22:20:31", BriefType.Highlight)]
     [InlineData("- заметка | Стр. 12 | 19 мая 2025 г., 22:21:00", BriefType.Note)]
     [InlineData("- закладка | Стр. 3 | 20 мая 2025 г., 08:00:00", BriefType.Bookmark)]
+    // 真实公开德语样本(becausecurious/kindle_clippings_parser;SuzanaK kindle_clippings_processor 注释)——类型行带 "Ihre"/"Pos." 变体
+    [InlineData("- Markierung Pos. 2919-28", BriefType.Highlight)]
+    [InlineData("- Ihre Markierung auf Seite 262", BriefType.Highlight)]
     public void ParseEntryType_RecognizesRegionalTypeTags(string metadata, BriefType expected) {
         Assert.Equal(expected, MyClippingsHelper.ParseEntryType(metadata));
     }

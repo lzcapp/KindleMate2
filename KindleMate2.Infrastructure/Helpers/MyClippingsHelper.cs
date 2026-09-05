@@ -177,6 +177,10 @@ namespace KindleMate2.Infrastructure.Helpers {
             "Añadido el ", "Ajouté le ", "Ajouté ll ",
             "日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日",
             "Dodany w dn. ", "Toegevoegd op ", "à",
+            // 德语时间短语(真实样本 "…4.46 Uhr GMT+07:29" / "…um 01:31:13 Uhr",SuzanaK·becausecurious 公开样本)。
+            // 注意:删除 token 若含两侧空格会把词前后空格一并吃掉导致粘连("2012 um 01"→"201201"),
+            // 故 "um " 只带单侧空格,清理后再折叠空白。
+            " Uhr", "um ",
             // 各语言星期词(.NET DateTime.TryParse 对带星期前缀的非标准串并不宽松 → 一并删除)
             "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
             "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag",
@@ -212,14 +216,17 @@ namespace KindleMate2.Infrastructure.Helpers {
             foreach (var token in KindleDateCleaningTokens) {
                 cleaned = Regex.Replace(cleaned, Regex.Escape(token), string.Empty, RegexOptions.IgnoreCase);
             }
-            // 折叠清理留下的连续空白(如 "2025 à 22" 删 à 后),避免影响解析
-            cleaned = Regex.Replace(cleaned, @"\s{2,}", " ").Trim();
+            // 折叠清理留下的连续空白(如 "2025 à 22" 删 à 后),并去掉星期词删除后残留的行首逗号
+            // (en 真实 "Sunday, September 05, 2021…" 删 Sunday 后留 ", …"),避免影响后续解析
+            cleaned = Regex.Replace(cleaned, @"\s{2,}", " ").Trim().TrimStart(',', ' ');
             // 某些区域在“日期 与 时间”之间带逗号(如 en/de/es "…2025, 10:20:31 PM"),文化解析不接受 → 归并为空格。
             cleaned = Regex.Replace(cleaned, @",\s+(?=\d{1,2}:\d{2})", " ");
             var gmtIndex = cleaned.LastIndexOf(" GMT", StringComparison.OrdinalIgnoreCase);
             if (gmtIndex >= 0) {
                 cleaned = cleaned[..gmtIndex].Trim();
             }
+            // 德语老设备点号时间(真实样本 "4.46 Uhr" 去 Uhr/GMT 后为 "4.46")→ 归并为冒号 "4:46"
+            cleaned = Regex.Replace(cleaned, @"(?<=^|\s)(\d{1,2})\.(\d{2})(?=\s|$)", "$1:$2");
 
             // 与原实现一致的“去掉首逗号前段”变体(兼容 "Added on Sunday, …" 类前缀残留)
             var truncated = cleaned;
