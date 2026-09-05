@@ -187,27 +187,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                     clipping.PageNumber = pageNumber;
                     clipping.ClippingTypeLocation = clippingTypeLocation;
 
-                    string clippingDate;
+                    // 多语言日期解析(MyClippingsHelper.TryParseClippingDate):清洗前缀/星期词 →
+                    // 原有三种精确格式优先(零回归)→ 11 个 Kindle 文化轮询兜底(原版 Kindle Mate 做法)。
                     var metaSplit = metadata.Split('|');
-                    var datetime = metaSplit[^1].Replace("Added on", "").Replace("添加于", "").Trim();
-                    datetime = datetime[(datetime.IndexOf(',') + 1)..].Trim();
-                    var isDateParsed = DateTime.TryParseExact(datetime, "MMMM d, yyyy h:m:s tt", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out DateTime parsedDate);
-                    if (!isDateParsed) {
-                        // Try English format with day before month (e.g., "19 May 2025 22:06:02")
-                        isDateParsed = DateTime.TryParseExact(datetime, "d MMMM yyyy HH:mm:ss", CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.None, out parsedDate);
-                    }
-                    if (!isDateParsed) {
-                        var dayOfWeekIndex = datetime.IndexOf("星期", StringComparison.Ordinal);
-                        if (dayOfWeekIndex != -1) {
-                            datetime = datetime.Remove(dayOfWeekIndex, 3);
-                        }
-                        isDateParsed = DateTime.TryParseExact(datetime, "yyyy年M月d日 tth:m:s", CultureInfo.GetCultureInfo("zh-CN"), DateTimeStyles.None, out parsedDate);
-                    }
-                    if (isDateParsed && parsedDate != DateTime.MinValue) {
-                        clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
-                    } else {
+                    if (!MyClippingsHelper.TryParseClippingDate(metaSplit[^1], out var parsedDate)) {
                         continue;
                     }
+                    var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
                     clipping.ClippingDate = clippingDate;
 
                     var key = clippingDate + "|" + clippingTypeLocation;
