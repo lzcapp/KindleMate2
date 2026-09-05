@@ -42,6 +42,7 @@ public static class DependencyInjection {
         // ── Application-level Managers (Singleton — stateless coordinators) ──
         services.AddSingleton<IVocabDatabaseServiceFactory, VocabDatabaseServiceFactory>();
         services.AddSingleton<IKmDatabaseServiceFactory, KmDatabaseServiceFactory>();
+        services.AddSingleton<IKmateDatabaseServiceFactory, KmateDatabaseServiceFactory>();
         services.AddSingleton<IDeviceManager>(sp => {
             var versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
             return new DeviceManager(versionFilePath);
@@ -58,6 +59,7 @@ public static class DependencyInjection {
                 sp.GetRequiredService<ILookupService>(),
                 sp.GetRequiredService<IVocabDatabaseServiceFactory>(),
                 sp.GetRequiredService<IKmDatabaseServiceFactory>(),
+                sp.GetRequiredService<IKmateDatabaseServiceFactory>(),
                 importPath);
         });
         services.AddSingleton<IDataDisplayService, DataDisplayService>();

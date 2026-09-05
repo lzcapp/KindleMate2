@@ -46,6 +46,7 @@
 
 - [x] 导入标注（`My Clippings.txt`）
 - [x] 导入生词本（`vocab.db`）
+- [x] 导入 KMate 数据库（`km3.dat`）
 - [x] 同步已连接的Kindle设备
 - [x] 编辑标注
 - [x] 编辑生词本

@@ -123,4 +123,38 @@ public sealed class DataLayerFixTests : IDisposable {
         Assert.True(svc.ImportFromKmDatabase());
         Assert.Single(targetClipRepo.GetAll());
     }
+
+    [Fact]
+    public void KmDatabaseServiceImport_CrossBookSameContent_KeepsBothRows() {
+        // Regression for the unified dedup scope (KmateDedup): the legacy import must behave like the
+        // km3 import — identical content in TWO different books are two distinct highlights.
+        var targetDb = NewDb("t6-target.db");
+        var kmDb = NewDb("t6-km.db");
+
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(kmDb))) {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "INSERT INTO clippings (key, content, bookname, authorname, clippingdate) VALUES " +
+                "('k1', 'a shared quote', 'Book A', 'Author A', '2026-01-01 00:00:00'), " +
+                "('k2', 'a shared quote', 'Book B', 'Author B', '2026-01-02 00:00:00');";
+            cmd.ExecuteNonQuery();
+        }
+
+        var targetClipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = new KmDatabaseService(
+            targetClipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new ClippingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new LookupRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(kmDb)));
+
+        Assert.True(svc.ImportFromKmDatabase());
+        Assert.Equal(2, targetClipRepo.GetAll().Count); // cross-book same content kept
+    }
 }

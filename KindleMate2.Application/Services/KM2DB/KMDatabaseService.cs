@@ -38,22 +38,24 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // Pre-fetch target data for O(1) in-memory dedup checks
                     var targetClippings = _clippingRepository.GetAll();
                     var targetClippingKeys = targetClippings.Select(c => c.Key).ToHashSet();
-                    var targetClippingContents = targetClippings
-                        .Where(c => c.Content != null)
-                        .Select(c => c.Content!)
-                        .ToHashSet();
+                    // Dedup scope is per (book, author, content) — shared with the KMate km3.dat
+                    // import (KmateDatabaseService / KmateDedup) so both import paths behave
+                    // consistently: the same sentence in two different books are two distinct
+                    // highlights and both are kept; a genuine duplicate of the same book still
+                    // shares book+author+content and is skipped.
+                    var targetClippingBookContents = targetClippings.Select(KmateDedup.BookContentKey).ToHashSet();
 
                     foreach (Clipping kmClipping in kmClippings) {
                         if (string.IsNullOrEmpty(kmClipping.Content)) {
                             continue;
                         }
                         if (!targetClippingKeys.Contains(kmClipping.Key) &&
-                            !targetClippingContents.Contains(kmClipping.Content)) {
+                            !targetClippingBookContents.Contains(KmateDedup.BookContentKey(kmClipping))) {
                             if (_clippingRepository.Add(kmClipping)) {
                                 // Keep the dedup sets in sync so a duplicate key/content later
                                 // in the same source file cannot trip the PRIMARY KEY constraint.
                                 targetClippingKeys.Add(kmClipping.Key);
-                                targetClippingContents.Add(kmClipping.Content);
+                                targetClippingBookContents.Add(KmateDedup.BookContentKey(kmClipping));
                             }
                         }
                     }

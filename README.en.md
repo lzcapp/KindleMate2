@@ -41,6 +41,7 @@
 
 - [x] Import Highlights (`My Clippings.txt`)
 - [x] Import Vocabulary List (`vocab.db`)
+- [x] Import KMate Database (`km3.dat`)
 - [x] Sync Connected Kindle Devices
 - [x] Edit Highlights
 - [x] Edit Vocabulary List

@@ -43,6 +43,7 @@ namespace KindleMate2 {
             menuImportKindle = new ToolStripMenuItem();
             menuImportKindleWords = new ToolStripMenuItem();
             menuImportKindleMate = new ToolStripMenuItem();
+            menuImportKmateDatabase = new ToolStripMenuItem();
             menuSyncFromKindle = new ToolStripMenuItem();
             menuSyncToKindle = new ToolStripMenuItem();
             menuExportMd = new ToolStripMenuItem();
@@ -186,7 +187,7 @@ namespace KindleMate2 {
             // 
             // menuManage
             // 
-            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuSyncFromKindle, menuSyncToKindle, menuExportMd, menuClean, menuRebuild, menuBackup, menuClear });
+            menuManage.DropDownItems.AddRange(new ToolStripItem[] { menuImportKindle, menuImportKindleWords, menuImportKindleMate, menuImportKmateDatabase, menuSyncFromKindle, menuSyncToKindle, menuExportMd, menuClean, menuRebuild, menuBackup, menuClear });
             menuManage.Name = "menuManage";
             menuManage.Size = new Size(107, 36);
             menuManage.Text = "管理(&M)";
@@ -214,6 +215,14 @@ namespace KindleMate2 {
             menuImportKindleMate.Size = new Size(360, 44);
             menuImportKindleMate.Text = "导入Kindle Mate数据库";
             menuImportKindleMate.Click += MenuImportKindleMate_Click;
+            // 
+            // menuImportKmateDatabase
+            // 
+            menuImportKmateDatabase.Image = Resources.page_facing_up;
+            menuImportKmateDatabase.Name = "menuImportKmateDatabase";
+            menuImportKmateDatabase.Size = new Size(360, 44);
+            menuImportKmateDatabase.Text = "导入KMate数据库";
+            menuImportKmateDatabase.Click += MenuImportKmateDatabase_Click;
             // 
             // menuSyncFromKindle
             // 
@@ -1007,6 +1016,7 @@ namespace KindleMate2 {
         private ToolStripMenuItem menuManage;
         private ToolStripMenuItem menuBackup;
         private ToolStripMenuItem menuImportKindleMate;
+        private ToolStripMenuItem menuImportKmateDatabase;
         private ToolStripMenuItem menuSyncFromKindle;
         private ToolStripMenuItem menuImportKindle;
         private ToolStripMenuItem menuRefresh;
