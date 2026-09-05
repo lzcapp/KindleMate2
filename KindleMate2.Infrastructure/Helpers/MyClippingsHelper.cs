@@ -177,6 +177,8 @@ namespace KindleMate2.Infrastructure.Helpers {
             "Añadido el ", "Ajouté le ", "Ajouté ll ",
             "日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日",
             "Dodany w dn. ", "Toegevoegd op ", "à",
+            // 意/葡真实前缀(KindleToJoplin languages.ts example: "Aggiunto il domenica…" / "Adicionado em domingo…")
+            "Aggiunto il ", "Adicionado em ",
             // 德语时间短语(真实样本 "…4.46 Uhr GMT+07:29" / "…um 01:31:13 Uhr",SuzanaK·becausecurious 公开样本)。
             // 注意:删除 token 若含两侧空格会把词前后空格一并吃掉导致粘连("2012 um 01"→"201201"),
             // 故 "um " 只带单侧空格,清理后再折叠空白。

@@ -46,6 +46,13 @@ public sealed class BriefTypeParsingTests {
     // 真实公开德语样本(becausecurious/kindle_clippings_parser;SuzanaK kindle_clippings_processor 注释)——类型行带 "Ihre"/"Pos." 变体
     [InlineData("- Markierung Pos. 2919-28", BriefType.Highlight)]
     [InlineData("- Ihre Markierung auf Seite 262", BriefType.Highlight)]
+    // KindleToJoplin languages.ts 六语言真实整行 example
+    [InlineData("- Your Highlight on page 42 | Location 123-456 | Added on Sunday, January 15, 2024 10:30:45 AM", BriefType.Highlight)]
+    [InlineData("- Tu subrayado en la página 42 | posición 123-456 | Añadido el domingo, 15 de enero de 2024 10:30:45", BriefType.Highlight)]
+    [InlineData("- La mia evidenziazione a pagina 42 | posizione 123-456 | Aggiunto il domenica 15 gennaio 2024 10:30:45", BriefType.Highlight)]
+    [InlineData("- Votre surlignement sur la page 42 | Emplacement 123-456 | Ajouté le dimanche 15 janvier 2024 10:30:45", BriefType.Highlight)]
+    [InlineData("- Ihre Markierung auf Seite 42 | Position 123-456 | Hinzugefügt am Sonntag, 15. Januar 2024 10:30:45", BriefType.Highlight)]
+    [InlineData("- Seu destaque na página 42 | Posição 123-456 | Adicionado em domingo, 15 de janeiro de 2024 10:30:45", BriefType.Highlight)]
     public void ParseEntryType_RecognizesRegionalTypeTags(string metadata, BriefType expected) {
         Assert.Equal(expected, MyClippingsHelper.ParseEntryType(metadata));
     }

@@ -30,6 +30,13 @@ public sealed class ClippingDateParsingTests {
     [InlineData("Hinzugefügt am Mittwoch, 18. August 2021 5.53 Uhr GMT+07:29", "2021-08-18 05:53:00")]
     [InlineData("Hinzugefügt am Sonntag, 27. Mai 2012 um 01:31:13 Uhr", "2012-05-27 01:31:13")]
     [InlineData("Added on Sunday, September 05, 2021, 04:39 PM", "2021-09-05 16:39:00")]
+    // KindleToJoplin languages.ts 六语言真实 example(日期段,来源注明)
+    [InlineData("Added on Sunday, January 15, 2024 10:30:45 AM", "2024-01-15 10:30:45")]
+    [InlineData("Añadido el domingo, 15 de enero de 2024 10:30:45", "2024-01-15 10:30:45")]
+    [InlineData("Aggiunto il domenica 15 gennaio 2024 10:30:45", "2024-01-15 10:30:45")]
+    [InlineData("Ajouté le dimanche 15 janvier 2024 10:30:45", "2024-01-15 10:30:45")]
+    [InlineData("Hinzugefügt am Sonntag, 15. Januar 2024 10:30:45", "2024-01-15 10:30:45")]
+    [InlineData("Adicionado em domingo, 15 de janeiro de 2024 10:30:45", "2024-01-15 10:30:45")]
     public void TryParseClippingDate_ParsesRegionalDates(string raw, string expected) {
         Assert.True(MyClippingsHelper.TryParseClippingDate(raw, out var date), $"should parse: {raw}");
         Assert.Equal(expected, date.ToString("yyyy-MM-dd HH:mm:ss"));
