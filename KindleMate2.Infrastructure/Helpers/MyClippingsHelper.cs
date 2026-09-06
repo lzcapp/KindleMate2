@@ -194,12 +194,15 @@ namespace KindleMate2.Infrastructure.Helpers {
         ];
 
         /// <summary>
-        /// Kindle 设备区域文化(原版 Kindle Mate 10 个 + ru-RU),用于轮询解析。
-        /// 注:zh-TW / ko-KR / tr-TR 不在 Kindle 界面语言列表中,不纳入(2026-09-06 用户纠正)。
-        /// 俄语词表见于原版 modClippingsPatterns,故保留 ru-RU 兜底。
+        /// Kindle 日期解析文化列表(2026-09-06 定稿):
+        /// - 用户设备语言设置页(滚完)显示 11 项,全部覆盖:zh-CN / en-US / en-GB / de-DE / es-ES /
+        ///   fr-FR / it-IT / ja-JP / nl-NL / pt-BR / ru-RU;
+        /// - 其余(en-GB/pt-BR 区域变体 + pt-PT/pl-PL,原版 Kindle Mate 10 区)保留作<b>冗余</b>:
+        ///   不同 Kindle 型号/地区语言集可能更多,冗余轮询无害;
+        /// - zh-TW / ko-KR / tr-TR 未见于任何 Kindle 语言列表,不纳入。
         /// </summary>
         private static readonly string[] KindleDateCultures = [
-            "zh-CN", "en-US", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "ru-RU"
+            "zh-CN", "en-US", "en-GB", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "pt-PT", "nl-NL", "ru-RU"
         ];
 
         private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
