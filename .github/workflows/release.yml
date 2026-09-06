@@ -132,3 +132,29 @@ jobs:
           body_path: notes.md
           files: dist/*
           fail_on_unmatched_files: true
+
+      # Release 成功后自动把 AppCast(站点源 docs/update_*.xml)的 version 更新为本次版本,
+      # 使 Autoupdater.NET 用户端能收到更新提示(url/changelog 已是 latest 固定形式,无需改)。
+      # best-effort:失败不阻断本次发布(可手动补改)。
+      - name: Bump AppCast version and push to main
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.ver.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch main
+          git pull --ff-only origin main
+          Get-ChildItem docs/update_*.xml | ForEach-Object {
+            $c = Get-Content $_.FullName -Raw
+            $c = [regex]::Replace($c, '<version>[^<]+</version>', "<version>$ver.0</version>")
+            Set-Content -NoNewline $_.FullName $c -Encoding utf8
+          }
+          if (git diff --quiet) {
+            Write-Output "AppCast version already current; nothing to commit."
+          } else {
+            git add docs/update_*.xml
+            git commit -m "chore: bump AppCast version to $ver.0"
+            git push origin main
+          }
