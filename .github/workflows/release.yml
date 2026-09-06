@@ -45,13 +45,18 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # runner 预装 .NET 10,host 无 global.json 时会选 10;而 SDK10 发布 net8(-r + 旧 assets)
+      # 触发 NuGet restore 崩溃(MSB4181/path1 null)。项目 net8.0-windows,钉 8 发布。
+      - name: Pin SDK 8 (temporary global.json)
+        shell: pwsh
+        run: Set-Content -Path global.json -Value '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}'
+
       - name: Resolve version
         id: ver
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}"
-          if ($v.StartsWith('refs/tags/')) { $v = $v.Substring('refs/tags/'.Length) }
-          if ($v -eq '') { $v = "${{ github.event.inputs.version }}" }
+          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
+          else { $v = "${{ github.event.inputs.version }}" }
           if ($v -eq '') {
             $m = Select-String -Path 'KindleMate2/KindleMate2.csproj' -Pattern '<Version>([^<]+)</Version>'
             $v = $m.Matches[0].Groups[1].Value
@@ -88,9 +93,8 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}"
-          if ($v.StartsWith('refs/tags/')) { $v = $v.Substring('refs/tags/'.Length) }
-          if ($v -eq '') { $v = "${{ github.event.inputs.version }}" }
+          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
+          else { $v = "${{ github.event.inputs.version }}" }
           if ($v -eq '') {
             $m = Select-String -Path 'KindleMate2/KindleMate2.csproj' -Pattern '<Version>([^<]+)</Version>'
             $v = $m.Matches[0].Groups[1].Value
