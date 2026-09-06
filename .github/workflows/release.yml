@@ -1,12 +1,13 @@
 name: release
 
-# 发布即自动化:push 日期式 tag(如 2026.09.06)或手动 dispatch 触发,
-# CI 自动 publish win-x64 自包含单文件 → 打包 zip → 创建 GitHub Release(附资产 + 变更摘要)。
-# 版本号:tag 触发时取 tag;手动 dispatch 时优先输入、其次 csproj <Version>。
+# 发布即自动化:push 日期式 tag(如 2026.09.06)或手动 dispatch 触发。
+# 四变体矩阵(对应站点 AppCast update_x64/x86(_runtime).xml):
+#   win-x64 / win-x86 × self-contained / framework-dependent(runtime)
+# 产物:KindleMate2-<ver>-win-<arch>[-runtime].zip → 合并进 GitHub Release(免手动登录 gh)。
 #
-# 注意:应用内自动更新走 Autoupdater.NET,AppCast(update_*.xml)由站点
-# https://github.lzc.app/KindleMate2/ 托管(不在本仓库)。发布后需在站点
-# 同步 AppCast 指向本 Release 的资产 URL(本 workflow 不覆盖该步骤)。
+# 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
+# (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
+# framework-dependent 变体需要目标机安装 .NET 8 Desktop Runtime。
 
 on:
   push:
@@ -20,14 +21,21 @@ on:
         default: ''
 
 jobs:
-  publish-win-x64:
+  publish:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, self: 'true',  suffix: win-x64 }
+          - { rid: win-x64, self: 'false', suffix: win-x64-runtime }
+          - { rid: win-x86, self: 'true',  suffix: win-x86 }
+          - { rid: win-x86, self: 'false', suffix: win-x86-runtime }
     steps:
-      - name: Checkout (with submodules, full history for notes)
+      - name: Checkout (with submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -47,16 +55,52 @@ jobs:
           }
           Write-Output "version=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Publish (win-x64, self-contained, single file)
-        run: dotnet publish KindleMate2/KindleMate2.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ steps.ver.outputs.version }} -o publish/win-x64
+      - name: Publish (${{ matrix.suffix }})
+        run: dotnet publish KindleMate2/KindleMate2.csproj -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:PublishSingleFile=true -p:Version=${{ steps.ver.outputs.version }} -o publish/${{ matrix.suffix }}
 
       - name: Package zip
         shell: pwsh
         run: |
-          Compress-Archive -Path 'publish/win-x64/*' -DestinationPath "KindleMate2-${{ steps.ver.outputs.version }}-win-x64.zip"
+          $name = "KindleMate2-${{ steps.ver.outputs.version }}-${{ matrix.suffix }}.zip"
+          Compress-Archive -Path "publish/${{ matrix.suffix }}/*" -DestinationPath $name
+          Write-Output "asset=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assets-${{ matrix.suffix }}
+          path: KindleMate2-${{ steps.ver.outputs.version }}-${{ matrix.suffix }}.zip
+          retention-days: 1
+
+  release:
+    needs: publish
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (full history for notes)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}"
+          if ($v.StartsWith('refs/tags/')) { $v = $v.Substring('refs/tags/'.Length) }
+          if ($v -eq '') { $v = "${{ github.event.inputs.version }}" }
+          if ($v -eq '') {
+            $m = Select-String -Path 'KindleMate2/KindleMate2.csproj' -Pattern '<Version>([^<]+)</Version>'
+            $v = $m.Matches[0].Groups[1].Value
+          }
+          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Download all assets
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
 
       - name: Build release notes (previous tag .. HEAD)
-        id: notes
         shell: pwsh
         run: |
           $tags = @(git tag --sort=-version:refname)
@@ -72,6 +116,5 @@ jobs:
           tag_name: ${{ steps.ver.outputs.version }}
           name: ${{ steps.ver.outputs.version }}
           body_path: notes.md
-          files: |
-            KindleMate2-${{ steps.ver.outputs.version }}-win-x64.zip
+          files: dist/*
           fail_on_unmatched_files: true
