@@ -1,0 +1,77 @@
+name: release
+
+# 发布即自动化:push 日期式 tag(如 2026.09.06)或手动 dispatch 触发,
+# CI 自动 publish win-x64 自包含单文件 → 打包 zip → 创建 GitHub Release(附资产 + 变更摘要)。
+# 版本号:tag 触发时取 tag;手动 dispatch 时优先输入、其次 csproj <Version>。
+#
+# 注意:应用内自动更新走 Autoupdater.NET,AppCast(update_*.xml)由站点
+# https://github.lzc.app/KindleMate2/ 托管(不在本仓库)。发布后需在站点
+# 同步 AppCast 指向本 Release 的资产 URL(本 workflow 不覆盖该步骤)。
+
+on:
+  push:
+    tags:
+      - '2[0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '手动发布版本号(留空则读取 csproj <Version>)'
+        required: false
+        default: ''
+
+jobs:
+  publish-win-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (with submodules, full history for notes)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}"
+          if ($v.StartsWith('refs/tags/')) { $v = $v.Substring('refs/tags/'.Length) }
+          if ($v -eq '') { $v = "${{ github.event.inputs.version }}" }
+          if ($v -eq '') {
+            $m = Select-String -Path 'KindleMate2/KindleMate2.csproj' -Pattern '<Version>([^<]+)</Version>'
+            $v = $m.Matches[0].Groups[1].Value
+          }
+          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Publish (win-x64, self-contained, single file)
+        run: dotnet publish KindleMate2/KindleMate2.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ steps.ver.outputs.version }} -o publish/win-x64
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path 'publish/win-x64/*' -DestinationPath "KindleMate2-${{ steps.ver.outputs.version }}-win-x64.zip"
+
+      - name: Build release notes (previous tag .. HEAD)
+        id: notes
+        shell: pwsh
+        run: |
+          $tags = @(git tag --sort=-version:refname)
+          $prev = $null
+          if ($tags.Count -gt 1) { $prev = $tags[1] }
+          $log = if ($prev) { git log "$prev..HEAD" --oneline } else { git log -20 --oneline }
+          $body = @('## Changes', '') + $log + @('', 'Auto-built by GitHub Actions (release workflow).')
+          $body | Out-File -FilePath notes.md -Encoding utf8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          name: ${{ steps.ver.outputs.version }}
+          body_path: notes.md
+          files: |
+            KindleMate2-${{ steps.ver.outputs.version }}-win-x64.zip
+          fail_on_unmatched_files: true
