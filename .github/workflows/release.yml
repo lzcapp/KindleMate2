@@ -2,7 +2,9 @@ name: release
 
 # 发布即自动化:push 日期式 tag(如 2026.09.06)或手动 dispatch 触发。
 # 六变体矩阵(资产命名与正式发布一致,下划线、不带版本号):
-#   arm64 / x64 / x86 × self-contained / framework-dependent(runtime)
+#   arm64 / x64 / x86 × framework-dependent / self-contained
+# 命名规则(2026-09-06 用户确认):**_runtime = 自包含(打包 .NET Runtime,免装)**;
+#   无后缀 = framework-dependent(需系统安装 .NET 8 Desktop Runtime)。
 # 产物:KindleMate2_arm64[_runtime].zip、KindleMate2_x64[_runtime].zip、KindleMate2_x86[_runtime].zip
 #   → 合并进 GitHub Release(免手动登录 gh)。
 #
@@ -29,14 +31,16 @@ jobs:
     runs-on: windows-latest
     strategy:
       fail-fast: false
+      # _runtime = self-contained(自带 .NET);无后缀 = framework-dependent
+      # (命名规则用户确认 2026-09-06:与常规直觉相反,_runtime 表示免装)
       matrix:
         include:
-          - { rid: win-arm64, self: 'true',  suffix: arm64 }
-          - { rid: win-arm64, self: 'false', suffix: arm64_runtime }
-          - { rid: win-x64,   self: 'true',  suffix: x64 }
-          - { rid: win-x64,   self: 'false', suffix: x64_runtime }
-          - { rid: win-x86,   self: 'true',  suffix: x86 }
-          - { rid: win-x86,   self: 'false', suffix: x86_runtime }
+          - { rid: win-arm64, self: 'false', suffix: arm64 }
+          - { rid: win-arm64, self: 'true',  suffix: arm64_runtime }
+          - { rid: win-x64,   self: 'false', suffix: x64 }
+          - { rid: win-x64,   self: 'true',  suffix: x64_runtime }
+          - { rid: win-x86,   self: 'false', suffix: x86 }
+          - { rid: win-x86,   self: 'true',  suffix: x86_runtime }
     steps:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4
