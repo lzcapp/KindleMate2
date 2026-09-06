@@ -10,6 +10,9 @@ name: release
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
 # framework-dependent 变体需要目标机安装 .NET 8 Desktop Runtime。
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
