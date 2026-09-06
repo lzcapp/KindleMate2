@@ -194,14 +194,12 @@ namespace KindleMate2.Infrastructure.Helpers {
         ];
 
         /// <summary>
-        /// Kindle 设备区域文化,用于轮询解析。覆盖 Kindle 官方界面语言全集:
-        /// 简中/英/日/波/德/法/西/意/葡/荷/俄 + 繁中/韩/土(zh-TW/ko-KR/tr-TR 依 Kindle 语言设置补入)。
-        /// 注:zh-TW/ko-KR/tr-TR 的类型词与日期前缀暂无公开原始样本,文化兜底保证其日期行可解析
-        /// (类型词缺失仅归为 Unknown,不丢行;待真机样本补齐见 KmateDedup 注释)。
+        /// Kindle 设备区域文化(原版 Kindle Mate 10 个 + ru-RU),用于轮询解析。
+        /// 注:zh-TW / ko-KR / tr-TR 不在 Kindle 界面语言列表中,不纳入(2026-09-06 用户纠正)。
+        /// 俄语词表见于原版 modClippingsPatterns,故保留 ru-RU 兜底。
         /// </summary>
         private static readonly string[] KindleDateCultures = [
-            "zh-CN", "en-US", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "ru-RU",
-            "zh-TW", "ko-KR", "tr-TR"
+            "zh-CN", "en-US", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "ru-RU"
         ];
 
         private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
@@ -210,7 +208,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <summary>
         /// 解析 Kindle 区域化的日期行(形如 "Added on Sunday, May 19, 2025, 10:20:31 PM" /
         /// "添加于 2025年5月19日 星期一 下午10:20:31" / "作成日: 2025年5月19日 22:20:31" …)。
-        /// 策略(借鉴原版):① 清洗前缀/星期词 → ② 优先尝试原有三种精确格式(零回归)→ ③ 按 14 个
+        /// 策略(借鉴原版):① 清洗前缀/星期词 → ② 优先尝试原有三种精确格式(零回归)→ ③ 按 11 个
         /// Kindle 文化逐轮 <see cref="DateTime.TryParse(string, IFormatProvider, DateTimeStyles, out DateTime)"/>
         /// 兜底(.NET 文化规则消化各区域长/短日期变体)。输出统一由调用方格式化为 yyyy-MM-dd HH:mm:ss。
         /// </summary>
