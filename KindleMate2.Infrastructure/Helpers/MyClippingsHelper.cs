@@ -164,6 +164,201 @@ namespace KindleMate2.Infrastructure.Helpers {
             return BriefType.Unknown;
         }
 
+        // ── 多语言日期解析(对齐原版 Kindle Mate 1.38 的 getLine2TypeLocationAddingTime) ──
+
+        /// <summary>
+        /// 各区域 Kindle 日期行中的前缀/星期/冗余词,解析前逐项删除(原版 StringToDelete 25 项;
+        /// 另补德语 Hinzugefügt 的变体与俄语日期常用词,删除均忽略大小写)。
+        /// </summary>
+        private static readonly string[] KindleDateCleaningTokens = [
+            "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日",
+            "Added on ", "添加于", "已添加至",
+            "Hinzugefügt am ", "Hinzugefügt pm ", "作成日: ",
+            "Añadido el ", "Ajouté le ", "Ajouté ll ",
+            "日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日",
+            "Dodany w dn. ", "Toegevoegd op ", "à",
+            // 意/葡真实前缀(KindleToJoplin languages.ts example: "Aggiunto il domenica…" / "Adicionado em domingo…")
+            "Aggiunto il ", "Adicionado em ",
+            // 德语时间短语(真实样本 "…4.46 Uhr GMT+07:29" / "…um 01:31:13 Uhr",SuzanaK·becausecurious 公开样本)。
+            // 注意:删除 token 若含两侧空格会把词前后空格一并吃掉导致粘连("2012 um 01"→"201201"),
+            // 故 "um " 只带单侧空格,清理后再折叠空白。
+            " Uhr", "um ",
+            // 各语言星期词(.NET DateTime.TryParse 对带星期前缀的非标准串并不宽松 → 一并删除)
+            "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+            "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag",
+            "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi",
+            "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
+            "domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato",
+            "zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag",
+            "niedzielę", "niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"
+        ];
+
+        /// <summary>
+        /// Kindle 日期解析文化列表(2026-09-06 定稿,原则:权威覆盖 + 冗余无害):
+        /// - 用户设备语言页(滚完)11 项全覆盖:zh-CN / en-US / en-GB / de-DE / es-ES / fr-FR /
+        ///   it-IT / ja-JP / nl-NL / pt-BR / ru-RU;
+        /// - 冗余保留(不同型号/地区/历史设备的语言集可能更多,轮询无害):pt-PT、pl-PL、
+        ///   zh-TW / ko-KR / tr-TR(繁体中文 Kindle / 韩系 / 土系设备与内容若产出日期行,
+        ///   文化兜底即可解析;相应类型词缺失时仅归 Unknown,不丢行,待样本补齐)。
+        /// </summary>
+        private static readonly string[] KindleDateCultures = [
+            "zh-CN", "en-US", "en-GB", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "pt-PT", "nl-NL", "ru-RU",
+            "zh-TW", "ko-KR", "tr-TR"
+        ];
+
+        private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
+        private static readonly CultureInfo ZhCn = CultureInfo.GetCultureInfo("zh-CN");
+
+        /// <summary>
+        /// 解析 Kindle 区域化的日期行(形如 "Added on Sunday, May 19, 2025, 10:20:31 PM" /
+        /// "添加于 2025年5月19日 星期一 下午10:20:31" / "作成日: 2025年5月19日 22:20:31" …)。
+        /// 策略(借鉴原版):① 清洗前缀/星期词 → ② 优先尝试原有三种精确格式(零回归)→ ③ 按 11 个
+        /// Kindle 文化逐轮 <see cref="DateTime.TryParse(string, IFormatProvider, DateTimeStyles, out DateTime)"/>
+        /// 兜底(.NET 文化规则消化各区域长/短日期变体)。输出统一由调用方格式化为 yyyy-MM-dd HH:mm:ss。
+        /// </summary>
+        public static bool TryParseClippingDate(string rawDate, out DateTime parsedDate) {
+            parsedDate = default;
+            if (string.IsNullOrWhiteSpace(rawDate)) {
+                return false;
+            }
+
+            var cleaned = rawDate;
+            foreach (var token in KindleDateCleaningTokens) {
+                cleaned = Regex.Replace(cleaned, Regex.Escape(token), string.Empty, RegexOptions.IgnoreCase);
+            }
+            // 折叠清理留下的连续空白(如 "2025 à 22" 删 à 后),并去掉星期词删除后残留的行首逗号
+            // (en 真实 "Sunday, September 05, 2021…" 删 Sunday 后留 ", …"),避免影响后续解析
+            cleaned = Regex.Replace(cleaned, @"\s{2,}", " ").Trim().TrimStart(',', ' ');
+            // 某些区域在“日期 与 时间”之间带逗号(如 en/de/es "…2025, 10:20:31 PM"),文化解析不接受 → 归并为空格。
+            cleaned = Regex.Replace(cleaned, @",\s+(?=\d{1,2}:\d{2})", " ");
+            var gmtIndex = cleaned.LastIndexOf(" GMT", StringComparison.OrdinalIgnoreCase);
+            if (gmtIndex >= 0) {
+                cleaned = cleaned[..gmtIndex].Trim();
+            }
+            // 德语老设备点号时间(真实样本 "4.46 Uhr" 去 Uhr/GMT 后为 "4.46")→ 归并为冒号 "4:46"
+            cleaned = Regex.Replace(cleaned, @"(?<=^|\s)(\d{1,2})\.(\d{2})(?=\s|$)", "$1:$2");
+
+            // 与原实现一致的“去掉首逗号前段”变体(兼容 "Added on Sunday, …" 类前缀残留)
+            var truncated = cleaned;
+            var firstComma = cleaned.IndexOf(',');
+            if (firstComma >= 0) {
+                truncated = cleaned[(firstComma + 1)..].Trim();
+            }
+
+            if (TryParseExactKindleDate(truncated, out var exactDate) && IsSaneYear(exactDate)) {
+                parsedDate = exactDate;
+                return true;
+            }
+            if (TryParseExactKindleDate(cleaned, out var exactDate2) && IsSaneYear(exactDate2)) {
+                parsedDate = exactDate2;
+                return true;
+            }
+
+            foreach (var cultureName in KindleDateCultures) {
+                var culture = CultureInfo.GetCultureInfo(cultureName);
+                if (DateTime.TryParse(cleaned, culture, DateTimeStyles.None, out var parsed) && IsSaneYear(parsed)) {
+                    parsedDate = parsed;
+                    return true;
+                }
+                if ((DateTime.TryParseExact(cleaned, "d MMMM yyyy HH:mm:ss", culture, DateTimeStyles.None, out parsed) ||
+                     DateTime.TryParseExact(cleaned, "d MMMM yyyy H:mm:ss", culture, DateTimeStyles.None, out parsed)) && IsSaneYear(parsed)) {
+                    parsedDate = parsed;
+                    return true;
+                }
+            }
+
+            // 最后兜底:以上全失败时,提取串中的数字日期(yyyy-m-d / m/d/yyyy / d.m.yyyy / yyyy年m月d日)
+            // 并尝试附带时间。语言无关,可捞回文化轮询不吃但日期确实存在的行。
+            if (TryExtractNumericDate(cleaned, out var numericDate) && IsSaneYear(numericDate)) {
+                parsedDate = numericDate;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Kindle 数据合理年份范围(1900–2100),防止宽松解析把畸形串解析成异常年份。</summary>
+        private static bool IsSaneYear(DateTime date) {
+            return date.Year is >= 1900 and <= 2100;
+        }
+
+        /// <summary>
+        /// 数字日期通用提取兜底:识别 yyyy-m-d(含中文 年月日)、m/d/yyyy、d.m.yyyy 三种形态,
+        /// 并尝试附带紧随其后的冒号时间(含 AM/PM、上午/下午)。全部失败返回 false。
+        /// </summary>
+        private static bool TryExtractNumericDate(string input, out DateTime parsedDate) {
+            parsedDate = default;
+            if (string.IsNullOrWhiteSpace(input)) {
+                return false;
+            }
+            // 1) 年在前: yyyy年m月d日 / yyyy-m-d / yyyy/m/d / yyyy.m.d
+            var ymd = Regex.Match(input, @"(?<!\d)(?<y>\d{4})[./\-年](?<m>\d{1,2})[./\-月](?<d>\d{1,2})(?!\d)");
+            Match dateMatch = ymd;
+            int? y = null, m = null, d = null;
+            if (ymd.Success) {
+                y = int.Parse(ymd.Groups["y"].Value);
+                m = int.Parse(ymd.Groups["m"].Value);
+                d = int.Parse(ymd.Groups["d"].Value);
+            } else {
+                // 2) 年在后且点/斜杠分隔,先欧式 d.m.yyyy 再美式 m/d/yyyy
+                var dmy = Regex.Match(input, @"(?<!\d)(?<d>\d{1,2})\.(?<m>\d{1,2})\.(?<y>\d{4})(?!\d)");
+                if (dmy.Success) {
+                    dateMatch = dmy;
+                    d = int.Parse(dmy.Groups["d"].Value);
+                    m = int.Parse(dmy.Groups["m"].Value);
+                    y = int.Parse(dmy.Groups["y"].Value);
+                } else {
+                    var mdy = Regex.Match(input, @"(?<!\d)(?<m>\d{1,2})[/\-](?<d>\d{1,2})[/\-](?<y>\d{4})(?!\d)");
+                    if (!mdy.Success) {
+                        return false;
+                    }
+                    dateMatch = mdy;
+                    m = int.Parse(mdy.Groups["m"].Value);
+                    d = int.Parse(mdy.Groups["d"].Value);
+                    y = int.Parse(mdy.Groups["y"].Value);
+                }
+            }
+
+            var hour = 0;
+            var minute = 0;
+            var second = 0;
+            // 时间:日期匹配之后找首个冒号时间
+            var timeMatch = Regex.Match(input, @"(?<h>\d{1,2}):(?<min>\d{2})(?::(?<s>\d{2}))?");
+            while (timeMatch.Success && timeMatch.Index < dateMatch.Index + dateMatch.Length) {
+                timeMatch = timeMatch.NextMatch();
+            }
+            if (timeMatch.Success) {
+                hour = int.Parse(timeMatch.Groups["h"].Value);
+                minute = int.Parse(timeMatch.Groups["min"].Value);
+                second = timeMatch.Groups["s"].Success ? int.Parse(timeMatch.Groups["s"].Value) : 0;
+                // 12 小时制修饰(AM/PM/上午/下午):检查时间之后一小段
+                var tail = input[timeMatch.Index..];
+                var meridian = Regex.Match(tail, @"(?i)\b(am|pm|上午|下午)\b");
+                if (meridian.Success && meridian.Index <= 12) {
+                    var isPm = meridian.Value.Equals("pm", StringComparison.OrdinalIgnoreCase) || meridian.Value.Contains("下午");
+                    hour = hour % 12 + (isPm ? 12 : 0);
+                }
+            }
+
+            try {
+                parsedDate = new DateTime(y!.Value, m!.Value, d!.Value, hour, minute, second);
+                return true;
+            } catch (ArgumentOutOfRangeException) {
+                return false;
+            }
+        }
+
+        private static bool TryParseExactKindleDate(string input, out DateTime parsedDate) {
+            if (DateTime.TryParseExact(input, "MMMM d, yyyy h:m:s tt", EnUs, DateTimeStyles.None, out parsedDate) ||
+                DateTime.TryParseExact(input, "d MMMM yyyy HH:mm:ss", EnUs, DateTimeStyles.None, out parsedDate)) {
+                return true;
+            }
+            var dayOfWeekIndex = input.IndexOf("星期", StringComparison.Ordinal);
+            if (dayOfWeekIndex != -1) {
+                input = input.Remove(dayOfWeekIndex, 3);
+            }
+            return DateTime.TryParseExact(input, "yyyy年M月d日 tth:m:s", ZhCn, DateTimeStyles.None, out parsedDate);
+        }
+
         private static DateTime? ParseToUtcDate(string serializedDate) {
             if (DateTime.TryParse(serializedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTime date) || CultureInfoArray.Any(culture => DateTime.TryParse(serializedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))) {
                 return date;

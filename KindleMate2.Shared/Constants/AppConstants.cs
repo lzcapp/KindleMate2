@@ -16,6 +16,9 @@
         public const string EmptyCount = "EmptyCount";
         public const string TrimmedCount = "TrimmedCount";
         public const string DuplicatedCount = "DuplicatedCount";
+        public const string SkippedDateCount = "SkippedDateCount";
+        public const string SkippedPageCount = "SkippedPageCount";
+        public const string SkippedLimitCount = "SkippedLimitCount";
 
         public const string SettingTheme = "theme";
         public const string SettingLanguage = "lang";

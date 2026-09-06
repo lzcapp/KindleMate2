@@ -4,6 +4,7 @@ using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Tests;
 
@@ -156,5 +157,39 @@ public sealed class DataLayerFixTests : IDisposable {
 
         Assert.True(svc.ImportFromKmDatabase());
         Assert.Equal(2, targetClipRepo.GetAll().Count); // cross-book same content kept
+    }
+
+    [Fact]
+    public void ImportKindleClippings_ReportsDateParseSkipCount() {
+        var targetDb = NewDb("t7-clippings.db");
+        var path = Path.Combine(_dir, "My Clippings.txt");
+        File.WriteAllText(path, """
+Book (Author)
+- Highlight | Page 5 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+some content
+==========
+Book (Author)
+- Highlight | Page 6 | addedd on a totally unparseable date string
+
+more content
+==========
+""");
+
+        var clipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = new Km2DatabaseService(
+            clipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)));
+
+        Assert.True(svc.ImportKindleClippings(path, out var result));
+        Assert.Equal("2", result[AppConstants.ParsedCount]);
+        Assert.Equal("1", result[AppConstants.InsertedCount]); // only the well-formed entry
+        Assert.Equal("1", result[AppConstants.SkippedDateCount]); // the unparseable-date entry
+        Assert.Equal("0", result[AppConstants.SkippedPageCount]);
+        Assert.Equal("0", result[AppConstants.SkippedLimitCount]);
+        Assert.Single(clipRepo.GetAll());
     }
 }
