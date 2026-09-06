@@ -59,11 +59,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
 
-                var insertedCount = HandleClippings(myClippings);
+                var insertedCount = HandleClippings(myClippings, out var skipCounts);
 
                 result = new Dictionary<string, string> {
                     { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
-                    { AppConstants.InsertedCount, insertedCount.ToString() }
+                    { AppConstants.InsertedCount, insertedCount.ToString() },
+                    { AppConstants.SkippedDateCount, skipCounts.DateFailed.ToString() },
+                    { AppConstants.SkippedPageCount, skipCounts.PageFailed.ToString() },
+                    { AppConstants.SkippedLimitCount, skipCounts.LimitReached.ToString() }
                 };
                 return true;
             } catch (Exception e) {
@@ -98,7 +101,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Delimiter = line5
                     }).ToList();
 
-                var insertedCount = HandleClippings(myClippings, isRebuild: true);
+                var insertedCount = HandleClippings(myClippings, out _, isRebuild: true);
 
                 UpdateFrequency();
 
@@ -116,7 +119,14 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
 
-        private int HandleClippings(List<MyClipping> clippings, bool isRebuild = false) {
+        private sealed class SkipCounts {
+            public int LimitReached;
+            public int PageFailed;
+            public int DateFailed;
+        }
+
+        private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false) {
+            skipCounts = new SkipCounts();
             var insertResult = 0;
 
             var allClippings = clippingRepository.GetAll();
@@ -141,7 +151,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var metadata = myClipping.Metadata;
                     var content = myClipping.Content;
 
-                    if (string.IsNullOrWhiteSpace(content) || MyClippingsHelper.IsClippingLimitReached(content)) {
+                    if (string.IsNullOrWhiteSpace(content)) {
+                        continue;
+                    }
+                    if (MyClippingsHelper.IsClippingLimitReached(content)) {
+                        skipCounts.LimitReached++;
                         continue;
                     }
 
@@ -182,6 +196,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         isPageParsed = int.TryParse(strMatched, out pageNumber);
                     }
                     if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
+                        skipCounts.PageFailed++;
                         continue;
                     }
                     clipping.PageNumber = pageNumber;
@@ -191,6 +206,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // 原有三种精确格式优先(零回归)→ 11 个 Kindle 文化轮询兜底(原版 Kindle Mate 做法)。
                     var metaSplit = metadata.Split('|');
                     if (!MyClippingsHelper.TryParseClippingDate(metaSplit[^1], out var parsedDate)) {
+                        skipCounts.DateFailed++;
                         continue;
                     }
                     var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");

@@ -37,6 +37,10 @@ public sealed class ClippingDateParsingTests {
     [InlineData("Ajouté le dimanche 15 janvier 2024 10:30:45", "2024-01-15 10:30:45")]
     [InlineData("Hinzugefügt am Sonntag, 15. Januar 2024 10:30:45", "2024-01-15 10:30:45")]
     [InlineData("Adicionado em domingo, 15 de janeiro de 2024 10:30:45", "2024-01-15 10:30:45")]
+    // 数字日期兜底(语言无关;文化轮询失败后提取 yyyy-m-d / m/d/yyyy / d.m.yyyy)
+    [InlineData("Gedaan op 19.05.2025 22:20:31", "2025-05-19 22:20:31")] // 欧式 d.m.yyyy(模拟未知语言)
+    [InlineData("Added 5/19/2025 10:30:45 PM", "2025-05-19 22:30:45")]     // 美式 m/d/yyyy + PM
+    [InlineData("хр. 2016年6月16日 22:20:31", "2016-06-16 22:20:31")]        // yyyy年m月d日
     public void TryParseClippingDate_ParsesRegionalDates(string raw, string expected) {
         Assert.True(MyClippingsHelper.TryParseClippingDate(raw, out var date), $"should parse: {raw}");
         Assert.Equal(expected, date.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -47,6 +51,8 @@ public sealed class ClippingDateParsingTests {
     [InlineData("   ")]
     [InlineData("kein datum hier")]
     [InlineData("位置 #123-125")]
+    [InlineData("Date: 1899-05-19 10:00:00")]   // 年份 < 1900 拒绝
+    [InlineData("Date: 2101-05-19 10:00:00")]   // 年份 > 2100 拒绝
     public void TryParseClippingDate_InvalidInput_ReturnsFalse(string raw) {
         Assert.False(MyClippingsHelper.TryParseClippingDate(raw, out _));
     }

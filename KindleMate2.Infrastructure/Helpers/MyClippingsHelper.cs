@@ -245,19 +245,106 @@ namespace KindleMate2.Infrastructure.Helpers {
                 truncated = cleaned[(firstComma + 1)..].Trim();
             }
 
-            if (TryParseExactKindleDate(truncated, out parsedDate) || TryParseExactKindleDate(cleaned, out parsedDate)) {
+            if (TryParseExactKindleDate(truncated, out var exactDate) && IsSaneYear(exactDate)) {
+                parsedDate = exactDate;
+                return true;
+            }
+            if (TryParseExactKindleDate(cleaned, out var exactDate2) && IsSaneYear(exactDate2)) {
+                parsedDate = exactDate2;
                 return true;
             }
 
             foreach (var cultureName in KindleDateCultures) {
                 var culture = CultureInfo.GetCultureInfo(cultureName);
-                if (DateTime.TryParse(cleaned, culture, DateTimeStyles.None, out parsedDate) ||
-                    DateTime.TryParseExact(cleaned, "d MMMM yyyy HH:mm:ss", culture, DateTimeStyles.None, out parsedDate) ||
-                    DateTime.TryParseExact(cleaned, "d MMMM yyyy H:mm:ss", culture, DateTimeStyles.None, out parsedDate)) {
+                if (DateTime.TryParse(cleaned, culture, DateTimeStyles.None, out var parsed) && IsSaneYear(parsed)) {
+                    parsedDate = parsed;
+                    return true;
+                }
+                if ((DateTime.TryParseExact(cleaned, "d MMMM yyyy HH:mm:ss", culture, DateTimeStyles.None, out parsed) ||
+                     DateTime.TryParseExact(cleaned, "d MMMM yyyy H:mm:ss", culture, DateTimeStyles.None, out parsed)) && IsSaneYear(parsed)) {
+                    parsedDate = parsed;
                     return true;
                 }
             }
+
+            // 最后兜底:以上全失败时,提取串中的数字日期(yyyy-m-d / m/d/yyyy / d.m.yyyy / yyyy年m月d日)
+            // 并尝试附带时间。语言无关,可捞回文化轮询不吃但日期确实存在的行。
+            if (TryExtractNumericDate(cleaned, out var numericDate) && IsSaneYear(numericDate)) {
+                parsedDate = numericDate;
+                return true;
+            }
             return false;
+        }
+
+        /// <summary>Kindle 数据合理年份范围(1900–2100),防止宽松解析把畸形串解析成异常年份。</summary>
+        private static bool IsSaneYear(DateTime date) {
+            return date.Year is >= 1900 and <= 2100;
+        }
+
+        /// <summary>
+        /// 数字日期通用提取兜底:识别 yyyy-m-d(含中文 年月日)、m/d/yyyy、d.m.yyyy 三种形态,
+        /// 并尝试附带紧随其后的冒号时间(含 AM/PM、上午/下午)。全部失败返回 false。
+        /// </summary>
+        private static bool TryExtractNumericDate(string input, out DateTime parsedDate) {
+            parsedDate = default;
+            if (string.IsNullOrWhiteSpace(input)) {
+                return false;
+            }
+            // 1) 年在前: yyyy年m月d日 / yyyy-m-d / yyyy/m/d / yyyy.m.d
+            var ymd = Regex.Match(input, @"(?<!\d)(?<y>\d{4})[./\-年](?<m>\d{1,2})[./\-月](?<d>\d{1,2})(?!\d)");
+            Match dateMatch = ymd;
+            int? y = null, m = null, d = null;
+            if (ymd.Success) {
+                y = int.Parse(ymd.Groups["y"].Value);
+                m = int.Parse(ymd.Groups["m"].Value);
+                d = int.Parse(ymd.Groups["d"].Value);
+            } else {
+                // 2) 年在后且点/斜杠分隔,先欧式 d.m.yyyy 再美式 m/d/yyyy
+                var dmy = Regex.Match(input, @"(?<!\d)(?<d>\d{1,2})\.(?<m>\d{1,2})\.(?<y>\d{4})(?!\d)");
+                if (dmy.Success) {
+                    dateMatch = dmy;
+                    d = int.Parse(dmy.Groups["d"].Value);
+                    m = int.Parse(dmy.Groups["m"].Value);
+                    y = int.Parse(dmy.Groups["y"].Value);
+                } else {
+                    var mdy = Regex.Match(input, @"(?<!\d)(?<m>\d{1,2})[/\-](?<d>\d{1,2})[/\-](?<y>\d{4})(?!\d)");
+                    if (!mdy.Success) {
+                        return false;
+                    }
+                    dateMatch = mdy;
+                    m = int.Parse(mdy.Groups["m"].Value);
+                    d = int.Parse(mdy.Groups["d"].Value);
+                    y = int.Parse(mdy.Groups["y"].Value);
+                }
+            }
+
+            var hour = 0;
+            var minute = 0;
+            var second = 0;
+            // 时间:日期匹配之后找首个冒号时间
+            var timeMatch = Regex.Match(input, @"(?<h>\d{1,2}):(?<min>\d{2})(?::(?<s>\d{2}))?");
+            while (timeMatch.Success && timeMatch.Index < dateMatch.Index + dateMatch.Length) {
+                timeMatch = timeMatch.NextMatch();
+            }
+            if (timeMatch.Success) {
+                hour = int.Parse(timeMatch.Groups["h"].Value);
+                minute = int.Parse(timeMatch.Groups["min"].Value);
+                second = timeMatch.Groups["s"].Success ? int.Parse(timeMatch.Groups["s"].Value) : 0;
+                // 12 小时制修饰(AM/PM/上午/下午):检查时间之后一小段
+                var tail = input[timeMatch.Index..];
+                var meridian = Regex.Match(tail, @"(?i)\b(am|pm|上午|下午)\b");
+                if (meridian.Success && meridian.Index <= 12) {
+                    var isPm = meridian.Value.Equals("pm", StringComparison.OrdinalIgnoreCase) || meridian.Value.Contains("下午");
+                    hour = hour % 12 + (isPm ? 12 : 0);
+                }
+            }
+
+            try {
+                parsedDate = new DateTime(y!.Value, m!.Value, d!.Value, hour, minute, second);
+                return true;
+            } catch (ArgumentOutOfRangeException) {
+                return false;
+            }
         }
 
         private static bool TryParseExactKindleDate(string input, out DateTime parsedDate) {
