@@ -194,15 +194,16 @@ namespace KindleMate2.Infrastructure.Helpers {
         ];
 
         /// <summary>
-        /// Kindle 日期解析文化列表(2026-09-06 定稿):
-        /// - 用户设备语言设置页(滚完)显示 11 项,全部覆盖:zh-CN / en-US / en-GB / de-DE / es-ES /
-        ///   fr-FR / it-IT / ja-JP / nl-NL / pt-BR / ru-RU;
-        /// - 其余(en-GB/pt-BR 区域变体 + pt-PT/pl-PL,原版 Kindle Mate 10 区)保留作<b>冗余</b>:
-        ///   不同 Kindle 型号/地区语言集可能更多,冗余轮询无害;
-        /// - zh-TW / ko-KR / tr-TR 未见于任何 Kindle 语言列表,不纳入。
+        /// Kindle 日期解析文化列表(2026-09-06 定稿,原则:权威覆盖 + 冗余无害):
+        /// - 用户设备语言页(滚完)11 项全覆盖:zh-CN / en-US / en-GB / de-DE / es-ES / fr-FR /
+        ///   it-IT / ja-JP / nl-NL / pt-BR / ru-RU;
+        /// - 冗余保留(不同型号/地区/历史设备的语言集可能更多,轮询无害):pt-PT、pl-PL、
+        ///   zh-TW / ko-KR / tr-TR(繁体中文 Kindle / 韩系 / 土系设备与内容若产出日期行,
+        ///   文化兜底即可解析;相应类型词缺失时仅归 Unknown,不丢行,待样本补齐)。
         /// </summary>
         private static readonly string[] KindleDateCultures = [
-            "zh-CN", "en-US", "en-GB", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "pt-PT", "nl-NL", "ru-RU"
+            "zh-CN", "en-US", "en-GB", "ja-JP", "pl-PL", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "pt-PT", "nl-NL", "ru-RU",
+            "zh-TW", "ko-KR", "tr-TR"
         ];
 
         private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
