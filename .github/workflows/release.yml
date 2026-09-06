@@ -1,9 +1,10 @@
 name: release
 
 # 发布即自动化:push 日期式 tag(如 2026.09.06)或手动 dispatch 触发。
-# 四变体矩阵(对应站点 AppCast update_x64/x86(_runtime).xml):
-#   win-x64 / win-x86 × self-contained / framework-dependent(runtime)
-# 产物:KindleMate2-<ver>-win-<arch>[-runtime].zip → 合并进 GitHub Release(免手动登录 gh)。
+# 六变体矩阵(资产命名与正式发布一致,下划线、不带版本号):
+#   arm64 / x64 / x86 × self-contained / framework-dependent(runtime)
+# 产物:KindleMate2_arm64[_runtime].zip、KindleMate2_x64[_runtime].zip、KindleMate2_x86[_runtime].zip
+#   → 合并进 GitHub Release(免手动登录 gh)。
 #
 # 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
@@ -27,10 +28,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { rid: win-x64, self: 'true',  suffix: win-x64 }
-          - { rid: win-x64, self: 'false', suffix: win-x64-runtime }
-          - { rid: win-x86, self: 'true',  suffix: win-x86 }
-          - { rid: win-x86, self: 'false', suffix: win-x86-runtime }
+          - { rid: win-arm64, self: 'true',  suffix: arm64 }
+          - { rid: win-arm64, self: 'false', suffix: arm64_runtime }
+          - { rid: win-x64,   self: 'true',  suffix: x64 }
+          - { rid: win-x64,   self: 'false', suffix: x64_runtime }
+          - { rid: win-x86,   self: 'true',  suffix: x86 }
+          - { rid: win-x86,   self: 'false', suffix: x86_runtime }
     steps:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4
@@ -58,10 +61,10 @@ jobs:
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2/KindleMate2.csproj -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:PublishSingleFile=true -p:Version=${{ steps.ver.outputs.version }} -o publish/${{ matrix.suffix }}
 
-      - name: Package zip
+      - name: Package zip (KindleMate2_${{ matrix.suffix }}.zip)
         shell: pwsh
         run: |
-          $name = "KindleMate2-${{ steps.ver.outputs.version }}-${{ matrix.suffix }}.zip"
+          $name = "KindleMate2_${{ matrix.suffix }}.zip"
           Compress-Archive -Path "publish/${{ matrix.suffix }}/*" -DestinationPath $name
           Write-Output "asset=$name" >> $env:GITHUB_OUTPUT
 
@@ -69,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: assets-${{ matrix.suffix }}
-          path: KindleMate2-${{ steps.ver.outputs.version }}-${{ matrix.suffix }}.zip
+          path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
   release:
