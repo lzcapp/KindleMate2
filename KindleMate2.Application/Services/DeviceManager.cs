@@ -275,8 +275,8 @@ public class DeviceManager : IDeviceManager {
     private static MediaDevice? FindKindleDevice() {
         return MediaDeviceManager.Instance.GetDevices()?
             .FirstOrDefault(d =>
-                d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
-                d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
+                d.FriendlyName?.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) == true ||
+                d.Model?.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) == true);
     }
 
     private static void ReadMtpFile(MediaDevice device, string path, string fileName, string filePath) {
