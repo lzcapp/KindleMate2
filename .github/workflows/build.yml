@@ -5,6 +5,9 @@ on:
     branches: [main, 'dev-*']
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: windows-latest
