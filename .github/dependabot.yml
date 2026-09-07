@@ -1,0 +1,25 @@
+# 依赖自动更新(Dependabot)
+# GitHub Actions 每周一自动检查升级,以 PR 形式提出,避免 node 运行时弃用类版本漂移。
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+  # NuGet 包依赖自动升级(csproj PackageReference)
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(nuget)"
