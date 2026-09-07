@@ -12,3 +12,14 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "ci(deps)"
+  # NuGet 包依赖自动升级(csproj PackageReference)
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(nuget)"
