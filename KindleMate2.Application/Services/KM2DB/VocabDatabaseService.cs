@@ -35,7 +35,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var insertedLookupCount = 0;
 
                 var bookInfoMap = bookInfos.ToDictionary(b => b.Id ?? string.Empty, StringComparer.OrdinalIgnoreCase);
-                
+
+                // Dedup against one in-memory snapshot of existing vocab ids instead of a
+                // GetById round-trip (new connection + query) per candidate row.
+                var existingVocabIds = _vocabRepository.GetAll()
+                    .Where(v => v.Id != null)
+                    .Select(v => v.Id!)
+                    .ToHashSet(StringComparer.Ordinal);
+
                 var newVocabs = new List<Vocab>();
                 foreach (Word item in words) {
                     var id = item.Id;
@@ -51,7 +58,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    if (_vocabRepository.GetById(word + timestamp) != null) {
+                    if (!existingVocabIds.Add(word + timestamp)) {
                         continue;
                     }
                     newVocabs.Add(new Vocab {
@@ -73,8 +80,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                 // up within the same second are legitimate, but the same word looked up at
                 // the exact same formatted timestamp must not be inserted twice. Dedup
                 // in-memory on that composite key so a single import pass never trips the
-                // constraint and rolls back the whole batch.
-                var seenLookupKeys = new HashSet<string>(StringComparer.Ordinal);
+                // constraint and rolls back the whole batch. The set is seeded from the
+                // existing destination rows so the previous per-row
+                // ExistsByWordKeyAndTimestamp query (one connection each) disappears too.
+                var seenLookupKeys = _km2DbLookupRepository.GetAll()
+                    .Where(l => l.WordKey != null && l.Timestamp != null)
+                    .Select(l => l.WordKey + "\u0000" + l.Timestamp)
+                    .ToHashSet(StringComparer.Ordinal);
                 foreach (Lookup item in lookups) {
                     var wordKey = item.WordKey;
                     var bookKey = item.BookKey;
@@ -105,9 +117,6 @@ namespace KindleMate2.Application.Services.KM2DB {
                         continue;
                     }
 
-                    if (_km2DbLookupRepository.ExistsByWordKeyAndTimestamp(wordKey, formattedDateTime)) {
-                        continue;
-                    }
                     newLookups.Add(new Domain.Entities.KM2DB.Lookup {
                         WordKey = wordKey,
                         Usage = usage,
@@ -147,18 +156,24 @@ namespace KindleMate2.Application.Services.KM2DB {
                 .GroupBy(l => l.WordKey!.Trim())
                 .ToDictionary(g => g.Key, g => g.Count());
 
+            // Collect every row first, then push frequencies in ONE batched,
+            // transaction-wrapped call instead of one connection + UPDATE per vocab.
+            var updates = new List<Vocab>(vocabs.Count);
             foreach (Vocab vocab in vocabs) {
                 var wordKey = vocab.WordKey;
                 if (wordKey == null) {
                     continue;
                 }
                 frequencyMap.TryGetValue(wordKey, out var frequency);
-                _vocabRepository.UpdateFrequencyByWordKey(new Vocab {
+                updates.Add(new Vocab {
                     WordKey = wordKey,
                     Frequency = frequency,
                     Id = vocab.Id,
                     Word = vocab.Word
                 });
+            }
+            if (updates.Count > 0) {
+                _vocabRepository.UpdateFrequencyByWordKey(updates);
             }
         }
     }

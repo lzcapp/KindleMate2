@@ -213,6 +213,40 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// Bulk-updates frequency for many vocabs in a single transaction with one reused
+        /// command. Replaces the previous per-vocab call pattern that opened a new
+        /// connection (and auto-committed) once per row — the dominant cost when an
+        /// import triggers a full frequency recompute over thousands of vocab rows.
+        /// Rows with a null/blank word_key are skipped (they can never match any
+        /// lookup), which keeps the batch from aborting on legacy junk rows.
+        /// </summary>
+        public int UpdateFrequencyByWordKey(List<Vocab> vocabs) {
+            var count = 0;
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try {
+                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key", connection, transaction);
+                foreach (Vocab vocab in vocabs) {
+                    var wordKey = vocab.WordKey;
+                    if (string.IsNullOrWhiteSpace(wordKey)) {
+                        continue;
+                    }
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@word_key", wordKey);
+                    cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
+                    count += cmd.ExecuteNonQuery();
+                }
+                transaction.Commit();
+            } catch {
+                transaction.Rollback();
+                throw;
+            }
+            return count;
+        }
+
         public bool Delete(string id) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
