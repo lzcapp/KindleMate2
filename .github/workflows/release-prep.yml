@@ -1,9 +1,11 @@
 # 一键发版准备:填版本号(或留空用当天日期)→ 自动 bump csproj <Version>、
-# 提交、打日期式 annotated tag 并推送 → 推送 tag 自动触发现有 release.yml
-# 六变体构建 + GitHub Release。用法:仓库 Actions 页 → release-prep → Run workflow。
+# 提交、打日期式 annotated tag、推送,并显式 dispatch release.yml 触发六变体
+# 构建 + GitHub Release。用法:仓库 Actions 页 → release-prep → Run workflow。
 #
 # 注意:
 # - 提交/推送由 github-actions[bot] 完成(非本机 GPG 签名);仓库未开签名强制规则。
+# - 必须用 API dispatch(gh workflow run)触发 release.yml,而不是依赖 push tag 事件:
+#   GitHub 规定 GITHUB_TOKEN 推送的 tag/commit 不会创建新的 workflow run。
 # - 若远端已存在同名 tag 会中止,防止误覆盖已发布版本。
 # - 发布后仍需在站点 https://github.lzc.app/KindleMate2/ 手动把 AppCast
 #   (update_*.xml)指向新 Release 资产(workflow 不含该步骤)。
@@ -14,13 +16,14 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '目标版本号(格式如 2026.09.07;留空 = 当天北京时间)'
+        description: '目标版本号(格式如 2026.09.07 或 2026.9.7;留空 = 当天北京时间)'
         required: false
         default: ''
         type: string
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   bump-and-tag:
@@ -87,10 +90,15 @@ jobs:
             git commit -m "chore: 版本号升级至 ${{ steps.ver.outputs.version }}"
           }
 
-      - name: Tag and push
+      - name: Tag, push and dispatch release
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $v = "${{ steps.ver.outputs.version }}"
           git tag -a $v -m "Release $v"
           git push origin main
           git push origin $v
+          # GITHUB_TOKEN push 不触发 release.yml(平台防递归),改用 API dispatch
+          gh workflow run release.yml --repo "$env:GITHUB_REPOSITORY" -f "version=$v"
+          Write-Output "已 dispatch release.yml (version=$v),构建请到 Actions 页查看"
