@@ -192,4 +192,69 @@ more content
         Assert.Equal("0", result[AppConstants.SkippedLimitCount]);
         Assert.Single(clipRepo.GetAll());
     }
+
+    [Fact]
+    public void CleanDatabase_ExactAndNestedDuplicates_MatchesLegacySemantics() {
+        // Regression for the O(n²)→grouping rewrite of Km2DatabaseService.FindDuplicatedClippings.
+        // Legacy rule: a clipping is duplicated when MORE than one row's content contains its
+        // content as a substring — identical content in two rows flags BOTH rows (not keep-one).
+        var db = NewDb("t9-clean.db");
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(db))) {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "INSERT INTO clippings (key, content, bookname, authorname, clippingdate) VALUES " +
+                "('k1', 'alpha', 'B1', 'A', '2026-01-01 00:00:00'), " +   // exact duplicate of k2
+                "('k2', 'alpha', 'B2', 'A', '2026-01-02 00:00:00'), " +   // exact duplicate of k1
+                "('k3', 'alpha beta', 'B1', 'A', '2026-01-03 00:00:00'), " + // contains 'alpha', but is unique itself
+                "('k4', 'gamma', 'B1', 'A', '2026-01-04 00:00:00');";     // unique, untouched
+            cmd.ExecuteNonQuery();
+        }
+
+        var clipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(db));
+        var svc = new Km2DatabaseService(
+            clipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(db)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(db)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(db)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(db)));
+
+        Assert.True(svc.CleanDatabase(db, out var result));
+        Assert.Equal("0", result[AppConstants.EmptyCount]);
+        Assert.Equal("2", result[AppConstants.DuplicatedCount]); // k1 + k2 removed
+
+        var remaining = clipRepo.GetAll().Select(c => c.Key).OrderBy(k => k).ToList();
+        Assert.Equal(new[] { "k3", "k4" }, remaining);
+    }
+
+    [Fact]
+    public void VocabBulkFrequencyUpdate_OneTransaction_UpdatesAllRows() {
+        var repo = new VocabRepository(DatabaseHelper.GetConnectionString(NewDb("t10-freq.db")));
+        var batch = new List<Vocab>();
+        for (var i = 0; i < 2000; i++) {
+            batch.Add(new Vocab {
+                Id = "f" + i,
+                WordKey = "wk" + i,
+                Word = "word" + i,
+                Timestamp = "2026-09-01 10:00:00",
+                Frequency = 0
+            });
+        }
+        Assert.Equal(2000, repo.Add(batch));
+
+        var updates = new List<Vocab>(batch.Count);
+        for (var i = 0; i < batch.Count; i++) {
+            updates.Add(new Vocab {
+                Id = batch[i].Id,
+                Word = batch[i].Word,
+                WordKey = batch[i].WordKey,
+                Frequency = i % 7 // arbitrary per-row target
+            });
+        }
+
+        Assert.Equal(2000, repo.UpdateFrequencyByWordKey(updates));
+        Assert.Equal(0, repo.GetById("f0")!.Frequency);
+        Assert.Equal(6, repo.GetById("f6")!.Frequency);
+        Assert.Equal(4, repo.GetById("f1999")!.Frequency); // 1999 % 7 == 4
+    }
 }

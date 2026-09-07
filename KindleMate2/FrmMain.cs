@@ -317,41 +317,105 @@ namespace KindleMate2 {
         }
 
         private void PopulateTreeViews() {
-            // Books tree
+            // Rebuilding a TreeView re-lays-out every node; with thousands of books/words a
+            // blind Clear + ExpandAll on every refresh is what stalls the UI after imports.
+            // BeginUpdate batches all mutations into a single repaint, and the tree's
+            // expansion is preserved (a previously fully-expanded / first-populated tree
+            // still gets the legacy ExpandAll so newly imported items remain visible).
+            var expandedBooks = CaptureExpandedNodeNames(treeViewBooks);
+            var expandedWords = CaptureExpandedNodeNames(treeViewWords);
+            var expandAllBooks = ShouldExpandAll(treeViewBooks);
+            var expandAllWords = ShouldExpandAll(treeViewWords);
+
             var books = _dataDisplayService.GetDistinctBookNames();
-            treeViewBooks.Nodes.Clear();
-            treeViewBooks.Nodes.Add(new TreeNode(Strings.Select_All) { ImageIndex = 2, SelectedImageIndex = 2 });
-            if (books.Count != 0) {
-                foreach (TreeNode bookNode in books.Select(book => new TreeNode(book) { ToolTipText = book })) {
-                    treeViewBooks.Nodes.Add(bookNode);
+            treeViewBooks.BeginUpdate();
+            try {
+                treeViewBooks.Nodes.Clear();
+                treeViewBooks.Nodes.Add(new TreeNode(Strings.Select_All) { ImageIndex = 2, SelectedImageIndex = 2 });
+                if (books.Count != 0) {
+                    foreach (TreeNode bookNode in books.Select(book => new TreeNode(book) { ToolTipText = book })) {
+                        treeViewBooks.Nodes.Add(bookNode);
+                    }
+                }
+                if (expandAllBooks) {
+                    treeViewBooks.ExpandAll();
+                } else {
+                    RestoreExpandedNodes(treeViewBooks, expandedBooks);
+                }
+            } finally {
+                treeViewBooks.EndUpdate();
+            }
+
+            var words = _dataDisplayService.GetDistinctWordNames();
+            treeViewWords.BeginUpdate();
+            try {
+                treeViewWords.Nodes.Clear();
+                if (words.Count == 0) return;
+                treeViewWords.Nodes.Add(new TreeNode(Strings.Select_All) { ImageIndex = 2, SelectedImageIndex = 2 });
+                foreach (TreeNode wordNode in words.Select(word => new TreeNode(word) { ToolTipText = word })) {
+                    treeViewWords.Nodes.Add(wordNode);
+                }
+                if (expandAllWords) {
+                    treeViewWords.ExpandAll();
+                } else {
+                    RestoreExpandedNodes(treeViewWords, expandedWords);
+                }
+            } finally {
+                treeViewWords.EndUpdate();
+            }
+        }
+
+        /// <summary>Texts of currently-expanded top-level nodes, captured before a rebuild.</summary>
+        private static HashSet<string> CaptureExpandedNodeNames(TreeView tree) {
+            var expanded = new HashSet<string>(StringComparer.Ordinal);
+            foreach (TreeNode node in tree.Nodes) {
+                if (node.IsExpanded) {
+                    expanded.Add(node.Text);
                 }
             }
-            treeViewBooks.ExpandAll();
+            return expanded;
+        }
 
-            // Words tree
-            var words = _dataDisplayService.GetDistinctWordNames();
-            treeViewWords.Nodes.Clear();
-            if (words.Count == 0) return;
-            treeViewWords.Nodes.Add(new TreeNode(Strings.Select_All) { ImageIndex = 2, SelectedImageIndex = 2 });
-            foreach (TreeNode wordNode in words.Select(word => new TreeNode(word) { ToolTipText = word })) {
-                treeViewWords.Nodes.Add(wordNode);
+        /// <summary>True when the tree is empty (first population) or every node was expanded.</summary>
+        private static bool ShouldExpandAll(TreeView tree) {
+            if (tree.Nodes.Count == 0) {
+                return true;
             }
-            treeViewWords.ExpandAll();
+            foreach (TreeNode node in tree.Nodes) {
+                if (!node.IsExpanded) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>Re-expands the nodes the user had open before the rebuild.</summary>
+        private static void RestoreExpandedNodes(TreeView tree, HashSet<string> expanded) {
+            foreach (TreeNode node in tree.Nodes) {
+                if (expanded.Contains(node.Text)) {
+                    node.Expand();
+                }
+            }
         }
 
         private void SetDataGridView() {
-            dataGridView.DataSource = null;
-            dataGridView.Rows.Clear();
-            dataGridView.Columns.Clear();
+            dataGridView.SuspendLayout();
+            try {
+                dataGridView.DataSource = null;
+                dataGridView.Rows.Clear();
+                dataGridView.Columns.Clear();
 
-            var selectedIndex = tabControl.SelectedIndex;
-            switch (selectedIndex) {
-                case 0:
-                    SetClippingsGridView();
-                    break;
-                case 1:
-                    SetVocabsGridView();
-                    break;
+                var selectedIndex = tabControl.SelectedIndex;
+                switch (selectedIndex) {
+                    case 0:
+                        SetClippingsGridView();
+                        break;
+                    case 1:
+                        SetVocabsGridView();
+                        break;
+                }
+            } finally {
+                dataGridView.ResumeLayout();
             }
         }
 

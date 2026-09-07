@@ -21,6 +21,8 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool UpdateFrequencyByWordKey(Vocab vocab);
 
+        int UpdateFrequencyByWordKey(List<Vocab> vocabs);
+
         bool Delete(string id);
 
         bool DeleteByWordKey(string wordKey);

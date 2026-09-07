@@ -456,16 +456,28 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            foreach (Clipping clipping in listClippings) {
-                var cmd = new SqliteCommand("DELETE FROM clippings WHERE key = @key", connection);
-                var key = clipping.Key;
-                if (string.IsNullOrWhiteSpace(key)) {
-                    throw new InvalidOperationException();
+            // One transaction + one reused command instead of an auto-committed DELETE
+            // per row — SQLite fsyncs on every standalone commit, which made bulk
+            // cleanup (CleanDatabase over thousands of rows) orders of magnitude
+            // slower than necessary.
+            using var transaction = connection.BeginTransaction();
+            try {
+                using var cmd = new SqliteCommand("DELETE FROM clippings WHERE key = @key", connection, transaction);
+                foreach (Clipping clipping in listClippings) {
+                    var key = clipping.Key;
+                    if (string.IsNullOrWhiteSpace(key)) {
+                        throw new InvalidOperationException();
+                    }
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@key", key);
+                    if (cmd.ExecuteNonQuery() > 0) {
+                        count++;
+                    }
                 }
-                cmd.Parameters.AddWithValue("@key", key);
-                if (cmd.ExecuteNonQuery() > 0) {
-                    count++;
-                }
+                transaction.Commit();
+            } catch {
+                transaction.Rollback();
+                throw;
             }
             return count;
         }

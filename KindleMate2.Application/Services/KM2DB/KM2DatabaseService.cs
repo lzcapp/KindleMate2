@@ -296,18 +296,24 @@ namespace KindleMate2.Application.Services.KM2DB {
                 .GroupBy(l => l.WordKey!.Trim())
                 .ToDictionary(g => g.Key, g => g.Count());
 
+            // Collect every row first, then push frequencies in ONE batched,
+            // transaction-wrapped call instead of one connection + UPDATE per vocab.
             var vocabs = vocabRepository.GetAll();
+            var updates = new List<Vocab>(vocabs.Count);
             foreach (Vocab vocab in vocabs) {
                 if (vocab.WordKey == null) {
                     continue;
                 }
                 frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
-                vocabRepository.UpdateFrequencyByWordKey(new Vocab {
+                updates.Add(new Vocab {
                     WordKey = vocab.WordKey,
                     Frequency = frequency,
                     Id = vocab.Id,
                     Word = vocab.Word,
                 });
+            }
+            if (updates.Count > 0) {
+                vocabRepository.UpdateFrequencyByWordKey(updates);
             }
             return true;
         }
@@ -322,10 +328,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 
-                var duplicatedClippings = clippings
-                    .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
-                    .Where(c => clippings.Count(x => x.Content != null && x.Content.Contains(c.Content!)) > 1)
-                    .ToList();
+                // Duplicate detection: a clipping (non-blank key + content) is "duplicated"
+                // when more than one row's content CONTAINS its content as a substring
+                // (the row itself always matches, so one exact copy or one longer
+                // container is enough to flag it). The old implementation re-scanned the
+                // whole list with a Contains() count per candidate — O(n²) string scans.
+                // Equivalent result, but: exact duplicates resolved by grouping (O(n)),
+                // containment checks run only on remaining unique contents with length
+                // pruning and early exit.
+                var duplicatedClippings = FindDuplicatedClippings(clippings);
 
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
                 
@@ -353,6 +364,72 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
         
+        /// <summary>
+        /// Equivalent to the previous O(n²) predicate
+        /// <c>clippings.Count(x =&gt; x.Content != null &amp;&amp; x.Content.Contains(c.Content)) &gt; 1</c>
+        /// but without rescanning the whole list per candidate:
+        /// 1. exact-content duplicates are found by grouping (O(n));
+        /// 2. remaining unique contents only need ONE strictly-longer container row to be
+        ///    flagged, checked over distinct contents with length pruning + early exit.
+        /// Semantics are preserved: every row with non-null content can serve as the
+        /// "other row" that makes a candidate duplicated (including rows with a blank key
+        /// that are themselves never deleted).
+        /// </summary>
+        private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings) {
+            var candidates = clippings
+                .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
+                .ToList();
+            var duplicated = new List<Clipping>();
+            if (candidates.Count == 0) {
+                return duplicated;
+            }
+
+            var rowsByContent = candidates
+                .GroupBy(c => c.Content!, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+
+            // Equality count over ALL non-null-content rows (not just candidates).
+            var poolCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (Clipping c in clippings) {
+                if (c.Content == null) continue;
+                poolCounts.TryGetValue(c.Content, out var count);
+                poolCounts[c.Content] = count + 1;
+            }
+
+            var remaining = new List<KeyValuePair<string, List<Clipping>>>();
+            foreach (var group in rowsByContent) {
+                if (poolCounts.TryGetValue(group.Key, out var equalCount) && equalCount > 1) {
+                    duplicated.AddRange(group.Value);
+                } else {
+                    remaining.Add(group);
+                }
+            }
+            if (remaining.Count == 0) {
+                return duplicated;
+            }
+
+            // Distinct container contents, longest first — iteration stops as soon as a
+            // container is no longer longer than the target.
+            var containers = poolCounts.Keys
+                .OrderByDescending(s => s.Length)
+                .ToArray();
+
+            // Shortest targets first so shallow hits are found quickly.
+            remaining.Sort((a, b) => a.Key.Length.CompareTo(b.Key.Length));
+            foreach (var (content, rows) in remaining) {
+                foreach (var container in containers) {
+                    if (container.Length <= content.Length) {
+                        break; // descending order: nothing after this can contain the target
+                    }
+                    if (container.IndexOf(content, StringComparison.Ordinal) >= 0) {
+                        duplicated.AddRange(rows); // one containing row ⇒ count > 1
+                        break;
+                    }
+                }
+            }
+            return duplicated;
+        }
+
         public bool IsDatabaseEmpty() {
             try {
                 var result = 0;
