@@ -273,7 +273,7 @@ public class DeviceManager : IDeviceManager {
     /// FriendlyName / Model are available before Connect().
     /// </summary>
     private static MediaDevice? FindKindleDevice() {
-        return MediaDevice.GetDevices()
+        return MediaDeviceManager.Instance.GetDevices()?
             .FirstOrDefault(d =>
                 d.FriendlyName.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) ||
                 d.Model.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase));
