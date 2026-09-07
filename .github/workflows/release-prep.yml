@@ -40,9 +40,20 @@ jobs:
           if ($v -eq '') {
             $bj = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([System.DateTime]::UtcNow, 'China Standard Time')
             $v = $bj.ToString('yyyy.MM.dd')
-          }
-          if ($v -notmatch '^\d{4}\.\d{2}\.\d{2}$') {
-            throw "版本号格式错误: '$v'(应为 2026.09.07 式,四位年 + 两位月 + 两位日)"
+          } else {
+            # 容错输入:2026.9.7 → 2026.09.07(年 4 位;月/日 1–2 位,自动补零)
+            $parts = $v -split '\.'
+            if ($parts.Count -ne 3 -or $parts[0] -notmatch '^\d{4}$' -or
+                $parts[1] -notmatch '^\d{1,2}$' -or $parts[2] -notmatch '^\d{1,2}$') {
+              throw "版本号格式错误: '$v'(应为 2026.09.07 或 2026.9.7 式)"
+            }
+            $m = [int]$parts[1]
+            $d = [int]$parts[2]
+            if ($m -lt 1 -or $m -gt 12 -or $d -lt 1 -or $d -gt 31) {
+              throw "非法的年月日: '$v'"
+            }
+            $v = '{0}.{1:D2}.{2:D2}' -f $parts[0], $m, $d
+            Write-Output "规范化版本号: $v"
           }
           $remote = git ls-remote --tags origin "refs/tags/$v"
           if ($LASTEXITCODE -ne 0) { throw 'git ls-remote 失败,请重试' }
