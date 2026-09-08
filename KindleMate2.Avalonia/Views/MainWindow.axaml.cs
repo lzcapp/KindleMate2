@@ -19,6 +19,12 @@ public partial class MainWindow : Window {
         }
     }
 
+    private void OnDomainTabChanged(object? sender, SelectionChangedEventArgs e) {
+        if (DataContext is MainWindowViewModel vm && sender is TabControl tabs) {
+            vm.DomainIndex = tabs.SelectedIndex;
+        }
+    }
+
     private async void OnOpenDatabaseClick(object? sender, RoutedEventArgs e) {
         if (DataContext is not MainWindowViewModel vm) return;
 

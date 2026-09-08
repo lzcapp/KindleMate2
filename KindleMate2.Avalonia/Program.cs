@@ -25,16 +25,24 @@ internal static class Program {
             var vm = new MainWindowViewModel();
             vm.OpenDatabaseAsync(dbPath).GetAwaiter().GetResult();
 
-            var firstBook = vm.Books.Count > 0 ? vm.Books[0].Name : "(空)";
-            report.AppendLine($"OK books={vm.Books.Count} first={firstBook}");
+            // 域 0:标注 → 左列表书籍,右表全量标注
+            vm.DomainIndex = 0;
+            var bookCount = vm.LeftItems.Count;
+            var clipTotal = vm.Clippings.Count;
+            report.AppendLine($"books={bookCount} clips={clipTotal}");
             report.AppendLine($"status: {vm.StatusText}");
 
-            // 选中第一本书,验证 Clippings 加载
-            if (vm.Books.Count > 0) {
-                vm.SelectedBook = vm.Books[0];
-                System.Threading.Thread.Sleep(500); // 等 fire-and-forget 的异步加载完成
-                report.AppendLine($"clippings(firstBook)={vm.Clippings.Count} status: {vm.StatusText}");
+            if (bookCount > 0) {
+                vm.SelectedItem = vm.LeftItems[0];
+                var firstBook = ((Models.BookItem)vm.LeftItems[0]).Name;
+                report.AppendLine($"select book '{firstBook}' -> clips={vm.Clippings.Count}");
             }
+
+            // 域 1:生词 → 左列表词,右表查询记录
+            vm.DomainIndex = 1;
+            var wordCount = vm.LeftItems.Count;
+            var lookupTotal = vm.Lookups.Count;
+            report.AppendLine($"words={wordCount} lookups={lookupTotal}");
 
             if (outFile != null) {
                 File.WriteAllText(outFile, report.ToString());

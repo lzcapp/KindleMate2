@@ -3,58 +3,78 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
+        xmlns:models="using:KindleMate2.Avalonia.Models"
         xmlns:dg="using:Avalonia.Controls"
         x:Class="KindleMate2.Avalonia.Views.MainWindow"
-        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
         x:DataType="vm:MainWindowViewModel"
-        Title="KindleMate2 · Avalonia Shell"
-        Width="1100" Height="700"
+        Title="KindleMate2 · Avalonia"
+        Width="1200" Height="760"
         WindowStartupLocation="CenterScreen"
         Opened="OnOpened">
 
   <DockPanel>
 
-    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto" Margin="10,10,10,6">
-      <TextBox Grid.Column="0" Text="{Binding DbPath, Mode=TwoWay}"
-               PlaceholderText="数据库路径(KM2.db),也可拖入或作为启动参数"/>
-      <Button Grid.Column="1" Content="打开数据库…" Margin="8,0,0,0"
-              IsEnabled="{Binding !IsBusy}" Click="OnOpenDatabaseClick"/>
-      <ProgressBar Grid.Column="2" Width="120" Margin="8,0,0,0" IsIndeterminate="True"
-                   IsVisible="{Binding IsBusy}" VerticalAlignment="Center"/>
+    <Grid DockPanel.Dock="Top" RowDefinitions="Auto,Auto" Margin="10,10,10,4">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
+        <TextBox Grid.Column="0" Text="{Binding DbPath, Mode=TwoWay}"
+                 PlaceholderText="数据库路径(KM2.db),也可作为启动参数传入"/>
+        <Button Grid.Column="1" Content="打开数据库…" Margin="8,0,0,0"
+                IsEnabled="{Binding !IsBusy}" Click="OnOpenDatabaseClick"/>
+        <ProgressBar Grid.Column="2" Width="140" Margin="8,0,0,0" IsIndeterminate="True"
+                     IsVisible="{Binding IsBusy}" VerticalAlignment="Center"/>
+      </Grid>
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
+        <TextBlock Grid.Column="0" Text="搜索:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+        <TextBox Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}"
+                 PlaceholderText="在当前页过滤(书名/作者/内容 或 词/例句)"/>
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" VerticalAlignment="Center"
+                   Margin="10,0,0,0" TextTrimming="CharacterEllipsis"/>
+      </Grid>
     </Grid>
 
-    <Grid DockPanel.Dock="Bottom" Margin="10,4,10,8">
-      <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis"
-                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-    </Grid>
-
-    <Grid ColumnDefinitions="280,*" Margin="10,2,10,0">
+    <Grid Margin="10,2,10,8" ColumnDefinitions="290,*">
 
       <DockPanel Grid.Column="0" Margin="0,0,8,0">
-        <TextBlock DockPanel.Dock="Top" Text="书籍" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <ListBox ItemsSource="{Binding Books}" SelectedItem="{Binding SelectedBook}">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding LeftTitle}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <ListBox ItemsSource="{Binding LeftItems}" SelectedItem="{Binding SelectedItem}">
           <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:BookItem">
+            <DataTemplate x:DataType="x:Object">
               <TextBlock Text="{Binding}"/>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
       </DockPanel>
 
-      <dg:DataGrid Grid.Column="1" ItemsSource="{Binding Clippings}"
-                   AutoGenerateColumns="False" IsReadOnly="True"
-                   GridLinesVisibility="Horizontal" HeadersVisibility="Column"
-                   Margin="0,0,0,2">
-        <dg:DataGrid.Columns>
-          <dg:DataGridTextColumn Header="书" Binding="{Binding BookName}" Width="180"/>
-          <dg:DataGridTextColumn Header="作者" Binding="{Binding AuthorName}" Width="100"/>
-          <dg:DataGridTextColumn Header="页码" Binding="{Binding PageNumber}" Width="56"/>
-          <dg:DataGridTextColumn Header="位置" Binding="{Binding ClippingTypeLocation}" Width="110"/>
-          <dg:DataGridTextColumn Header="时间" Binding="{Binding ClippingDate}" Width="150"/>
-          <dg:DataGridTextColumn Header="类型" Binding="{Binding BriefType}" Width="64"/>
-          <dg:DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
-        </dg:DataGrid.Columns>
-      </dg:DataGrid>
+      <TabControl Grid.Column="1" SelectionChanged="OnDomainTabChanged">
+        <TabItem Header="标注">
+          <dg:DataGrid ItemsSource="{Binding Clippings}"
+                       AutoGenerateColumns="False" IsReadOnly="True"
+                       GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+            <dg:DataGrid.Columns>
+              <dg:DataGridTextColumn Header="书" Binding="{Binding BookName}" Width="180"/>
+              <dg:DataGridTextColumn Header="作者" Binding="{Binding AuthorName}" Width="90"/>
+              <dg:DataGridTextColumn Header="页码" Binding="{Binding PageNumber}" Width="56"/>
+              <dg:DataGridTextColumn Header="位置" Binding="{Binding Location}" Width="100"/>
+              <dg:DataGridTextColumn Header="类型" Binding="{Binding TypeText}" Width="56"/>
+              <dg:DataGridTextColumn Header="时间" Binding="{Binding ClippingDate}" Width="150"/>
+              <dg:DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+            </dg:DataGrid.Columns>
+          </dg:DataGrid>
+        </TabItem>
+        <TabItem Header="生词">
+          <dg:DataGrid ItemsSource="{Binding Lookups}"
+                       AutoGenerateColumns="False" IsReadOnly="True"
+                       GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+            <dg:DataGrid.Columns>
+              <dg:DataGridTextColumn Header="词" Binding="{Binding Word}" Width="140"/>
+              <dg:DataGridTextColumn Header="例句/出处" Binding="{Binding Usage}" Width="*"/>
+              <dg:DataGridTextColumn Header="书名" Binding="{Binding Title}" Width="160"/>
+              <dg:DataGridTextColumn Header="时间" Binding="{Binding Timestamp}" Width="150"/>
+            </dg:DataGrid.Columns>
+          </dg:DataGrid>
+        </TabItem>
+      </TabControl>
 
     </Grid>
 
