@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DarkModeForms\src\DarkModeForms\DarkModeForms.csproj" />
     <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
   </ItemGroup>
 
