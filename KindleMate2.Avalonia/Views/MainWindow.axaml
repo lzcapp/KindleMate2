@@ -6,77 +6,128 @@
         xmlns:models="using:KindleMate2.Avalonia.Models"
         xmlns:dg="using:Avalonia.Controls"
         x:Class="KindleMate2.Avalonia.Views.MainWindow"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
         x:DataType="vm:MainWindowViewModel"
-        Title="KindleMate2 · Avalonia"
-        Width="1200" Height="760"
+        Title="Kindle Mate 2"
+        Width="1280" Height="800" MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Opened="OnOpened">
 
   <DockPanel>
 
-    <Grid DockPanel.Dock="Top" RowDefinitions="Auto,Auto" Margin="10,10,10,4">
-      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
-        <TextBox Grid.Column="0" Text="{Binding DbPath, Mode=TwoWay}"
-                 PlaceholderText="数据库路径(KM2.db),也可作为启动参数传入"/>
-        <Button Grid.Column="1" Content="打开数据库…" Margin="8,0,0,0"
-                IsEnabled="{Binding !IsBusy}" Click="OnOpenDatabaseClick"/>
-        <ProgressBar Grid.Column="2" Width="140" Margin="8,0,0,0" IsIndeterminate="True"
-                     IsVisible="{Binding IsBusy}" VerticalAlignment="Center"/>
+    <!-- 菜单栏(原 UI:文件/管理/帮助) -->
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="文件(_F)">
+        <MenuItem Header="刷新" Click="OnMenuRefresh"/>
+        <MenuItem Header="统计" Click="OnMenuStatistics"/>
+        <Separator/>
+        <MenuItem Header="重启" Click="OnMenuRestart"/>
+        <MenuItem Header="退出" Click="OnMenuExit"/>
+      </MenuItem>
+      <MenuItem Header="管理(_M)">
+        <MenuItem Header="导入Kindle标注" Click="OnMenuImportClippings"/>
+        <MenuItem Header="导入Kindle生词本" Click="OnMenuImportVocab"/>
+        <MenuItem Header="导入Kindle Mate数据库" Click="OnMenuImportKmDatabase"/>
+        <MenuItem Header="导入KMate数据库" Click="OnMenuImportKmateDatabase"/>
+        <MenuItem Header="从Kindle设备导入" Click="OnMenuImportFromDevice"/>
+        <MenuItem Header="同步到Kindle设备" Click="OnMenuSyncToDevice"/>
+        <Separator/>
+        <MenuItem Header="导出为Markdown" Click="OnMenuExportMarkdown"/>
+        <MenuItem Header="清理数据库" Click="OnMenuCleanDb"/>
+        <MenuItem Header="重建数据库" Click="OnMenuRebuildDb"/>
+        <MenuItem Header="备份" Click="OnMenuBackup"/>
+        <MenuItem Header="清空数据" Click="OnMenuDeleteAll"/>
+      </MenuItem>
+      <MenuItem Header="帮助(_H)">
+        <MenuItem Header="关于" Click="OnMenuAbout"/>
+        <MenuItem Header="GitHub仓库" Click="OnMenuGithub"/>
+        <MenuItem Header="语言">
+          <MenuItem Header="简体中文"/>
+          <MenuItem Header="繁体中文"/>
+          <MenuItem Header="英文"/>
+          <MenuItem Header="自动"/>
+        </MenuItem>
+      </MenuItem>
+    </Menu>
+
+    <!-- 工具栏(原 UI:左 全部▼+搜索框+🔍 | 右 🌐设备 + ☀主题) -->
+    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1" Padding="8,6">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="6" VerticalAlignment="Center">
+        <ComboBox Grid.Column="0" Width="90"
+                  ItemsSource="{Binding SearchTypes}"
+                  SelectedItem="{Binding SearchType}"/>
+        <TextBox Grid.Column="1" Width="220" Text="{Binding SearchText, Mode=TwoWay}"
+                 PlaceholderText="搜索..."/>
+        <Button Grid.Column="2" HorizontalAlignment="Left" Content="🔍" Width="32" Click="OnSearchClick"/>
+        <TextBlock Grid.Column="3" Text="{Binding DeviceStatus}" VerticalAlignment="Center"
+                   Margin="20,0,0,0" Opacity="0.75"/>
+        <Button Grid.Column="4" Content="☀" Width="32" Click="OnToggleTheme"
+                ToolTip.Tip="切换深/浅主题" Margin="6,0,0,0"/>
       </Grid>
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
-        <TextBlock Grid.Column="0" Text="搜索:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-        <TextBox Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}"
-                 PlaceholderText="在当前页过滤(书名/作者/内容 或 词/例句)"/>
-        <TextBlock Grid.Column="2" Text="{Binding StatusText}" VerticalAlignment="Center"
-                   Margin="10,0,0,0" TextTrimming="CharacterEllipsis"/>
-      </Grid>
-    </Grid>
+    </Border>
 
-    <Grid Margin="10,2,10,8" ColumnDefinitions="290,*">
+    <!-- 状态栏(原 UI:底部 1 行) -->
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0" Padding="8,5" Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <TextBlock Text="{Binding StatusBarText}" FontSize="12" Opacity="0.75"
+                 TextTrimming="CharacterEllipsis"/>
+    </Border>
 
-      <DockPanel Grid.Column="0" Margin="0,0,8,0">
-        <TextBlock DockPanel.Dock="Top" Text="{Binding LeftTitle}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <ListBox ItemsSource="{Binding LeftItems}" SelectedItem="{Binding SelectedItem}">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="x:Object">
-              <TextBlock Text="{Binding}"/>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </DockPanel>
-
-      <TabControl Grid.Column="1" SelectionChanged="OnDomainTabChanged">
-        <TabItem Header="标注">
-          <dg:DataGrid ItemsSource="{Binding Clippings}"
+    <!-- 主区:底部 tab(标注/生词本)+ 内部左树右表 -->
+    <TabControl DockPanel.Dock="Top" SelectionChanged="OnDomainTabChanged" Padding="6">
+      <TabItem Header="标注">
+        <Grid ColumnDefinitions="280,*" ColumnSpacing="8">
+          <ListBox Grid.Column="0" ItemsSource="{Binding LeftItems}" SelectedItem="{Binding SelectedItem}"
+                   SelectionMode="Single" Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="x:Object">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <CheckBox/>
+                  <TextBlock Text="{Binding}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <dg:DataGrid Grid.Column="1" ItemsSource="{Binding Clippings}"
                        AutoGenerateColumns="False" IsReadOnly="True"
-                       GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                       GridLinesVisibility="None" HeadersVisibility="Column"
+                       Background="Transparent">
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="书" Binding="{Binding BookName}" Width="180"/>
-              <dg:DataGridTextColumn Header="作者" Binding="{Binding AuthorName}" Width="90"/>
-              <dg:DataGridTextColumn Header="页码" Binding="{Binding PageNumber}" Width="56"/>
-              <dg:DataGridTextColumn Header="位置" Binding="{Binding Location}" Width="100"/>
-              <dg:DataGridTextColumn Header="类型" Binding="{Binding TypeText}" Width="56"/>
-              <dg:DataGridTextColumn Header="时间" Binding="{Binding ClippingDate}" Width="150"/>
               <dg:DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+              <dg:DataGridTextColumn Header="书籍" Binding="{Binding BookName}" Width="160"/>
+              <dg:DataGridTextColumn Header="作者" Binding="{Binding AuthorName}" Width="80"/>
+              <dg:DataGridTextColumn Header="页数" Binding="{Binding PageNumber}" Width="60"/>
+              <dg:DataGridTextColumn Header="类型" Binding="{Binding TypeText}" Width="60"/>
+              <dg:DataGridTextColumn Header="时间" Binding="{Binding ClippingDate}" Width="146"/>
             </dg:DataGrid.Columns>
           </dg:DataGrid>
-        </TabItem>
-        <TabItem Header="生词">
-          <dg:DataGrid ItemsSource="{Binding Lookups}"
+        </Grid>
+      </TabItem>
+      <TabItem Header="生词本">
+        <Grid ColumnDefinitions="280,*" ColumnSpacing="8">
+          <ListBox Grid.Column="0" ItemsSource="{Binding LeftItems}" SelectedItem="{Binding SelectedItem}"
+                   SelectionMode="Single" Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="x:Object">
+                <TextBlock Text="{Binding}" FontSize="13" Padding="4,0"/>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <dg:DataGrid Grid.Column="1" ItemsSource="{Binding Lookups}"
                        AutoGenerateColumns="False" IsReadOnly="True"
-                       GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                       GridLinesVisibility="None" HeadersVisibility="Column"
+                       Background="Transparent">
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="词" Binding="{Binding Word}" Width="140"/>
-              <dg:DataGridTextColumn Header="例句/出处" Binding="{Binding Usage}" Width="*"/>
+              <dg:DataGridTextColumn Header="词" Binding="{Binding Word}" Width="160"/>
+              <dg:DataGridTextColumn Header="例句 / 出处" Binding="{Binding Usage}" Width="*"/>
               <dg:DataGridTextColumn Header="书名" Binding="{Binding Title}" Width="160"/>
-              <dg:DataGridTextColumn Header="时间" Binding="{Binding Timestamp}" Width="150"/>
+              <dg:DataGridTextColumn Header="时间" Binding="{Binding Timestamp}" Width="146"/>
             </dg:DataGrid.Columns>
           </dg:DataGrid>
-        </TabItem>
-      </TabControl>
-
-    </Grid>
+        </Grid>
+      </TabItem>
+    </TabControl>
 
   </DockPanel>
 </Window>
