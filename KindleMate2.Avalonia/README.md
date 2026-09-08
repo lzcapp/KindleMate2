@@ -3,6 +3,11 @@
 Avalonia UI 迁移工程:把 WinForms 主程序 UI 切换到 Avalonia,数据/业务层
 (Domain / Application / Infrastructure)原样复用。
 
+## 布局规范(2026-09-08 定)
+**所有界面一律按原 WinForms UI 的布局复刻**——以 FrmMain.Designer.cs 等 Designer
+文件为布局权威源(控件分区/停靠/层级照搬),不做自创布局;视觉只做等价的现代
+渲染,不改信息架构。原版截图仅作观感校准。
+
 ## 迁移状态(2026-09-08)
 - **阶段 1(主界面骨架)✅**:顶部数据库行 + 搜索行;左侧书/词列表(随 Tab 切换);
   右侧「标注 | 生词」双 Tab DataGrid;内存过滤(选书/选词/搜索词);状态栏计数;
