@@ -1,0 +1,9 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KindleMate2.Avalonia.App"
+             RequestedThemeVariant="Default">
+  <Application.Styles>
+    <!-- RequestedThemeVariant=Default 时 Fluent 自动跟随系统深浅色 -->
+    <FluentTheme />
+  </Application.Styles>
+</Application>
