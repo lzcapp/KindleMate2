@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -148,39 +150,74 @@ public partial class MainWindow : Window {
     private async void OnMenuImportClippings(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var path = await PickFileAsync(Strings.Ui_Pick_Clippings, Strings.Ui_FileType_Clippings, new[] { "*.txt" });
-        if (path != null) await vm.ImportKindleClippingsAsync(path);
+        if (path == null) return;   // 原版:取消选择即静默返回
+        await ShowResultAsync(await vm.ImportKindleClippingsAsync(path));
     }
 
     private async void OnMenuImportVocab(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var path = await PickFileAsync(Strings.Ui_Pick_Words, Strings.Ui_FileType_Words, new[] { "*.db" });
-        if (path != null) await vm.ImportKindleWordsAsync(path);
+        if (path == null) return;
+        await ShowResultAsync(await vm.ImportKindleWordsAsync(path));
     }
 
     private async void OnMenuImportKmDatabase(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var path = await PickFileAsync(Strings.Ui_Pick_KmDatabase, Strings.Ui_FileType_KmDatabase, new[] { "*.dat", "*.db" });
-        if (path != null) await vm.ImportKmDatabaseAsync(path);
+        if (path == null) return;
+        await ShowResultAsync(await vm.ImportKmDatabaseAsync(path));
     }
 
     private async void OnMenuImportKmateDatabase(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var path = await PickFileAsync(Strings.Ui_Pick_KmateDatabase, Strings.Ui_FileType_KmateDatabase, new[] { "*.dat", "*.db" });
-        if (path != null) await vm.ImportKmateDatabaseAsync(path);
+        if (path == null) return;
+        await ShowResultAsync(await vm.ImportKmateDatabaseAsync(path));
+    }
+
+    // —— 通用操作反馈(严格按原版语义弹框) ——
+
+    /// <summary>
+    /// 把 VM 返回的 <see cref="MainWindowViewModel.OperationResult"/> 呈现为对话框。
+    /// 静默分支不弹任何窗 —— 原版有大量此类分支(导出失败、用户取消),这是既定行为,不要"补全"。
+    /// </summary>
+    private async Task ShowResultAsync(MainWindowViewModel.OperationResult result) {
+        if (result.Kind == MainWindowViewModel.FeedbackKind.Silent) return;
+        if (result.Title.Length == 0 && result.Message.Length == 0) return;
+
+        if (result.Kind == MainWindowViewModel.FeedbackKind.OpenFolderPrompt) {
+            // 原版:YesNo 追问「需要打开文件夹吗?」,选「是」后打开资源管理器
+            var open = await AppDialog.ConfirmAsync(this, result.Title, result.Message, Strings.Ui_Action_Ok);
+            if (open) OpenInExplorer(result.FolderToOpen);
+            return;
+        }
+
+        await AppDialog.AlertAsync(this, result.Title, result.Message);
+    }
+
+    /// <summary>打开指定目录(对应原版 Process.Start(AppConstants.ExplorerFileName, path))。</summary>
+    private void OpenInExplorer(string path) {
+        try {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            Directory.CreateDirectory(path);
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        } catch (Exception ex) {
+            Console.WriteLine($"[OpenInExplorer] {ex.Message}");
+        }
     }
 
     // —— 导出 ——
 
     private async void OnMenuExportMarkdown(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        if (vm.IsWordDomain) await vm.ExportVocabsMarkdownAsync();
-        else await vm.ExportClippingsMarkdownAsync();
+        // 原版 MenuExportMd_Click:一次导出「标注 + 生词本」两份,任一失败即静默无提示
+        await ShowResultAsync(await vm.ExportAllMarkdownAsync());
     }
 
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {
-        if (Vm is { } vm) await vm.BackupDatabaseAsync();
+        if (Vm is { } vm) await ShowResultAsync(await vm.BackupDatabaseAsync());
     }
 
     private async void OnMenuCleanDb(object? sender, RoutedEventArgs e) {
@@ -284,7 +321,7 @@ public partial class MainWindow : Window {
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {
-        if (Vm is { } vm) await vm.ExportCurrentBookMarkdownAsync();
+        if (Vm is { } vm) await ShowResultAsync(await vm.ExportCurrentBookMarkdownAsync());
     }
 
     private async void OnRefreshCurrent(object? sender, RoutedEventArgs e) {

@@ -197,11 +197,15 @@ internal static class Program {
     private static int RunOperations(string dbPath, string clippingsPath, string vocabDbPath, string outFile) {
         var report = new System.Text.StringBuilder();
         var work = Path.Combine(Path.GetTempPath(), "km2ops");
+        var originalCwd = Environment.CurrentDirectory;
         try {
             if (Directory.Exists(work)) Directory.Delete(work, true);
             Directory.CreateDirectory(work);
-            var dbCopy = Path.Combine(work, "KM2_ops.dat");
+            // 与原版一致的固定路径模型:库文件名必须是 KM2.dat,且当前目录即"程序目录"。
+            // 这样备份 / 导出 / 导入目录全部落在临时副本上 —— 既不碰真实数据,走的又是产品真实路径。
+            var dbCopy = Path.Combine(work, AppConstants.DatabaseFileName);
             File.Copy(dbPath, dbCopy, true);
+            Environment.CurrentDirectory = work;
 
             var vm = new MainWindowViewModel();
             vm.OpenDatabaseAsync(dbCopy).GetAwaiter().GetResult();
@@ -224,17 +228,15 @@ internal static class Program {
                 report.AppendLine($"  -> lookups={vm.LookupTable.Count}");
             }
 
-            // 3. 导出 Markdown
-            vm.ExportClippingsMarkdownAsync().GetAwaiter().GetResult();
-            report.AppendLine($"export clippings: {vm.StatusText}");
-            vm.ExportVocabsMarkdownAsync().GetAwaiter().GetResult();
-            report.AppendLine($"export vocabs: {vm.StatusText}");
+            // 3. 导出 Markdown(原版语义:任一失败即静默无提示;成功时正文为「导出成功!需要打开文件夹吗?」)
+            var exportResult = vm.ExportAllMarkdownAsync().GetAwaiter().GetResult();
+            report.AppendLine($"export all: ok={exportResult.Ok} kind={exportResult.Kind} msg={exportResult.Message}");
             var exportDir = Path.Combine(work, "Exports");
             report.AppendLine($"  -> exports={Directory.GetFiles(exportDir, "*.md").Length} 个 md 文件");
 
-            // 4. 备份
-            vm.BackupDatabaseAsync().GetAwaiter().GetResult();
-            report.AppendLine($"backup: {vm.StatusText}");
+            // 4. 备份(原版语义:成功弹「备份完成!需要打开文件夹吗?」;无数据弹「没有数据可备份」)
+            var backupResult = vm.BackupDatabaseAsync().GetAwaiter().GetResult();
+            report.AppendLine($"backup: ok={backupResult.Ok} kind={backupResult.Kind} msg={backupResult.Message}");
 
             // 5. 重命名第一本书
             vm.SelectedNav = vm.NavItems[1];
@@ -271,9 +273,11 @@ internal static class Program {
                 report.AppendLine($"reimport vocab: {vm.StatusText} -> lookups={vm.LookupTable.Count}");
             }
 
+            Environment.CurrentDirectory = originalCwd;
             File.WriteAllText(outFile, report.ToString());
             return 0;
         } catch (Exception ex) {
+            Environment.CurrentDirectory = originalCwd;
             File.WriteAllText(outFile, report.AppendLine($"FAIL: {ex}").ToString());
             return 1;
         }

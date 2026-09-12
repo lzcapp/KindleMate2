@@ -407,7 +407,70 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         OnPropertyChanged(nameof(NavSectionCount));
     }
 
-    /// <summary>统一的写操作执行壳:繁忙标记 / 异常兜底 / 状态栏文案 / 可选重载。</summary>
+    /// <summary>操作反馈类型 —— 决定视图层弹哪种对话框(严格对齐原版)。</summary>
+    public enum FeedbackKind {
+        /// <summary>不弹窗。原版有大量静默分支(如导出失败、用户取消),不得擅自补提示。</summary>
+        Silent,
+
+        /// <summary>单按钮提示框,对应原版 <c>MessageBox(..., OK)</c>。</summary>
+        Info,
+
+        /// <summary>是/否追问,选「是」后打开资源管理器 —— 对应原版
+        /// <c>Export_Successful / Backup_Successful</c> 后拼接 <c>Open_Folder</c> 的 YesNo 框。</summary>
+        OpenFolderPrompt
+    }
+
+    /// <summary>
+    /// 一次写操作的结果。语义对齐原版 <c>RunBackgroundTask</c>:
+    /// 操作返回的字符串即成功提示正文;返回空串视为失败;抛异常视为失败(详情为异常消息)。
+    /// </summary>
+    public readonly record struct OperationResult(bool Ok, string Title, string Message,
+        FeedbackKind Kind = FeedbackKind.Info, string FolderToOpen = "") {
+        /// <summary>原版的静默分支:什么都不弹。</summary>
+        public static OperationResult Silent => new(false, string.Empty, string.Empty, FeedbackKind.Silent);
+    }
+
+    /// <summary>
+    /// 统一的写操作执行壳。**不弹窗** —— 按原版 <c>RunBackgroundTask</c> 的语义把结果交回视图层:
+    /// <list type="bullet">
+    ///   <item>返回非空串 → 成功,该串就是成功框正文(标题 = <paramref name="successTitle"/>);</item>
+    ///   <item>返回空串 → 失败,弹一个「只有标题」的错误框(标题=正文=<paramref name="failureTitle"/>);</item>
+    ///   <item>抛异常 → 失败,正文 = <c>failureTitle + 换行 + 异常消息</c>。</item>
+    /// </list>
+    /// 注意:成功与否**靠返回串是否为空判定**,不是靠 bool —— 这是原版的既定契约,不要"改进"。
+    /// </summary>
+    private async Task<OperationResult> RunOperationAsync(Func<string> operation, bool reload,
+        string successTitle, string failureTitle) {
+        if (_session == null) {
+            return new OperationResult(false, failureTitle, failureTitle);
+        }
+        if (IsBusy) return OperationResult.Silent;
+
+        var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
+        IsBusy = true;
+        try {
+            var result = await Task.Run(operation);
+            if (reload) {
+                await Task.Run(ReloadFromSession);
+                RebuildNav();
+                RestoreSelection(previous);
+            }
+            return string.IsNullOrWhiteSpace(result)
+                ? new OperationResult(false, failureTitle, failureTitle)
+                : new OperationResult(true, successTitle, result);
+        } catch (Exception ex) {
+            return new OperationResult(false, failureTitle,
+                $"{failureTitle}{Environment.NewLine}{ex.InnerException?.Message ?? ex.Message}");
+        } finally {
+            IsBusy = false;
+            NotifyCounts();
+        }
+    }
+
+    /// <summary>
+    /// 【过渡】尚未迁移到 OperationResult 契约的操作(维护类 / 删除 / 重命名 / 同步)仍走这条路径,
+    /// 结果暂时只写状态栏。迁移完成后删除该重载 —— 保留它只是为了让本轮改动保持可编译、可审查。
+    /// </summary>
     private async Task RunOperationAsync(string name, Func<string> operation, bool reload) {
         if (_session == null) {
             StatusText = Strings.Ui_Status_OpenDatabaseFirst;
@@ -424,9 +487,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 RebuildNav();
                 RestoreSelection(previous);
             }
-            StatusText = string.IsNullOrWhiteSpace(result)
-                ? $"{name}:{Strings.Ui_Result_NoChange}"
-                : $"{name}:{result}";
+            StatusText = string.IsNullOrWhiteSpace(result) ? name : $"{name}:{result}";
         } catch (Exception ex) {
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Failed, name, ex.Message);
         } finally {
@@ -436,55 +497,92 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     // —— 导入 ——
+    // 原版四路导入统一走 RunBackgroundTask(..., Strings.Successful, Strings.Import_Failed),
+    // 成功正文即 ImportManager 的返回串。
 
-    public Task ImportKindleClippingsAsync(string path) =>
-        RunOperationAsync(Strings.Ui_Menu_ImportClippings, () => _session!.ImportManager.ImportKindleClippings(path), true);
+    public Task<OperationResult> ImportKindleClippingsAsync(string path) =>
+        RunOperationAsync(() => _session!.ImportManager.ImportKindleClippings(path), true,
+            Strings.Successful, Strings.Import_Failed);
 
-    public Task ImportKindleWordsAsync(string path) =>
-        RunOperationAsync(Strings.Ui_Menu_ImportWords, () => _session!.ImportManager.ImportKindleWords(path), true);
+    public Task<OperationResult> ImportKindleWordsAsync(string path) =>
+        RunOperationAsync(() => _session!.ImportManager.ImportKindleWords(path), true,
+            Strings.Successful, Strings.Import_Failed);
 
-    public Task ImportKmDatabaseAsync(string path) =>
-        RunOperationAsync(Strings.Ui_Menu_ImportKmDatabase, () => _session!.ImportManager.ImportKmDatabase(path), true);
+    public Task<OperationResult> ImportKmDatabaseAsync(string path) =>
+        RunOperationAsync(() => _session!.ImportManager.ImportKmDatabase(path), true,
+            Strings.Successful, Strings.Import_Failed);
 
-    public Task ImportKmateDatabaseAsync(string path) =>
-        RunOperationAsync(Strings.Ui_Menu_ImportKmateDatabase, () => _session!.ImportManager.ImportKmateDatabase(path), true);
+    public Task<OperationResult> ImportKmateDatabaseAsync(string path) =>
+        RunOperationAsync(() => _session!.ImportManager.ImportKmateDatabase(path), true,
+            Strings.Successful, Strings.Import_Failed);
 
     // —— 导出 ——
+    // 原版 MenuExportMd_Click:任一导出返回 false 就 **静默 return、不弹任何窗**;
+    // 两者都成功才弹「导出成功! 需要打开文件夹吗?」,选「是」后打开 Exports 目录。
 
-    public Task ExportClippingsMarkdownAsync() =>
-        RunOperationAsync(Strings.Ui_Op_ExportClippings,
-            () => _session!.ExportManager.ExportClippingsToMarkdown()
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
-                : Strings.Ui_Result_NothingToExport, false);
+    public Task<OperationResult> ExportAllMarkdownAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var exportDir = session.ExportDirectory;
+        return Task.Run(() => {
+            var clippingsOk = session.ExportManager.ExportClippingsToMarkdown();
+            var vocabsOk = session.ExportManager.ExportVocabsToMarkdown();
+            if (!clippingsOk || !vocabsOk) return OperationResult.Silent;   // 原版静默分支
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
+    }
 
-    public Task ExportVocabsMarkdownAsync() =>
-        RunOperationAsync(Strings.Ui_Op_ExportWords,
-            () => _session!.ExportManager.ExportVocabsToMarkdown()
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
-                : Strings.Ui_Result_NothingToExport, false);
-
-    /// <summary>导出当前选中书籍(或全部)的标注。</summary>
-    public Task ExportCurrentBookMarkdownAsync() {
+    /// <summary>
+    /// 导出当前选中书籍(或全部)的标注 / 生词本 —— 对应原版 <c>MenuBooksExport_Click</c>,
+    /// 同样失败静默;未选中具体项时原版直接 return,故这里也返回静默。
+    /// </summary>
+    public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
         var book = _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
-        var label = book.Length > 0
-            ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Op_ExportBook, book)
-            : Strings.Ui_Op_ExportAllClippings;
-        return RunOperationAsync(label,
-            () => _session!.ExportManager.ExportClippingsToMarkdown(book)
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
-                : Strings.Ui_Result_NothingToExport, false);
+        var exportDir = session.ExportDirectory;
+        return Task.Run(() => {
+            if (!session.ExportManager.ExportClippingsToMarkdown(book)) return OperationResult.Silent;
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
     }
 
     // —— 维护 ——
 
-    public Task BackupDatabaseAsync() =>
-        RunOperationAsync(Strings.Ui_Op_Backup, () => {
-            var session = _session!;
-            Directory.CreateDirectory(session.BackupDirectory);
-            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
-            File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
-            return string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_BackedUp, fileName);
-        }, false);
+    /// <summary>
+    /// 备份数据库。严格对齐原版 <c>MenuBackup_Click</c>:
+    /// 先无条件执行一次库文件备份(无提示)→ 无标注数据则提示「没有数据可备份」→
+    /// 否则 <c>BackupClippings</c>,成功弹「备份完成! 需要打开文件夹吗?」(选是打开 Backups 目录),
+    /// 失败弹 <c>Backup_Clippings_Failed</c> 错误框。
+    /// </summary>
+    public Task<OperationResult> BackupDatabaseAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        return Task.Run(() => {
+            var backupPath = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+            session.ExportManager.BackupDatabase();
+
+            if (_allClippings.Count == 0) {
+                return new OperationResult(false, Strings.Prompt, Strings.No_Data_To_Backup);
+            }
+
+            if (session.ExportManager.BackupClippings(out var exception)) {
+                return new OperationResult(true, Strings.Successful,
+                    Strings.Backup_Successful + Strings.Open_Folder,
+                    FeedbackKind.OpenFolderPrompt, backupPath);
+            }
+
+            return new OperationResult(false, Strings.Error,
+                MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception!));
+        });
+    }
 
     public Task CleanDatabaseAsync() =>
         RunOperationAsync(Strings.Ui_Menu_CleanDatabase, () => {
