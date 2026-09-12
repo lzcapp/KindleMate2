@@ -2,8 +2,294 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="KindleMate2.Avalonia.App"
              RequestedThemeVariant="Default">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <FontFamily x:Key="KmFont">Segoe UI, Microsoft YaHei UI, Microsoft YaHei, sans-serif</FontFamily>
+
+      <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="KmChromeBrush" Color="#0F0F12" />
+          <SolidColorBrush x:Key="KmCanvasBrush" Color="#131316" />
+          <SolidColorBrush x:Key="KmSurfaceBrush" Color="#1A1A1E" />
+          <SolidColorBrush x:Key="KmRaisedBrush" Color="#212126" />
+          <SolidColorBrush x:Key="KmHoverBrush" Color="#2C2C33" />
+          <SolidColorBrush x:Key="KmBorderBrush" Color="#2C2C33" />
+          <SolidColorBrush x:Key="KmBorderStrongBrush" Color="#38383F" />
+          <SolidColorBrush x:Key="KmDividerBrush" Color="#24242A" />
+          <SolidColorBrush x:Key="KmTextBrush" Color="#ECECEF" />
+          <SolidColorBrush x:Key="KmTextSecondaryBrush" Color="#9C9CA6" />
+          <SolidColorBrush x:Key="KmTextTertiaryBrush" Color="#6C6C76" />
+          <SolidColorBrush x:Key="KmAccentBrush" Color="#7B8CFF" />
+          <SolidColorBrush x:Key="KmAccentHoverBrush" Color="#8D9CFF" />
+          <SolidColorBrush x:Key="KmAccentSoftBrush" Color="#2A2C46" />
+          <SolidColorBrush x:Key="KmOnAccentBrush" Color="#0F0F12" />
+          <SolidColorBrush x:Key="KmDangerBrush" Color="#E58BB0" />
+          <SolidColorBrush x:Key="KmOkBrush" Color="#5EC8B0" />
+          <SolidColorBrush x:Key="KmChipHighlightFgBrush" Color="#8FA0FF" />
+          <SolidColorBrush x:Key="KmChipHighlightBgBrush" Color="#232847" />
+          <SolidColorBrush x:Key="KmChipNoteFgBrush" Color="#E0A458" />
+          <SolidColorBrush x:Key="KmChipNoteBgBrush" Color="#33291B" />
+          <SolidColorBrush x:Key="KmChipBookmarkFgBrush" Color="#5EC8B0" />
+          <SolidColorBrush x:Key="KmChipBookmarkBgBrush" Color="#1B2E2C" />
+          <SolidColorBrush x:Key="KmChipCutFgBrush" Color="#E58BB0" />
+          <SolidColorBrush x:Key="KmChipCutBgBrush" Color="#33222C" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="KmChromeBrush" Color="#F4F4F6" />
+          <SolidColorBrush x:Key="KmCanvasBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="KmSurfaceBrush" Color="#F7F7F9" />
+          <SolidColorBrush x:Key="KmRaisedBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="KmHoverBrush" Color="#ECECF1" />
+          <SolidColorBrush x:Key="KmBorderBrush" Color="#E4E4EA" />
+          <SolidColorBrush x:Key="KmBorderStrongBrush" Color="#D0D0D8" />
+          <SolidColorBrush x:Key="KmDividerBrush" Color="#EFEFF3" />
+          <SolidColorBrush x:Key="KmTextBrush" Color="#16161A" />
+          <SolidColorBrush x:Key="KmTextSecondaryBrush" Color="#5C5C68" />
+          <SolidColorBrush x:Key="KmTextTertiaryBrush" Color="#8A8A96" />
+          <SolidColorBrush x:Key="KmAccentBrush" Color="#4A5BE0" />
+          <SolidColorBrush x:Key="KmAccentHoverBrush" Color="#3D4ED0" />
+          <SolidColorBrush x:Key="KmAccentSoftBrush" Color="#E8EAFB" />
+          <SolidColorBrush x:Key="KmOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="KmDangerBrush" Color="#B03060" />
+          <SolidColorBrush x:Key="KmOkBrush" Color="#12756A" />
+          <SolidColorBrush x:Key="KmChipHighlightFgBrush" Color="#3B4ED8" />
+          <SolidColorBrush x:Key="KmChipHighlightBgBrush" Color="#E6E9FB" />
+          <SolidColorBrush x:Key="KmChipNoteFgBrush" Color="#8A5A10" />
+          <SolidColorBrush x:Key="KmChipNoteBgBrush" Color="#FBEFDA" />
+          <SolidColorBrush x:Key="KmChipBookmarkFgBrush" Color="#12756A" />
+          <SolidColorBrush x:Key="KmChipBookmarkBgBrush" Color="#DFF3F0" />
+          <SolidColorBrush x:Key="KmChipCutFgBrush" Color="#B03060" />
+          <SolidColorBrush x:Key="KmChipCutBgBrush" Color="#FAE7EE" />
+        </ResourceDictionary>
+
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
-    <!-- RequestedThemeVariant=Default 时 Fluent 自动跟随系统深浅色 -->
     <FluentTheme />
+
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource KmCanvasBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+      <Setter Property="FontFamily" Value="{DynamicResource KmFont}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.ts">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextSecondaryBrush}" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="TextBlock.tt">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextTertiaryBrush}" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.dot">
+      <Setter Property="Foreground" Value="{DynamicResource KmBorderStrongBrush}" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style Selector="Menu">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Menu > MenuItem">
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="Button">
+      <Setter Property="Background" Value="{DynamicResource KmRaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmBorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextSecondaryBrush}" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource KmHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmBorderStrongBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.active">
+      <Setter Property="Background" Value="{DynamicResource KmAccentSoftBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmAccentBrush}" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{DynamicResource KmAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmOnAccentBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource KmAccentHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmAccentHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmOnAccentBrush}" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource KmDangerBrush}" />
+    </Style>
+
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="{DynamicResource KmRaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmBorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="9,4" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="{DynamicResource KmRaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmBorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="9,3" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,2" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="8,5" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextSecondaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource KmHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource KmAccentSoftBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem Border.kbar">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem:selected Border.kbar">
+      <Setter Property="Background" Value="{DynamicResource KmAccentBrush}" />
+    </Style>
+
+    <Style Selector="Border.chip">
+      <Setter Property="Padding" Value="6,1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="{DynamicResource KmRaisedBrush}" />
+    </Style>
+    <Style Selector="Border.chip > TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextSecondaryBrush}" />
+    </Style>
+    <Style Selector="Border.chip.highlight">
+      <Setter Property="Background" Value="{DynamicResource KmChipHighlightBgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.highlight > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource KmChipHighlightFgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.note">
+      <Setter Property="Background" Value="{DynamicResource KmChipNoteBgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.note > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource KmChipNoteFgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.bookmark">
+      <Setter Property="Background" Value="{DynamicResource KmChipBookmarkBgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.bookmark > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource KmChipBookmarkFgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.cut">
+      <Setter Property="Background" Value="{DynamicResource KmChipCutBgBrush}" />
+    </Style>
+    <Style Selector="Border.chip.cut > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource KmChipCutFgBrush}" />
+    </Style>
+
+    <Style Selector="GridSplitter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="GridSplitter:pointerover">
+      <Setter Property="Background" Value="{DynamicResource KmAccentSoftBrush}" />
+    </Style>
+
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="GridLinesVisibility" Value="None" />
+      <Setter Property="HeadersVisibility" Value="Column" />
+      <Setter Property="RowHeight" Value="34" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+      <Setter Property="HorizontalGridLinesBrush" Value="Transparent" />
+      <Setter Property="VerticalGridLinesBrush" Value="Transparent" />
+      <Setter Property="RowBackground" Value="Transparent" />
+      <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="{DynamicResource KmSurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmBorderBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="DataGridCell">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="DataGridCell:selected">
+      <Setter Property="Foreground" Value="{DynamicResource KmTextBrush}" />
+    </Style>
+    <Style Selector="DataGridRow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KmDividerBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="DataGridRow:selected">
+      <Setter Property="Background" Value="{DynamicResource KmAccentSoftBrush}" />
+    </Style>
+
+    <Style Selector="ProgressBar">
+      <Setter Property="Height" Value="4" />
+      <Setter Property="MinHeight" Value="4" />
+      <Setter Property="Foreground" Value="{DynamicResource KmAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource KmDividerBrush}" />
+      <Setter Property="CornerRadius" Value="2" />
+    </Style>
+
+    <Style Selector="ToolTip">
+      <Setter Property="FontSize" Value="12" />
+    </Style>
   </Application.Styles>
 </Application>
