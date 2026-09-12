@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkModeForms", "DarkModeFo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Tests", "KindleMate2.Tests\KindleMate2.Tests.csproj", "{73FF0E51-3558-4763-9B5B-0E08B2B9DBA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Devices.Windows", "KindleMate2.Devices.Windows\KindleMate2.Devices.Windows.csproj", "{C4781565-FCE8-49A5-AF9E-4386952C4CAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -111,6 +113,18 @@ Global
 		{73FF0E51-3558-4763-9B5B-0E08B2B9DBA0}.Release|x64.Build.0 = Release|Any CPU
 		{73FF0E51-3558-4763-9B5B-0E08B2B9DBA0}.Release|x86.ActiveCfg = Release|Any CPU
 		{73FF0E51-3558-4763-9B5B-0E08B2B9DBA0}.Release|x86.Build.0 = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|x64.Build.0 = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Debug|x86.Build.0 = Debug|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|x64.ActiveCfg = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|x64.Build.0 = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|x86.ActiveCfg = Release|Any CPU
+		{C4781565-FCE8-49A5-AF9E-4386952C4CAA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

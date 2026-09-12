@@ -98,7 +98,15 @@ public sealed class DatabaseSession : IDisposable {
         KmateDatabaseServiceFactory = new KmateDatabaseServiceFactory(
             ClippingRepository, LookupRepository, OriginalClippingLineRepository, VocabRepository);
 
-        DeviceManager = new DeviceManager(Path.Combine(WorkDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
+        // 设备管理器按平台选择实现:
+        // Windows 用 KindleMate2.Devices.Windows(USB 盘符 + MTP);其他平台用空实现兜底。
+        // 这样上层(VM / 视图)完全不需要条件编译。
+#if WINDOWS
+        DeviceManager = new KindleMate2.Devices.Windows.DeviceManager(
+            Path.Combine(WorkDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
+#else
+        DeviceManager = new NullDeviceManager();
+#endif
 
         ImportManager = new ImportManager(
             Km2DatabaseService, ClippingService, VocabService, OriginalClippingLineService, LookupService,

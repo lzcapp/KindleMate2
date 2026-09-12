@@ -43,10 +43,9 @@ public static class DependencyInjection {
         services.AddSingleton<IVocabDatabaseServiceFactory, VocabDatabaseServiceFactory>();
         services.AddSingleton<IKmDatabaseServiceFactory, KmDatabaseServiceFactory>();
         services.AddSingleton<IKmateDatabaseServiceFactory, KmateDatabaseServiceFactory>();
-        services.AddSingleton<IDeviceManager>(sp => {
-            var versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
-            return new DeviceManager(versionFilePath);
-        });
+        // 注意:IDeviceManager 的注册由各平台壳自行完成 —— Windows 壳注册
+        // KindleMate2.Devices.Windows.DeviceManager,其他平台注册 NullDeviceManager。
+        // 这样 Application 层不依赖任何 Windows 专有程序集。
         services.AddSingleton<IImportManager>(sp => {
             var importPath = Path.Combine(Environment.CurrentDirectory, AppConstants.ImportsPathName);
             // Ensure the backup/import directory exists before ImportManager writes to it.

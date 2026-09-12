@@ -1,4 +1,5 @@
 using System.Management;
+using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
@@ -6,10 +7,11 @@ using KindleMate2.Shared.Entities;
 using KindleMate2.Infrastructure.Helpers;
 using MediaDevices;
 
-namespace KindleMate2.Application.Services;
+namespace KindleMate2.Devices.Windows;
 
 /// <summary>
-/// Manages Kindle device detection via USB and MTP, including connection monitoring.
+/// Windows 专有的 Kindle 设备检测与同步:USB 盘符枚举 + MTP(MediaDevices)+ WMI 事件监听。
+/// 接口 <see cref="IDeviceManager"/> 定义在 Application 层,本类是其 Windows 实现。
 /// </summary>
 public class DeviceManager : IDeviceManager {
     private ManagementEventWatcher? _usbDeviceArrivalWatcher;

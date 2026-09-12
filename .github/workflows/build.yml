@@ -36,3 +36,43 @@ jobs:
 
       - name: Run tests
         run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore
+
+  # 跨平台验证:Windows 之外的平台只构建 Avalonia 壳的 net8.0(非 Windows)TFM。
+  # 整个解决方案在 Linux/macOS 上无法构建 —— WinForms 壳与其 DarkModeForms 子模块
+  # 依赖 Windows 桌面 / .NET Framework。因此这里只取跨平台子集,并实跑一次自检,
+  # 验证:还原、编译、应用启动、SQLite 原生库可用、平台设备实现正确降级为 NullDeviceManager。
+  cross-platform-build:
+    name: cross-platform (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore (Avalonia shell)
+        run: dotnet restore KindleMate2.Avalonia/KindleMate2.Avalonia.csproj
+
+      - name: Build net8.0 (full, no incremental)
+        run: dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release --no-restore --no-incremental
+
+      - name: Boot self-check
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          touch "$work/empty.dat"
+          dotnet KindleMate2.Avalonia/bin/Release/net8.0/KindleMate2.Avalonia.dll \
+            --smoke "$work/empty.dat" "$work/smoke.txt"
+          cat "$work/smoke.txt"
+          grep -q "NullDeviceManager" "$work/smoke.txt"
+          echo "cross-platform boot check passed on ${{ matrix.os }}"

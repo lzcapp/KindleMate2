@@ -5,7 +5,12 @@
 
   <Application.Resources>
     <ResourceDictionary>
-      <FontFamily x:Key="KmFont">Segoe UI, Microsoft YaHei UI, Microsoft YaHei, sans-serif</FontFamily>
+      <!--
+        跨平台字体回退链(按平台逐一命中):
+        Windows → Segoe UI / 微软雅黑;macOS → SF Pro / PingFang SC;
+        Linux → Noto Sans CJK SC / 思源黑体 / 文泉驿。全部缺失时交给系统默认字体。
+      -->
+      <FontFamily x:Key="KmFont">Segoe UI, Microsoft YaHei UI, Microsoft YaHei, -apple-system, PingFang SC, Hiragino Sans GB, Noto Sans CJK SC, Source Han Sans SC, Source Han Sans CN, WenQuanYi Micro Hei, sans-serif</FontFamily>
 
       <ResourceDictionary.ThemeDictionaries>
 

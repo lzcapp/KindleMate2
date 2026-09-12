@@ -83,6 +83,12 @@ internal static class Program {
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
 
+            // 平台实现核对:Windows 应为 Devices.Windows.DeviceManager,其他平台为 NullDeviceManager
+            var deviceImpl = vm.Session?.DeviceManager.GetType().FullName ?? "<无会话>";
+            var deviceConnected = vm.Session?.DeviceManager.IsConnected ?? false;
+            report.AppendLine($"device: {deviceImpl} connected={deviceConnected} status={vm.ProbeDeviceStatus()}");
+            report.AppendLine($"framework: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
+
             // 应用级设置往返(主题 / 语言 / 上次打开的库)
             var settingsDir = Path.Combine(Path.GetTempPath(), "km2settings");
             var settings = AppSettings.Load(settingsDir);
