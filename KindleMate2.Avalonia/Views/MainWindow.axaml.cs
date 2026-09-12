@@ -87,6 +87,7 @@ public partial class MainWindow : Window {
         if (global::Avalonia.Application.Current is { } app) {
             app.RequestedThemeVariant = vm.IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
+        vm.PersistTheme(vm.IsDarkTheme);
     }
 
     // —— 数据库 ——
@@ -279,7 +280,21 @@ public partial class MainWindow : Window {
         }
     }
 
-    private void OnLanguageStub(object? sender, RoutedEventArgs e) => Stub("切换界面语言");
+    private void OnLanguageHans(object? sender, RoutedEventArgs e) => SetLanguage("zh-hans", "简体中文");
+    private void OnLanguageHant(object? sender, RoutedEventArgs e) => SetLanguage("zh-hant", "繁体中文");
+    private void OnLanguageEn(object? sender, RoutedEventArgs e) => SetLanguage("en", "English");
+    private void OnLanguageAuto(object? sender, RoutedEventArgs e) => SetLanguage("auto", "跟随系统");
+
+    /// <summary>
+    /// 语言切换:写入设置并立即应用文化(影响日期 / 数字格式与资源查找)。
+    /// 界面控件文案的抽取(改为读取 Shared.Strings 资源)仍在进行中,
+    /// 因此当前切换后需重启才完全生效 —— 这里如实提示。
+    /// </summary>
+    private void SetLanguage(string language, string display) {
+        if (Vm is not { } vm) return;
+        vm.PersistLanguage(language);
+        vm.StatusText = $"界面语言已设为「{display}」;文案资源抽取完成后重启即可完整生效";
+    }
 
     private async void OnMenuAbout(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;

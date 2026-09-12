@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 
 namespace KindleMate2.Avalonia;
@@ -80,6 +81,21 @@ internal static class Program {
             // 关于页数据
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
+
+            // 应用级设置往返(主题 / 语言 / 上次打开的库)
+            var settingsDir = Path.Combine(Path.GetTempPath(), "km2settings");
+            var settings = AppSettings.Load(settingsDir);
+            settings.Theme = "light";
+            settings.Language = "zh-hant";
+            settings.LastDatabase = @"C:\tmp\demo.dat";
+            settings.Save();
+            var reloaded = AppSettings.Load(settingsDir);
+            report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} db={reloaded.LastDatabase} path={reloaded.FilePath}");
+            try {
+                Directory.Delete(settingsDir, true);
+            } catch {
+                // 清理失败不影响自检结论
+            }
 
             if (outFile != null) {
                 File.WriteAllText(outFile, report.ToString());

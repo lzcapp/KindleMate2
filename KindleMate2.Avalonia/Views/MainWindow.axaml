@@ -120,10 +120,10 @@
                   Data="M8 2.5A5.5 5.5 0 1 1 8 13.5A5.5 5.5 0 0 1 8 2.5Z M2.5 8H13.5 M8 2.5C9.9 4.6 9.9 11.4 8 13.5 M8 2.5C6.1 4.6 6.1 11.4 8 13.5" />
             <Button.Flyout>
               <MenuFlyout>
-                <MenuItem Header="简体中文" Click="OnLanguageStub" />
-                <MenuItem Header="繁体中文" Click="OnLanguageStub" />
-                <MenuItem Header="英文" Click="OnLanguageStub" />
-                <MenuItem Header="跟随系统" Click="OnLanguageStub" />
+                <MenuItem Header="简体中文" Click="OnLanguageHans" />
+                <MenuItem Header="繁体中文" Click="OnLanguageHant" />
+                <MenuItem Header="英文" Click="OnLanguageEn" />
+                <MenuItem Header="跟随系统" Click="OnLanguageAuto" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>

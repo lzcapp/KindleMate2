@@ -58,6 +58,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public DatabaseSession? Session => _session;
 
     public bool HasSession => _session != null;
+
+    /// <summary>应用级设置(由 App 注入);为 null 时不做持久化,便于无头自检。</summary>
+    public AppSettings? Settings { get; set; }
+
+    /// <summary>是否已注入设置(视图层据此启用主题 / 语言持久化)。</summary>
+    public bool HasSettings => Settings != null;
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
@@ -257,6 +263,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             await OpenDatabaseAsync(args[1]);
             return;
         }
+        // 1) 上次打开的库 2) 程序目录附近的 KM2.db
+        if (Settings is { LastDatabase.Length: > 0 } settings && File.Exists(settings.LastDatabase)) {
+            await OpenDatabaseAsync(settings.LastDatabase);
+            return;
+        }
         var candidates = new[] {
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "KM2.db"),
             Path.Combine(AppContext.BaseDirectory, "KM2.db")
@@ -267,6 +278,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 return;
             }
         }
+    }
+
+    /// <summary>持久化主题选择。</summary>
+    public void PersistTheme(bool dark) {
+        if (Settings is not { } settings) return;
+        settings.Theme = dark ? "dark" : "light";
+        settings.Save();
+    }
+
+    /// <summary>持久化语言选择并立即应用文化。</summary>
+    public void PersistLanguage(string language) {
+        if (Settings is not { } settings) return;
+        settings.Language = language;
+        settings.ApplyCulture();
+        settings.Save();
     }
 
     public async Task OpenDatabaseAsync(string path) {
@@ -289,6 +315,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             var elapsedMs = await Task.Run(ReloadFromSession);
             RebuildNav();
             StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} 条标注 / {_allLookups.Count:N0} 条查询(读取 {elapsedMs} ms)";
+            if (Settings is { } settings) {
+                settings.LastDatabase = path;
+                settings.Save();
+            }
         } catch (Exception ex) {
             StatusText = $"打开失败: {ex.Message}";
             Console.WriteLine(ex);
