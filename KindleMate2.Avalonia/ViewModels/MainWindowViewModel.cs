@@ -267,12 +267,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </list>
     /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
     /// </summary>
-    public async Task<(bool Ok, string Error)> PrepareDatabaseAsync() {
+    /// <returns>
+    /// <c>Fatal</c> = 建库失败(原版会错误框 + 退出);<c>Ok</c> = 库已成功打开;
+    /// <c>Error</c> 为消息(失败时)。
+    /// </returns>
+    public async Task<(bool Fatal, bool Ok, string Error)> PrepareDatabaseAsync() {
         var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
 
         if (!File.Exists(databasePath)) {
             if (!DatabaseHelper.CreateDatabase(databasePath, out var exception)) {
-                return (false, exception.Message);
+                return (true, false, exception.Message);
             }
         }
 
@@ -285,7 +289,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         await OpenDatabaseAsync(databasePath);
-        return (true, string.Empty);
+        // 原版对「库打不开」不退出:弹错误框,界面继续(数据为空)。
+        return (false, HasSession, HasSession ? string.Empty : StatusText);
     }
 
     /// <summary>schema 迁移失败的告警文案(空表示无告警);由视图层弹一次提示。</summary>
@@ -310,19 +315,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         settings.Save();
     }
 
+    /// <summary>
+    /// 打开指定库。**注意:不再做 schema 预校验** —— 原版没有这层发明,
+    /// 库损坏时就是让异常发生,由调用方(视图层)按原版方式弹错误框。
+    /// 失败时必须把会话清干净,否则 <c>HasSession</c> 会说谎,后续刷新会在坏会话上重演异常。
+    /// </summary>
     public async Task OpenDatabaseAsync(string path) {
         if (IsBusy) return;
         if (!File.Exists(path)) {
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_FileNotFound, path);
-            return;
-        }
-        // 校验放在任何状态变更之前:选错文件时应当保留当前已打开的库,
-        // 否则会出现「DbPath 指向新文件、HasSession 却仍指向旧会话」的不一致状态。
-        var (probe, probeDetail) = DatabaseSession.Probe(path);
-        if (probe != DatabaseSession.ProbeResult.Valid) {
-            StatusText = probe == DatabaseSession.ProbeResult.MissingSchema
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_NotKm2Database, probeDetail)
-                : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, probeDetail);
             return;
         }
 
@@ -340,10 +341,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             var elapsedMs = await Task.Run(ReloadFromSession);
             RebuildNav();
             StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} / {_allLookups.Count:N0} ({elapsedMs} ms)";
-            if (Settings is { } settings) {
-                settings.LastDatabase = path;
-                settings.Save();
-            }
         } catch (Exception ex) {
             // 打开失败必须把会话清干净:否则 _session 非 null 会让 HasSession 说谎,
             // 后续任何刷新/导入都会在一个坏会话上重演同一个异常。

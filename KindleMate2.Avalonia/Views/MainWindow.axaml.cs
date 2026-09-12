@@ -32,8 +32,8 @@ public partial class MainWindow : Window {
         SyncThemeFromApplication();
         if (Vm is { } vm) {
             // 对齐原版 FrmMain 构造函数:固定 KM2.dat → 不存在则建库 → 一次性 lookups 迁移
-            var (ok, error) = await vm.PrepareDatabaseAsync();
-            if (!ok) {
+            var (fatal, ok, error) = await vm.PrepareDatabaseAsync();
+            if (fatal) {
                 await AppDialog.AlertAsync(this, Strings.Error,
                     MessageHelper.BuildMessage(Strings.Create_Database_Failed, new Exception(error)));
                 Close();   // 原版此处 Environment.Exit(0)
@@ -42,6 +42,11 @@ public partial class MainWindow : Window {
             if (vm.MigrationWarning.Length > 0) {
                 // 原版:迁移失败只警告,不阻断启动
                 await AppDialog.AlertAsync(this, Strings.Error, vm.MigrationWarning);
+            }
+            if (!ok) {
+                // 原版 RefreshData 的 catch:正文 = BuildMessage(Failed, ex),标题 = Error
+                await AppDialog.AlertAsync(this, Strings.Error,
+                    MessageHelper.BuildMessage(Strings.Failed, new Exception(error)));
             }
         }
         StartDevicePolling();
@@ -108,14 +113,8 @@ public partial class MainWindow : Window {
     }
 
     // —— 数据库 ——
-
-    private async void OnMenuOpenDatabase(object? sender, RoutedEventArgs e) {
-        if (Vm is not { } vm) return;
-        var path = await PickFileAsync(Strings.Ui_Pick_Database, Strings.Ui_FileType_Database, new[] { "*.dat", "*.db" });
-        if (path == null) return;
-        await vm.OpenDatabaseAsync(path);
-        _ = RefreshDeviceStatusAsync();
-    }
+    // 原版没有「打开数据库」入口:库固定为 <当前目录>/KM2.dat,不存在则自动建库。
+    // 此前的库选择器/多库记忆/Probe 拒绝均为超出范围的发明,已移除(F 项)。
 
     private async void OnMenuRefresh(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;

@@ -53,7 +53,6 @@
                      Foreground="{DynamicResource KmTextSecondaryBrush}" Margin="0,0,8,0" />
           <Menu VerticalAlignment="Center">
             <MenuItem Header="{x:Static shared:Strings.Ui_Menu_File}">
-              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_OpenDatabase}" Click="OnMenuOpenDatabase" />
               <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnMenuRefresh" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Statistics}" Click="OnMenuStatistics" />
               <Separator />

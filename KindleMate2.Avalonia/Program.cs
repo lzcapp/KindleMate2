@@ -96,15 +96,14 @@ internal static class Program {
             report.AppendLine($"device(session): {vm.Session?.DeviceManager.GetType().FullName ?? "<无会话>"} status={vm.ProbeDeviceStatus()}");
             report.AppendLine($"framework: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 
-            // 应用级设置往返(主题 / 语言 / 上次打开的库)
+            // 应用级设置往返(主题 / 语言)
             var settingsDir = Path.Combine(Path.GetTempPath(), "km2settings");
             var settings = AppSettings.Load(settingsDir);
             settings.Theme = "light";
             settings.Language = "zh-hant";
-            settings.LastDatabase = @"C:\tmp\demo.dat";
             settings.Save();
             var reloaded = AppSettings.Load(settingsDir);
-            report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} db={reloaded.LastDatabase} path={reloaded.FilePath}");
+            report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} path={reloaded.FilePath}");
 
             // 多语言资源核对:切换 Culture 后取同一条文案,验证三套卫星资源均可用
             var original = Strings.Culture;
@@ -123,40 +122,38 @@ internal static class Program {
             try {
                 Environment.CurrentDirectory = freshDir;
                 var startupVm = new MainWindowViewModel();
-                var (startupOk, startupError) = startupVm.PrepareDatabaseAsync().GetAwaiter().GetResult();
+                var (startupFatal, startupOk, startupError) = startupVm.PrepareDatabaseAsync().GetAwaiter().GetResult();
                 var newDbPath = Path.Combine(freshDir, AppConstants.DatabaseFileName);
-                report.AppendLine($"startup: ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
-                report.AppendLine($"  probe(auto-created)={DatabaseSession.Probe(newDbPath).Result}");
-                report.AppendLine($"  migrationWarning='{startupVm.MigrationWarning}'");
+                report.AppendLine($"startup: fatal={startupFatal} ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
+                report.AppendLine($"  newDbSize={new FileInfo(newDbPath).Length}B  migrationWarning='{startupVm.MigrationWarning}'");
             } finally {
                 Environment.CurrentDirectory = originalCwd;
                 try { Directory.Delete(freshDir, true); } catch { /* 清理失败不影响结论 */ }
             }
 
-            // —— 回归:坏库不得抛异常 ——
+            // —— 回归:坏库不得抛异常,且不得留下坏会话 ——
             // 此前的缺陷链:OpenDatabaseAsync 在装载成功前就赋值 _session(于是 HasSession 说谎)
             // + ReloadAsync 只有 try/finally 没有 catch + 调用方是 async void
             // → 打开一个 schema 不匹配的库后点「刷新」会直接崩进程。
+            // 注意:原版对库损坏没有预校验,就是把异常交给 RefreshData 的 catch 弹错误框 ——
+            // 因此这里断言的是"不抛异常 + 不留坏会话",而不是某个友好文案。
             var badPath = Path.Combine(Path.GetTempPath(), "km2-bad-" + Guid.NewGuid().ToString("N") + ".dat");
             File.WriteAllBytes(badPath, new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 });
             try {
-                // 场景 A:已打开有效库时选错文件 —— 应保留原库,不破坏当前状态
-                var dbBefore = vm.DbPath;
+                // 场景 A:已打开有效库时再打开坏库 —— 坏库必须清干净,旧会话不得残留
                 vm.OpenDatabaseAsync(badPath).GetAwaiter().GetResult();
-                report.AppendLine($"bad db (with valid open): keptSession={vm.HasSession} dbUnchanged={vm.DbPath == dbBefore}");
-                report.AppendLine($"  status={vm.StatusText}");
+                report.AppendLine($"bad db (with valid open): hasSession={vm.HasSession} (expect False)");
                 vm.ReloadAsync().GetAwaiter().GetResult();
                 report.AppendLine("  reload -> no throw (OK)");
 
-                // 场景 B:全新实例直接打开坏库 —— 不应留下坏会话
+                // 场景 B:全新实例直接打开坏库
                 var fresh = new MainWindowViewModel();
                 fresh.OpenDatabaseAsync(badPath).GetAwaiter().GetResult();
                 report.AppendLine($"bad db (fresh): hasSession={fresh.HasSession} status={fresh.StatusText}");
                 fresh.ReloadAsync().GetAwaiter().GetResult();
                 report.AppendLine("  reload -> no throw (OK)");
 
-                // 场景 C:空文件 —— 是合法 SQLite 但缺 schema(等价于旧版 KM2.db 那类文件),
-                // 应走「这不像是 Kindle Mate 2 的数据库」而不是抛出 no such column: key
+                // 场景 C:空文件(合法 SQLite 但缺 schema,等价于旧版 KM2.db 那类文件)
                 var emptyPath = Path.Combine(Path.GetTempPath(), "km2-empty-" + Guid.NewGuid().ToString("N") + ".dat");
                 File.WriteAllBytes(emptyPath, Array.Empty<byte>());
                 try {

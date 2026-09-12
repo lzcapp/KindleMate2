@@ -16,7 +16,6 @@ namespace KindleMate2.Avalonia.Services;
 public sealed class AppSettings {
     [JsonPropertyName("theme")] public string Theme { get; set; } = "system";
     [JsonPropertyName("language")] public string Language { get; set; } = "auto";
-    [JsonPropertyName("lastDatabase")] public string LastDatabase { get; set; } = string.Empty;
 
     [JsonIgnore] public string FilePath { get; private set; } = string.Empty;
 
