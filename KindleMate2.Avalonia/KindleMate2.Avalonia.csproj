@@ -18,6 +18,16 @@
     <Version>2026.09.13</Version>
   </PropertyGroup>
 
+  <!-- 程序图标:沿用原版 WinForms 壳的 bookmark.ico(与仓库根 bookmark.ico 字节一致)。
+       ApplicationIcon 是属性 → 决定 exe 的 Win32 图标;AvaloniaResource 是项 → 供窗口 Icon 在运行时加载。 -->
+  <PropertyGroup>
+    <ApplicationIcon>Assets/bookmark.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/bookmark.ico" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.2" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />

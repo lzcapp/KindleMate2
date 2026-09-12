@@ -8,6 +8,7 @@
         mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="380"
         x:DataType="vm:AboutViewModel"
         Title="{x:Static shared:Strings.Ui_About_Title}"
+        Icon="/Assets/bookmark.ico"
         Width="460" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False" ShowInTaskbar="False">

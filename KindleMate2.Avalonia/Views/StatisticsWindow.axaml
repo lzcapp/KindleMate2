@@ -9,6 +9,7 @@
         mc:Ignorable="d" d:DesignWidth="940" d:DesignHeight="680"
         x:DataType="vm:StatisticsViewModel"
         Title="{x:Static shared:Strings.Ui_Menu_Statistics}"
+        Icon="/Assets/bookmark.ico"
         Width="940" Height="680" MinWidth="720" MinHeight="520"
         WindowStartupLocation="CenterOwner">
 
