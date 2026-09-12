@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using KindleMate2.Application.Services;
 using KindleMate2.Application.Services.KM2DB;
@@ -6,6 +7,7 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Shared.Constants;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Avalonia.Services;
 
@@ -98,15 +100,8 @@ public sealed class DatabaseSession : IDisposable {
         KmateDatabaseServiceFactory = new KmateDatabaseServiceFactory(
             ClippingRepository, LookupRepository, OriginalClippingLineRepository, VocabRepository);
 
-        // 设备管理器按平台选择实现:
-        // Windows 用 KindleMate2.Devices.Windows(USB 盘符 + MTP);其他平台用空实现兜底。
-        // 这样上层(VM / 视图)完全不需要条件编译。
-#if WINDOWS
-        DeviceManager = new KindleMate2.Devices.Windows.DeviceManager(
-            Path.Combine(WorkDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
-#else
-        DeviceManager = new NullDeviceManager();
-#endif
+        // 设备管理器按平台选择实现(Windows 用真实 USB/MTP,其他平台空实现兜底)。
+        DeviceManager = CreateDeviceManager(WorkDirectory);
 
         ImportManager = new ImportManager(
             Km2DatabaseService, ClippingService, VocabService, OriginalClippingLineService, LookupService,
@@ -121,5 +116,73 @@ public sealed class DatabaseSession : IDisposable {
         if (_disposed) return;
         _disposed = true;
         DeviceManager.Dispose();
+    }
+
+    /// <summary>
+    /// 按平台创建设备管理器。独立成静态工厂的用意有二:
+    /// ① 构造函数复用;② 无头自检 / CI 无需先打开数据库,就能断言当前平台选到了哪个实现。
+    /// </summary>
+    public static IDeviceManager CreateDeviceManager(string workDirectory) {
+#if WINDOWS
+        return new KindleMate2.Devices.Windows.DeviceManager(
+            Path.Combine(workDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
+#else
+        return new NullDeviceManager();
+#endif
+    }
+
+    /// <summary>数据库可用性探测结果。</summary>
+    public enum ProbeResult {
+        /// <summary>结构符合当前 schema,可以打开。</summary>
+        Valid,
+
+        /// <summary>文件根本不是 SQLite 数据库(或已损坏)。</summary>
+        NotSqlite,
+
+        /// <summary>是 SQLite 库,但缺少当前 schema 需要的表 / 列(例如旧版 Kindle Mate 格式)。</summary>
+        MissingSchema,
+
+        /// <summary>读取失败(权限、被占用等)。</summary>
+        Unreadable
+    }
+
+    /// <summary>
+    /// 探测目标文件能否作为 Kindle Mate 2 的库打开(只读 sqlite_master / PRAGMA,不写文件)。
+    ///
+    /// 背景:仓库根目录的 KM2.db 是旧版 Kindle Mate 格式,直接用会抛
+    /// <c>SQLite Error 1: 'no such column: key'</c> —— 对用户完全看不懂。
+    /// 先探一次 schema,就能把「选错文件」翻译成人话;同时把
+    /// 「不是数据库」与「缺表」区分开,避免两种错误共用一套措辞。
+    /// </summary>
+    public static (ProbeResult Result, string Detail) Probe(string path) {
+        try {
+            if (!File.Exists(path)) return (ProbeResult.Unreadable, path);
+
+            using var connection = new SqliteConnection(DatabaseHelper.GetConnectionString(path));
+            connection.Open();
+
+            using (var cmd = new SqliteCommand(
+                       "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='clippings'", connection)) {
+                if (Convert.ToInt64(cmd.ExecuteScalar() ?? 0L, CultureInfo.InvariantCulture) == 0) {
+                    return (ProbeResult.MissingSchema, "clippings");
+                }
+            }
+
+            using (var cmd = new SqliteCommand("PRAGMA table_info(clippings)", connection))
+            using (var reader = cmd.ExecuteReader()) {
+                while (reader.Read()) {
+                    if (string.Equals(DatabaseHelper.GetSafeString(reader, 1), "key", StringComparison.OrdinalIgnoreCase)) {
+                        return (ProbeResult.Valid, string.Empty);
+                    }
+                }
+            }
+
+            return (ProbeResult.MissingSchema, "clippings.key");
+        } catch (SqliteException ex) when (ex.SqliteErrorCode == 26) {
+            // 26 = SQLITE_NOTADB:文件头不是 SQLite 格式
+            return (ProbeResult.NotSqlite, ex.Message);
+        } catch (Exception ex) {
+            return (ProbeResult.Unreadable, ex.Message);
+        }
     }
 }

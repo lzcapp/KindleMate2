@@ -984,4 +984,7 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_Status_NotKm2Database" xml:space="preserve">
+    <value>這不像是 Kindle Mate 2 的資料庫(缺少 {0})。請選擇由本程式產生的庫。</value>
+  </data>
 </root>

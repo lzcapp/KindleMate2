@@ -1537,6 +1537,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Stats_SummaryVocabNoSpan => ResourceManager.GetString("Ui_Stats_SummaryVocabNoSpan", resourceCulture);
         public static string Ui_Stats_Saved => ResourceManager.GetString("Ui_Stats_Saved", resourceCulture);
         public static string Ui_Stats_SaveFailed => ResourceManager.GetString("Ui_Stats_SaveFailed", resourceCulture);
+        public static string Ui_Status_NotKm2Database => ResourceManager.GetString("Ui_Status_NotKm2Database", resourceCulture);
         public static string Ui_About_Title => ResourceManager.GetString("Ui_About_Title", resourceCulture);
         public static string Ui_About_Version => ResourceManager.GetString("Ui_About_Version", resourceCulture);
         public static string Ui_About_Runtime => ResourceManager.GetString("Ui_About_Runtime", resourceCulture);

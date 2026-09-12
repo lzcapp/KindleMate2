@@ -981,4 +981,7 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_Status_NotKm2Database" xml:space="preserve">
+    <value>This does not look like a Kindle Mate 2 database (missing {0}). Pick a database created by this app.</value>
+  </data>
 </root>

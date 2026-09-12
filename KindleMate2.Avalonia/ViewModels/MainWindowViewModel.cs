@@ -264,20 +264,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             await OpenDatabaseAsync(args[1]);
             return;
         }
-        // 1) 上次打开的库 2) 程序目录附近的 KM2.db
-        if (Settings is { LastDatabase.Length: > 0 } settings && File.Exists(settings.LastDatabase)) {
-            await OpenDatabaseAsync(settings.LastDatabase);
+        // 1) 上次成功打开的库;2) 程序目录附近的 KM2.db。
+        // 一律先用 Probe 校验 schema:仓库根的 KM2.db 是旧版 Kindle Mate 格式,
+        // 直接打开会抛 "no such column: key"。与其每次启动都失败一次,不如静默跳过
+        // ——用户仍可通过「文件 → 打开数据库…」手动指定。
+        if (Settings?.LastDatabase is { Length: > 0 } last && File.Exists(last) &&
+            DatabaseSession.Probe(last).Result == DatabaseSession.ProbeResult.Valid) {
+            await OpenDatabaseAsync(last);
             return;
         }
         var candidates = new[] {
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "KM2.db"),
-            Path.Combine(AppContext.BaseDirectory, "KM2.db")
+            Path.Combine(AppContext.BaseDirectory, "KM2.db"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "KM2.db")
         };
         foreach (var candidate in candidates.Select(Path.GetFullPath)) {
-            if (File.Exists(candidate)) {
-                await OpenDatabaseAsync(candidate);
-                return;
-            }
+            if (!File.Exists(candidate)) continue;
+            if (DatabaseSession.Probe(candidate).Result != DatabaseSession.ProbeResult.Valid) continue;
+            await OpenDatabaseAsync(candidate);
+            return;
         }
     }
 
@@ -302,6 +306,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_FileNotFound, path);
             return;
         }
+        // 校验放在任何状态变更之前:选错文件时应当保留当前已打开的库,
+        // 否则会出现「DbPath 指向新文件、HasSession 却仍指向旧会话」的不一致状态。
+        var (probe, probeDetail) = DatabaseSession.Probe(path);
+        if (probe != DatabaseSession.ProbeResult.Valid) {
+            StatusText = probe == DatabaseSession.ProbeResult.MissingSchema
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_NotKm2Database, probeDetail)
+                : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, probeDetail);
+            return;
+        }
+
         IsBusy = true;
         DbPath = path;
         StatusText = Strings.Ui_Status_Loading;
@@ -321,6 +335,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 settings.Save();
             }
         } catch (Exception ex) {
+            // 打开失败必须把会话清干净:否则 _session 非 null 会让 HasSession 说谎,
+            // 后续任何刷新/导入都会在一个坏会话上重演同一个异常。
+            _session?.Dispose();
+            _session = null;
+            ResetCollections();
+            OnPropertyChanged(nameof(HasSession));
+            OnPropertyChanged(nameof(Session));
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
             Console.WriteLine(ex);
         } finally {
@@ -347,13 +368,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>重新装载数据并刷新界面(不改变当前库)。</summary>
     public async Task ReloadAsync() {
-        if (_session == null || IsBusy) return;
+        if (!HasSession || IsBusy) return;
         var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
         IsBusy = true;
         try {
             await Task.Run(ReloadFromSession);
             RebuildNav();
             RestoreSelection(previous);
+        } catch (Exception ex) {
+            // 这里必须捕获:ReloadAsync 由 async void 事件处理器调用,
+            // 异常逃逸会直接击穿到 UI 层导致进程崩溃(库被删除/损坏时很容易触发)。
+            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
         } finally {
             IsBusy = false;
             NotifyCounts();

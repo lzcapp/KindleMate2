@@ -83,10 +83,11 @@ internal static class Program {
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
 
-            // 平台实现核对:Windows 应为 Devices.Windows.DeviceManager,其他平台为 NullDeviceManager
-            var deviceImpl = vm.Session?.DeviceManager.GetType().FullName ?? "<无会话>";
-            var deviceConnected = vm.Session?.DeviceManager.IsConnected ?? false;
-            report.AppendLine($"device: {deviceImpl} connected={deviceConnected} status={vm.ProbeDeviceStatus()}");
+            // 平台实现核对:Windows 应为 Devices.Windows.DeviceManager,其他平台为 NullDeviceManager。
+            // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
+            var platformDevice = DatabaseSession.CreateDeviceManager(Path.GetDirectoryName(dbPath) ?? ".").GetType().FullName;
+            report.AppendLine($"device(platform): {platformDevice}");
+            report.AppendLine($"device(session): {vm.Session?.DeviceManager.GetType().FullName ?? "<无会话>"} status={vm.ProbeDeviceStatus()}");
             report.AppendLine($"framework: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 
             // 应用级设置往返(主题 / 语言 / 上次打开的库)
@@ -106,6 +107,45 @@ internal static class Program {
                 report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings}");
             }
             Strings.Culture = original;
+
+            // —— 回归:坏库不得抛异常 ——
+            // 此前的缺陷链:OpenDatabaseAsync 在装载成功前就赋值 _session(于是 HasSession 说谎)
+            // + ReloadAsync 只有 try/finally 没有 catch + 调用方是 async void
+            // → 打开一个 schema 不匹配的库后点「刷新」会直接崩进程。
+            var badPath = Path.Combine(Path.GetTempPath(), "km2-bad-" + Guid.NewGuid().ToString("N") + ".dat");
+            File.WriteAllBytes(badPath, new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 });
+            try {
+                // 场景 A:已打开有效库时选错文件 —— 应保留原库,不破坏当前状态
+                var dbBefore = vm.DbPath;
+                vm.OpenDatabaseAsync(badPath).GetAwaiter().GetResult();
+                report.AppendLine($"bad db (with valid open): keptSession={vm.HasSession} dbUnchanged={vm.DbPath == dbBefore}");
+                report.AppendLine($"  status={vm.StatusText}");
+                vm.ReloadAsync().GetAwaiter().GetResult();
+                report.AppendLine("  reload -> no throw (OK)");
+
+                // 场景 B:全新实例直接打开坏库 —— 不应留下坏会话
+                var fresh = new MainWindowViewModel();
+                fresh.OpenDatabaseAsync(badPath).GetAwaiter().GetResult();
+                report.AppendLine($"bad db (fresh): hasSession={fresh.HasSession} status={fresh.StatusText}");
+                fresh.ReloadAsync().GetAwaiter().GetResult();
+                report.AppendLine("  reload -> no throw (OK)");
+
+                // 场景 C:空文件 —— 是合法 SQLite 但缺 schema(等价于旧版 KM2.db 那类文件),
+                // 应走「这不像是 Kindle Mate 2 的数据库」而不是抛出 no such column: key
+                var emptyPath = Path.Combine(Path.GetTempPath(), "km2-empty-" + Guid.NewGuid().ToString("N") + ".dat");
+                File.WriteAllBytes(emptyPath, Array.Empty<byte>());
+                try {
+                    var blank = new MainWindowViewModel();
+                    blank.OpenDatabaseAsync(emptyPath).GetAwaiter().GetResult();
+                    report.AppendLine($"empty db (fresh): hasSession={blank.HasSession} status={blank.StatusText}");
+                    blank.ReloadAsync().GetAwaiter().GetResult();
+                    report.AppendLine("  reload -> no throw (OK)");
+                } finally {
+                    try { File.Delete(emptyPath); } catch { /* 清理失败不影响结论 */ }
+                }
+            } finally {
+                try { File.Delete(badPath); } catch { /* 清理失败不影响结论 */ }
+            }
             try {
                 Directory.Delete(settingsDir, true);
             } catch {
