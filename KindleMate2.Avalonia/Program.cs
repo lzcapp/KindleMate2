@@ -71,6 +71,16 @@ internal static class Program {
             vm.SearchText = "的";
             report.AppendLine($"search '的'(内容) -> {vm.Items.Count} 条");
 
+            // 统计页数据
+            var stats = StatisticsViewModel.Load(vm.Session);
+            report.AppendLine($"stats: byDate={stats.ClippingsByDate.Count} byHour={stats.ClippingsByHour.Count} byWeekday={stats.ClippingsByWeekday.Count} hasVocabs={stats.HasVocabs} empty={stats.IsEmpty}");
+            report.AppendLine($"  {stats.ClippingSummary}");
+            report.AppendLine($"  {stats.VocabSummary}");
+
+            // 关于页数据
+            var about = AboutViewModel.Load(vm.Session);
+            report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
+
             if (outFile != null) {
                 File.WriteAllText(outFile, report.ToString());
             }

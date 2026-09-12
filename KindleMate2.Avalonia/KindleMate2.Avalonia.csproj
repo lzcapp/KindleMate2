@@ -10,6 +10,10 @@
     <AssemblyName>KindleMate2.Avalonia</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Product>Kindle Mate 2</Product>
+    <Company>lzcapp</Company>
+    <Copyright>Copyright © 2026 lzcapp</Copyright>
+    <Version>2026.09.13</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -199,7 +199,11 @@ public partial class MainWindow : Window {
         if (ok) await vm.SyncToDeviceAsync();
     }
 
-    private void OnMenuStatistics(object? sender, RoutedEventArgs e) => Stub("统计页");
+    private async void OnMenuStatistics(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var stats = await Task.Run(() => StatisticsViewModel.Load(vm.Session));
+        await new StatisticsWindow(stats).ShowDialog(this);
+    }
 
     private void OnMenuRestart(object? sender, RoutedEventArgs e) => Stub("重启");
 
@@ -277,7 +281,11 @@ public partial class MainWindow : Window {
 
     private void OnLanguageStub(object? sender, RoutedEventArgs e) => Stub("切换界面语言");
 
-    private void OnMenuAbout(object? sender, RoutedEventArgs e) => Stub("关于");
+    private async void OnMenuAbout(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var about = await Task.Run(() => AboutViewModel.Load(vm.Session));
+        await new AboutWindow(about).ShowDialog(this);
+    }
 
     private void OnMenuImportFromDevice(object? sender, RoutedEventArgs e) => Stub("从 Kindle 设备导入");
 

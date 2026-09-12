@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
+        x:Class="KindleMate2.Avalonia.Views.AboutWindow"
+        mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="380"
+        x:DataType="vm:AboutViewModel"
+        Title="关于 Kindle Mate 2"
+        Width="460" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False" ShowInTaskbar="False">
+
+  <StackPanel Margin="24,20,24,18" Spacing="16">
+
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource KmAccentBrush}" />
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="{Binding Product}" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Classes="tt" Text="{Binding Version, StringFormat='版本 {0}'}" />
+      </StackPanel>
+    </StackPanel>
+
+    <Rectangle Height="1" Fill="{DynamicResource KmBorderBrush}" />
+
+    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
+      <TextBlock Grid.Row="0" Grid.Column="0" Classes="tt" Text="版权" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="0" Grid.Column="1" FontSize="12" Text="{Binding Copyright}"
+                 TextWrapping="Wrap" VerticalAlignment="Center" />
+
+      <TextBlock Grid.Row="1" Grid.Column="0" Classes="tt" Text="程序目录" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="1" Grid.Column="1" FontSize="12" Text="{Binding ProgramPath}"
+                 TextWrapping="Wrap" VerticalAlignment="Center" />
+
+      <TextBlock Grid.Row="2" Grid.Column="0" Classes="tt" Text="数据库" VerticalAlignment="Center" />
+      <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <TextBlock FontSize="12" Text="{Binding DatabaseName}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Classes="tt" Text="{Binding DatabaseSize, StringFormat='({0})'}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <TextBlock Grid.Row="3" Grid.Column="0" Classes="tt" Text="运行环境" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="3" Grid.Column="1" FontSize="12" Text="{Binding Runtime}" VerticalAlignment="Center" />
+
+      <TextBlock Grid.Row="4" Grid.Column="0" Classes="tt" Text="仓库" VerticalAlignment="Center" />
+      <Button Grid.Row="4" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+              Content="{Binding RepoUrl}" Click="OnOpenRepo" />
+    </Grid>
+
+    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+      <TextBlock Grid.Column="0" Classes="tt" Text="{Binding DatabasePath}" VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis" MaxWidth="260" />
+      <Button Grid.Column="1" Classes="primary" Content="确定" Click="OnClose" />
+    </Grid>
+
+  </StackPanel>
+</Window>
