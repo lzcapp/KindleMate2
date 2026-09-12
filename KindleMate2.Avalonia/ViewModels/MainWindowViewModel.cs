@@ -28,7 +28,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private const string DomainClipping = "标注";
     private const string DomainWord = "生词本";
 
-    private string _dbPath = string.Empty;
     private string _searchText = string.Empty;
     private string _searchType = TypeTextMap.SearchTypes[0];
     private string _statusText = Strings.Ui_Status_Initial;
@@ -63,8 +62,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>应用级设置(由 App 注入);为 null 时不做持久化,便于无头自检。</summary>
     public AppSettings? Settings { get; set; }
 
-    /// <summary>是否已注入设置(视图层据此启用主题 / 语言持久化)。</summary>
-    public bool HasSettings => Settings != null;
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
@@ -81,11 +78,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public ObservableCollection<Lookup> LookupTable { get; } = new();
 
     public IReadOnlyList<string> SearchTypes => TypeTextMap.SearchTypes;
-
-    public string DbPath {
-        get => _dbPath;
-        set { if (_dbPath == value) return; _dbPath = value; OnPropertyChanged(); }
-    }
 
     public string SearchText {
         get => _searchText;
@@ -331,7 +323,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         IsBusy = true;
-        DbPath = path;
         StatusText = Strings.Ui_Status_Loading;
         ResetCollections();
 

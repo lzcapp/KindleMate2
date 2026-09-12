@@ -573,9 +573,6 @@
   <data name="Ui_Menu_Help" xml:space="preserve">
     <value>說明(_H)</value>
   </data>
-  <data name="Ui_Menu_OpenDatabase" xml:space="preserve">
-    <value>開啟資料庫…</value>
-  </data>
   <data name="Ui_Menu_Statistics" xml:space="preserve">
     <value>統計</value>
   </data>
@@ -738,9 +735,6 @@
   <data name="Ui_Status_BookNameEmpty" xml:space="preserve">
     <value>書名不能為空</value>
   </data>
-  <data name="Ui_Status_BookNameUnchanged" xml:space="preserve">
-    <value>書名未變更</value>
-  </data>
   <data name="Ui_Status_NoDevice" xml:space="preserve">
     <value>未偵測到 Kindle 裝置</value>
   </data>
@@ -786,89 +780,14 @@
   <data name="Ui_Text_LookupCount" xml:space="preserve">
     <value>{0} 條查詢</value>
   </data>
-  <data name="Ui_Op_ExportClippings" xml:space="preserve">
-    <value>匯出標註為 Markdown</value>
-  </data>
-  <data name="Ui_Op_ExportWords" xml:space="preserve">
-    <value>匯出生詞本為 Markdown</value>
-  </data>
-  <data name="Ui_Op_ExportBook" xml:space="preserve">
-    <value>匯出《{0}》</value>
-  </data>
-  <data name="Ui_Op_ExportAllClippings" xml:space="preserve">
-    <value>匯出全部標註</value>
-  </data>
-  <data name="Ui_Op_Backup" xml:space="preserve">
-    <value>備份資料庫</value>
-  </data>
-  <data name="Ui_Op_DeleteClipping" xml:space="preserve">
-    <value>刪除標註</value>
-  </data>
-  <data name="Ui_Op_DeleteLookup" xml:space="preserve">
-    <value>刪除查詢記錄</value>
-  </data>
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>重新命名書籍</value>
-  </data>
-  <data name="Ui_Result_NoChange" xml:space="preserve">
-    <value>完成(無變化)</value>
-  </data>
-  <data name="Ui_Result_Exported" xml:space="preserve">
-    <value>已匯出到 {0}</value>
   </data>
   <data name="Ui_Result_NothingToExport" xml:space="preserve">
     <value>無內容可匯出</value>
   </data>
-  <data name="Ui_Result_BackedUp" xml:space="preserve">
-    <value>已備份為 {0}</value>
-  </data>
-  <data name="Ui_Result_Cleared" xml:space="preserve">
-    <value>已清空(已自動備份為 {0})</value>
-  </data>
-  <data name="Ui_Result_ClearFailed" xml:space="preserve">
-    <value>清空失敗</value>
-  </data>
-  <data name="Ui_Result_DeletedClipping" xml:space="preserve">
-    <value>已刪除 1 條標註</value>
-  </data>
-  <data name="Ui_Result_DeletedLookup" xml:space="preserve">
-    <value>已刪除 1 條查詢</value>
-  </data>
-  <data name="Ui_Result_DeleteFailed" xml:space="preserve">
-    <value>刪除失敗</value>
-  </data>
-  <data name="Ui_Result_Renamed" xml:space="preserve">
-    <value>已重新命名為「{0}」</value>
-  </data>
-  <data name="Ui_Result_RenameFailed" xml:space="preserve">
-    <value>重新命名失敗</value>
-  </data>
-  <data name="Ui_Result_Rebuilt" xml:space="preserve">
-    <value>已重建</value>
-  </data>
-  <data name="Ui_Result_RebuildFailed" xml:space="preserve">
-    <value>重建失敗</value>
-  </data>
-  <data name="Ui_Result_Cleaned" xml:space="preserve">
-    <value>已清理</value>
-  </data>
-  <data name="Ui_Result_CleanFailed" xml:space="preserve">
-    <value>未能清理</value>
-  </data>
-  <data name="Ui_Result_CleanedCount" xml:space="preserve">
-    <value>已清理 {0} 條空內容</value>
-  </data>
-  <data name="Ui_Result_Synced" xml:space="preserve">
-    <value>已同步</value>
-  </data>
-  <data name="Ui_Result_Failed" xml:space="preserve">
-    <value>{0}失敗:{1}</value>
-  </data>
   <data name="Ui_Result_LanguageSet" xml:space="preserve">
     <value>介面語言已設為「{0}」</value>
-  </data>
-  <data name="Ui_Pick_Database" xml:space="preserve">
-    <value>選擇 KindleMate2 資料庫</value>
   </data>
   <data name="Ui_Pick_Clippings" xml:space="preserve">
     <value>選擇 Kindle 標註檔案(My Clippings.txt)</value>
@@ -881,9 +800,6 @@
   </data>
   <data name="Ui_Pick_KmateDatabase" xml:space="preserve">
     <value>選擇 KMate 資料庫</value>
-  </data>
-  <data name="Ui_FileType_Database" xml:space="preserve">
-    <value>KindleMate2 資料庫</value>
   </data>
   <data name="Ui_FileType_Clippings" xml:space="preserve">
     <value>Kindle 標註</value>
@@ -902,36 +818,6 @@
   </data>
   <data name="Ui_Dlg_CleanOk" xml:space="preserve">
     <value>清理</value>
-  </data>
-  <data name="Ui_Dlg_RebuildMessage" xml:space="preserve">
-    <value>將依書籍與頁碼重新整理標註順序。建議先備份,是否繼續?</value>
-  </data>
-  <data name="Ui_Dlg_RebuildOk" xml:space="preserve">
-    <value>重建</value>
-  </data>
-  <data name="Ui_Dlg_ClearMessage" xml:space="preserve">
-    <value>將刪除資料庫內全部標註、生詞與查詢記錄(會自動先備份一份資料庫)。此操作不可復原,是否繼續?</value>
-  </data>
-  <data name="Ui_Dlg_ClearOk" xml:space="preserve">
-    <value>清空</value>
-  </data>
-  <data name="Ui_Dlg_SyncMessage" xml:space="preserve">
-    <value>將先從裝置讀取現有檔案備份,再把目前標註寫回裝置。是否繼續?</value>
-  </data>
-  <data name="Ui_Dlg_SyncOk" xml:space="preserve">
-    <value>同步</value>
-  </data>
-  <data name="Ui_Dlg_DeleteMessage" xml:space="preserve">
-    <value>將永久刪除目前選取的記錄。此操作不可復原,是否繼續?</value>
-  </data>
-  <data name="Ui_Dlg_DeleteOk" xml:space="preserve">
-    <value>刪除</value>
-  </data>
-  <data name="Ui_Dlg_RenameMessage" xml:space="preserve">
-    <value>輸入新的書名:</value>
-  </data>
-  <data name="Ui_Dlg_RenameOk" xml:space="preserve">
-    <value>重新命名</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>按日期</value>
@@ -983,8 +869,5 @@
   </data>
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
-  </data>
-  <data name="Ui_Status_NotKm2Database" xml:space="preserve">
-    <value>這不像是 Kindle Mate 2 的資料庫(缺少 {0})。請選擇由本程式產生的庫。</value>
   </data>
 </root>

@@ -570,9 +570,6 @@
   <data name="Ui_Menu_Help" xml:space="preserve">
     <value>_Help</value>
   </data>
-  <data name="Ui_Menu_OpenDatabase" xml:space="preserve">
-    <value>Open database…</value>
-  </data>
   <data name="Ui_Menu_Statistics" xml:space="preserve">
     <value>Statistics</value>
   </data>
@@ -735,9 +732,6 @@
   <data name="Ui_Status_BookNameEmpty" xml:space="preserve">
     <value>Book name cannot be empty</value>
   </data>
-  <data name="Ui_Status_BookNameUnchanged" xml:space="preserve">
-    <value>Book name unchanged</value>
-  </data>
   <data name="Ui_Status_NoDevice" xml:space="preserve">
     <value>No Kindle device detected</value>
   </data>
@@ -783,89 +777,14 @@
   <data name="Ui_Text_LookupCount" xml:space="preserve">
     <value>{0} lookups</value>
   </data>
-  <data name="Ui_Op_ExportClippings" xml:space="preserve">
-    <value>Export clippings as Markdown</value>
-  </data>
-  <data name="Ui_Op_ExportWords" xml:space="preserve">
-    <value>Export vocabulary as Markdown</value>
-  </data>
-  <data name="Ui_Op_ExportBook" xml:space="preserve">
-    <value>Export "{0}"</value>
-  </data>
-  <data name="Ui_Op_ExportAllClippings" xml:space="preserve">
-    <value>Export all clippings</value>
-  </data>
-  <data name="Ui_Op_Backup" xml:space="preserve">
-    <value>Back up database</value>
-  </data>
-  <data name="Ui_Op_DeleteClipping" xml:space="preserve">
-    <value>Delete clipping</value>
-  </data>
-  <data name="Ui_Op_DeleteLookup" xml:space="preserve">
-    <value>Delete lookup</value>
-  </data>
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>Rename book</value>
-  </data>
-  <data name="Ui_Result_NoChange" xml:space="preserve">
-    <value>Done (no change)</value>
-  </data>
-  <data name="Ui_Result_Exported" xml:space="preserve">
-    <value>Exported to {0}</value>
   </data>
   <data name="Ui_Result_NothingToExport" xml:space="preserve">
     <value>Nothing to export</value>
   </data>
-  <data name="Ui_Result_BackedUp" xml:space="preserve">
-    <value>Backed up as {0}</value>
-  </data>
-  <data name="Ui_Result_Cleared" xml:space="preserve">
-    <value>Cleared (auto-backed up as {0})</value>
-  </data>
-  <data name="Ui_Result_ClearFailed" xml:space="preserve">
-    <value>Clear failed</value>
-  </data>
-  <data name="Ui_Result_DeletedClipping" xml:space="preserve">
-    <value>Deleted 1 clipping</value>
-  </data>
-  <data name="Ui_Result_DeletedLookup" xml:space="preserve">
-    <value>Deleted 1 lookup</value>
-  </data>
-  <data name="Ui_Result_DeleteFailed" xml:space="preserve">
-    <value>Delete failed</value>
-  </data>
-  <data name="Ui_Result_Renamed" xml:space="preserve">
-    <value>Renamed to "{0}"</value>
-  </data>
-  <data name="Ui_Result_RenameFailed" xml:space="preserve">
-    <value>Rename failed</value>
-  </data>
-  <data name="Ui_Result_Rebuilt" xml:space="preserve">
-    <value>Rebuilt</value>
-  </data>
-  <data name="Ui_Result_RebuildFailed" xml:space="preserve">
-    <value>Rebuild failed</value>
-  </data>
-  <data name="Ui_Result_Cleaned" xml:space="preserve">
-    <value>Cleaned</value>
-  </data>
-  <data name="Ui_Result_CleanFailed" xml:space="preserve">
-    <value>Nothing cleaned</value>
-  </data>
-  <data name="Ui_Result_CleanedCount" xml:space="preserve">
-    <value>Cleaned {0} empty entries</value>
-  </data>
-  <data name="Ui_Result_Synced" xml:space="preserve">
-    <value>Synced</value>
-  </data>
-  <data name="Ui_Result_Failed" xml:space="preserve">
-    <value>{0} failed: {1}</value>
-  </data>
   <data name="Ui_Result_LanguageSet" xml:space="preserve">
     <value>Language set to "{0}"</value>
-  </data>
-  <data name="Ui_Pick_Database" xml:space="preserve">
-    <value>Choose a KindleMate2 database</value>
   </data>
   <data name="Ui_Pick_Clippings" xml:space="preserve">
     <value>Choose Kindle clippings (My Clippings.txt)</value>
@@ -878,9 +797,6 @@
   </data>
   <data name="Ui_Pick_KmateDatabase" xml:space="preserve">
     <value>Choose a KMate database</value>
-  </data>
-  <data name="Ui_FileType_Database" xml:space="preserve">
-    <value>KindleMate2 database</value>
   </data>
   <data name="Ui_FileType_Clippings" xml:space="preserve">
     <value>Kindle clippings</value>
@@ -899,36 +815,6 @@
   </data>
   <data name="Ui_Dlg_CleanOk" xml:space="preserve">
     <value>Clean</value>
-  </data>
-  <data name="Ui_Dlg_RebuildMessage" xml:space="preserve">
-    <value>Clippings will be reordered by book and page. Continue?</value>
-  </data>
-  <data name="Ui_Dlg_RebuildOk" xml:space="preserve">
-    <value>Rebuild</value>
-  </data>
-  <data name="Ui_Dlg_ClearMessage" xml:space="preserve">
-    <value>All clippings, vocabulary and lookups will be deleted (a backup is taken first). This cannot be undone. Continue?</value>
-  </data>
-  <data name="Ui_Dlg_ClearOk" xml:space="preserve">
-    <value>Clear</value>
-  </data>
-  <data name="Ui_Dlg_SyncMessage" xml:space="preserve">
-    <value>Existing files are read from the device as a backup first, then clippings are written back. Continue?</value>
-  </data>
-  <data name="Ui_Dlg_SyncOk" xml:space="preserve">
-    <value>Sync</value>
-  </data>
-  <data name="Ui_Dlg_DeleteMessage" xml:space="preserve">
-    <value>The selected record will be permanently deleted. This cannot be undone. Continue?</value>
-  </data>
-  <data name="Ui_Dlg_DeleteOk" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="Ui_Dlg_RenameMessage" xml:space="preserve">
-    <value>Enter the new book name:</value>
-  </data>
-  <data name="Ui_Dlg_RenameOk" xml:space="preserve">
-    <value>Rename</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>By date</value>
@@ -980,8 +866,5 @@
   </data>
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
-  </data>
-  <data name="Ui_Status_NotKm2Database" xml:space="preserve">
-    <value>This does not look like a Kindle Mate 2 database (missing {0}). Pick a database created by this app.</value>
   </data>
 </root>
