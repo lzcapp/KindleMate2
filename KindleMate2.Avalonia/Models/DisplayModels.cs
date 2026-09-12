@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Avalonia.Models;
 
@@ -98,16 +99,22 @@ public sealed class DetailModel {
     public bool IsCut => Kind == TypeKind.Cut;
 }
 
-/// <summary>标注类型文本与分组映射(与 Domain 的 BriefType 对齐)。</summary>
+/// <summary>标注类型文本与分组映射(与 Domain 的 BriefType 对齐;文案取自 Shared.Strings)。</summary>
 public static class TypeTextMap {
     public static (string Text, TypeKind Kind) Of(long? briefType) => briefType switch {
-        (long)BriefType.Highlight => ("划线", TypeKind.Highlight),
-        (long)BriefType.Note => ("笔记", TypeKind.Note),
-        (long)BriefType.Bookmark => ("书签", TypeKind.Bookmark),
-        (long)BriefType.Cut => ("剪切", TypeKind.Cut),
+        (long)BriefType.Highlight => (Strings.Ui_Type_Highlight, TypeKind.Highlight),
+        (long)BriefType.Note => (Strings.Ui_Type_Note, TypeKind.Note),
+        (long)BriefType.Bookmark => (Strings.Ui_Type_Bookmark, TypeKind.Bookmark),
+        (long)BriefType.Cut => (Strings.Ui_Type_Cut, TypeKind.Cut),
         _ => (string.Empty, TypeKind.None)
     };
 
-    public static IReadOnlyList<string> SearchTypes { get; } =
-        new[] { "全部", "书籍", "作者", "内容", "笔记" };
+    /// <summary>搜索范围下拉项。索引与 <see cref="MatchClipping"/> 的判定顺序一致。</summary>
+    public static IReadOnlyList<string> SearchTypes { get; } = new[] {
+        Strings.Ui_Search_Type_All,
+        Strings.Ui_Search_Type_Books,
+        Strings.Ui_Search_Type_Author,
+        Strings.Ui_Search_Type_Content,
+        Strings.Ui_Search_Type_Note
+    };
 }

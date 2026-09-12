@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Avalonia;
 
@@ -91,6 +92,14 @@ internal static class Program {
             settings.Save();
             var reloaded = AppSettings.Load(settingsDir);
             report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} db={reloaded.LastDatabase} path={reloaded.FilePath}");
+
+            // 多语言资源核对:切换 Culture 后取同一条文案,验证三套卫星资源均可用
+            var original = Strings.Culture;
+            foreach (var code in new[] { "zh-Hans", "zh-Hant", "en" }) {
+                Strings.Culture = new System.Globalization.CultureInfo(code);
+                report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings}");
+            }
+            Strings.Culture = original;
             try {
                 Directory.Delete(settingsDir, true);
             } catch {

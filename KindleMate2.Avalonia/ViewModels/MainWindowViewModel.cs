@@ -14,6 +14,7 @@ using KindleMate2.Avalonia.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia.ViewModels;
@@ -29,9 +30,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private string _dbPath = string.Empty;
     private string _searchText = string.Empty;
-    private string _searchType = "全部";
-    private string _statusText = "请选择一个 KM2 数据库开始";
-    private string _deviceStatus = "设备未连接";
+    private string _searchType = TypeTextMap.SearchTypes[0];
+    private string _statusText = Strings.Ui_Status_Initial;
+    private string _deviceStatus = Strings.Ui_Status_DeviceOffline;
     private int _domainIndex;
     private bool _isBusy;
     private bool _isDarkTheme;
@@ -134,7 +135,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
     }
 
-    public string SortLabel => _sortDescending ? "按时间 ↓" : "按时间 ↑";
+    public string SortLabel => _sortDescending ? Strings.Ui_Sort_TimeDesc : Strings.Ui_Sort_TimeAsc;
 
     /// <summary>0 = 标注,1 = 生词本。</summary>
     public int DomainIndex {
@@ -230,17 +231,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     // —— 左栏分区标题 / 计数 ——
-    public string NavSectionTitle => IsClipDomain ? "书籍" : "生词";
+    public string NavSectionTitle => IsClipDomain ? Strings.Books : Strings.Ui_Nav_Words;
     public int NavSectionCount => IsClipDomain ? BookCount : WordCount;
 
     // —— 主区标题 ——
     public string HeaderTitle => _selectedNav is { IsAll: false } nav
         ? nav.Name
-        : (IsClipDomain ? "全部标注" : "全部生词");
+        : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
 
     public string HeaderSubtitle => IsClipDomain
-        ? $"{Items.Count:N0} 条"
-        : $"{Items.Count:N0} 条查询";
+        ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, Items.Count)
+        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, Items.Count);
 
     // —— 状态栏 ——
     public int BookCount => _allClippings.Select(c => c.BookName).Where(b => !string.IsNullOrWhiteSpace(b)).Distinct().Count();
@@ -252,8 +253,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public int DeletedCount => Math.Max(0, _originLineCount - _allClippings.Count);
 
     public string StatusLeft => IsClipDomain
-        ? $"共 {BookCount:N0} 本书 · {ClipCount:N0} 条标注 · 已删除 {DeletedCount:N0} 条"
-        : $"共 {WordCount:N0} 个生词 · {LookupCount:N0} 条查询";
+        ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_SummaryClippings, BookCount, ClipCount, DeletedCount)
+        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_SummaryVocab, WordCount, LookupCount);
 
     public string StatusRight => _deviceStatus;
 
@@ -298,12 +299,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public async Task OpenDatabaseAsync(string path) {
         if (IsBusy) return;
         if (!File.Exists(path)) {
-            StatusText = $"文件不存在: {path}";
+            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_FileNotFound, path);
             return;
         }
         IsBusy = true;
         DbPath = path;
-        StatusText = "正在读取数据库…";
+        StatusText = Strings.Ui_Status_Loading;
         ResetCollections();
 
         try {
@@ -314,13 +315,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
             var elapsedMs = await Task.Run(ReloadFromSession);
             RebuildNav();
-            StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} 条标注 / {_allLookups.Count:N0} 条查询(读取 {elapsedMs} ms)";
+            StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} / {_allLookups.Count:N0} ({elapsedMs} ms)";
             if (Settings is { } settings) {
                 settings.LastDatabase = path;
                 settings.Save();
             }
         } catch (Exception ex) {
-            StatusText = $"打开失败: {ex.Message}";
+            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
             Console.WriteLine(ex);
         } finally {
             IsBusy = false;
@@ -374,7 +375,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>统一的写操作执行壳:繁忙标记 / 异常兜底 / 状态栏文案 / 可选重载。</summary>
     private async Task RunOperationAsync(string name, Func<string> operation, bool reload) {
         if (_session == null) {
-            StatusText = "请先打开一个数据库";
+            StatusText = Strings.Ui_Status_OpenDatabaseFirst;
             return;
         }
         if (IsBusy) return;
@@ -388,9 +389,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 RebuildNav();
                 RestoreSelection(previous);
             }
-            StatusText = string.IsNullOrWhiteSpace(result) ? $"{name}:完成(无变化)" : $"{name}:{result}";
+            StatusText = string.IsNullOrWhiteSpace(result)
+                ? $"{name}:{Strings.Ui_Result_NoChange}"
+                : $"{name}:{result}";
         } catch (Exception ex) {
-            StatusText = $"{name}失败:{ex.Message}";
+            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Failed, name, ex.Message);
         } finally {
             IsBusy = false;
             NotifyCounts();
@@ -400,97 +403,103 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 导入 ——
 
     public Task ImportKindleClippingsAsync(string path) =>
-        RunOperationAsync("导入 Kindle 标注", () => _session!.ImportManager.ImportKindleClippings(path), true);
+        RunOperationAsync(Strings.Ui_Menu_ImportClippings, () => _session!.ImportManager.ImportKindleClippings(path), true);
 
     public Task ImportKindleWordsAsync(string path) =>
-        RunOperationAsync("导入 Kindle 生词本", () => _session!.ImportManager.ImportKindleWords(path), true);
+        RunOperationAsync(Strings.Ui_Menu_ImportWords, () => _session!.ImportManager.ImportKindleWords(path), true);
 
     public Task ImportKmDatabaseAsync(string path) =>
-        RunOperationAsync("导入 Kindle Mate 数据库", () => _session!.ImportManager.ImportKmDatabase(path), true);
+        RunOperationAsync(Strings.Ui_Menu_ImportKmDatabase, () => _session!.ImportManager.ImportKmDatabase(path), true);
 
     public Task ImportKmateDatabaseAsync(string path) =>
-        RunOperationAsync("导入 KMate 数据库", () => _session!.ImportManager.ImportKmateDatabase(path), true);
+        RunOperationAsync(Strings.Ui_Menu_ImportKmateDatabase, () => _session!.ImportManager.ImportKmateDatabase(path), true);
 
     // —— 导出 ——
 
     public Task ExportClippingsMarkdownAsync() =>
-        RunOperationAsync("导出标注为 Markdown",
+        RunOperationAsync(Strings.Ui_Op_ExportClippings,
             () => _session!.ExportManager.ExportClippingsToMarkdown()
-                ? $"已导出到 {_session.ExportDirectory}"
-                : "无内容可导出", false);
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
+                : Strings.Ui_Result_NothingToExport, false);
 
     public Task ExportVocabsMarkdownAsync() =>
-        RunOperationAsync("导出生词本为 Markdown",
+        RunOperationAsync(Strings.Ui_Op_ExportWords,
             () => _session!.ExportManager.ExportVocabsToMarkdown()
-                ? $"已导出到 {_session.ExportDirectory}"
-                : "无内容可导出", false);
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
+                : Strings.Ui_Result_NothingToExport, false);
 
     /// <summary>导出当前选中书籍(或全部)的标注。</summary>
     public Task ExportCurrentBookMarkdownAsync() {
         var book = _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
-        var label = book.Length > 0 ? $"导出《{book}》" : "导出全部标注";
+        var label = book.Length > 0
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Op_ExportBook, book)
+            : Strings.Ui_Op_ExportAllClippings;
         return RunOperationAsync(label,
             () => _session!.ExportManager.ExportClippingsToMarkdown(book)
-                ? $"已导出到 {_session.ExportDirectory}"
-                : "无内容可导出", false);
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Exported, _session.ExportDirectory)
+                : Strings.Ui_Result_NothingToExport, false);
     }
 
     // —— 维护 ——
 
     public Task BackupDatabaseAsync() =>
-        RunOperationAsync("备份数据库", () => {
+        RunOperationAsync(Strings.Ui_Op_Backup, () => {
             var session = _session!;
             Directory.CreateDirectory(session.BackupDirectory);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
-            return $"已备份为 {fileName}";
+            return string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_BackedUp, fileName);
         }, false);
 
     public Task CleanDatabaseAsync() =>
-        RunOperationAsync("清理数据库", () => {
+        RunOperationAsync(Strings.Ui_Menu_CleanDatabase, () => {
             var session = _session!;
             if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result)) {
-                return result.TryGetValue(AppConstants.Exception, out var error) ? error : "未能清理";
+                return result.TryGetValue(AppConstants.Exception, out var error) ? error : Strings.Ui_Result_CleanFailed;
             }
-            return result.TryGetValue(AppConstants.TrimmedCount, out var trimmed) ? $"已清理 {trimmed} 条空内容" : "已清理";
+            return result.TryGetValue(AppConstants.TrimmedCount, out var trimmed)
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_CleanedCount, trimmed)
+                : Strings.Ui_Result_Cleaned;
         }, true);
 
     public Task RebuildDatabaseAsync() =>
-        RunOperationAsync("重建数据库", () => {
+        RunOperationAsync(Strings.Ui_Menu_RebuildDatabase, () => {
             if (!_session!.Km2DatabaseService.RebuildDatabase(out var result)) {
-                return result.TryGetValue(AppConstants.Exception, out var error) ? error : "重建失败";
+                return result.TryGetValue(AppConstants.Exception, out var error) ? error : Strings.Ui_Result_RebuildFailed;
             }
-            return "已重建";
+            return Strings.Ui_Result_Rebuilt;
         }, true);
 
     public Task ClearAllDataAsync() =>
-        RunOperationAsync("清空数据", () => {
+        RunOperationAsync(Strings.Ui_Menu_ClearData, () => {
             var session = _session!;
             Directory.CreateDirectory(session.BackupDirectory);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
-            return session.Km2DatabaseService.DeleteAllData() ? $"已清空(已自动备份为 {fileName})" : "清空失败";
+            return session.Km2DatabaseService.DeleteAllData()
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Cleared, fileName)
+                : Strings.Ui_Result_ClearFailed;
         }, true);
 
     // —— 删除 / 重命名 ——
 
     public Task DeleteSelectedAsync() {
         if (_session == null) {
-            StatusText = "请先打开一个数据库";
+            StatusText = Strings.Ui_Status_OpenDatabaseFirst;
             return Task.CompletedTask;
         }
         if (_selectedItem?.Clipping is { } clip) {
             var key = clip.Key;
-            return RunOperationAsync("删除标注",
-                () => _session.ClippingService.DeleteClipping(key) ? "已删除 1 条标注" : "删除失败", true);
+            return RunOperationAsync(Strings.Ui_Op_DeleteClipping,
+                () => _session.ClippingService.DeleteClipping(key) ? Strings.Ui_Result_DeletedClipping : Strings.Ui_Result_DeleteFailed, true);
         }
         if (_selectedItem?.Lookup is { } lookup) {
             var wordKey = lookup.WordKey ?? string.Empty;
             var timestamp = lookup.Timestamp ?? string.Empty;
-            return RunOperationAsync("删除查询记录",
-                () => _session.LookupRepository.Delete(wordKey, timestamp) ? "已删除 1 条查询" : "删除失败", true);
+            return RunOperationAsync(Strings.Ui_Op_DeleteLookup,
+                () => _session.LookupRepository.Delete(wordKey, timestamp) ? Strings.Ui_Result_DeletedLookup : Strings.Ui_Result_DeleteFailed, true);
         }
-        StatusText = "未选中可删除的记录";
+        StatusText = Strings.Ui_Status_NoSelection;
         return Task.CompletedTask;
     }
 
@@ -500,27 +509,31 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     public Task RenameCurrentBookAsync(string newName) {
         if (_session == null || _selectedNav is not { IsAll: false } nav) {
-            StatusText = "请先选择一本书";
+            StatusText = Strings.Ui_Status_PickBookFirst;
             return Task.CompletedTask;
         }
         var oldName = nav.Key;
         var author = _allClippings
             .FirstOrDefault(c => string.Equals(c.BookName, oldName, StringComparison.Ordinal))?.AuthorName ?? string.Empty;
-        return RunOperationAsync("重命名书籍",
-            () => _session.ClippingService.RenameBook(oldName, newName, author) ? $"已重命名为「{newName}」" : "重命名失败", true);
+        return RunOperationAsync(Strings.Ui_Op_RenameBook,
+            () => _session.ClippingService.RenameBook(oldName, newName, author)
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Renamed, newName)
+                : Strings.Ui_Result_RenameFailed, true);
     }
 
     // —— 设备 ——
 
     /// <summary>探测设备状态(可后台线程调用,不触碰绑定属性)。</summary>
     public string ProbeDeviceStatus() {
-        if (_session == null) return "设备未连接";
+        if (_session == null) return Strings.Ui_Status_DeviceOffline;
         try {
-            if (!_session.DeviceManager.IsKindleConnected()) return "设备未连接";
+            if (!_session.DeviceManager.IsKindleConnected()) return Strings.Ui_Status_DeviceOffline;
             var drive = _session.DeviceManager.DriveLetter;
-            return string.IsNullOrWhiteSpace(drive) ? "Kindle 已连接" : $"Kindle 已连接({drive})";
+            return string.IsNullOrWhiteSpace(drive)
+                ? Strings.Ui_Status_DeviceOnline
+                : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_DeviceOnlineDrive, drive);
         } catch {
-            return "设备未连接";
+            return Strings.Ui_Status_DeviceOffline;
         }
     }
 
@@ -528,9 +541,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public void RefreshDeviceStatus() => DeviceStatus = ProbeDeviceStatus();
 
     public Task SyncToDeviceAsync() =>
-        RunOperationAsync("同步到 Kindle 设备", () => {
+        RunOperationAsync(Strings.Ui_Menu_SyncToDevice, () => {
             _session!.ExportManager.SyncToKindle();
-            return "已同步";
+            return Strings.Ui_Result_Synced;
         }, false);
 
     private void ResetCollections() {
@@ -594,7 +607,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private void RebuildNav() {
         NavItems.Clear();
         if (IsClipDomain) {
-            NavItems.Add(new NavItem { Key = string.Empty, Name = "全部标注", IsAll = true, Count = _allClippings.Count });
+            NavItems.Add(new NavItem { Key = string.Empty, Name = Strings.Ui_Header_AllClippings, IsAll = true, Count = _allClippings.Count });
             var groups = _allClippings
                 .Where(c => !string.IsNullOrWhiteSpace(c.BookName))
                 .GroupBy(c => c.BookName!, StringComparer.Ordinal)
@@ -602,7 +615,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 .OrderBy(x => x.Name, StringComparer.CurrentCulture);
             foreach (var item in groups) NavItems.Add(item);
         } else {
-            NavItems.Add(new NavItem { Key = string.Empty, Name = "全部生词", IsAll = true, Count = _allLookups.Count });
+            NavItems.Add(new NavItem { Key = string.Empty, Name = Strings.Ui_Header_AllWords, IsAll = true, Count = _allLookups.Count });
             var groups = _allVocabs
                 .Where(v => !string.IsNullOrWhiteSpace(v.Word))
                 .GroupBy(v => v.Word, StringComparer.OrdinalIgnoreCase)
@@ -695,13 +708,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private static bool MatchClipping(Clipping c, string k, string type) {
         bool Hit(string? s) => !string.IsNullOrEmpty(s) && s.Contains(k, StringComparison.OrdinalIgnoreCase);
-        return type switch {
-            "书籍" => Hit(c.BookName),
-            "作者" => Hit(c.AuthorName),
-            "内容" => Hit(c.Content),
-            "笔记" => c.BriefType == (long)BriefType.Note && (Hit(c.Content) || Hit(c.BookName)),
-            _ => Hit(c.Content) || Hit(c.BookName) || Hit(c.AuthorName)
-        };
+        if (type == Strings.Ui_Search_Type_Books) return Hit(c.BookName);
+        if (type == Strings.Ui_Search_Type_Author) return Hit(c.AuthorName);
+        if (type == Strings.Ui_Search_Type_Content) return Hit(c.Content);
+        if (type == Strings.Ui_Search_Type_Note) {
+            return c.BriefType == (long)BriefType.Note && (Hit(c.Content) || Hit(c.BookName));
+        }
+        return Hit(c.Content) || Hit(c.BookName) || Hit(c.AuthorName);
     }
 
     private static ListItem ToListItem(Clipping clip) {
@@ -711,7 +724,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Primary = Flatten(clip.Content),
             Book = clip.BookName ?? string.Empty,
             Place = (clip.PageNumber ?? 0) > 0
-                ? string.Concat("第 ", (clip.PageNumber ?? 0).ToString(CultureInfo.InvariantCulture), " 页")
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Page, clip.PageNumber ?? 0)
                 : string.Empty,
             Time = clip.ClippingDate ?? string.Empty,
             TypeText = typeText,
@@ -728,8 +741,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             frequency = vocab.Frequency is > 0 ? vocab.Frequency.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
         }
         var extra = new List<string>();
-        if (stem.Length > 0 && !string.Equals(stem, lookup.Word, StringComparison.OrdinalIgnoreCase)) extra.Add($"词干 {stem}");
-        if (frequency.Length > 0) extra.Add($"词频 {frequency}");
+        if (stem.Length > 0 && !string.Equals(stem, lookup.Word, StringComparison.OrdinalIgnoreCase)) {
+            extra.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Stem, stem));
+        }
+        if (frequency.Length > 0) {
+            extra.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Frequency, frequency));
+        }
 
         var usage = Flatten(lookup.Usage ?? string.Empty);
         return new ListItem {
@@ -742,8 +759,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Kind = TypeKind.None,
             Lookup = lookup,
             LookupWordKey = wordKey
-        };
-    }
+        };    }
 
     private static string Flatten(string? text) =>
         string.IsNullOrEmpty(text)
@@ -767,7 +783,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private DetailModel BuildClippingDetail(Clipping clip) {
         var (typeText, kind) = TypeTextMap.Of(clip.BriefType);
         var place = (clip.PageNumber ?? 0) > 0
-            ? string.Concat("第 ", (clip.PageNumber ?? 0).ToString(CultureInfo.InvariantCulture), " 页")
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Page, clip.PageNumber ?? 0)
             : string.Empty;
         var subtitle = string.Join(" · ", new[] { clip.AuthorName ?? string.Empty, place }
             .Where(s => s.Length > 0));
@@ -792,10 +808,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 Kind = kind,
                 Time = model.Time,
                 HasQuote = quote.Length > 0,
-                QuoteLabel = "划线",
+                QuoteLabel = Strings.Ui_Type_Highlight,
                 Quote = quote,
                 HasNote = true,
-                NoteLabel = "笔记",
+                NoteLabel = Strings.Ui_Type_Note,
                 Note = clip.Content
             };
         }
@@ -849,10 +865,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         foreach (var entry in clippingEntries) builder.Append("• ").Append(entry.Trim()).Append('\n');
 
         var stats = new List<string>();
-        if (stem.Length > 0 && !string.Equals(stem, word, StringComparison.OrdinalIgnoreCase)) stats.Add($"词干 {stem}");
-        if (frequency.Length > 0) stats.Add($"词频 {frequency}");
-        if (lookupEntries.Count > 0) stats.Add($"{lookupEntries.Count:N0} 条查询");
-        if (clippingEntries.Count > 0) stats.Add($"{clippingEntries.Count:N0} 条标注");
+        if (stem.Length > 0 && !string.Equals(stem, word, StringComparison.OrdinalIgnoreCase)) {
+            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Stem, stem));
+        }
+        if (frequency.Length > 0) {
+            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Frequency, frequency));
+        }
+        if (lookupEntries.Count > 0) {
+            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, lookupEntries.Count));
+        }
+        if (clippingEntries.Count > 0) {
+            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippingEntries.Count));
+        }
 
         return new DetailModel {
             HasSelection = true,

@@ -5,6 +5,7 @@
         xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
         xmlns:models="using:KindleMate2.Avalonia.Models"
         xmlns:dg="using:Avalonia.Controls"
+        xmlns:shared="using:KindleMate2.Shared"
         x:Class="KindleMate2.Avalonia.Views.MainWindow"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="780"
         x:DataType="vm:MainWindowViewModel"
@@ -43,7 +44,6 @@
 
   <DockPanel>
 
-    <!-- 顶部菜单行 -->
     <Border DockPanel.Dock="Top" Height="32" Background="{DynamicResource KmChromeBrush}"
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="Auto,*" Margin="12,0">
@@ -52,38 +52,37 @@
           <TextBlock Text="Kindle Mate 2" FontSize="12" VerticalAlignment="Center"
                      Foreground="{DynamicResource KmTextSecondaryBrush}" Margin="0,0,8,0" />
           <Menu VerticalAlignment="Center">
-            <MenuItem Header="文件(_F)">
-              <MenuItem Header="打开数据库…" Click="OnMenuOpenDatabase" />
-              <MenuItem Header="刷新" Click="OnMenuRefresh" />
-              <MenuItem Header="统计" Click="OnMenuStatistics" />
+            <MenuItem Header="{x:Static shared:Strings.Ui_Menu_File}">
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_OpenDatabase}" Click="OnMenuOpenDatabase" />
+              <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnMenuRefresh" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Statistics}" Click="OnMenuStatistics" />
               <Separator />
-              <MenuItem Header="重启" Click="OnMenuRestart" />
-              <MenuItem Header="退出" Click="OnMenuExit" />
+              <MenuItem Header="{x:Static shared:Strings.Restart}" Click="OnMenuRestart" />
+              <MenuItem Header="{x:Static shared:Strings.Exit}" Click="OnMenuExit" />
             </MenuItem>
-            <MenuItem Header="管理(_M)">
-              <MenuItem Header="导入 Kindle 标注" Click="OnMenuImportClippings" />
-              <MenuItem Header="导入 Kindle 生词本" Click="OnMenuImportVocab" />
-              <MenuItem Header="导入 Kindle Mate 数据库" Click="OnMenuImportKmDatabase" />
-              <MenuItem Header="导入 KMate 数据库" Click="OnMenuImportKmateDatabase" />
-              <MenuItem Header="从 Kindle 设备导入" Click="OnMenuImportFromDevice" IsVisible="False" />
-              <MenuItem Header="同步到 Kindle 设备" Click="OnMenuSyncToDevice" />
+            <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Manage}">
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportClippings}" Click="OnMenuImportClippings" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportWords}" Click="OnMenuImportVocab" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmDatabase}" Click="OnMenuImportKmDatabase" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmateDatabase}" Click="OnMenuImportKmateDatabase" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportFromDevice}" Click="OnMenuImportFromDevice" IsVisible="False" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_SyncToDevice}" Click="OnMenuSyncToDevice" />
               <Separator />
-              <MenuItem Header="导出为 Markdown" Click="OnMenuExportMarkdown" />
-              <MenuItem Header="清理数据库" Click="OnMenuCleanDb" />
-              <MenuItem Header="重建数据库" Click="OnMenuRebuildDb" />
-              <MenuItem Header="备份" Click="OnMenuBackup" />
-              <MenuItem Header="清空数据" Click="OnMenuDeleteAll" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportMarkdown}" Click="OnMenuExportMarkdown" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_CleanDatabase}" Click="OnMenuCleanDb" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_RebuildDatabase}" Click="OnMenuRebuildDb" />
+              <MenuItem Header="{x:Static shared:Strings.Backup}" Click="OnMenuBackup" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ClearData}" Click="OnMenuDeleteAll" />
             </MenuItem>
-            <MenuItem Header="帮助(_H)">
-              <MenuItem Header="关于" Click="OnMenuAbout" />
-              <MenuItem Header="GitHub 仓库" Click="OnMenuGithub" />
+            <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Help}">
+              <MenuItem Header="{x:Static shared:Strings.About}" Click="OnMenuAbout" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Github}" Click="OnMenuGithub" />
             </MenuItem>
           </Menu>
         </StackPanel>
       </Grid>
     </Border>
 
-    <!-- 命令栏:全局搜索 + 视图 / 主题 / 语言 -->
     <Border DockPanel.Dock="Top" Height="48" Background="{DynamicResource KmSurfaceBrush}"
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto" Margin="12,0" VerticalAlignment="Center">
@@ -95,7 +94,7 @@
                   Stroke="{DynamicResource KmTextTertiaryBrush}" StrokeThickness="1.5"
                   Data="M6.5 2A4.5 4.5 0 1 1 6.5 11A4.5 4.5 0 0 1 6.5 2Z M9.8 9.8L13.5 13.5" />
             <TextBox Grid.Column="1" Classes="inline" Text="{Binding SearchText, Mode=TwoWay}"
-                     PlaceholderText="搜索标注、书名、作者…" />
+                     PlaceholderText="{x:Static shared:Strings.Ui_Search_Placeholder}" />
             <ComboBox Grid.Column="2" Classes="flat" Width="74"
                       ItemsSource="{Binding SearchTypes}" SelectedItem="{Binding SearchType, Mode=TwoWay}" />
           </Grid>
@@ -105,25 +104,28 @@
           <Border Background="{DynamicResource KmRaisedBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
                   BorderThickness="0.5" CornerRadius="6" Padding="2">
             <StackPanel Orientation="Horizontal" Spacing="2">
-              <Button Classes="ghost seg" Classes.active="{Binding IsListMode}" Content="列表" Click="OnShowList" />
-              <Button Classes="ghost seg" Classes.active="{Binding IsTableMode}" Content="表格" Click="OnShowTable" />
+              <Button Classes="ghost seg" Classes.active="{Binding IsListMode}"
+                      Content="{x:Static shared:Strings.Ui_View_List}" Click="OnShowList" />
+              <Button Classes="ghost seg" Classes.active="{Binding IsTableMode}"
+                      Content="{x:Static shared:Strings.Ui_View_Table}" Click="OnShowTable" />
             </StackPanel>
           </Border>
 
-          <Button Classes="ghost icon" Click="OnToggleTheme" ToolTip.Tip="切换深色 / 浅色">
+          <Button Classes="ghost icon" Click="OnToggleTheme"
+                  ToolTip.Tip="{x:Static shared:Strings.Ui_Tip_ToggleTheme}">
             <Path Width="14" Height="14" Stretch="None" Stroke="{DynamicResource KmTextSecondaryBrush}" StrokeThickness="1.3"
                   Data="M12.5 9.8A5.5 5.5 0 0 1 6.2 3.5A5.5 5.5 0 1 0 12.5 9.8Z" />
           </Button>
 
-          <Button Classes="ghost icon" ToolTip.Tip="界面语言">
+          <Button Classes="ghost icon" ToolTip.Tip="{x:Static shared:Strings.Ui_Tip_Language}">
             <Path Width="14" Height="14" Stretch="None" Stroke="{DynamicResource KmAccentBrush}" StrokeThickness="1.3"
                   Data="M8 2.5A5.5 5.5 0 1 1 8 13.5A5.5 5.5 0 0 1 8 2.5Z M2.5 8H13.5 M8 2.5C9.9 4.6 9.9 11.4 8 13.5 M8 2.5C6.1 4.6 6.1 11.4 8 13.5" />
             <Button.Flyout>
               <MenuFlyout>
-                <MenuItem Header="简体中文" Click="OnLanguageHans" />
-                <MenuItem Header="繁体中文" Click="OnLanguageHant" />
-                <MenuItem Header="英文" Click="OnLanguageEn" />
-                <MenuItem Header="跟随系统" Click="OnLanguageAuto" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Lang_Hans}" Click="OnLanguageHans" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Lang_Hant}" Click="OnLanguageHant" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Lang_En}" Click="OnLanguageEn" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Lang_Auto}" Click="OnLanguageAuto" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>
@@ -131,7 +133,6 @@
       </Grid>
     </Border>
 
-    <!-- 状态栏 -->
     <Border DockPanel.Dock="Bottom" Height="28" Background="{DynamicResource KmSurfaceBrush}"
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" Margin="12,0" VerticalAlignment="Center">
@@ -139,8 +140,8 @@
         <TextBlock Grid.Column="1" Classes="tt" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="14,0,0,0" />
         <ProgressBar Grid.Column="3" Width="110" IsIndeterminate="True" VerticalAlignment="Center"
                      IsVisible="{Binding IsProgressVisible}" />
-        <TextBlock Grid.Column="4" Classes="tt" Text="读取中" Margin="8,0" VerticalAlignment="Center"
-                   IsVisible="{Binding IsProgressVisible}" />
+        <TextBlock Grid.Column="4" Classes="tt" Text="{x:Static shared:Strings.Ui_Status_Reading}"
+                   Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding IsProgressVisible}" />
         <TextBlock Grid.Column="5" Classes="dot" Text="·" Margin="8,0" VerticalAlignment="Center"
                    IsVisible="{Binding IsProgressVisible}" />
         <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -150,7 +151,6 @@
       </Grid>
     </Border>
 
-    <!-- 主体:左导航 | 内容 | 预览 -->
     <Grid ColumnDefinitions="236,3,*,3,330">
 
       <Border Grid.Column="0" Background="{DynamicResource KmSurfaceBrush}">
@@ -158,9 +158,9 @@
           <Border DockPanel.Dock="Top" Background="{DynamicResource KmRaisedBrush}" CornerRadius="7" Padding="2">
             <Grid ColumnDefinitions="*,*" ColumnSpacing="2">
               <Button Grid.Column="0" Classes="ghost seg" Classes.active="{Binding IsClipDomain}"
-                      Content="标注" HorizontalAlignment="Stretch" Click="OnSelectClipDomain" />
+                      Content="{x:Static shared:Strings.Clippings}" HorizontalAlignment="Stretch" Click="OnSelectClipDomain" />
               <Button Grid.Column="1" Classes="ghost seg" Classes.active="{Binding IsWordDomain}"
-                      Content="生词本" HorizontalAlignment="Stretch" Click="OnSelectWordDomain" />
+                      Content="{x:Static shared:Strings.Ui_Domain_Vocab}" HorizontalAlignment="Stretch" Click="OnSelectWordDomain" />
             </Grid>
           </Border>
 
@@ -172,7 +172,7 @@
           <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,1,0,0"
                   Padding="8,9" Margin="0,8,0,0">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="回收站" FontSize="12"
+              <TextBlock Grid.Column="0" Text="{x:Static shared:Strings.Ui_Nav_RecycleBin}" FontSize="12"
                          Foreground="{DynamicResource KmTextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Classes="ts" Text="{Binding DeletedCount}" />
             </Grid>
@@ -181,10 +181,10 @@
           <ListBox ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNav, Mode=TwoWay}">
             <ListBox.ContextMenu>
               <ContextMenu>
-                <MenuItem Header="刷新" Click="OnRefreshCurrent" />
-                <MenuItem Header="导出" Click="OnExportCurrent" />
-                <MenuItem Header="重命名" Click="OnRenameCurrent" />
-                <MenuItem Header="删除" Click="OnDeleteSelected" />
+                <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Action_Export}" Click="OnExportCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
               </ContextMenu>
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
@@ -219,9 +219,9 @@
                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
             <ListBox.ContextMenu>
               <ContextMenu>
-                <MenuItem Header="刷新" Click="OnRefreshCurrent" />
-                <MenuItem Header="复制" Click="OnContextCopy" />
-                <MenuItem Header="删除" Click="OnDeleteSelected" />
+                <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
               </ContextMenu>
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
@@ -255,17 +255,17 @@
                        AutoGenerateColumns="False" IsReadOnly="True">
             <dg:DataGrid.ContextMenu>
               <ContextMenu>
-                <MenuItem Header="刷新" Click="OnRefreshCurrent" />
-                <MenuItem Header="复制" Click="OnContextCopy" />
-                <MenuItem Header="删除" Click="OnDeleteSelected" />
+                <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
               </ContextMenu>
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*" />
-              <dg:DataGridTextColumn Header="书籍" Binding="{Binding BookName}" Width="150" />
-              <dg:DataGridTextColumn Header="作者" Binding="{Binding AuthorName}" Width="90" />
-              <dg:DataGridTextColumn Header="页数" Binding="{Binding PageNumber}" Width="60" />
-              <dg:DataGridTextColumn Header="日期" Binding="{Binding ClippingDate}" Width="130" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Content}" Width="*" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding BookName}" Width="150" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Author}" Binding="{Binding AuthorName}" Width="90" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Page}" Binding="{Binding PageNumber}" Width="60" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Date}" Binding="{Binding ClippingDate}" Width="130" />
             </dg:DataGrid.Columns>
           </dg:DataGrid>
 
@@ -274,18 +274,18 @@
                        AutoGenerateColumns="False" IsReadOnly="True">
             <dg:DataGrid.ContextMenu>
               <ContextMenu>
-                <MenuItem Header="刷新" Click="OnRefreshCurrent" />
-                <MenuItem Header="复制" Click="OnContextCopy" />
-                <MenuItem Header="删除" Click="OnDeleteSelected" />
+                <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
+                <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
               </ContextMenu>
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="生词" Binding="{Binding Word}" Width="130" />
-              <dg:DataGridTextColumn Header="词干" Binding="{Binding Stem}" Width="110" />
-              <dg:DataGridTextColumn Header="词频" Binding="{Binding Frequency}" Width="60" />
-              <dg:DataGridTextColumn Header="内容" Binding="{Binding Usage}" Width="*" />
-              <dg:DataGridTextColumn Header="书籍" Binding="{Binding Title}" Width="130" />
-              <dg:DataGridTextColumn Header="时间" Binding="{Binding Timestamp}" Width="130" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Frequency}" Binding="{Binding Frequency}" Width="60" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Usage}" Width="*" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding Title}" Width="130" />
+              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Time}" Binding="{Binding Timestamp}" Width="130" />
             </dg:DataGrid.Columns>
           </dg:DataGrid>
 
@@ -298,17 +298,16 @@
               BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="1,0,0,0">
         <Border.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="复制" Click="OnContextCopy" />
-            <MenuItem Header="全选" Click="OnContextCopy" />
+            <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
           </ContextMenu>
         </Border.ContextMenu>
         <Grid RowDefinitions="Auto,*,Auto" Margin="16,14">
 
           <StackPanel Grid.Row="0" Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center"
                       Spacing="6" IsVisible="{Binding Detail.HasNoSelection}">
-            <TextBlock Text="未选中内容" Foreground="{DynamicResource KmTextSecondaryBrush}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Classes="tt" Text="从列表或表格中选择一条记录" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static shared:Strings.Ui_Detail_Empty}"
+                       Foreground="{DynamicResource KmTextSecondaryBrush}" HorizontalAlignment="Center" />
+            <TextBlock Classes="tt" Text="{x:Static shared:Strings.Ui_Detail_EmptyHint}" HorizontalAlignment="Center" />
           </StackPanel>
 
           <StackPanel Grid.Row="0" IsVisible="{Binding Detail.HasSelection}">
@@ -352,9 +351,10 @@
 
           <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,14,0,0"
                 IsVisible="{Binding Detail.HasSelection}">
-            <Button Grid.Column="0" Classes="primary" Content="复制" Click="OnCopyDetail" />
-            <Button Grid.Column="1" Classes="ghost seg" Content="导出" Margin="8,0,0,0" Click="OnMenuExportMarkdown" />
-            <Button Grid.Column="3" Classes="danger" Content="删除" Click="OnDeleteSelected" />
+            <Button Grid.Column="0" Classes="primary" Content="{x:Static shared:Strings.Copy}" Click="OnCopyDetail" />
+            <Button Grid.Column="1" Classes="ghost seg" Content="{x:Static shared:Strings.Ui_Action_Export}"
+                    Margin="8,0,0,0" Click="OnMenuExportMarkdown" />
+            <Button Grid.Column="3" Classes="danger" Content="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
           </Grid>
 
         </Grid>

@@ -4,10 +4,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
         xmlns:charts="using:KindleMate2.Avalonia.Charts"
+        xmlns:shared="using:KindleMate2.Shared"
         x:Class="KindleMate2.Avalonia.Views.StatisticsWindow"
         mc:Ignorable="d" d:DesignWidth="940" d:DesignHeight="680"
         x:DataType="vm:StatisticsViewModel"
-        Title="统计"
+        Title="{x:Static shared:Strings.Ui_Menu_Statistics}"
         Width="940" Height="680" MinWidth="720" MinHeight="520"
         WindowStartupLocation="CenterOwner">
 
@@ -17,7 +18,7 @@
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto" Margin="16,0">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock Text="统计" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="{x:Static shared:Strings.Ui_Menu_Statistics}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
           <TextBlock Classes="tt" Text="{Binding Source}" VerticalAlignment="Center"
                      MaxWidth="360" TextTrimming="CharacterEllipsis" />
         </StackPanel>
@@ -25,12 +26,12 @@
           <Border Background="{DynamicResource KmRaisedBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
                   BorderThickness="0.5" CornerRadius="6" Padding="2">
             <StackPanel Orientation="Horizontal" Spacing="2">
-              <Button x:Name="TabClippings" Classes="ghost seg" Content="标注" Click="OnShowClippings" />
-              <Button x:Name="TabVocabs" Classes="ghost seg" Content="生词本" Click="OnShowVocabs" />
+              <Button x:Name="TabClippings" Classes="ghost seg" Content="{x:Static shared:Strings.Clippings}" Click="OnShowClippings" />
+              <Button x:Name="TabVocabs" Classes="ghost seg" Content="{x:Static shared:Strings.Ui_Domain_Vocab}" Click="OnShowVocabs" />
             </StackPanel>
           </Border>
-          <Button Classes="primary" Content="导出图片" Click="OnExportImage" />
-          <Button Content="关闭" Click="OnClose" />
+          <Button Classes="primary" Content="{x:Static shared:Strings.Ui_Stats_ExportImage}" Click="OnExportImage" />
+          <Button Content="{x:Static shared:Strings.Ui_Action_Close}" Click="OnClose" />
         </StackPanel>
       </Grid>
     </Border>
@@ -47,7 +48,7 @@
         <Border Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
                 BorderThickness="0.5" CornerRadius="10" Padding="14,12">
           <StackPanel Spacing="8">
-            <TextBlock Text="按日期" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+            <TextBlock Text="{x:Static shared:Strings.Ui_Stats_ByDate}" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
             <charts:ChartControl x:Name="DateChart" Height="190" Kind="Line"
                                  Accent="{DynamicResource KmAccentBrush}"
                                  Axis="{DynamicResource KmBorderBrush}"
@@ -59,7 +60,7 @@
           <Border Grid.Column="0" Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
                   BorderThickness="0.5" CornerRadius="10" Padding="14,12">
             <StackPanel Spacing="8">
-              <TextBlock Text="按小时" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+              <TextBlock Text="{x:Static shared:Strings.Ui_Stats_ByHour}" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
               <charts:ChartControl x:Name="HourChart" Height="170" Kind="Bar"
                                    Accent="{DynamicResource KmAccentBrush}"
                                    Axis="{DynamicResource KmBorderBrush}"
@@ -69,7 +70,7 @@
           <Border Grid.Column="1" Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
                   BorderThickness="0.5" CornerRadius="10" Padding="14,12">
             <StackPanel Spacing="8">
-              <TextBlock Text="按星期" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+              <TextBlock Text="{x:Static shared:Strings.Ui_Stats_ByWeekday}" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
               <charts:ChartControl x:Name="WeekdayChart" Height="170" Kind="Bar"
                                    Accent="{DynamicResource KmAccentBrush}"
                                    Axis="{DynamicResource KmBorderBrush}"
@@ -78,7 +79,7 @@
           </Border>
         </Grid>
 
-        <TextBlock x:Name="EmptyHint" Classes="tt" Text="该库暂无统计数据" IsVisible="False" Margin="2,0" />
+        <TextBlock x:Name="EmptyHint" Classes="tt" Text="{x:Static shared:Strings.Ui_Stats_Empty}" IsVisible="False" Margin="2,0" />
       </StackPanel>
     </ScrollViewer>
 

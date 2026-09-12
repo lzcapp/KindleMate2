@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using KindleMate2.Avalonia.Services;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia.ViewModels;
@@ -19,6 +20,12 @@ public sealed class AboutViewModel {
     public string RepoUrl { get; private init; } = AppConstants.RepoUrl;
     public string Runtime { get; private init; } = string.Empty;
 
+    /// <summary>「版本 2026.9.13.0」——文案走资源,便于多语言。</summary>
+    public string VersionLabel => string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_Version, Version);
+
+    /// <summary>数据库体积,形如「(7.02 MB)」;无体积时为空。</summary>
+    public string DatabaseSizeLabel => DatabaseSize.Length > 0 ? $"({DatabaseSize})" : string.Empty;
+
     public static AboutViewModel Load(DatabaseSession? session) {
         var assembly = typeof(AboutViewModel).Assembly;
         var product = GetAttribute<AssemblyProductAttribute>(assembly)?.Product ?? "Kindle Mate 2";
@@ -26,7 +33,7 @@ public sealed class AboutViewModel {
         var version = assembly.GetName().Version?.ToString() ?? string.Empty;
 
         var dbPath = session?.DatabasePath ?? string.Empty;
-        var dbName = dbPath.Length > 0 ? Path.GetFileName(dbPath) : "未打开数据库";
+        var dbName = dbPath.Length > 0 ? Path.GetFileName(dbPath) : Strings.Ui_About_NoDatabase;
         var dbSize = string.Empty;
         if (dbPath.Length > 0 && File.Exists(dbPath)) {
             dbSize = FormatSize(new FileInfo(dbPath).Length);
@@ -40,7 +47,8 @@ public sealed class AboutViewModel {
             DatabaseName = dbName,
             DatabaseSize = dbSize,
             DatabasePath = dbPath,
-            Runtime = $"{Environment.OSVersion.Platform} · .NET {Environment.Version}"
+            Runtime = string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_RuntimeFormat,
+                Environment.OSVersion.Platform, Environment.Version)
         };
     }
 

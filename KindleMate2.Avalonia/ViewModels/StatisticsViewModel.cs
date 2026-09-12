@@ -5,6 +5,7 @@ using System.Linq;
 using KindleMate2.Avalonia.Charts;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Avalonia.ViewModels;
 
@@ -28,7 +29,7 @@ public sealed class StatisticsViewModel {
 
     public static StatisticsViewModel Load(DatabaseSession? session) {
         if (session == null) {
-            return new StatisticsViewModel { IsEmpty = true, ClippingSummary = "尚未打开数据库" };
+            return new StatisticsViewModel { IsEmpty = true, ClippingSummary = Strings.Ui_Status_NoDatabase };
         }
 
         var clippings = session.ClippingRepository.GetAll();
@@ -53,11 +54,15 @@ public sealed class StatisticsViewModel {
             VocabsByWeekday = ByWeekday(vocabDates),
             HasVocabs = vocabs.Count > 0,
             ClippingSummary = clippingDates.Count > 0
-                ? $"跨度 {SpanDays(clippingDates)} 天 · 共 {clippings.Count:N0} 条标注 · {bookCount:N0} 本书 · {authorCount:N0} 位作者"
-                : $"共 {clippings.Count:N0} 条标注 · {bookCount:N0} 本书 · {authorCount:N0} 位作者",
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Stats_SummaryClippings,
+                    SpanDays(clippingDates), clippings.Count, bookCount, authorCount)
+                : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Stats_SummaryClippingsNoSpan,
+                    clippings.Count, bookCount, authorCount),
             VocabSummary = vocabDates.Count > 0
-                ? $"跨度 {SpanDays(vocabDates)} 天 · 共 {lookupCount:N0} 次查询 · {wordCount:N0} 个生词"
-                : $"共 {lookupCount:N0} 次查询 · {wordCount:N0} 个生词"
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Stats_SummaryVocab,
+                    SpanDays(vocabDates), lookupCount, wordCount)
+                : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Stats_SummaryVocabNoSpan,
+                    lookupCount, wordCount)
         };
     }
 

@@ -561,4 +561,424 @@
   <data name="Edit_Notes_Only" xml:space="preserve">
     <value>Only notes can be edited.</value>
   </data>
+  <data name="Ui_Menu_File" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="Ui_Menu_Manage" xml:space="preserve">
+    <value>_Manage</value>
+  </data>
+  <data name="Ui_Menu_Help" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="Ui_Menu_OpenDatabase" xml:space="preserve">
+    <value>Open database…</value>
+  </data>
+  <data name="Ui_Menu_Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="Ui_Menu_ImportClippings" xml:space="preserve">
+    <value>Import Kindle clippings</value>
+  </data>
+  <data name="Ui_Menu_ImportWords" xml:space="preserve">
+    <value>Import Kindle vocabulary</value>
+  </data>
+  <data name="Ui_Menu_ImportKmDatabase" xml:space="preserve">
+    <value>Import Kindle Mate database</value>
+  </data>
+  <data name="Ui_Menu_ImportKmateDatabase" xml:space="preserve">
+    <value>Import KMate database</value>
+  </data>
+  <data name="Ui_Menu_ImportFromDevice" xml:space="preserve">
+    <value>Import from Kindle device</value>
+  </data>
+  <data name="Ui_Menu_SyncToDevice" xml:space="preserve">
+    <value>Sync to Kindle device</value>
+  </data>
+  <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
+    <value>Export as Markdown</value>
+  </data>
+  <data name="Ui_Menu_CleanDatabase" xml:space="preserve">
+    <value>Clean database</value>
+  </data>
+  <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
+    <value>Rebuild database</value>
+  </data>
+  <data name="Ui_Menu_ClearData" xml:space="preserve">
+    <value>Clear all data</value>
+  </data>
+  <data name="Ui_Menu_Github" xml:space="preserve">
+    <value>GitHub repository</value>
+  </data>
+  <data name="Ui_Search_Placeholder" xml:space="preserve">
+    <value>Search clippings, books, authors…</value>
+  </data>
+  <data name="Ui_View_List" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="Ui_View_Table" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Ui_Tip_ToggleTheme" xml:space="preserve">
+    <value>Toggle dark / light</value>
+  </data>
+  <data name="Ui_Tip_Language" xml:space="preserve">
+    <value>Interface language</value>
+  </data>
+  <data name="Ui_Lang_Hans" xml:space="preserve">
+    <value>Simplified Chinese</value>
+  </data>
+  <data name="Ui_Lang_Hant" xml:space="preserve">
+    <value>Traditional Chinese</value>
+  </data>
+  <data name="Ui_Lang_En" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Ui_Lang_Auto" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="Ui_Search_Type_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Ui_Search_Type_Books" xml:space="preserve">
+    <value>Book</value>
+  </data>
+  <data name="Ui_Search_Type_Author" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="Ui_Search_Type_Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="Ui_Search_Type_Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Ui_Domain_Vocab" xml:space="preserve">
+    <value>Vocabulary</value>
+  </data>
+  <data name="Ui_Nav_Words" xml:space="preserve">
+    <value>Words</value>
+  </data>
+  <data name="Ui_Nav_RecycleBin" xml:space="preserve">
+    <value>Recycle bin</value>
+  </data>
+  <data name="Ui_Header_AllClippings" xml:space="preserve">
+    <value>All clippings</value>
+  </data>
+  <data name="Ui_Header_AllWords" xml:space="preserve">
+    <value>All words</value>
+  </data>
+  <data name="Ui_Sort_TimeDesc" xml:space="preserve">
+    <value>By time ↓</value>
+  </data>
+  <data name="Ui_Sort_TimeAsc" xml:space="preserve">
+    <value>By time ↑</value>
+  </data>
+  <data name="Ui_Col_Word" xml:space="preserve">
+    <value>Word</value>
+  </data>
+  <data name="Ui_Col_Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Ui_Detail_Empty" xml:space="preserve">
+    <value>Nothing selected</value>
+  </data>
+  <data name="Ui_Detail_EmptyHint" xml:space="preserve">
+    <value>Pick a record from the list or table</value>
+  </data>
+  <data name="Ui_Action_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Ui_Action_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Ui_Action_Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Ui_Type_Highlight" xml:space="preserve">
+    <value>Highlight</value>
+  </data>
+  <data name="Ui_Type_Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Ui_Type_Bookmark" xml:space="preserve">
+    <value>Bookmark</value>
+  </data>
+  <data name="Ui_Type_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Ui_Status_Initial" xml:space="preserve">
+    <value>Pick a KM2 database to begin</value>
+  </data>
+  <data name="Ui_Status_Reading" xml:space="preserve">
+    <value>Loading</value>
+  </data>
+  <data name="Ui_Status_DeviceOffline" xml:space="preserve">
+    <value>Device not connected</value>
+  </data>
+  <data name="Ui_Status_DeviceOnline" xml:space="preserve">
+    <value>Kindle connected</value>
+  </data>
+  <data name="Ui_Status_DeviceOnlineDrive" xml:space="preserve">
+    <value>Kindle connected ({0})</value>
+  </data>
+  <data name="Ui_Status_NoDatabase" xml:space="preserve">
+    <value>No database open</value>
+  </data>
+  <data name="Ui_Status_OpenDatabaseFirst" xml:space="preserve">
+    <value>Open a database first</value>
+  </data>
+  <data name="Ui_Status_NoSelection" xml:space="preserve">
+    <value>No deletable record selected</value>
+  </data>
+  <data name="Ui_Status_PickBookFirst" xml:space="preserve">
+    <value>Pick a book on the left first</value>
+  </data>
+  <data name="Ui_Status_BookNameEmpty" xml:space="preserve">
+    <value>Book name cannot be empty</value>
+  </data>
+  <data name="Ui_Status_BookNameUnchanged" xml:space="preserve">
+    <value>Book name unchanged</value>
+  </data>
+  <data name="Ui_Status_NoDevice" xml:space="preserve">
+    <value>No Kindle device detected</value>
+  </data>
+  <data name="Ui_Status_Copied" xml:space="preserve">
+    <value>Copied to clipboard</value>
+  </data>
+  <data name="Ui_Status_NothingToCopy" xml:space="preserve">
+    <value>Nothing to copy</value>
+  </data>
+  <data name="Ui_Status_ClipboardUnavailable" xml:space="preserve">
+    <value>Clipboard unavailable</value>
+  </data>
+  <data name="Ui_Status_BadPath" xml:space="preserve">
+    <value>Cannot resolve local path: {0}</value>
+  </data>
+  <data name="Ui_Status_Loading" xml:space="preserve">
+    <value>Reading database…</value>
+  </data>
+  <data name="Ui_Status_FileNotFound" xml:space="preserve">
+    <value>File not found: {0}</value>
+  </data>
+  <data name="Ui_Status_OpenFailed" xml:space="preserve">
+    <value>Open failed: {0}</value>
+  </data>
+  <data name="Ui_Status_SummaryClippings" xml:space="preserve">
+    <value>{0} books · {1} clippings · {2} deleted</value>
+  </data>
+  <data name="Ui_Status_SummaryVocab" xml:space="preserve">
+    <value>{0} words · {1} lookups</value>
+  </data>
+  <data name="Ui_Text_Page" xml:space="preserve">
+    <value>p. {0}</value>
+  </data>
+  <data name="Ui_Text_Stem" xml:space="preserve">
+    <value>stem {0}</value>
+  </data>
+  <data name="Ui_Text_Frequency" xml:space="preserve">
+    <value>freq {0}</value>
+  </data>
+  <data name="Ui_Text_ClippingCount" xml:space="preserve">
+    <value>{0} clippings</value>
+  </data>
+  <data name="Ui_Text_LookupCount" xml:space="preserve">
+    <value>{0} lookups</value>
+  </data>
+  <data name="Ui_Op_ExportClippings" xml:space="preserve">
+    <value>Export clippings as Markdown</value>
+  </data>
+  <data name="Ui_Op_ExportWords" xml:space="preserve">
+    <value>Export vocabulary as Markdown</value>
+  </data>
+  <data name="Ui_Op_ExportBook" xml:space="preserve">
+    <value>Export "{0}"</value>
+  </data>
+  <data name="Ui_Op_ExportAllClippings" xml:space="preserve">
+    <value>Export all clippings</value>
+  </data>
+  <data name="Ui_Op_Backup" xml:space="preserve">
+    <value>Back up database</value>
+  </data>
+  <data name="Ui_Op_DeleteClipping" xml:space="preserve">
+    <value>Delete clipping</value>
+  </data>
+  <data name="Ui_Op_DeleteLookup" xml:space="preserve">
+    <value>Delete lookup</value>
+  </data>
+  <data name="Ui_Op_RenameBook" xml:space="preserve">
+    <value>Rename book</value>
+  </data>
+  <data name="Ui_Result_NoChange" xml:space="preserve">
+    <value>Done (no change)</value>
+  </data>
+  <data name="Ui_Result_Exported" xml:space="preserve">
+    <value>Exported to {0}</value>
+  </data>
+  <data name="Ui_Result_NothingToExport" xml:space="preserve">
+    <value>Nothing to export</value>
+  </data>
+  <data name="Ui_Result_BackedUp" xml:space="preserve">
+    <value>Backed up as {0}</value>
+  </data>
+  <data name="Ui_Result_Cleared" xml:space="preserve">
+    <value>Cleared (auto-backed up as {0})</value>
+  </data>
+  <data name="Ui_Result_ClearFailed" xml:space="preserve">
+    <value>Clear failed</value>
+  </data>
+  <data name="Ui_Result_DeletedClipping" xml:space="preserve">
+    <value>Deleted 1 clipping</value>
+  </data>
+  <data name="Ui_Result_DeletedLookup" xml:space="preserve">
+    <value>Deleted 1 lookup</value>
+  </data>
+  <data name="Ui_Result_DeleteFailed" xml:space="preserve">
+    <value>Delete failed</value>
+  </data>
+  <data name="Ui_Result_Renamed" xml:space="preserve">
+    <value>Renamed to "{0}"</value>
+  </data>
+  <data name="Ui_Result_RenameFailed" xml:space="preserve">
+    <value>Rename failed</value>
+  </data>
+  <data name="Ui_Result_Rebuilt" xml:space="preserve">
+    <value>Rebuilt</value>
+  </data>
+  <data name="Ui_Result_RebuildFailed" xml:space="preserve">
+    <value>Rebuild failed</value>
+  </data>
+  <data name="Ui_Result_Cleaned" xml:space="preserve">
+    <value>Cleaned</value>
+  </data>
+  <data name="Ui_Result_CleanFailed" xml:space="preserve">
+    <value>Nothing cleaned</value>
+  </data>
+  <data name="Ui_Result_CleanedCount" xml:space="preserve">
+    <value>Cleaned {0} empty entries</value>
+  </data>
+  <data name="Ui_Result_Synced" xml:space="preserve">
+    <value>Synced</value>
+  </data>
+  <data name="Ui_Result_Failed" xml:space="preserve">
+    <value>{0} failed: {1}</value>
+  </data>
+  <data name="Ui_Result_LanguageSet" xml:space="preserve">
+    <value>Language set to "{0}"</value>
+  </data>
+  <data name="Ui_Pick_Database" xml:space="preserve">
+    <value>Choose a KindleMate2 database</value>
+  </data>
+  <data name="Ui_Pick_Clippings" xml:space="preserve">
+    <value>Choose Kindle clippings (My Clippings.txt)</value>
+  </data>
+  <data name="Ui_Pick_Words" xml:space="preserve">
+    <value>Choose Kindle vocabulary (vocab.db)</value>
+  </data>
+  <data name="Ui_Pick_KmDatabase" xml:space="preserve">
+    <value>Choose a Kindle Mate database</value>
+  </data>
+  <data name="Ui_Pick_KmateDatabase" xml:space="preserve">
+    <value>Choose a KMate database</value>
+  </data>
+  <data name="Ui_FileType_Database" xml:space="preserve">
+    <value>KindleMate2 database</value>
+  </data>
+  <data name="Ui_FileType_Clippings" xml:space="preserve">
+    <value>Kindle clippings</value>
+  </data>
+  <data name="Ui_FileType_Words" xml:space="preserve">
+    <value>Kindle vocabulary</value>
+  </data>
+  <data name="Ui_FileType_KmDatabase" xml:space="preserve">
+    <value>Kindle Mate database</value>
+  </data>
+  <data name="Ui_FileType_KmateDatabase" xml:space="preserve">
+    <value>KMate database</value>
+  </data>
+  <data name="Ui_Dlg_CleanMessage" xml:space="preserve">
+    <value>Empty clippings will be removed. Back up first if unsure. Continue?</value>
+  </data>
+  <data name="Ui_Dlg_CleanOk" xml:space="preserve">
+    <value>Clean</value>
+  </data>
+  <data name="Ui_Dlg_RebuildMessage" xml:space="preserve">
+    <value>Clippings will be reordered by book and page. Continue?</value>
+  </data>
+  <data name="Ui_Dlg_RebuildOk" xml:space="preserve">
+    <value>Rebuild</value>
+  </data>
+  <data name="Ui_Dlg_ClearMessage" xml:space="preserve">
+    <value>All clippings, vocabulary and lookups will be deleted (a backup is taken first). This cannot be undone. Continue?</value>
+  </data>
+  <data name="Ui_Dlg_ClearOk" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Ui_Dlg_SyncMessage" xml:space="preserve">
+    <value>Existing files are read from the device as a backup first, then clippings are written back. Continue?</value>
+  </data>
+  <data name="Ui_Dlg_SyncOk" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="Ui_Dlg_DeleteMessage" xml:space="preserve">
+    <value>The selected record will be permanently deleted. This cannot be undone. Continue?</value>
+  </data>
+  <data name="Ui_Dlg_DeleteOk" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Ui_Dlg_RenameMessage" xml:space="preserve">
+    <value>Enter the new book name:</value>
+  </data>
+  <data name="Ui_Dlg_RenameOk" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Ui_Stats_ByDate" xml:space="preserve">
+    <value>By date</value>
+  </data>
+  <data name="Ui_Stats_ByHour" xml:space="preserve">
+    <value>By hour</value>
+  </data>
+  <data name="Ui_Stats_ByWeekday" xml:space="preserve">
+    <value>By weekday</value>
+  </data>
+  <data name="Ui_Stats_ExportImage" xml:space="preserve">
+    <value>Export image</value>
+  </data>
+  <data name="Ui_Stats_Empty" xml:space="preserve">
+    <value>No statistics in this database</value>
+  </data>
+  <data name="Ui_Stats_SummaryClippings" xml:space="preserve">
+    <value>Over {0} days · {1} clippings · {2} books · {3} authors</value>
+  </data>
+  <data name="Ui_Stats_SummaryClippingsNoSpan" xml:space="preserve">
+    <value>{0} clippings · {1} books · {2} authors</value>
+  </data>
+  <data name="Ui_Stats_SummaryVocab" xml:space="preserve">
+    <value>Over {0} days · {1} lookups · {2} words</value>
+  </data>
+  <data name="Ui_Stats_SummaryVocabNoSpan" xml:space="preserve">
+    <value>{0} lookups · {1} words</value>
+  </data>
+  <data name="Ui_Stats_Saved" xml:space="preserve">
+    <value>Statistics image saved: {0}</value>
+  </data>
+  <data name="Ui_Stats_SaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="Ui_About_Title" xml:space="preserve">
+    <value>About Kindle Mate 2</value>
+  </data>
+  <data name="Ui_About_Version" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="Ui_About_Runtime" xml:space="preserve">
+    <value>Runtime</value>
+  </data>
+  <data name="Ui_About_Repo" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="Ui_About_NoDatabase" xml:space="preserve">
+    <value>No database open</value>
+  </data>
+  <data name="Ui_About_RuntimeFormat" xml:space="preserve">
+    <value>{0} · .NET {1}</value>
+  </data>
 </root>

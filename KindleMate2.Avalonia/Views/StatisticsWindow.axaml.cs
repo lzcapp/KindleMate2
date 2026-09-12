@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using KindleMate2.Avalonia.Charts;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia.Views;
@@ -90,9 +91,9 @@ public partial class StatisticsWindow : Window {
 #pragma warning disable CS0618
             bitmap.Save(file);
 #pragma warning restore CS0618
-            SummaryText.Text = $"已保存统计图:{file}";
+            SummaryText.Text = string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Ui_Stats_Saved, file);
         } catch (Exception ex) {
-            SummaryText.Text = $"保存失败:{ex.Message}";
+            SummaryText.Text = string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Ui_Stats_SaveFailed, ex.Message);
         }
 
         await Task.CompletedTask;
