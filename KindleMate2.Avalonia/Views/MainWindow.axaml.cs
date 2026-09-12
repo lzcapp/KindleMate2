@@ -11,6 +11,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -28,7 +29,18 @@ public partial class MainWindow : Window {
     private async void OnOpened(object? sender, EventArgs e) {
         SyncThemeFromApplication();
         if (Vm is { } vm) {
-            await vm.TryAutoOpenAsync();
+            // 对齐原版 FrmMain 构造函数:固定 KM2.dat → 不存在则建库 → 一次性 lookups 迁移
+            var (ok, error) = await vm.PrepareDatabaseAsync();
+            if (!ok) {
+                await AppDialog.AlertAsync(this, Strings.Error,
+                    MessageHelper.BuildMessage(Strings.Create_Database_Failed, new Exception(error)));
+                Close();   // 原版此处 Environment.Exit(0)
+                return;
+            }
+            if (vm.MigrationWarning.Length > 0) {
+                // 原版:迁移失败只警告,不阻断启动
+                await AppDialog.AlertAsync(this, Strings.Error, vm.MigrationWarning);
+            }
         }
         StartDevicePolling();
         _ = RefreshDeviceStatusAsync();

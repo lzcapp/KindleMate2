@@ -6,6 +6,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Shared;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia;
 
@@ -112,6 +113,25 @@ internal static class Program {
                 report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings}");
             }
             Strings.Culture = original;
+
+            // —— 回归:启动应自动建库(对齐原版 FrmMain 的数据库生命周期) ——
+            // 原版:库固定为 <当前目录>/KM2.dat,不存在则 CreateDatabase 自动创建。
+            // 此前 Avalonia 壳没有这一步,导致"没有现成库就完全无法开始"。
+            var originalCwd = Environment.CurrentDirectory;
+            var freshDir = Path.Combine(Path.GetTempPath(), "km2-startup-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(freshDir);
+            try {
+                Environment.CurrentDirectory = freshDir;
+                var startupVm = new MainWindowViewModel();
+                var (startupOk, startupError) = startupVm.PrepareDatabaseAsync().GetAwaiter().GetResult();
+                var newDbPath = Path.Combine(freshDir, AppConstants.DatabaseFileName);
+                report.AppendLine($"startup: ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
+                report.AppendLine($"  probe(auto-created)={DatabaseSession.Probe(newDbPath).Result}");
+                report.AppendLine($"  migrationWarning='{startupVm.MigrationWarning}'");
+            } finally {
+                Environment.CurrentDirectory = originalCwd;
+                try { Directory.Delete(freshDir, true); } catch { /* 清理失败不影响结论 */ }
+            }
 
             // —— 回归:坏库不得抛异常 ——
             // 此前的缺陷链:OpenDatabaseAsync 在装载成功前就赋值 _session(于是 HasSession 说谎)

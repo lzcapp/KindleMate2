@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using KindleMate2.Shared;
 
 namespace KindleMate2.Avalonia.Views;
 
@@ -23,6 +24,17 @@ public partial class AppDialog : Window {
         var dialog = new AppDialog();
         dialog.Configure(title, message, okText, danger, null);
         return await dialog.ShowDialog<bool>(owner);
+    }
+
+    /// <summary>
+    /// 提示对话框(只有「确定」,没有取消)—— 对应原版 WinForms 的 MessageBox(..., OK)。
+    /// 用于错误 / 成功 / 警告这类单按钮反馈,保持与原版一致的交互。
+    /// </summary>
+    public static async Task AlertAsync(Window owner, string title, string message, string okText = "") {
+        var dialog = new AppDialog();
+        dialog.Configure(title, message, okText.Length > 0 ? okText : Strings.Ui_Action_Ok, false, null);
+        dialog.CancelButton.IsVisible = false;
+        await dialog.ShowDialog<bool>(owner);
     }
 
     /// <summary>文本输入对话框。返回 null 表示取消。</summary>

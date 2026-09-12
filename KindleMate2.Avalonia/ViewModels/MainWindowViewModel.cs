@@ -258,32 +258,42 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     public string StatusRight => _deviceStatus;
 
-    public async Task TryAutoOpenAsync() {
-        var args = Environment.GetCommandLineArgs();
-        if (args.Length > 1 && File.Exists(args[1])) {
-            await OpenDatabaseAsync(args[1]);
-            return;
+    /// <summary>
+    /// 启动流程 —— 严格对齐原 WinForms 版 <c>FrmMain</c> 构造函数里的数据库生命周期:
+    /// <list type="number">
+    ///   <item>库路径固定为 <c>&lt;当前目录&gt;/KM2.dat</c>(原版即如此,没有库选择器);</item>
+    ///   <item>文件不存在则用 <c>DatabaseHelper.CreateDatabase</c> 自动建库,失败则报错并退出;</item>
+    ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断)。</item>
+    /// </list>
+    /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
+    /// </summary>
+    public async Task<(bool Ok, string Error)> PrepareDatabaseAsync() {
+        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+
+        if (!File.Exists(databasePath)) {
+            if (!DatabaseHelper.CreateDatabase(databasePath, out var exception)) {
+                return (false, exception.Message);
+            }
         }
-        // 1) 上次成功打开的库;2) 程序目录附近的 KM2.db。
-        // 一律先用 Probe 校验 schema:仓库根的 KM2.db 是旧版 Kindle Mate 格式,
-        // 直接打开会抛 "no such column: key"。与其每次启动都失败一次,不如静默跳过
-        // ——用户仍可通过「文件 → 打开数据库…」手动指定。
-        if (Settings?.LastDatabase is { Length: > 0 } last && File.Exists(last) &&
-            DatabaseSession.Probe(last).Result == DatabaseSession.ProbeResult.Valid) {
-            await OpenDatabaseAsync(last);
-            return;
+
+        try {
+            DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
+        } catch (Exception ex) {
+            // 原版此处只弹一个警告框,不阻断启动
+            MigrationWarning = ex.Message;
+            OnPropertyChanged(nameof(MigrationWarning));
         }
-        var candidates = new[] {
-            Path.Combine(AppContext.BaseDirectory, "KM2.db"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "KM2.db")
-        };
-        foreach (var candidate in candidates.Select(Path.GetFullPath)) {
-            if (!File.Exists(candidate)) continue;
-            if (DatabaseSession.Probe(candidate).Result != DatabaseSession.ProbeResult.Valid) continue;
-            await OpenDatabaseAsync(candidate);
-            return;
-        }
+
+        await OpenDatabaseAsync(databasePath);
+        return (true, string.Empty);
     }
+
+    /// <summary>schema 迁移失败的告警文案(空表示无告警);由视图层弹一次提示。</summary>
+    public string MigrationWarning { get; private set; } = string.Empty;
+
+    /// <summary>兼容旧调用点:进程级备份注册所需的库路径(与原版一致的固定路径)。</summary>
+    public static string DefaultDatabasePath =>
+        Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
 
     /// <summary>持久化主题选择。</summary>
     public void PersistTheme(bool dark) {

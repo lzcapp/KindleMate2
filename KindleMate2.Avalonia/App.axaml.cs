@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -5,6 +7,8 @@ using Avalonia.Styling;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Avalonia.Views;
+using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia;
 
@@ -33,6 +37,21 @@ public partial class App : global::Avalonia.Application {
                 DataContext = new MainWindowViewModel { Settings = Settings }
             };
         }
+
+        // 对齐原版 FrmMain:进程退出时自动备份数据库。
+        // 只在 App 层注册一次(主窗口在切换语言时会被重建,放在窗口里会重复注册导致多次备份)。
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+            try {
+                var programPath = Environment.CurrentDirectory;
+                DatabaseHelper.BackupDatabase(
+                    programPath,
+                    Path.Combine(programPath, AppConstants.BackupsPathName),
+                    AppConstants.DatabaseFileName);
+            } catch (Exception ex) {
+                Console.WriteLine($"[ProcessExit backup] {ex.Message}");
+            }
+        };
+
         base.OnFrameworkInitializationCompleted();
     }
 }
