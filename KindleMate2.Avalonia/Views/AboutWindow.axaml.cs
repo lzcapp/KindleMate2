@@ -25,5 +25,18 @@ public partial class AboutWindow : Window {
         }
     }
 
+    /// <summary>
+    /// 点击「程序路径」→ 用资源管理器打开该目录,对应原版 FrmAboutBox 的 lblPath 链接
+    /// (原版即 <c>Process.Start("explorer.exe", lblPath.Text)</c>,无确认、无提示)。
+    /// </summary>
+    private void OnOpenProgramPath(object? sender, RoutedEventArgs e) {
+        if (DataContext is not AboutViewModel vm || vm.ProgramPath.Length == 0) return;
+        try {
+            Process.Start(new ProcessStartInfo { FileName = vm.ProgramPath, UseShellExecute = true });
+        } catch {
+            // 目录不存在或无权限时静默忽略
+        }
+    }
+
     private void OnClose(object? sender, RoutedEventArgs e) => Close();
 }

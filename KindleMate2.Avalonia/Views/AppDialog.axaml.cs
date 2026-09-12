@@ -46,8 +46,25 @@ public partial class AppDialog : Window {
         return ok ? dialog.InputBox.Text ?? string.Empty : null;
     }
 
-    private void Configure(string title, string message, string okText, bool danger, string? initial) {
-        Title = title;
+    /// <summary>
+    /// 多行文本输入对话框 —— 对应原版 <c>KeyValue.ValueTypes.Multiline</c> 字段
+    /// (标注编辑用正文是多行文本)。返回 null 表示取消。
+    /// </summary>
+    public static async Task<string?> PromptMultilineAsync(Window owner, string title, string message,
+        string initial = "", string okText = "确定", int lines = 8) {
+        var dialog = new AppDialog();
+        dialog.Configure(title, message, okText, false, initial);
+        dialog.InputBox.AcceptsReturn = true;
+        // 注意:本文件位于 namespace KindleMate2.Avalonia 内,Avalonia.Media / Avalonia.Layout
+        // 会被解析成 KindleMate2.Avalonia.Media 等,必须用 global:: 限定。
+        dialog.InputBox.TextWrapping = global::Avalonia.Media.TextWrapping.Wrap;
+        dialog.InputBox.Height = lines * 20;
+        dialog.InputBox.VerticalContentAlignment = global::Avalonia.Layout.VerticalAlignment.Top;
+        var ok = await dialog.ShowDialog<bool>(owner);
+        return ok ? dialog.InputBox.Text ?? string.Empty : null;
+    }
+
+    private void Configure(string title, string message, string okText, bool danger, string? initial) {        Title = title;
         TitleText.Text = title;
         MessageText.Text = message;
         MessageText.IsVisible = message.Length > 0;

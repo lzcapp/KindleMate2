@@ -243,6 +243,19 @@ internal static class Program {
             report.AppendLine($"rename: ok={renameResult.Ok} title={renameResult.Title} msg={renameResult.Message}");
             report.AppendLine($"  -> nav 含新名={vm.NavItems.Any(n => n.Name == oldName + "_renamed")}");
 
+            // 5b. 编辑标注正文(对齐原版 ShowContentEditDialog:同时写 clippings 与 original_clipping_lines.line4)
+            vm.SelectedNav = vm.NavItems[0];
+            if (vm.Items.Count > 0) {
+                vm.SelectedItem = vm.Items[0];
+                var editKey = vm.SelectedClippingKey;
+                const string edited = "【编辑自检】改写后的正文";
+                var editResult = vm.SaveClippingContentAsync(editKey, edited).GetAwaiter().GetResult();
+                report.AppendLine($"edit clipping: ok={editResult.Ok} title={editResult.Title} msg={editResult.Message}");
+                var reread = vm.ClipTable.FirstOrDefault(c => c.Key == editKey);
+                var origLine = vm.Session?.OriginalClippingLineService.GetOriginalClippingLineByKey(editKey);
+                report.AppendLine($"  -> clippings.content 已更新={reread?.Content == edited} / original.line4 已更新={origLine?.Line4 == edited}");
+            }
+
             // 6. 删除一条标注(契约:原版成功不弹窗 → 成功时 Silent)
             var beforeDelete = vm.ClipTable.Count;
             var deleteResult = vm.DeleteSelectedAsync().GetAwaiter().GetResult();

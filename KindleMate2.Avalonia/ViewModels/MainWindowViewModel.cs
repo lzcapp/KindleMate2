@@ -690,6 +690,69 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }, false, Strings.Successful, Strings.Sync_Failed);
     }
 
+    // —— 启动时的备份确认(对齐原版 FrmMain_Load 第 242-261 行的条件链) ——
+
+    /// <summary>
+    /// 启动时是否需要询问「从备份恢复 / 删除备份」。条件链严格照搬原版:
+    /// 库文件存在 → 库为空 → Backups 目录存在 → Backups/KM2.dat 存在 → 该文件 ≥ 20KB。
+    /// 返回 (是否需要询问, 备份文件路径)。
+    /// </summary>
+    public (bool Ask, string BackupFile) CheckStartupBackup() {
+        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        if (!File.Exists(databasePath)) return (false, string.Empty);
+        if (_allClippings.Count > 0) return (false, string.Empty);
+
+        var backupDir = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+        if (!Directory.Exists(backupDir)) return (false, string.Empty);
+
+        var backupFile = Path.Combine(backupDir, AppConstants.DatabaseFileName);
+        if (!File.Exists(backupFile)) return (false, string.Empty);
+        if (new FileInfo(backupFile).Length / 1024 < 20) return (false, string.Empty);
+
+        return (true, backupFile);
+    }
+
+    /// <summary>从备份恢复库文件(原版为 <c>File.Copy(backup, db, true)</c>;实际生效在下次启动)。</summary>
+    public void RestoreFromBackup(string backupFile) {
+        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        File.Copy(backupFile, databasePath, true);
+    }
+
+    /// <summary>删除备份文件(原版为 <c>File.Delete</c>)。</summary>
+    public void DeleteBackup(string backupFile) => File.Delete(backupFile);
+
+    // —— 编辑标注(对齐原版 ShowContentEditDialog) ——
+
+    /// <summary>当前选中的标注键(供编辑入口取用);无选中或非标注时为空。</summary>
+    public string SelectedClippingKey => _selectedItem?.Clipping?.Key ?? string.Empty;
+
+    /// <summary>当前选中标注的正文(输入框初值)。</summary>
+    public string SelectedClippingContent => _selectedItem?.Clipping?.Content ?? string.Empty;
+
+    /// <summary>
+    /// 保存编辑后的标注正文。对齐原版:更新 <c>clippings.content</c>,
+    /// 并同步更新 <c>original_clipping_lines.line4</c>(存在该行时)。
+    /// 成功标题 <c>Successful</c>、正文 <c>Clippings_Revised</c>;失败弹 <c>Clippings_Revised_Failed</c>。
+    /// </summary>
+    public Task<OperationResult> SaveClippingContentAsync(string key, string newContent) {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        return RunOperationAsync(() => {
+            var clipping = session.ClippingService.GetClippingByKey(key);
+            if (clipping == null) return string.Empty;
+            clipping.Content = newContent;
+            if (!session.ClippingService.UpdateClipping(clipping)) return string.Empty;
+
+            var originalLine = session.OriginalClippingLineService.GetOriginalClippingLineByKey(key);
+            if (originalLine != null) {
+                originalLine.Line4 = newContent;
+                session.OriginalClippingLineService.UpdateOriginalClippingLine(originalLine);
+            }
+            return Strings.Clippings_Revised;
+        }, true, Strings.Successful, Strings.Clippings_Revised_Failed);
+    }
+
     private void ResetCollections() {
         NavItems.Clear();
         Items.Clear();

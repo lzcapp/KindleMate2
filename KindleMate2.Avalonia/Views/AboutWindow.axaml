@@ -30,8 +30,8 @@
                  TextWrapping="Wrap" VerticalAlignment="Center" />
 
       <TextBlock Grid.Row="1" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Program_Path}" VerticalAlignment="Center" />
-      <TextBlock Grid.Row="1" Grid.Column="1" FontSize="12" Text="{Binding ProgramPath}"
-                 TextWrapping="Wrap" VerticalAlignment="Center" />
+      <Button Grid.Row="1" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+              Content="{Binding ProgramPath}" Click="OnOpenProgramPath" />
 
       <TextBlock Grid.Row="2" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Database}" VerticalAlignment="Center" />
       <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">

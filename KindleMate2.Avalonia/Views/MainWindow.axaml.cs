@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -49,8 +50,49 @@ public partial class MainWindow : Window {
                     MessageHelper.BuildMessage(Strings.Failed, new Exception(error)));
             }
         }
+        // 对齐原版 FrmMain_Load:备份恢复 / 删除备份的两个连续确认。
+        // 注意原版的既定行为:第二个确认与第一个的回答**无关** —— 即使用户拒绝恢复,
+        // 仍会追问是否删除备份。不要"顺手修正"成互斥。
+        if (Vm is { } mainVm) {
+            var (askBackup, backupFile) = mainVm.CheckStartupBackup();
+            if (askBackup) {
+                var restore = await AppDialog.ConfirmAsync(this, Strings.Confirm, Strings.Confirm_Restore_Database, Strings.Ui_Action_Ok);
+                if (restore) {
+                    try { mainVm.RestoreFromBackup(backupFile); }
+                    catch (Exception ex) { await AppDialog.AlertAsync(this, Strings.Error, ex.Message); }
+                }
+                var deleteBackup = await AppDialog.ConfirmAsync(this, Strings.Confirm, Strings.Confirm_Delete_Backup, Strings.Ui_Action_Ok);
+                if (deleteBackup) {
+                    try { mainVm.DeleteBackup(backupFile); }
+                    catch (Exception ex) { await AppDialog.AlertAsync(this, Strings.Error, ex.Message); }
+                }
+            }
+        }
+
         StartDevicePolling();
         _ = RefreshDeviceStatusAsync();
+    }
+
+    /// <summary>
+    /// 编辑选中标注的正文 —— 对齐原版 <c>ShowContentEditDialog</c>(双击内容列触发):
+    /// 「取消 / 内容为空 / 与原文相同」一律**静默返回**(原版如此,不弹任何提示);
+    /// 成功弹 Successful + Clippings_Revised,失败弹 Clippings_Revised_Failed。
+    /// </summary>
+    private async void OnEditClipping(object? sender, TappedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (!vm.HasSelectedItem) return;
+        var key = vm.SelectedClippingKey;
+        if (key.Length == 0) return;
+
+        var current = vm.SelectedClippingContent;
+        var edited = await AppDialog.PromptMultilineAsync(this, Strings.Edit_Clippings, Strings.Content, current);
+        if (edited == null) return;
+
+        var trimmed = edited.Trim();
+        if (trimmed.Length == 0) return;
+        if (string.Equals(trimmed, current, StringComparison.Ordinal)) return;
+
+        await ShowResultAsync(await vm.SaveClippingContentAsync(key, trimmed));
     }
 
     private void SyncThemeFromApplication() {
