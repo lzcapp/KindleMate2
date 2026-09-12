@@ -273,15 +273,25 @@ internal static class Program {
 
             report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
 
-            // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条)
+            // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条),同时测量真实批量导入耗时
             if (File.Exists(clippingsPath)) {
+                // 进度上报核对:用同步 sink 捕获阶段序列,确认应用层确实在按阶段上报(含条数)
+                var stages = new List<KindleMate2.Application.Models.OperationProgress>();
+                var swImport = System.Diagnostics.Stopwatch.StartNew();
                 vm.ImportKindleClippingsAsync(clippingsPath).GetAwaiter().GetResult();
-                report.AppendLine($"reimport into empty: {vm.StatusText} -> clips={vm.ClipTable.Count}");
+                swImport.Stop();
+                vm.Session!.ImportManager.ImportKindleClippings(clippingsPath, new SyncProgress(stages.Add));
+                report.AppendLine($"reimport into empty: {swImport.ElapsedMilliseconds} ms -> clips={vm.ClipTable.Count}");
+                report.AppendLine($"  progress stages: {string.Join(" > ", stages.Select(p => p.Stage).Distinct())}");
+                var withCounts = stages.LastOrDefault(p => p.Total > 0);
+                report.AppendLine($"  末次带数量的上报: {withCounts.Stage} {withCounts.Current}/{withCounts.Total}");
             }
             if (File.Exists(vocabDbPath)) {
+                var swVocab = System.Diagnostics.Stopwatch.StartNew();
                 vm.ImportKindleWordsAsync(vocabDbPath).GetAwaiter().GetResult();
+                swVocab.Stop();
                 vm.DomainIndex = 1;
-                report.AppendLine($"reimport vocab: {vm.StatusText} -> lookups={vm.LookupTable.Count}");
+                report.AppendLine($"reimport vocab: {swVocab.ElapsedMilliseconds} ms -> lookups={vm.LookupTable.Count}");
             }
 
             Environment.CurrentDirectory = originalCwd;
@@ -299,4 +309,10 @@ internal static class Program {
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+
+    /// <summary>同步的进度接收器:自检里用它捕获阶段序列(Progress&lt;T&gt; 是异步投递的,不适合断言)。</summary>
+    private sealed class SyncProgress(Action<KindleMate2.Application.Models.OperationProgress> handler)
+        : IProgress<KindleMate2.Application.Models.OperationProgress> {
+        public void Report(KindleMate2.Application.Models.OperationProgress value) => handler(value);
+    }
 }

@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using KindleMate2.Avalonia.Models;
 using KindleMate2.Avalonia.Services;
+using KindleMate2.Application.Models;
+using KindleMate2.Avalonia.Collections;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
@@ -62,20 +64,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>应用级设置(由 App 注入);为 null 时不做持久化,便于无头自检。</summary>
     public AppSettings? Settings { get; set; }
 
+    public MainWindowViewModel() {
+        // 必须在 UI 线程构造:Progress<T> 在此捕获同步上下文,
+        // 之后后台线程调用 Report 时会自动回到 UI 线程更新属性。
+        _progressReporter = new Progress<OperationProgress>(p => Progress = p);
+    }
+
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
     /// <summary>左栏导航(书籍 / 生词)。</summary>
     public ObservableCollection<NavItem> NavItems { get; } = new();
 
-    /// <summary>主列表(内容优先)。</summary>
-    public ObservableCollection<ListItem> Items { get; } = new();
+    /// <summary>主列表(内容优先)。数千条量级,整体替换用 <c>ReplaceAll</c> 避免逐条通知淹没 UI 线程。</summary>
+    public BulkObservableCollection<ListItem> Items { get; } = new();
 
     /// <summary>表格视图 · 标注。</summary>
-    public ObservableCollection<Clipping> ClipTable { get; } = new();
+    public BulkObservableCollection<Clipping> ClipTable { get; } = new();
 
     /// <summary>表格视图 · 生词。</summary>
-    public ObservableCollection<Lookup> LookupTable { get; } = new();
+    public BulkObservableCollection<Lookup> LookupTable { get; } = new();
 
     public IReadOnlyList<string> SearchTypes => TypeTextMap.SearchTypes;
 
@@ -110,6 +118,51 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     public bool IsProgressVisible => _isBusy;
+
+    // —— 进度展示(取代此前的"跑马灯 + 读取中"占位) ——
+    //
+    // 设计要点:能算比例就给确定进度条(导入按「已处理 / 总条数」算),
+    // 算不出才退化为不确定态;阶段文案由 VM 本地化(应用层只报结构化的 OperationStage)。
+
+    private OperationProgress _progress = OperationProgress.At(OperationStage.None);
+    private readonly IProgress<OperationProgress> _progressReporter;
+
+    /// <summary>当前进度快照。</summary>
+    public OperationProgress Progress {
+        get => _progress;
+        private set {
+            _progress = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ProgressStageText));
+            OnPropertyChanged(nameof(ProgressDetailText));
+            OnPropertyChanged(nameof(ProgressValue));
+            OnPropertyChanged(nameof(IsProgressIndeterminate));
+        }
+    }
+
+    /// <summary>供后台操作上报进度;<see cref="Progress{T}"/> 构造于 UI 线程,回调会自动回到 UI 线程。</summary>
+    public IProgress<OperationProgress> ProgressReporter => _progressReporter;
+
+    /// <summary>进度条是否为不确定态(无法估计比例)。</summary>
+    public bool IsProgressIndeterminate => _progress.Fraction is null;
+
+    /// <summary>确定进度的百分比(0..100),供 ProgressBar.Value 使用。</summary>
+    public double ProgressValue => (_progress.Fraction ?? 0d) * 100d;
+
+    /// <summary>阶段文案,如「正在导入标注」。</summary>
+    public string ProgressStageText => _progress.Stage switch {
+        OperationStage.ReadingFile => Strings.Ui_Progress_ReadingFile,
+        OperationStage.Parsing => Strings.Ui_Progress_Parsing,
+        OperationStage.Preparing => Strings.Ui_Progress_Preparing,
+        OperationStage.Writing => Strings.Ui_Progress_Writing,
+        OperationStage.Reloading => Strings.Ui_Progress_Reloading,
+        _ => Strings.Ui_Status_Reading
+    };
+
+    /// <summary>数量明细,如「3,200 / 5,680 条」;无数量时为空。</summary>
+    public string ProgressDetailText => _progress.Total > 0
+        ? $"{_progress.Current:N0} / {_progress.Total:N0}"
+        : string.Empty;
 
     public bool IsDarkTheme {
         get => _isDarkTheme;
@@ -439,9 +492,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
         IsBusy = true;
+        Progress = OperationProgress.At(OperationStage.None);
         try {
             var result = await Task.Run(operation);
             if (reload) {
+                Progress = OperationProgress.At(OperationStage.Reloading);
                 await Task.Run(ReloadFromSession);
                 RebuildNav();
                 RestoreSelection(previous);
@@ -456,6 +511,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return new OperationResult(false, failureTitle,
                 $"{failureTitle}{Environment.NewLine}{ex.InnerException?.Message ?? ex.Message}");
         } finally {
+            Progress = OperationProgress.At(OperationStage.None);
             IsBusy = false;
             NotifyCounts();
         }
@@ -466,7 +522,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // 成功正文即 ImportManager 的返回串。
 
     public Task<OperationResult> ImportKindleClippingsAsync(string path) =>
-        RunOperationAsync(() => _session!.ImportManager.ImportKindleClippings(path), true,
+        RunOperationAsync(() => _session!.ImportManager.ImportKindleClippings(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
     public Task<OperationResult> ImportKindleWordsAsync(string path) =>
@@ -873,12 +929,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ? query.OrderByDescending(c => c.ClippingDate, StringComparer.Ordinal)
             : query.OrderBy(c => c.ClippingDate, StringComparer.Ordinal)).ToList();
 
-        Items.Clear();
-        ClipTable.Clear();
+        // 整批替换;逐条 Add 会产生与条目数同量级的界面通知,数千条时足以卡死 UI 线程
+        var items = new List<ListItem>(ordered.Count);
         foreach (var clip in ordered) {
-            Items.Add(ToListItem(clip));
-            ClipTable.Add(clip);
+            items.Add(ToListItem(clip));
         }
+        Items.ReplaceAll(items);
+        ClipTable.ReplaceAll(ordered);
         SelectedItem = Items.FirstOrDefault();
         SelectedClipTable = ClipTable.FirstOrDefault();
         if (SelectedItem == null) Detail = DetailModel.Empty;
@@ -902,12 +959,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ? query.OrderByDescending(l => l.Timestamp, StringComparer.Ordinal)
             : query.OrderBy(l => l.Timestamp, StringComparer.Ordinal)).ToList();
 
-        Items.Clear();
-        LookupTable.Clear();
+        // 整批替换;逐条 Add 会产生与条目数同量级的界面通知
+        var items = new List<ListItem>(ordered.Count);
         foreach (var lookup in ordered) {
-            Items.Add(ToListItem(lookup));
-            LookupTable.Add(lookup);
+            items.Add(ToListItem(lookup));
         }
+        Items.ReplaceAll(items);
+        LookupTable.ReplaceAll(ordered);
         SelectedItem = Items.FirstOrDefault();
         SelectedLookupTable = LookupTable.FirstOrDefault();
         if (SelectedItem == null) Detail = DetailModel.Empty;

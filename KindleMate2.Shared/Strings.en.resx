@@ -867,4 +867,19 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_Progress_ReadingFile" xml:space="preserve">
+    <value>Reading file…</value>
+  </data>
+  <data name="Ui_Progress_Parsing" xml:space="preserve">
+    <value>Parsing clippings…</value>
+  </data>
+  <data name="Ui_Progress_Preparing" xml:space="preserve">
+    <value>Comparing and organising…</value>
+  </data>
+  <data name="Ui_Progress_Writing" xml:space="preserve">
+    <value>Writing to database…</value>
+  </data>
+  <data name="Ui_Progress_Reloading" xml:space="preserve">
+    <value>Refreshing…</value>
+  </data>
 </root>

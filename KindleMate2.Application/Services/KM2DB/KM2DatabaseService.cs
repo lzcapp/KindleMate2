@@ -4,6 +4,7 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -14,11 +15,14 @@ namespace KindleMate2.Application.Services.KM2DB {
         IOriginalClippingLineRepository originalClippingLineRepository,
         ISettingRepository settingRepository,
         IVocabRepository vocabRepository) : IKm2DatabaseService {
-        public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
+        public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result,
+            IProgress<OperationProgress>? progress = null) {
             try {
+                progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
                 List<string> lines = [
                     .. File.ReadAllLines(clippingsPath)
                 ];
+                progress?.Report(OperationProgress.At(OperationStage.Parsing));
 
                 var delimiterIndex = new List<int>();
 
@@ -59,7 +63,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
 
-                var insertedCount = HandleClippings(myClippings, out var skipCounts);
+                var insertedCount = HandleClippings(myClippings, out var skipCounts, progress: progress);
 
                 result = new Dictionary<string, string> {
                     { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
@@ -125,9 +129,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             public int DateFailed;
         }
 
-        private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false) {
+        private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false,
+            IProgress<OperationProgress>? progress = null) {
             skipCounts = new SkipCounts();
             var insertResult = 0;
+            // 准备阶段按「已处理 / 解析出总数」上报确定进度(每 100 条一次,避免过于频繁)
+            var processed = 0;
 
             var allClippings = clippingRepository.GetAll();
             var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
@@ -142,6 +149,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             var listAddOriginalClippings = new List<OriginalClippingLine>();
             
             foreach (MyClipping myClipping in clippings) {
+                processed++;
+                if (processed % 100 == 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, processed, clippings.Count));
+                }
                 try {
                     var clipping = new Clipping {
                         Key = string.Empty
@@ -252,7 +263,9 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
 
             if (listAddClippings.Count > 0) {
+                progress?.Report(new OperationProgress(OperationStage.Writing, 0, listAddClippings.Count));
                 insertResult = clippingRepository.Add(listAddClippings);
+                progress?.Report(new OperationProgress(OperationStage.Writing, listAddClippings.Count, listAddClippings.Count));
             }
 
             if (listAddOriginalClippings.Count > 0) {

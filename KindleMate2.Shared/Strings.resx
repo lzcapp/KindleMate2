@@ -870,4 +870,19 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_Progress_ReadingFile" xml:space="preserve">
+    <value>正在读取文件…</value>
+  </data>
+  <data name="Ui_Progress_Parsing" xml:space="preserve">
+    <value>正在解析标注…</value>
+  </data>
+  <data name="Ui_Progress_Preparing" xml:space="preserve">
+    <value>正在比对与整理…</value>
+  </data>
+  <data name="Ui_Progress_Writing" xml:space="preserve">
+    <value>正在写入数据库…</value>
+  </data>
+  <data name="Ui_Progress_Reloading" xml:space="preserve">
+    <value>正在刷新界面…</value>
+  </data>
 </root>

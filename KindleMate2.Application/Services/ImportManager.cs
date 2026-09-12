@@ -1,5 +1,6 @@
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -56,8 +57,9 @@ public class ImportManager : IImportManager {
         return clippingsResult + Environment.NewLine + wordResult;
     }
 
-    public string ImportKindleClippings(string clippingsPath) {
-        if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+    /// <summary>导入 Kindle 标注(My Clippings.txt)。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
+    public string ImportKindleClippings(string clippingsPath, IProgress<OperationProgress>? progress = null) {
+        if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result, progress)) {
             var exception = result[AppConstants.Exception];
             throw new InvalidOperationException(exception);
         }

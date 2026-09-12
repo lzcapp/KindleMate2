@@ -135,16 +135,27 @@
 
     <Border DockPanel.Dock="Bottom" Height="28" Background="{DynamicResource KmSurfaceBrush}"
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" Margin="12,0" VerticalAlignment="Center">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="12,0" VerticalAlignment="Center">
         <TextBlock Grid.Column="0" Classes="tt" Text="{Binding StatusLeft}" VerticalAlignment="Center" />
         <TextBlock Grid.Column="1" Classes="tt" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="14,0,0,0" />
-        <ProgressBar Grid.Column="3" Width="110" IsIndeterminate="True" VerticalAlignment="Center"
-                     IsVisible="{Binding IsProgressVisible}" />
-        <TextBlock Grid.Column="4" Classes="tt" Text="{x:Static shared:Strings.Ui_Status_Reading}"
-                   Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding IsProgressVisible}" />
-        <TextBlock Grid.Column="5" Classes="dot" Text="·" Margin="8,0" VerticalAlignment="Center"
-                   IsVisible="{Binding IsProgressVisible}" />
-        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+
+        <!--
+          进行中的操作:阶段文案 + 数量明细 + 进度条。
+          能算出比例(如导入按「已处理/总条数」)就画确定进度,否则自动退化为不确定态;
+          操作结束后整组隐藏,不占视觉。
+        -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                    IsVisible="{Binding IsProgressVisible}">
+          <ProgressBar Width="120" Height="6" VerticalAlignment="Center"
+                       Minimum="0" Maximum="100"
+                       Value="{Binding ProgressValue}"
+                       IsIndeterminate="{Binding IsProgressIndeterminate}" />
+          <TextBlock Classes="tt" Text="{Binding ProgressStageText}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource KmAccentBrush}" />
+          <TextBlock Classes="ts" Text="{Binding ProgressDetailText}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="14,0,0,0">
           <Ellipse Width="6" Height="6" Fill="{DynamicResource KmTextTertiaryBrush}" />
           <TextBlock Classes="tt" Text="{Binding DeviceStatus}" />
         </StackPanel>
