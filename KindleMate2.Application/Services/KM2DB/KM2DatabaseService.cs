@@ -335,8 +335,19 @@ namespace KindleMate2.Application.Services.KM2DB {
             var clippings = clippingRepository.GetAll();
 
             try {
-                var fileInfo = new FileInfo(databaseFilePath);
-                var originFileSize = fileInfo.Length;
+                // 路径可能为空:导入流程收尾的清理只关心数据卫生(空内容/重复项),不关心文件体积,
+                // 调用方传的是 string.Empty。此前直接 new FileInfo("") 会抛
+                // "The path is empty",导致导入在最后一步整个失败。
+                // 文件不存在时同样跳过体积统计,但不影响清理本身。
+                FileInfo? fileInfo = null;
+                long originFileSize = 0;
+                if (!string.IsNullOrWhiteSpace(databaseFilePath)) {
+                    var candidate = new FileInfo(databaseFilePath);
+                    if (candidate.Exists) {
+                        fileInfo = candidate;
+                        originFileSize = candidate.Length;
+                    }
+                }
                 
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
@@ -355,7 +366,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 
                 DatabaseHelper.VacuumDatabase(databaseFilePath);
                 
-                var newFileSize = fileInfo.Length;
+                var newFileSize = fileInfo?.Length ?? 0;
                 var fileSizeDelta = originFileSize - newFileSize;
 
                 if (emptyCount == 0 && duplicatedCount == 0) {

@@ -264,6 +264,12 @@ internal static class Program {
             // 7. 清理 / 重建(契约:成功标题分别为 Clean_Database / Rebuild_Database)
             var cleanResult = vm.CleanDatabaseAsync().GetAwaiter().GetResult();
             report.AppendLine($"clean: ok={cleanResult.Ok} title={cleanResult.Title} msg={cleanResult.Message}");
+
+            // 回归:CleanDatabase 传入空路径不得抛异常。
+            // 导入 Kindle Mate / KMate 数据库的收尾清理正是传 string.Empty,
+            // 此前 new FileInfo("") 抛 "The path is empty",导致整条导入在最后一步失败。
+            vm.Session!.Km2DatabaseService.CleanDatabase(string.Empty, out var emptyPathResult);
+            report.AppendLine($"clean(empty path): 未抛异常 OK, empty={emptyPathResult.GetValueOrDefault(AppConstants.EmptyCount)} dup={emptyPathResult.GetValueOrDefault(AppConstants.DuplicatedCount)}");
             var rebuildResult = vm.RebuildDatabaseAsync().GetAwaiter().GetResult();
             report.AppendLine($"rebuild: ok={rebuildResult.Ok} title={rebuildResult.Title} msg={rebuildResult.Message}");
 
@@ -272,6 +278,19 @@ internal static class Program {
             report.AppendLine($"clear: ok={clearResult.Ok} title={clearResult.Title} msg={clearResult.Message} -> clips={vm.ClipTable.Count}");
 
             report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
+
+            // 回归:完整走一遍「导入旧版 Kindle Mate 数据库」。
+            // 该路径收尾会调 CleanDatabase(string.Empty),此前必然抛 "The path is empty"
+            // 导致数据虽已导入、整个操作却报失败。用仓库根那份旧格式 KM2.db 实测。
+            var legacyKmDb = Path.Combine(originalCwd, "KM2.db");
+            if (File.Exists(legacyKmDb)) {
+                var legacyResult = vm.ImportKmDatabaseAsync(legacyKmDb).GetAwaiter().GetResult();
+                report.AppendLine($"import legacy KM db: ok={legacyResult.Ok} title={legacyResult.Title} msg={legacyResult.Message}");
+                report.AppendLine("  注:此步只为证明收尾清理不再抛 'The path is empty'。仓库根 KM2.db 是另一套" +
+                                  "关系型 schema(books + clippings.book_id),任何现有导入器都不认,故 ok 本就为 False。");
+            } else {
+                report.AppendLine($"import legacy KM db: 跳过(未找到 {legacyKmDb})");
+            }
 
             // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条),同时测量真实批量导入耗时
             if (File.Exists(clippingsPath)) {
