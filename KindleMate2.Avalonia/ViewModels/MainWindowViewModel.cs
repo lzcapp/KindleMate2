@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using KindleMate2.Avalonia.Models;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
@@ -31,7 +32,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private string _searchType = "全部";
     private string _statusText = "请选择一个 KM2 数据库开始";
     private string _deviceStatus = "设备未连接";
-    private string _connectionString = string.Empty;
     private int _domainIndex;
     private bool _isBusy;
     private bool _isDarkTheme;
@@ -50,6 +50,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private List<Vocab> _allVocabs = new();
     private int _originLineCount;
     private int _distinctWordCount;
+
+    /// <summary>当前库的服务会话(仓储 + 导入/导出/维护/设备管理器)。未打开库时为 null。</summary>
+    private DatabaseSession? _session;
+
+    /// <summary>当前会话,供视图层轮询设备状态。</summary>
+    public DatabaseSession? Session => _session;
+
+    public bool HasSession => _session != null;
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
@@ -273,28 +281,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         ResetCollections();
 
         try {
-            _connectionString = DatabaseHelper.GetConnectionString(path);
-            var cs = _connectionString;
-            var snapshot = await Task.Run(() => {
-                var sw = Stopwatch.StartNew();
-                var clips = new ClippingRepository(cs).GetAll();
-                var lookups = new LookupRepository(cs).GetAll();
-                var vocabs = new VocabRepository(cs).GetAll();
-                var originCount = new OriginalClippingLineRepository(cs).GetAll().Count;
-                return new { ElapsedMs = sw.ElapsedMilliseconds, Clips = clips, Lookups = lookups, Vocabs = vocabs, OriginCount = originCount };
-            });
+            _session?.Dispose();
+            _session = new DatabaseSession(path);
+            OnPropertyChanged(nameof(HasSession));
+            OnPropertyChanged(nameof(Session));
 
-            _allClippings = snapshot.Clips;
-            _allLookups = snapshot.Lookups;
-            _allVocabs = snapshot.Vocabs;
-            _originLineCount = snapshot.OriginCount;
-
-            IndexVocabs();
-            IndexNoteHighlights();
-            EnrichLookups();
-
+            var elapsedMs = await Task.Run(ReloadFromSession);
             RebuildNav();
-            StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} 条标注 / {_allLookups.Count:N0} 条查询(读取 {snapshot.ElapsedMs} ms)";
+            StatusText = $"{Path.GetFileName(path)} · {_allClippings.Count:N0} 条标注 / {_allLookups.Count:N0} 条查询(读取 {elapsedMs} ms)";
         } catch (Exception ex) {
             StatusText = $"打开失败: {ex.Message}";
             Console.WriteLine(ex);
@@ -304,6 +298,210 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             OnPropertyChanged(nameof(StatusRight));
         }
     }
+
+    /// <summary>从当前会话重新装载全部数据(打开库 / 导入 / 维护 / 删除后)。须在后台线程调用。</summary>
+    private long ReloadFromSession() {
+        var session = _session ?? throw new InvalidOperationException("尚未打开数据库");
+        var stopwatch = Stopwatch.StartNew();
+        _allClippings = session.ClippingRepository.GetAll();
+        _allLookups = session.LookupRepository.GetAll();
+        _allVocabs = session.VocabRepository.GetAll();
+        _originLineCount = session.OriginalClippingLineRepository.GetAll().Count;
+        IndexVocabs();
+        IndexNoteHighlights();
+        EnrichLookups();
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
+    }
+
+    /// <summary>重新装载数据并刷新界面(不改变当前库)。</summary>
+    public async Task ReloadAsync() {
+        if (_session == null || IsBusy) return;
+        var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
+        IsBusy = true;
+        try {
+            await Task.Run(ReloadFromSession);
+            RebuildNav();
+            RestoreSelection(previous);
+        } finally {
+            IsBusy = false;
+            NotifyCounts();
+        }
+    }
+
+    private void RestoreSelection(string? previousKey) {
+        if (string.IsNullOrEmpty(previousKey)) return;
+        var match = NavItems.FirstOrDefault(n => !n.IsAll && string.Equals(n.Key, previousKey, StringComparison.Ordinal));
+        if (match != null) SelectedNav = match;
+    }
+
+    private void NotifyCounts() {
+        OnPropertyChanged(nameof(StatusLeft));
+        OnPropertyChanged(nameof(StatusRight));
+        OnPropertyChanged(nameof(NavSectionCount));
+    }
+
+    /// <summary>统一的写操作执行壳:繁忙标记 / 异常兜底 / 状态栏文案 / 可选重载。</summary>
+    private async Task RunOperationAsync(string name, Func<string> operation, bool reload) {
+        if (_session == null) {
+            StatusText = "请先打开一个数据库";
+            return;
+        }
+        if (IsBusy) return;
+        var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
+        IsBusy = true;
+        StatusText = $"{name}…";
+        try {
+            var result = await Task.Run(operation);
+            if (reload) {
+                await Task.Run(ReloadFromSession);
+                RebuildNav();
+                RestoreSelection(previous);
+            }
+            StatusText = string.IsNullOrWhiteSpace(result) ? $"{name}:完成(无变化)" : $"{name}:{result}";
+        } catch (Exception ex) {
+            StatusText = $"{name}失败:{ex.Message}";
+        } finally {
+            IsBusy = false;
+            NotifyCounts();
+        }
+    }
+
+    // —— 导入 ——
+
+    public Task ImportKindleClippingsAsync(string path) =>
+        RunOperationAsync("导入 Kindle 标注", () => _session!.ImportManager.ImportKindleClippings(path), true);
+
+    public Task ImportKindleWordsAsync(string path) =>
+        RunOperationAsync("导入 Kindle 生词本", () => _session!.ImportManager.ImportKindleWords(path), true);
+
+    public Task ImportKmDatabaseAsync(string path) =>
+        RunOperationAsync("导入 Kindle Mate 数据库", () => _session!.ImportManager.ImportKmDatabase(path), true);
+
+    public Task ImportKmateDatabaseAsync(string path) =>
+        RunOperationAsync("导入 KMate 数据库", () => _session!.ImportManager.ImportKmateDatabase(path), true);
+
+    // —— 导出 ——
+
+    public Task ExportClippingsMarkdownAsync() =>
+        RunOperationAsync("导出标注为 Markdown",
+            () => _session!.ExportManager.ExportClippingsToMarkdown()
+                ? $"已导出到 {_session.ExportDirectory}"
+                : "无内容可导出", false);
+
+    public Task ExportVocabsMarkdownAsync() =>
+        RunOperationAsync("导出生词本为 Markdown",
+            () => _session!.ExportManager.ExportVocabsToMarkdown()
+                ? $"已导出到 {_session.ExportDirectory}"
+                : "无内容可导出", false);
+
+    /// <summary>导出当前选中书籍(或全部)的标注。</summary>
+    public Task ExportCurrentBookMarkdownAsync() {
+        var book = _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
+        var label = book.Length > 0 ? $"导出《{book}》" : "导出全部标注";
+        return RunOperationAsync(label,
+            () => _session!.ExportManager.ExportClippingsToMarkdown(book)
+                ? $"已导出到 {_session.ExportDirectory}"
+                : "无内容可导出", false);
+    }
+
+    // —— 维护 ——
+
+    public Task BackupDatabaseAsync() =>
+        RunOperationAsync("备份数据库", () => {
+            var session = _session!;
+            Directory.CreateDirectory(session.BackupDirectory);
+            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
+            File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
+            return $"已备份为 {fileName}";
+        }, false);
+
+    public Task CleanDatabaseAsync() =>
+        RunOperationAsync("清理数据库", () => {
+            var session = _session!;
+            if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result)) {
+                return result.TryGetValue(AppConstants.Exception, out var error) ? error : "未能清理";
+            }
+            return result.TryGetValue(AppConstants.TrimmedCount, out var trimmed) ? $"已清理 {trimmed} 条空内容" : "已清理";
+        }, true);
+
+    public Task RebuildDatabaseAsync() =>
+        RunOperationAsync("重建数据库", () => {
+            if (!_session!.Km2DatabaseService.RebuildDatabase(out var result)) {
+                return result.TryGetValue(AppConstants.Exception, out var error) ? error : "重建失败";
+            }
+            return "已重建";
+        }, true);
+
+    public Task ClearAllDataAsync() =>
+        RunOperationAsync("清空数据", () => {
+            var session = _session!;
+            Directory.CreateDirectory(session.BackupDirectory);
+            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
+            File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
+            return session.Km2DatabaseService.DeleteAllData() ? $"已清空(已自动备份为 {fileName})" : "清空失败";
+        }, true);
+
+    // —— 删除 / 重命名 ——
+
+    public Task DeleteSelectedAsync() {
+        if (_session == null) {
+            StatusText = "请先打开一个数据库";
+            return Task.CompletedTask;
+        }
+        if (_selectedItem?.Clipping is { } clip) {
+            var key = clip.Key;
+            return RunOperationAsync("删除标注",
+                () => _session.ClippingService.DeleteClipping(key) ? "已删除 1 条标注" : "删除失败", true);
+        }
+        if (_selectedItem?.Lookup is { } lookup) {
+            var wordKey = lookup.WordKey ?? string.Empty;
+            var timestamp = lookup.Timestamp ?? string.Empty;
+            return RunOperationAsync("删除查询记录",
+                () => _session.LookupRepository.Delete(wordKey, timestamp) ? "已删除 1 条查询" : "删除失败", true);
+        }
+        StatusText = "未选中可删除的记录";
+        return Task.CompletedTask;
+    }
+
+    public bool CanRenameCurrentBook => _selectedNav is { IsAll: false };
+
+    public string CurrentBookName => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
+
+    public Task RenameCurrentBookAsync(string newName) {
+        if (_session == null || _selectedNav is not { IsAll: false } nav) {
+            StatusText = "请先选择一本书";
+            return Task.CompletedTask;
+        }
+        var oldName = nav.Key;
+        var author = _allClippings
+            .FirstOrDefault(c => string.Equals(c.BookName, oldName, StringComparison.Ordinal))?.AuthorName ?? string.Empty;
+        return RunOperationAsync("重命名书籍",
+            () => _session.ClippingService.RenameBook(oldName, newName, author) ? $"已重命名为「{newName}」" : "重命名失败", true);
+    }
+
+    // —— 设备 ——
+
+    /// <summary>探测设备状态(可后台线程调用,不触碰绑定属性)。</summary>
+    public string ProbeDeviceStatus() {
+        if (_session == null) return "设备未连接";
+        try {
+            if (!_session.DeviceManager.IsKindleConnected()) return "设备未连接";
+            var drive = _session.DeviceManager.DriveLetter;
+            return string.IsNullOrWhiteSpace(drive) ? "Kindle 已连接" : $"Kindle 已连接({drive})";
+        } catch {
+            return "设备未连接";
+        }
+    }
+
+    /// <summary>在 UI 线程刷新设备状态。</summary>
+    public void RefreshDeviceStatus() => DeviceStatus = ProbeDeviceStatus();
+
+    public Task SyncToDeviceAsync() =>
+        RunOperationAsync("同步到 Kindle 设备", () => {
+            _session!.ExportManager.SyncToKindle();
+            return "已同步";
+        }, false);
 
     private void ResetCollections() {
         NavItems.Clear();

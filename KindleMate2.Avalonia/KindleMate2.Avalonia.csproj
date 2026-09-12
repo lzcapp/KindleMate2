@@ -21,7 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 复用现有分层:Infrastructure(仓储/SQLite)+ Domain(实体)+ Shared(常量),不触碰 WinForms 壳 -->
+    <!-- 复用现有分层:Application(导入/导出/维护/设备管理器)+ Infrastructure(仓储/SQLite)+ Domain(实体)+ Shared(常量) -->
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
     <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
     <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
     <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />

@@ -6,7 +6,7 @@ using KindleMate2.Avalonia.Views;
 
 namespace KindleMate2.Avalonia;
 
-public partial class App : Application {
+public partial class App : global::Avalonia.Application {
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
     }

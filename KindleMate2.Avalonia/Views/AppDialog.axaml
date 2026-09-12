@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="KindleMate2.Avalonia.Views.AppDialog"
+        mc:Ignorable="d"
+        Width="420" SizeToContent="Height" MinHeight="140"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False" ShowInTaskbar="False"
+        Title="Kindle Mate 2">
+
+  <Grid RowDefinitions="Auto,Auto" Margin="20,18,20,16">
+
+    <StackPanel Grid.Row="0" Spacing="10">
+      <TextBlock x:Name="TitleText" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <TextBlock x:Name="MessageText" FontSize="13" TextWrapping="Wrap"
+                 Foreground="{DynamicResource KmTextSecondaryBrush}" />
+      <TextBox x:Name="InputBox" IsVisible="False" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,20,0,0">
+      <Button Grid.Column="1" x:Name="CancelButton" Content="取消" Margin="0,0,8,0" Click="OnCancel" />
+      <Button Grid.Column="2" x:Name="OkButton" Content="确定" Click="OnOk" />
+    </Grid>
+  </Grid>
+</Window>
