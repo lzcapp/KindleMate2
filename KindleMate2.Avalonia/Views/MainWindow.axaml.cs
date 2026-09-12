@@ -219,25 +219,33 @@ public partial class MainWindow : Window {
         if (Vm is { } vm) await ShowResultAsync(await vm.BackupDatabaseAsync());
     }
 
+    /// <summary>
+    /// 清理数据库。确认框为**用户指定**(2026-09-13;原版 MenuClean_Click 无确认框);
+    /// 执行前的「无数据 → 数据库无需清理」提示由 VM 按原版逻辑返回。
+    /// </summary>
     private async void OnMenuCleanDb(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanDatabase,
-            Strings.Ui_Dlg_CleanMessage, Strings.Ui_Dlg_CleanOk);
-        if (ok) await vm.CleanDatabaseAsync();
+        if (vm.HasClippingData) {
+            var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanDatabase,
+                Strings.Ui_Dlg_CleanMessage, Strings.Ui_Dlg_CleanOk);
+            if (!ok) return;
+        }
+        await ShowResultAsync(await vm.CleanDatabaseAsync());
     }
 
     private async void OnMenuRebuildDb(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_RebuildDatabase,
-            Strings.Ui_Dlg_RebuildMessage, Strings.Ui_Dlg_RebuildOk);
-        if (ok) await vm.RebuildDatabaseAsync();
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm, Strings.Confirm_Rebuild_Database, Strings.Ui_Action_Ok);
+        if (!ok) return;   // 原版:确认框选 No → 静默 return
+        await ShowResultAsync(await vm.RebuildDatabaseAsync());
     }
 
     private async void OnMenuDeleteAll(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_ClearData,
-            Strings.Ui_Dlg_ClearMessage, Strings.Ui_Dlg_ClearOk, danger: true);
-        if (ok) await vm.ClearAllDataAsync();
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm, Strings.Confirm_Clear_All_Data,
+            Strings.Ui_Action_Ok, danger: true);
+        if (!ok) return;
+        await ShowResultAsync(await vm.ClearAllDataAsync());
     }
 
     private async void OnMenuSyncToDevice(object? sender, RoutedEventArgs e) {
@@ -247,13 +255,18 @@ public partial class MainWindow : Window {
             vm.StatusText = Strings.Ui_Status_NoDevice;
             return;
         }
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_SyncToDevice,
-            Strings.Ui_Dlg_SyncMessage, Strings.Ui_Dlg_SyncOk);
-        if (ok) await vm.SyncToDeviceAsync();
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm, Strings.Confirm_Sync_To_Kindle, Strings.Ui_Action_Ok);
+        if (!ok) return;
+        await ShowResultAsync(await vm.SyncToDeviceAsync());
     }
 
     private async void OnMenuStatistics(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
+        // 原版 MenuStatistic_Click:库为空时提示 Database_Empty 并拒绝打开统计窗
+        if (!vm.HasClippingData) {
+            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Database_Empty);
+            return;
+        }
         var stats = await Task.Run(() => StatisticsViewModel.Load(vm.Session));
         await new StatisticsWindow(stats).ShowDialog(this);
     }
@@ -294,9 +307,10 @@ public partial class MainWindow : Window {
             vm.StatusText = Strings.Ui_Status_NoSelection;
             return;
         }
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Op_DeleteClipping,
-            Strings.Ui_Dlg_DeleteMessage, Strings.Ui_Dlg_DeleteOk, danger: true);
-        if (ok) await vm.DeleteSelectedAsync();
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm,
+            Strings.Confirm_Delete_Selected_Clippings, Strings.Ui_Action_Ok, danger: true);
+        if (!ok) return;
+        await ShowResultAsync(await vm.DeleteSelectedAsync());
     }
 
     private async void OnRenameCurrent(object? sender, RoutedEventArgs e) {
@@ -305,18 +319,19 @@ public partial class MainWindow : Window {
             vm.StatusText = Strings.Ui_Status_PickBookFirst;
             return;
         }
-        var name = await AppDialog.PromptAsync(this, Strings.Ui_Op_RenameBook,
-            Strings.Ui_Dlg_RenameMessage, vm.CurrentBookName, Strings.Ui_Dlg_RenameOk);
+        var name = await AppDialog.PromptAsync(this, Strings.Rename,
+            Strings.Book_Title, vm.CurrentBookName, Strings.Ui_Action_Ok);
         if (name == null) return;
         if (string.IsNullOrWhiteSpace(name)) {
-            vm.StatusText = Strings.Ui_Status_BookNameEmpty;
+            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Ui_Status_BookNameEmpty);
             return;
         }
         if (string.Equals(name, vm.CurrentBookName, StringComparison.Ordinal)) {
-            vm.StatusText = Strings.Ui_Status_BookNameUnchanged;
+            // 原版:书名未变 → 提示 Books_Title_Not_Changed(标题 Prompt)
+            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Books_Title_Not_Changed);
             return;
         }
-        await vm.RenameCurrentBookAsync(name.Trim());
+        await ShowResultAsync(await vm.RenameCurrentBookAsync(name.Trim()));
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {

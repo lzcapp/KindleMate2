@@ -92,7 +92,20 @@ public partial class StatisticsWindow : Window {
             bitmap.Save(file);
 #pragma warning restore CS0618
             SummaryText.Text = string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Ui_Stats_Saved, file);
+
+            // 原版:成功弹 Statistics_Screenshot_Successful 后【无条件】打开资源管理器并选中文件;
+            // 用户 2026-09-13 指定改为 Yes/No 追问 —— 这是有意偏离原版的一处。
+            var open = await AppDialog.ConfirmAsync(this, Strings.Successful,
+                Strings.Statistics_Screenshot_Successful, Strings.Ui_Action_Ok);
+            if (open) {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
+                    FileName = AppConstants.ExplorerFileName,
+                    Arguments = AppConstants.ExplorerSelect + "\"" + file + "\"",
+                    UseShellExecute = true
+                });
+            }
         } catch (Exception ex) {
+            await AppDialog.AlertAsync(this, Strings.Failed, Strings.Statistics_Screenshot_Failed);
             SummaryText.Text = string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Ui_Stats_SaveFailed, ex.Message);
         }
 

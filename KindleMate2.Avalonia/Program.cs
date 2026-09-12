@@ -236,26 +236,27 @@ internal static class Program {
             report.AppendLine($"backup: ok={backupResult.Ok} kind={backupResult.Kind} msg={backupResult.Message}");
 
             // 5. 重命名第一本书
+            // 5. 重命名第一本书(契约:成功标题 Successful、正文 Books_Renamed)
             vm.SelectedNav = vm.NavItems[1];
             var oldName = vm.CurrentBookName;
-            vm.RenameCurrentBookAsync(oldName + "_renamed").GetAwaiter().GetResult();
-            report.AppendLine($"rename: {vm.StatusText}");
+            var renameResult = vm.RenameCurrentBookAsync(oldName + "_renamed").GetAwaiter().GetResult();
+            report.AppendLine($"rename: ok={renameResult.Ok} title={renameResult.Title} msg={renameResult.Message}");
             report.AppendLine($"  -> nav 含新名={vm.NavItems.Any(n => n.Name == oldName + "_renamed")}");
 
-            // 6. 删除一条标注
+            // 6. 删除一条标注(契约:原版成功不弹窗 → 成功时 Silent)
             var beforeDelete = vm.ClipTable.Count;
-            vm.DeleteSelectedAsync().GetAwaiter().GetResult();
-            report.AppendLine($"delete: {vm.StatusText} (clips {beforeDelete} -> {vm.ClipTable.Count})");
+            var deleteResult = vm.DeleteSelectedAsync().GetAwaiter().GetResult();
+            report.AppendLine($"delete: ok={deleteResult.Ok} kind={deleteResult.Kind} (clips {beforeDelete} -> {vm.ClipTable.Count})");
 
-            // 7. 清理 / 重建
-            vm.CleanDatabaseAsync().GetAwaiter().GetResult();
-            report.AppendLine($"clean: {vm.StatusText}");
-            vm.RebuildDatabaseAsync().GetAwaiter().GetResult();
-            report.AppendLine($"rebuild: {vm.StatusText}");
+            // 7. 清理 / 重建(契约:成功标题分别为 Clean_Database / Rebuild_Database)
+            var cleanResult = vm.CleanDatabaseAsync().GetAwaiter().GetResult();
+            report.AppendLine($"clean: ok={cleanResult.Ok} title={cleanResult.Title} msg={cleanResult.Message}");
+            var rebuildResult = vm.RebuildDatabaseAsync().GetAwaiter().GetResult();
+            report.AppendLine($"rebuild: ok={rebuildResult.Ok} title={rebuildResult.Title} msg={rebuildResult.Message}");
 
-            // 8. 清空(含自动备份)
-            vm.ClearAllDataAsync().GetAwaiter().GetResult();
-            report.AppendLine($"clear: {vm.StatusText} -> clips={vm.ClipTable.Count}");
+            // 8. 清空(契约:成功正文 Data_Cleared;含自动备份)
+            var clearResult = vm.ClearAllDataAsync().GetAwaiter().GetResult();
+            report.AppendLine($"clear: ok={clearResult.Ok} title={clearResult.Title} msg={clearResult.Message} -> clips={vm.ClipTable.Count}");
 
             report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
 

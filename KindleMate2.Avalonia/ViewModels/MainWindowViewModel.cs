@@ -249,6 +249,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public int WordCount => _distinctWordCount;
     public int LookupCount => _allLookups.Count;
 
+    /// <summary>库内是否有标注数据 —— 清理/清空前是否需要提示或确认(对齐原版的 Count 判断)。</summary>
+    public bool HasClippingData => _allClippings.Count > 0;
+
     /// <summary>已删除 = 原始标注行 − 当前标注(与原版 GetStatusText 口径一致)。</summary>
     public int DeletedCount => Math.Max(0, _originLineCount - _allClippings.Count);
 
@@ -437,7 +440,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 注意:成功与否**靠返回串是否为空判定**,不是靠 bool —— 这是原版的既定契约,不要"改进"。
     /// </summary>
     private async Task<OperationResult> RunOperationAsync(Func<string> operation, bool reload,
-        string successTitle, string failureTitle) {
+        string successTitle, string failureTitle, bool silentOnSuccess = false) {
         if (_session == null) {
             return new OperationResult(false, failureTitle, failureTitle);
         }
@@ -454,39 +457,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             }
             return string.IsNullOrWhiteSpace(result)
                 ? new OperationResult(false, failureTitle, failureTitle)
-                : new OperationResult(true, successTitle, result);
+                : silentOnSuccess
+                    // 操作成功但原版不弹窗(如删除):仍如实标记 Ok=true,只是 Kind=Silent
+                    ? new OperationResult(true, string.Empty, string.Empty, FeedbackKind.Silent)
+                    : new OperationResult(true, successTitle, result);
         } catch (Exception ex) {
             return new OperationResult(false, failureTitle,
                 $"{failureTitle}{Environment.NewLine}{ex.InnerException?.Message ?? ex.Message}");
-        } finally {
-            IsBusy = false;
-            NotifyCounts();
-        }
-    }
-
-    /// <summary>
-    /// 【过渡】尚未迁移到 OperationResult 契约的操作(维护类 / 删除 / 重命名 / 同步)仍走这条路径,
-    /// 结果暂时只写状态栏。迁移完成后删除该重载 —— 保留它只是为了让本轮改动保持可编译、可审查。
-    /// </summary>
-    private async Task RunOperationAsync(string name, Func<string> operation, bool reload) {
-        if (_session == null) {
-            StatusText = Strings.Ui_Status_OpenDatabaseFirst;
-            return;
-        }
-        if (IsBusy) return;
-        var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
-        IsBusy = true;
-        StatusText = $"{name}…";
-        try {
-            var result = await Task.Run(operation);
-            if (reload) {
-                await Task.Run(ReloadFromSession);
-                RebuildNav();
-                RestoreSelection(previous);
-            }
-            StatusText = string.IsNullOrWhiteSpace(result) ? name : $"{name}:{result}";
-        } catch (Exception ex) {
-            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Failed, name, ex.Message);
         } finally {
             IsBusy = false;
             NotifyCounts();
@@ -514,8 +491,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Strings.Successful, Strings.Import_Failed);
 
     // —— 导出 ——
-    // 原版 MenuExportMd_Click:任一导出返回 false 就 **静默 return、不弹任何窗**;
-    // 两者都成功才弹「导出成功! 需要打开文件夹吗?」,选「是」后打开 Exports 目录。
+    // 注:原版 MenuExportMd_Click 在导出失败时是 **完全静默**(直接 return,不弹任何窗);
+    // 用户 2026-09-13 明确要求失败也要弹窗,故此处按用户要求返回失败结果 ——
+    // 这是**有意偏离原版**的一处,已在提交说明中标注。
 
     public Task<OperationResult> ExportAllMarkdownAsync() {
         if (_session is not { } session) {
@@ -525,17 +503,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         return Task.Run(() => {
             var clippingsOk = session.ExportManager.ExportClippingsToMarkdown();
             var vocabsOk = session.ExportManager.ExportVocabsToMarkdown();
-            if (!clippingsOk || !vocabsOk) return OperationResult.Silent;   // 原版静默分支
+            if (!clippingsOk || !vocabsOk) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
             return new OperationResult(true, Strings.Successful,
                 Strings.Export_Successful + Strings.Open_Folder,
                 FeedbackKind.OpenFolderPrompt, exportDir);
         });
     }
 
-    /// <summary>
-    /// 导出当前选中书籍(或全部)的标注 / 生词本 —— 对应原版 <c>MenuBooksExport_Click</c>,
-    /// 同样失败静默;未选中具体项时原版直接 return,故这里也返回静默。
-    /// </summary>
+    /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -543,7 +520,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         var book = _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
         var exportDir = session.ExportDirectory;
         return Task.Run(() => {
-            if (!session.ExportManager.ExportClippingsToMarkdown(book)) return OperationResult.Silent;
+            if (!session.ExportManager.ExportClippingsToMarkdown(book)) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
             return new OperationResult(true, Strings.Successful,
                 Strings.Export_Successful + Strings.Open_Folder,
                 FeedbackKind.OpenFolderPrompt, exportDir);
@@ -581,74 +560,113 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
-    public Task CleanDatabaseAsync() =>
-        RunOperationAsync(Strings.Ui_Menu_CleanDatabase, () => {
-            var session = _session!;
+    /// <summary>
+    /// 清理数据库 —— 对齐原版 <c>MenuClean_Click</c>:无标注数据时提示
+    /// 「数据库无需清理」(标题 Prompt);否则走统一结果契约
+    /// (成功标题 <c>Clean_Database</c>、失败标题 <c>Clear_Failed</c>)。
+    /// 注:执行前的确认框由视图层弹出(用户 2026-09-13 指定;原版没有该确认)。
+    /// </summary>
+    public Task<OperationResult> CleanDatabaseAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        if (_allClippings.Count <= 0) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_No_Need_Clean));
+        }
+        return RunOperationAsync(() => {
             if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result)) {
-                return result.TryGetValue(AppConstants.Exception, out var error) ? error : Strings.Ui_Result_CleanFailed;
+                return string.Empty;
             }
-            return result.TryGetValue(AppConstants.TrimmedCount, out var trimmed)
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_CleanedCount, trimmed)
-                : Strings.Ui_Result_Cleaned;
-        }, true);
+            // 严格按原版 CleanDatabase() 的正文拼接格式与键名
+            var countEmpty = result.TryGetValue(AppConstants.EmptyCount, out var e) ? e : "0";
+            var countDuplicated = result.TryGetValue(AppConstants.DuplicatedCount, out var d) ? d : "0";
+            var fileSizeDelta = result.TryGetValue(AppConstants.FileSizeDelta, out var f) ? f : "0";
+            return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty +
+                   Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space +
+                   countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma +
+                   Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
+        }, true, Strings.Clean_Database, Strings.Clear_Failed);
+    }
 
-    public Task RebuildDatabaseAsync() =>
-        RunOperationAsync(Strings.Ui_Menu_RebuildDatabase, () => {
-            if (!_session!.Km2DatabaseService.RebuildDatabase(out var result)) {
-                return result.TryGetValue(AppConstants.Exception, out var error) ? error : Strings.Ui_Result_RebuildFailed;
+    /// <summary>
+    /// 重建数据库 —— 原版成功正文为「解析 N 条标注,导入 M 条标注」,
+    /// 成功标题 <c>Rebuild_Database</c>、失败标题 <c>Rebuild_Database + Failed</c>。
+    /// </summary>
+    public Task<OperationResult> RebuildDatabaseAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        return RunOperationAsync(() => {
+            if (!session.Km2DatabaseService.RebuildDatabase(out var result)) {
+                return string.Empty;
             }
-            return Strings.Ui_Result_Rebuilt;
-        }, true);
+            var parsedCount = result.TryGetValue(AppConstants.ParsedCount, out var p) ? p : "0";
+            var insertedCount = result.TryGetValue(AppConstants.InsertedCount, out var i) ? i : "0";
+            return Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings +
+                   Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + insertedCount +
+                   Strings.Space + Strings.X_Clippings;
+        }, true, Strings.Rebuild_Database, Strings.Rebuild_Database + Strings.Failed);
+    }
 
-    public Task ClearAllDataAsync() =>
-        RunOperationAsync(Strings.Ui_Menu_ClearData, () => {
-            var session = _session!;
+    /// <summary>
+    /// 清空全部数据 —— 原版 <c>MenuClear_Click</c>:库为空时提示「数据库为空」(标题 Prompt);
+    /// 成功正文 <c>Data_Cleared</c>(标题 Successful)、失败 <c>Clear_Failed</c>。
+    /// 确认框由视图层弹出。
+    /// </summary>
+    public Task<OperationResult> ClearAllDataAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        if (_allClippings.Count <= 0) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_Empty));
+        }
+        return RunOperationAsync(() => {
             Directory.CreateDirectory(session.BackupDirectory);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
-            return session.Km2DatabaseService.DeleteAllData()
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Cleared, fileName)
-                : Strings.Ui_Result_ClearFailed;
-        }, true);
+            return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
+        }, true, Strings.Successful, Strings.Clear_Failed);
+    }
 
     // —— 删除 / 重命名 ——
 
-    public Task DeleteSelectedAsync() {
-        if (_session == null) {
-            StatusText = Strings.Ui_Status_OpenDatabaseFirst;
-            return Task.CompletedTask;
+    /// <summary>
+    /// 删除选中的标注 / 查询 —— 原版语义:确认框由视图层弹,**成功不弹窗**,
+    /// 只有失败才弹 <c>Delete_Failed</c>(故成功时返回 Silent)。
+    /// </summary>
+    public Task<OperationResult> DeleteSelectedAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
         if (_selectedItem?.Clipping is { } clip) {
             var key = clip.Key;
-            return RunOperationAsync(Strings.Ui_Op_DeleteClipping,
-                () => _session.ClippingService.DeleteClipping(key) ? Strings.Ui_Result_DeletedClipping : Strings.Ui_Result_DeleteFailed, true);
+            return RunOperationAsync(() => session.ClippingService.DeleteClipping(key) ? "-" : string.Empty,
+                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
         }
         if (_selectedItem?.Lookup is { } lookup) {
             var wordKey = lookup.WordKey ?? string.Empty;
             var timestamp = lookup.Timestamp ?? string.Empty;
-            return RunOperationAsync(Strings.Ui_Op_DeleteLookup,
-                () => _session.LookupRepository.Delete(wordKey, timestamp) ? Strings.Ui_Result_DeletedLookup : Strings.Ui_Result_DeleteFailed, true);
+            return RunOperationAsync(() => session.LookupRepository.Delete(wordKey, timestamp) ? "-" : string.Empty,
+                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
         }
-        StatusText = Strings.Ui_Status_NoSelection;
-        return Task.CompletedTask;
+        return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
     }
 
     public bool CanRenameCurrentBook => _selectedNav is { IsAll: false };
 
     public string CurrentBookName => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
 
-    public Task RenameCurrentBookAsync(string newName) {
-        if (_session == null || _selectedNav is not { IsAll: false } nav) {
-            StatusText = Strings.Ui_Status_PickBookFirst;
-            return Task.CompletedTask;
+    /// <summary>重命名书籍 —— 成功标题 Successful、正文 <c>Books_Renamed</c>;失败 <c>Book_Renamed_Failed</c>。</summary>
+    public Task<OperationResult> RenameCurrentBookAsync(string newName) {
+        if (_session is not { } session || _selectedNav is not { IsAll: false } nav) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Ui_Status_PickBookFirst));
         }
         var oldName = nav.Key;
         var author = _allClippings
             .FirstOrDefault(c => string.Equals(c.BookName, oldName, StringComparison.Ordinal))?.AuthorName ?? string.Empty;
-        return RunOperationAsync(Strings.Ui_Op_RenameBook,
-            () => _session.ClippingService.RenameBook(oldName, newName, author)
-                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Result_Renamed, newName)
-                : Strings.Ui_Result_RenameFailed, true);
+        return RunOperationAsync(() => session.ClippingService.RenameBook(oldName, newName, author)
+            ? Strings.Books_Renamed
+            : string.Empty, true, Strings.Successful, Strings.Book_Renamed_Failed);
     }
 
     // —— 设备 ——
@@ -670,11 +688,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>在 UI 线程刷新设备状态。</summary>
     public void RefreshDeviceStatus() => DeviceStatus = ProbeDeviceStatus();
 
-    public Task SyncToDeviceAsync() =>
-        RunOperationAsync(Strings.Ui_Menu_SyncToDevice, () => {
-            _session!.ExportManager.SyncToKindle();
-            return Strings.Ui_Result_Synced;
-        }, false);
+    /// <summary>同步到设备 —— 原版:确认框(视图层)后,成功 <c>Sync_Successful</c>;失败弹 <c>Sync_Failed</c>。</summary>
+    public Task<OperationResult> SyncToDeviceAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        return RunOperationAsync(() => {
+            session.ExportManager.SyncToKindle();
+            return Strings.Sync_Successful;
+        }, false, Strings.Successful, Strings.Sync_Failed);
+    }
 
     private void ResetCollections() {
         NavItems.Clear();
