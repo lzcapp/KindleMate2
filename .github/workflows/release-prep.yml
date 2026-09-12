@@ -67,7 +67,8 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ steps.ver.outputs.version }}"
-          $path = 'KindleMate2/KindleMate2.csproj'
+          # 2026-09-13:发布目标已从 WinForms 壳改为 Avalonia 壳
+          $path = 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj'
           $content = [System.IO.File]::ReadAllText($path)
           $new = [regex]::Replace($content, '(<Version>)[^<]*(</Version>)', "`${1}$v`${2}")
           if ($new -cne $content) {
@@ -80,7 +81,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add KindleMate2/KindleMate2.csproj
+          git add KindleMate2.Avalonia/KindleMate2.Avalonia.csproj
           # 注意:不能用 if (git diff --cached --quiet) —— pwsh 把原生命令的 stdout
           # 当布尔值,--quiet 无输出恒为 false,会误走 else。必须显式看 $LASTEXITCODE。
           git diff --cached --quiet

@@ -1,40 +1,71 @@
-# KindleMate2.Avalonia(迁移中)
+# KindleMate2.Avalonia
 
-Avalonia UI 迁移工程:把 WinForms 主程序 UI 切换到 Avalonia,数据/业务层
-(Domain / Application / Infrastructure)原样复用。
+Kindle Mate 2 的 **Avalonia 桌面客户端**。数据/业务层（`Shared` / `Domain` /
+`Infrastructure` / `Application`）原样复用，平台专有代码收敛在独立程序集里。
 
-## 布局规范(2026-09-08 定)
-**所有界面一律按原 WinForms UI 的布局复刻**——以 FrmMain.Designer.cs 等 Designer
-文件为布局权威源(控件分区/停靠/层级照搬),不做自创布局;视觉只做等价的现代
-渲染,不改信息架构。原版截图仅作观感校准。
+> 2026-09-13：原 WinForms 壳（`KindleMate2/`）与 `DarkModeForms` 子模块已**退役**，
+> 本工程即当前唯一的桌面 UI，并已加入 `KindleMate2.sln`。
 
-## 迁移状态(2026-09-08)
-- **阶段 1(主界面骨架)✅**:顶部数据库行 + 搜索行;左侧书/词列表(随 Tab 切换);
-  右侧「标注 | 生词」双 Tab DataGrid;内存过滤(选书/选词/搜索词);状态栏计数;
-  Fluent 主题随系统深浅色。编译 0 错误,smoke 通过。
-- 阶段 2(行级操作:编辑/删除/复制/重命名)、阶段 3(导入/同步/维护/导出/统计)、
-  阶段 4(关于/多语言/更新/发布主产物)待做。
-- 此前 Spike 已证明:Infrastructure(Domain)可被非 WinForms UI 直接引用复用。
+## 设计规范（2026-09-12 修订）
+
+**不再照搬 WinForms 布局，也不使用 DarkModeForms 配色。** 界面按设计系统自主构建：
+
+- 信息架构：内容优先列表 + 右侧预览面板（邮件客户端范式），搜索为全局命令栏。
+- 设计令牌：5 阶冷中性表面 + 唯一强调色 `#7B8CFF` + 4 类标注标签色；正文对比度
+  15.2:1、次要 6.3:1（过 WCAG AA）。深浅双主题，默认跟随系统。
+- 全部定义在 `App.axaml`（`ThemeDictionaries` + 控件样式），无第三方 UI 库。
+- 图表是自研的 `Charts/ChartControl.cs`（重写 `Render(DrawingContext)` 自绘，零依赖）。
+
+## 平台与目标框架
+
+| 工程 | TFM | 说明 |
+|---|---|---|
+| `KindleMate2.Avalonia` | `net8.0-windows;net8.0` | 双 TFM。Windows 用 `WinExe`，其他平台用 `Exe` |
+| `KindleMate2.Devices.Windows` | `net8.0-windows` | Kindle 设备 USB/MTP 实现，仅 Windows TFM 引用 |
+| 其余类库 | `net8.0` | 纯跨平台 |
+
+设备层通过 `IDeviceManager` 抽象：Windows 用真实实现，其他平台由
+`Application.Services.NullDeviceManager` 兜底（如实报告「未连接」）。
 
 ## 构建与运行
-Avalonia 12.x 的 XAML 生成器要求 Roslyn ≥ 4.14(**SDK ≥ 9**;本机用 SDK 10 构建):
+
+Avalonia 12.x 的 XAML 生成器要求 Roslyn ≥ 4.14（**SDK ≥ 9**；本机用 SDK 10 构建）。
 
 ```bash
-dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -c Debug
-dotnet run --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj
+# Windows（含设备支持）
+dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Debug
+dotnet run   --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows
+
+# 跨平台
+dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Debug
 ```
 
-启动后自动尝试打开 `KM2.db`(输出目录上溯四级的仓库根,或启动参数),或点「打开数据库…」。
+启动后优先打开上次的库（记录在 `%APPDATA%/KindleMate2/settings.json`），
+其次尝试输出目录附近的 `KM2.db`，或从「文件 → 打开数据库…」手动选择。
 
-## 无头自检(--smoke)
+## 无头自检
+
+两套自检都不开窗口，用于 CI 与本机验证：
+
 ```bash
-dotnet run --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -c Debug -- \
-  --smoke <path-to-current-schema.db> [out.txt]
+# 只读链路：列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言
+KindleMate2.Avalonia(.exe) --smoke <db> [out.txt]
+
+# 写操作端到端：导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导
+KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt>
 ```
+
+`--ops` **全程在临时副本上执行**，不会改动传入的库。测试夹具见
+`Documents\KindleMate2\fixtures\`（不在仓库内）。
 
 ## 注意
-- **数据库 schema**:读取的是**当前程序生成的库**(clippings 表含 key/content/bookname 等列)。
-  仓库根的 `KM2.db` 是旧版 Kindle Mate 格式(`source_clippings`/`book_id`),不适用。
-- 设备同步(MediaDevices/MTP)与导入尚未接入壳;跨平台到 macOS 前需把 MTP 依赖抽成
-  接口(计划中的 `IDeviceProvider`)。
-- 未加入 `KindleMate2.sln`,独立构建,避免影响现有 WinForms 发布流水线(阶段 4 再切换)。
+
+- **数据库 schema**：读取的是**当前程序生成的库**（`clippings` 表含 `key`/`content`/
+  `bookname` 等列）。仓库根的 `KM2.db` 是旧版 Kindle Mate 格式
+  （`source_clippings`/`book_id`），不适用。
+- **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
+  非 Windows 的设备支持（挂载点 / libmtp）与各平台打包发布仍待补齐。
+- **界面文案**一律走 `Shared.Strings`（简/繁/英三套），不要在 XAML / VM 里写死中文。
+  新增文案需同步改 4 个 resx 并手工补 `Strings.Designer.cs` 的强类型属性。
+- **CI**：`.github/workflows/build.yml` 在 windows 上跑全量构建 + 单测，在
+  ubuntu/macOS 上跑跨平台构建 + 单测 + 启动自检。

@@ -12,10 +12,9 @@ jobs:
   build-and-test:
     runs-on: windows-latest
     steps:
-      - name: Checkout (with submodules)
+      # 自 2026-09-13 起仓库不再有子模块(WinForms 壳与 DarkModeForms 子模块已退休)
+      - name: Checkout
         uses: actions/checkout@v7
-        with:
-          submodules: recursive
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
@@ -37,10 +36,12 @@ jobs:
       - name: Run tests
         run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore
 
-  # 跨平台验证:Windows 之外的平台只构建 Avalonia 壳的 net8.0(非 Windows)TFM。
-  # 整个解决方案在 Linux/macOS 上无法构建 —— WinForms 壳与其 DarkModeForms 子模块
-  # 依赖 Windows 桌面 / .NET Framework。因此这里只取跨平台子集,并实跑一次自检,
-  # 验证:还原、编译、应用启动、SQLite 原生库可用、平台设备实现正确降级为 NullDeviceManager。
+  # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
+  # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),
+  # 因此这里能构建**整个解决方案**并跨平台跑单测,而不只是壳的 net8.0 子集。
+  #
+  # 说明:Devices.Windows 与 Avalonia 的 net8.0-windows TFM 在 Linux/macOS 上可以还原与编译
+  # (Windows 引用包可由 NuGet 还原),只是不能运行;net8.0 变体才是运行时目标。
   cross-platform-build:
     name: cross-platform (${{ matrix.os }})
     strategy:
@@ -49,22 +50,25 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout (with submodules)
+      - name: Checkout
         uses: actions/checkout@v7
-        with:
-          submodules: recursive
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore (Avalonia shell)
-        run: dotnet restore KindleMate2.Avalonia/KindleMate2.Avalonia.csproj
+      - name: Restore solution
+        run: dotnet restore KindleMate2.sln
 
-      - name: Build net8.0 (full, no incremental)
-        run: dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release --no-restore --no-incremental
+      - name: Build solution (full, no incremental)
+        run: dotnet build KindleMate2.sln -c Release --no-restore --no-incremental
 
+      - name: Run tests (cross-platform TFM)
+        run: dotnet test KindleMate2.Tests/KindleMate2.Tests.csproj -c Release --no-build --no-restore
+
+      # 实跑一次自检:验证应用能启动、SQLite 原生库可用、系统文案资源可解析,
+      # 且平台设备实现按预期降级为 NullDeviceManager。
       - name: Boot self-check
         shell: bash
         run: |
