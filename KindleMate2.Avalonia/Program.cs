@@ -32,6 +32,7 @@ internal static class Program {
         try {
             var vm = new MainWindowViewModel();
             vm.OpenDatabaseAsync(dbPath).GetAwaiter().GetResult();
+            report.AppendLine($"open: hasSession={vm.HasSession} status={vm.StatusText}");
 
             // 域 0:标注 → 左栏书籍,主列表标注,详情面板
             vm.DomainIndex = 0;
@@ -47,7 +48,11 @@ internal static class Program {
             }
 
             // 笔记型标注:应同时带「划线」引用块与「笔记」正文
-            vm.SelectedNav = vm.NavItems[0];
+            // 注意:空库 / 打开失败时 NavItems 为空,这里必须判空 ——
+            // CI 的跨平台作业就是拿空文件跑的,越界会让自检自己崩掉而误判产品有问题。
+            if (vm.NavItems.Count > 0) {
+                vm.SelectedNav = vm.NavItems[0];
+            }
             var noteItem = vm.Items.FirstOrDefault(i => i.IsNote);
             if (noteItem != null) {
                 vm.SelectedItem = noteItem;
