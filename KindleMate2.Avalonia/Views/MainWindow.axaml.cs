@@ -410,6 +410,30 @@ public partial class MainWindow : Window {
 
     // —— 列表 / 详情动作 ——
 
+    /// <summary>点击左栏「回收站」→ 把已删除(可恢复)的条目载入主列表(仅显示,不改数据)。</summary>
+    private async void OnOpenRecycleBin(object? sender, TappedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await vm.LoadRecycleBinAsync();
+    }
+
+    /// <summary>恢复回收站中选中的那一条(原版无此功能)。</summary>
+    private async void OnRestoreFromRecycleBin(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.RestoreSelectedFromRecycleBinAsync());
+        // 恢复后刷新回收站视图,让该条从列表消失
+        await vm.LoadRecycleBinAsync();
+    }
+
+    /// <summary>清空回收站 —— 彻底删除其中全部条目。确认框与"清空数据"同理,属不可逆操作。</summary>
+    private async void OnPurgeRecycleBin(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm,
+            Strings.Ui_Menu_PurgeRecycleBin, Strings.Ui_Action_Ok, danger: true);
+        if (!ok) return;
+        await ShowResultAsync(await vm.PurgeRecycleBinAsync());
+        await vm.LoadRecycleBinAsync();
+    }
+
     private async void OnDeleteSelected(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         if (!vm.HasSelectedItem) {

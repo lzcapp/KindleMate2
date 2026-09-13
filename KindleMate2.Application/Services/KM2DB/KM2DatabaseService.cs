@@ -347,6 +347,51 @@ namespace KindleMate2.Application.Services.KM2DB {
             return true;
         }
         
+        // —— 回收站(2026-09-13 新增功能;原版无此概念) ——
+        //
+        // 语义:回收站 = 「原始行仍在、但 clippings 里已不存在」的条目 ——
+        // 与原版状态栏"已删除 N 条"的统计口径**完全一致**(origin 行数 − clippings 行数)。
+        // 因此无需新增 schema:original_clipping_lines 本身就是每条目的原始 5 行快照。
+
+        /// <summary>回收站内容(已删除、可恢复的条目)。</summary>
+        public List<OriginalClippingLine> GetDeletedOriginalLines() {
+            var liveKeys = clippingRepository.GetAll().Select(c => c.Key).ToHashSet(StringComparer.Ordinal);
+            return originalClippingLineRepository.GetAll()
+                .Where(line => !liveKeys.Contains(line.Key))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 从回收站恢复一条标注。
+        /// **复用导入的解析路径**(<c>isRebuild: true</c>)—— 这样解析口径与导入完全一致,
+        /// 且不会重复写入原始行(它本来就在,这正是"已删除"的判据)。
+        /// 返回 true 表示确实插回了一条。
+        /// </summary>
+        public bool RestoreFromOriginalLine(OriginalClippingLine originalLine) {
+            if (originalLine == null) return false;
+
+            var entries = new List<MyClipping> {
+                new() {
+                    Header = originalLine.Line1 ?? string.Empty,
+                    Metadata = originalLine.Line2 ?? string.Empty,
+                    Content = originalLine.Line4 ?? string.Empty,
+                    Delimiter = originalLine.Line5 ?? "=========="
+                }
+            };
+            return HandleClippings(entries, out _, isRebuild: true) > 0;
+        }
+
+        /// <summary>彻底删除回收站中的条目(只删传入的 key,不影响仍在使用的原始行)。</summary>
+        public int PurgeDeletedOriginalLines(IEnumerable<string> keys) {
+            var removed = 0;
+            foreach (var key in keys) {
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                originalClippingLineRepository.Delete(key);
+                removed++;
+            }
+            return removed;
+        }
+
         public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result,
             IProgress<OperationProgress>? progress = null) {
             // 清理最耗时的是判重扫描与随后的 VACUUM,都在这两个阶段里上报

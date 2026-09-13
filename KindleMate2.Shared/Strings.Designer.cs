@@ -1083,6 +1083,11 @@ namespace KindleMate2.Shared {
         public static string Ui_Domain_Vocab => ResourceManager.GetString("Ui_Domain_Vocab", resourceCulture);
         public static string Ui_Nav_Words => ResourceManager.GetString("Ui_Nav_Words", resourceCulture);
         public static string Ui_Nav_RecycleBin => ResourceManager.GetString("Ui_Nav_RecycleBin", resourceCulture);
+        public static string Restore => ResourceManager.GetString("Restore", resourceCulture);
+        public static string Restored => ResourceManager.GetString("Restored", resourceCulture);
+        public static string Restore_Failed => ResourceManager.GetString("Restore_Failed", resourceCulture);
+        public static string Purge => ResourceManager.GetString("Purge", resourceCulture);
+        public static string Ui_Menu_PurgeRecycleBin => ResourceManager.GetString("Ui_Menu_PurgeRecycleBin", resourceCulture);
         public static string Ui_Header_AllClippings => ResourceManager.GetString("Ui_Header_AllClippings", resourceCulture);
         public static string Ui_Header_AllWords => ResourceManager.GetString("Ui_Header_AllWords", resourceCulture);
         public static string Ui_Sort_TimeDesc => ResourceManager.GetString("Ui_Sort_TimeDesc", resourceCulture);

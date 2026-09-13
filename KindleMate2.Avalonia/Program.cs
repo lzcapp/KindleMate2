@@ -449,6 +449,21 @@ internal static class Program {
                 var lookupsAfter = wordKeyToDrop == null ? 0
                     : vm.Session.LookupService.GetAllLookups().Count(l => l.WordKey == wordKeyToDrop);
                 report.AppendLine($"delete word node: ok={wordDropResult.Ok} kind={wordDropResult.Kind} '{wordToDrop}' 查询 {lookupsBefore} -> {lookupsAfter} 条(期望 0)");
+            // 回收站回归(2026-09-13 新功能):删除一条 → 应进入回收站 → 恢复后回到主表。
+            vm.DomainIndex = 0;
+            if (vm.Items.Count > 0) {
+                vm.SelectedItem = vm.Items.FirstOrDefault();
+                var binKey = vm.SelectedClippingKey;
+                vm.DeleteSelectedAsync().GetAwaiter().GetResult();
+                var inBin = vm.Session!.Km2DatabaseService.GetDeletedOriginalLines().Any(l => l.Key == binKey);
+                vm.LoadRecycleBinAsync().GetAwaiter().GetResult();
+                var binShows = vm.ClipTable.Any(c => c.Key == binKey);
+                vm.SelectedItem = vm.Items.FirstOrDefault(i => i.Clipping?.Key == binKey);
+                var restored = vm.RestoreSelectedFromRecycleBinAsync().GetAwaiter().GetResult();
+                var backInList = vm.Session.ClippingService.GetClippingByKey(binKey) != null;
+                report.AppendLine($"recycle bin: 删除后进回收站={inBin} / 回收站可见={binShows} / 恢复 ok={restored.Ok} / 回主表={backInList}");
+            }
+
             }
             vm.DomainIndex = 0;
 

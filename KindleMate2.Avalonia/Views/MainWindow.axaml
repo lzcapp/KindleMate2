@@ -78,6 +78,9 @@
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_RebuildDatabase}" Click="OnMenuRebuildDb" />
               <MenuItem Header="{x:Static shared:Strings.Backup}" Click="OnMenuBackup" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ClearData}" Click="OnMenuDeleteAll" />
+              <!-- 仅当正在查看回收站时可用(原版无此功能) -->
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_PurgeRecycleBin}" Click="OnPurgeRecycleBin"
+                        IsVisible="{Binding IsRecycleBinView}" />
             </MenuItem>
             <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Help}">
               <MenuItem Header="{x:Static shared:Strings.About}" Click="OnMenuAbout" />
@@ -201,7 +204,7 @@
           </Grid>
 
           <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,1,0,0"
-                  Padding="8,9" Margin="0,8,0,0">
+                  Padding="8,9" Margin="0,8,0,0" Cursor="Hand" Tapped="OnOpenRecycleBin">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{x:Static shared:Strings.Ui_Nav_RecycleBin}" FontSize="12"
                          Foreground="{DynamicResource KmTextSecondaryBrush}" />
@@ -256,7 +259,10 @@
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
                 <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
-                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
+                <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected"
+                          IsVisible="{Binding !IsRecycleBinView}" />
+                <MenuItem Header="{x:Static shared:Strings.Restore}" Click="OnRestoreFromRecycleBin"
+                          IsVisible="{Binding IsRecycleBinView}" />
               </ContextMenu>
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>

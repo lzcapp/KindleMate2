@@ -735,25 +735,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>
     /// 删除「全部标注」或某一本书的全部标注 —— 对齐原版 <c>DeleteBookNodes()</c>(FrmMain.cs:1032)。
-    /// **成功不弹窗**(原版只有 deletedCount == 0 时才报 Delete_Failed);
-    /// 「全部标注」分支只清 clippings + original_clipping_lines,**不做备份、不动生词本**
-    /// (与管理菜单的「清空数据」不是同一个操作)。
+    /// **成功不弹窗**(原版只有 deletedCount == 0 时才报 Delete_Failed)。
+    /// ⚠️ **有意偏离原版**:原版此处会连 `original_clipping_lines` 一起删,本版**保留原始行**,
+    /// 使被删条目进入回收站、可恢复(回收站功能见 GetDeletedOriginalLines/RestoreFromOriginalLine)。
     /// </summary>
     private Task<OperationResult> DeleteBookNodeAsync(DatabaseSession session, NavItem nav) {
         var bookName = nav.Key;
         return RunOperationAsync(() => {
             if (nav.IsAll) {
                 session.ClippingService.DeleteAllClippings();
-                session.OriginalClippingLineService.DeleteAllOriginalClippingLines();
                 return "-";
             }
 
             var clippings = session.ClippingService.GetClippingsByBookName(bookName);
             var deleted = 0;
             foreach (var clipping in clippings) {
-                if (!session.ClippingService.DeleteClipping(clipping.Key)) continue;
-                session.OriginalClippingLineService.DeleteOriginalClippingLine(clipping.Key);
-                deleted++;
+                if (session.ClippingService.DeleteClipping(clipping.Key)) deleted++;
             }
             return deleted == 0 ? string.Empty : "-";
         }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
@@ -779,6 +776,94 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             var vocabDeleted = session.VocabService.DeleteVocabByWordKey(wordKey);
             var lookupDeleted = session.LookupService.DeleteLookup(wordKey);
             return vocabDeleted || lookupDeleted ? "-" : string.Empty;
+        }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
+    }
+
+    // —— 回收站(2026-09-13 新增;原版无此概念) ——
+    //
+    // 回收站 = 「原始行仍在、clippings 里已不存在」的条目,与原版"已删除 N 条"同一口径。
+    // 显示到主列表(复用 Items/ClipTable),不改数据;恢复/彻底删除分别见下面两个方法。
+
+    private bool _isRecycleBinView;
+
+    /// <summary>当前是否正在查看回收站(而非正常的标注 / 生词列表)。</summary>
+    public bool IsRecycleBinView {
+        get => _isRecycleBinView;
+        private set {
+            if (_isRecycleBinView == value) return;
+            _isRecycleBinView = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>把回收站内容(仅显示)载入主列表。不触发 reload,避免被常规重建覆盖。</summary>
+    public async Task<OperationResult> LoadRecycleBinAsync() {
+        if (_session is not { } session) {
+            return new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst);
+        }
+        if (IsBusy) return OperationResult.Silent;
+
+        IsBusy = true;
+        Progress = OperationProgress.At(OperationStage.Preparing);
+        try {
+            // 后台构建,再回 UI 线程一次性替换集合(整批替换,避免逐条界面通知)
+            var (items, table) = await Task.Run(() => {
+                var deleted = session.Km2DatabaseService.GetDeletedOriginalLines();
+                var list = new List<ListItem>(deleted.Count);
+                var clips = new List<Clipping>(deleted.Count);
+                foreach (var line in deleted) {
+                    var header = MyClippingsHelper.ParseTitleAndAuthor(line.Line1 ?? string.Empty);
+                    var clip = new Clipping {
+                        Key = line.Key,
+                        Content = line.Line4 ?? string.Empty,
+                        BookName = header.Title,
+                        AuthorName = header.Author
+                    };
+                    clips.Add(clip);
+                    list.Add(ToListItem(clip));
+                }
+                return (list, clips);
+            });
+
+            Items.ReplaceAll(items);
+            ClipTable.ReplaceAll(table);
+            SelectedItem = Items.FirstOrDefault();
+            SelectedClipTable = ClipTable.FirstOrDefault();
+            IsRecycleBinView = true;
+            return OperationResult.Silent;
+        } finally {
+            Progress = OperationProgress.At(OperationStage.None);
+            IsBusy = false;
+            NotifyCounts();
+        }
+    }
+
+    /// <summary>恢复回收站中选中的那一条(重新插回 clippings;原始行原本就在,故可反复恢复)。</summary>
+    public Task<OperationResult> RestoreSelectedFromRecycleBinAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var key = SelectedClippingKey;
+        if (key.Length == 0) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
+        }
+        return RunOperationAsync(() => {
+            var line = session.OriginalClippingLineService.GetOriginalClippingLineByKey(key);
+            if (line == null) return string.Empty;
+            return session.Km2DatabaseService.RestoreFromOriginalLine(line) ? Strings.Restored : string.Empty;
+        }, true, Strings.Successful, Strings.Restore_Failed);
+    }
+
+    /// <summary>清空回收站 —— 彻底删除其中全部条目(不影响仍在使用的数据)。</summary>
+    public Task<OperationResult> PurgeRecycleBinAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        return RunOperationAsync(() => {
+            var keys = session.Km2DatabaseService.GetDeletedOriginalLines().Select(l => l.Key).ToList();
+            if (keys.Count == 0) return string.Empty;
+            var removed = session.Km2DatabaseService.PurgeDeletedOriginalLines(keys);
+            return removed > 0 ? "-" : string.Empty;
         }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
     }
 

@@ -747,4 +747,19 @@
   <data name="Ui_Progress_Reloading" xml:space="preserve">
     <value>Refreshing…</value>
   </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Restored" xml:space="preserve">
+    <value>Restored</value>
+  </data>
+  <data name="Restore_Failed" xml:space="preserve">
+    <value>Restore failed</value>
+  </data>
+  <data name="Purge" xml:space="preserve">
+    <value>Delete permanently</value>
+  </data>
+  <data name="Ui_Menu_PurgeRecycleBin" xml:space="preserve">
+    <value>Empty recycle bin</value>
+  </data>
 </root>
