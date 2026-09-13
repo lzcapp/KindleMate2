@@ -73,6 +73,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 <img src="docs/screenshots/02.png" width="100%">
 <img src="docs/screenshots/03.png" width="100%">
 <img src="docs/screenshots/04.png" width="100%">
+<img src="docs/screenshots/05.png" width="100%">
 
 ## 小星星⭐历史
 
