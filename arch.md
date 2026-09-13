@@ -166,7 +166,8 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 | 只读自检 | `KindleMate2.Avalonia --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
 | 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
-| CI | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
+| CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
+| CI（发布） | `.github/workflows/release.yml` | 14 个资产：Windows 6 变体 zip + Linux/macOS 8 变体 tar.gz；发布前对 `linux-x64_runtime` 与 osx 产物各做一次「解压即跑」自检 |
 
 两套自检**全程在临时副本上执行**，不会改动传入的真实数据库。
 
@@ -176,8 +177,15 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 
 - **非 Windows 的 Kindle 设备支持**尚未实现（`NullDeviceManager` 兜底）；
   macOS / Linux 的挂载点与 libmtp 需要各自实现。
-- **各平台打包发布**未完成：`release.yml` 目前只产出 Windows 六变体（x64/x86/arm64 ×
-  框架依赖/自包含），且已移除单文件打包（待实机验证）。
+  **因此非 Windows 虽有发布包，设备同步仍不可用**，其余功能完整。
+- **各平台打包发布已完成**：`release.yml` 共 14 个资产 —— Windows 六变体 zip（x64/x86/arm64 ×
+  框架依赖/自包含）+ Linux/macOS 八变体 tar.gz（linux-x64 / linux-arm64 / osx-x64 / osx-arm64 × 两种）。
+  ⚠️ **非 Windows 产物必须在 Unix runner 上发布并打包** —— 从 NTFS 打出的归档记录不出可执行位，
+  解压出来是 644、运行即 permission denied；故用 `tar.gz` 且打包前 `chmod +x`。
+  单文件打包（`PublishSingleFile`）仍未启用（未实机验证）。
+- **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
+  在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
+  `CS0103: InitializeComponent 不存在`。
 - **自动更新**（AutoUpdater.NET + AppCast）尚未迁移到 Avalonia 壳。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。

@@ -74,7 +74,9 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   测试夹具目录，仅供回归测试用）。旧数据的迁入通道是
   「管理 → 导入 Kindle Mate 数据库 / 导入 KMate 数据库」。
 - **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
-  非 Windows 的设备支持（挂载点 / libmtp）与各平台打包发布仍待补齐。
+  **各平台发布包已由 `release.yml` 覆盖**（Windows 6 个 zip + Linux/macOS 8 个 tar.gz）。
+  仍待补齐的是**非 Windows 的设备支持本身**（挂载点 / libmtp）：那边由 `NullDeviceManager` 兜底，
+  所以即便有这个平台的包，设备同步也不可用。
 - **界面文案**一律走 `Shared.Strings`（简/繁/英三套），不要在 XAML / VM 里写死中文。
   新增文案需同步改 4 个 resx 并手工补 `Strings.Designer.cs` 的强类型属性。
 - **日志**：库层（`Application` / `Infrastructure` / `Devices.Windows`）一律用
@@ -84,3 +86,8 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   **自检路径（`--smoke` / `--ops`）不注入文件 sink** —— 它们的日志打在 stderr，避免污染 `error.log`。
 - **CI**：`.github/workflows/build.yml` 在 windows 上跑全量构建 + 单测，在
   ubuntu/macOS 上跑跨平台构建 + 单测 + 启动自检。
+  **`release.yml`** 负责发布：`version`（版本号唯一来源）→ `publish`（Windows 6 变体 zip）→
+  `publish-unix`（ubuntu 上交叉发布 linux-x64 / linux-arm64 / osx-x64 / osx-arm64 × 框架依赖/自包含，
+  tar.gz）→ `smoke-macos`（解压 osx 产物实跑自检）→ `release`。
+  **非 Windows 产物必须在 Unix runner 上打包** —— 从 NTFS 打出的归档记录不出可执行位，
+  解压出来是 644、直接运行会 permission denied；打包前必须 `chmod +x`。

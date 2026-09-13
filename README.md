@@ -16,15 +16,31 @@
 
 ## 系统要求
 
-- **Windows**：`Windows 10 1809` 或更高（.NET 8 的要求）；现有发布产物均为 Windows
-- **macOS / Linux**：可由源码构建运行（跨平台），**除 Kindle 设备同步外功能完整**；暂无官方发布包
+- **Windows**：`Windows 10 1809` 或更高（.NET 8 的要求）—— 发布包 `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **macOS / Linux**：发布包 `KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`；
+  **除 Kindle 设备同步（仅 Windows 可用）外功能完整**
 - **架构**: `x86` 或 `x64` 或 `ARM64`
 
-依赖运行时（runtime）的版本需要安装 [.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) 。
+依赖运行时（runtime）的版本需要安装对应平台的 [.NET 8 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。
+
+### 下载与运行
+
+每个平台提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
+
+- **Windows**：解压 `.zip` 后运行 `KindleMate2.Avalonia.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）
+- **Linux**：`tar -xzf KindleMate2_linux-x64_runtime.tar.gz && ./KindleMate2.Avalonia`
+- **macOS**：解压后运行 `./KindleMate2.Avalonia`。产物**未签名**，首次运行前需清除隔离标记，
+  否则会被 Gatekeeper 拦下：
+  ```bash
+  xattr -dr com.apple.quarantine <解压目录>
+  ```
+
+归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x KindleMate2.Avalonia` 即可。
 
 ## 构建
 
-需要 .NET SDK 9 或更高（Avalonia 12 的 XAML 生成器要求 Roslyn ≥ 4.14）。
+需要 .NET SDK 10 或更高（Avalonia 12 的 XAML 源生成器要求 Roslyn ≥ 4.14；
+在 SDK 8/9 上它会被 Roslyn **静默跳过**，表现为满屏 `CS0103: The name 'InitializeComponent' does not exist`）。
 
 ```bash
 dotnet build KindleMate2.sln -c Debug
@@ -65,7 +81,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 夜间模式（深色模式）
 - [x] 语言切换（简体中文 / 繁体中文 / English）
 - [x] 搜索功能（书名 / 作者 / 内容 / 笔记）
-- [x] **跨平台**（Windows 功能完整；macOS / Linux 除设备同步外功能完整）
+- [x] **跨平台**（Windows / Linux / macOS 均有发布包；非 Windows 除 Kindle 设备同步外功能完整）
 
 ## 截图
 

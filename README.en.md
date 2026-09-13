@@ -16,15 +16,32 @@
 
 ## System Requirements
 
-- **Windows**: `Windows 10 1809` or later (required by .NET 8); all published builds are Windows
-- **macOS / Linux**: buildable and runnable from source (cross-platform) — **feature complete except Kindle device sync**; no official packages yet
+- **Windows**: `Windows 10 1809` or later (required by .NET 8) — packages: `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **macOS / Linux**: packages: `KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`;
+  **feature complete except Kindle device sync (Windows only)**
 - **Architecture**: `x86` or `x64` or `ARM64`
 
-[.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) required for runtime dependent version.
+The runtime-dependent builds require the platform's [.NET 8 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation.
+
+### Download & Run
+
+Each platform ships two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
+
+- **Windows**: unzip the `.zip` and run `KindleMate2.Avalonia.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit)
+- **Linux**: `tar -xzf KindleMate2_linux-x64_runtime.tar.gz && ./KindleMate2.Avalonia`
+- **macOS**: extract and run `./KindleMate2.Avalonia`. The build is **unsigned**, so clear the quarantine
+  attribute first or Gatekeeper will block it:
+  ```bash
+  xattr -dr com.apple.quarantine <extracted-dir>
+  ```
+
+The archives preserve the executable bit; if a GUI extractor drops it, just run `chmod +x KindleMate2.Avalonia`.
 
 ## Building
 
-Requires .NET SDK 9 or later (Avalonia 12's XAML compiler needs Roslyn ≥ 4.14).
+Requires .NET SDK 10 or later (Avalonia 12's XAML source generator needs Roslyn ≥ 4.14;
+on SDK 8/9 Roslyn **silently skips** it, so every generated member disappears behind
+`CS0103: The name 'InitializeComponent' does not exist`).
 
 ```bash
 dotnet build KindleMate2.sln -c Debug
@@ -63,7 +80,7 @@ and the headless self-checks.
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch (简体中文 / 繁體中文 / English)
 - [x] Search Function (book / author / content / note)
-- [x] **Cross-platform** (full feature set on Windows; everything but device sync on macOS / Linux)
+- [x] **Cross-platform** (official packages for Windows / Linux / macOS; everything but device sync outside Windows)
 
 ## Screenshots
 
