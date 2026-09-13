@@ -76,6 +76,13 @@
 
   <Application.Styles>
     <FluentTheme />
+    <!--
+      DataGrid 的主题**必须单独包含** —— 它随 Avalonia.Controls.DataGrid 包分发
+      (avares 资源 /Themes/Fluent.xaml,已用程序集内字符串核对)。
+      缺这一行时 DataGrid 没有 ControlTheme、也就没有模板,**什么都渲染不出来**:
+      列头、数据行、网格线全无,界面表现为"切到表格页一片空白"。
+    -->
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
     <Style Selector="Window">
       <Setter Property="Background" Value="{DynamicResource KmCanvasBrush}" />

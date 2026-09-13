@@ -148,45 +148,11 @@ public partial class MainWindow : Window {
     }
 
     private void OnShowList(object? sender, RoutedEventArgs e) {
-        if (Vm is not { } vm) return;
-        vm.IsListMode = true;
-        RebindViews();
+        if (Vm is { } vm) vm.IsListMode = true;
     }
 
     private void OnShowTable(object? sender, RoutedEventArgs e) {
-        if (Vm is not { } vm) return;
-        vm.IsListMode = false;
-        RebindViews();
-    }
-
-    /// <summary>
-    /// 让列表与两个表格重新读取各自的 ItemsSource。
-    ///
-    /// 为什么需要:大列表用 <c>BulkObservableCollection</c> 整批替换、只发**一次** Reset 通知
-    /// (逐条 Add 会产生上万次界面通知、把 UI 线程淹掉)。但控件**在隐藏状态下不会为这次
-    /// Reset 建行,之后也不会自行重建** —— 而数据加载发生在启动时(默认列表模式,表格隐藏),
-    /// 于是切到表格页只会看到"空表格"(表头在、没有行)。
-    ///
-    /// 这里在切换视图时显式重绑一次,并恢复选中项(重绑会把 SelectedItem 清空,
-    /// 而它是双向绑定,不恢复会顺带清掉右侧详情)。
-    /// </summary>
-    private void RebindViews() {
-        if (Vm is not { } vm) return;
-
-        var itemSelection = vm.SelectedItem;
-        ItemList.ItemsSource = null;
-        ItemList.ItemsSource = vm.Items;
-        ItemList.SelectedItem = itemSelection;
-
-        var clipSelection = vm.SelectedClipTable;
-        ClipGrid.ItemsSource = null;
-        ClipGrid.ItemsSource = vm.ClipTable;
-        ClipGrid.SelectedItem = clipSelection;
-
-        var wordSelection = vm.SelectedLookupTable;
-        WordGrid.ItemsSource = null;
-        WordGrid.ItemsSource = vm.LookupTable;
-        WordGrid.SelectedItem = wordSelection;
+        if (Vm is { } vm) vm.IsListMode = false;
     }
 
     /// <summary>
