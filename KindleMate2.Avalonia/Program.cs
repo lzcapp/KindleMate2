@@ -281,15 +281,18 @@ internal static class Program {
 
             // 回归:完整走一遍「导入旧版 Kindle Mate 数据库」。
             // 该路径收尾会调 CleanDatabase(string.Empty),此前必然抛 "The path is empty"
-            // 导致数据虽已导入、整个操作却报失败。用仓库根那份旧格式 KM2.db 实测。
-            var legacyKmDb = Path.Combine(originalCwd, "KM2.db");
+            // 导致数据虽已导入、整个操作却报失败。
+            // 源库由可选的第 6 个命令行参数指定(仓库已不再自带旧格式样本);
+            // 未提供则回退到 <原当前目录>/KM2.db,再没有就跳过。
+            var cmdArgs = Environment.GetCommandLineArgs();
+            var legacyKmDb = cmdArgs.Length > 6 ? cmdArgs[6] : Path.Combine(originalCwd, "KM2.db");
             if (File.Exists(legacyKmDb)) {
                 var legacyResult = vm.ImportKmDatabaseAsync(legacyKmDb).GetAwaiter().GetResult();
                 report.AppendLine($"import legacy KM db: ok={legacyResult.Ok} title={legacyResult.Title} msg={legacyResult.Message}");
-                report.AppendLine("  注:此步只为证明收尾清理不再抛 'The path is empty'。仓库根 KM2.db 是另一套" +
+                report.AppendLine("  注:此步只为证明收尾清理不再抛 'The path is empty'。传入的旧库属另一套" +
                                   "关系型 schema(books + clippings.book_id),任何现有导入器都不认,故 ok 本就为 False。");
             } else {
-                report.AppendLine($"import legacy KM db: 跳过(未找到 {legacyKmDb})");
+                report.AppendLine($"import legacy KM db: 跳过(未提供旧格式样本;可选第 6 参数)");
             }
 
             // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条),同时测量真实批量导入耗时

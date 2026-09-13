@@ -40,8 +40,9 @@ dotnet run   --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.
 dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Debug
 ```
 
-启动后优先打开上次的库（记录在 `%APPDATA%/KindleMate2/settings.json`），
-其次尝试输出目录附近的 `KM2.db`，或从「文件 → 打开数据库…」手动选择。
+启动后**自动使用程序当前目录下的 `KM2.dat`**：文件不存在会按当前 schema 自动建库；
+库损坏时不做预校验，直接报错。**没有"选择数据库"入口** —— 与原版行为一致。
+主题与语言偏好记录在 `%APPDATA%/KindleMate2/settings.json`。
 
 ## 无头自检
 
@@ -60,9 +61,11 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt>
 
 ## 注意
 
-- **数据库 schema**：读取的是**当前程序生成的库**（`clippings` 表含 `key`/`content`/
-  `bookname` 等列）。仓库根的 `KM2.db` 是旧版 Kindle Mate 格式
-  （`source_clippings`/`book_id`），不适用。
+- **数据库 schema**：只读写**本程序生成的库**（扁平 `clippings(key, content, bookname, …)`）。
+  仓库根原有的 `KM2.db` 属于另一套关系型 schema（`books` + `clippings.book_id` +
+  `source_clippings`），**任何现有导入器都不支持**，已从仓库移除（样本保留在仓库外的
+  测试夹具目录，仅供回归测试用）。旧数据的迁入通道是
+  「管理 → 导入 Kindle Mate 数据库 / 导入 KMate 数据库」。
 - **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
   非 Windows 的设备支持（挂载点 / libmtp）与各平台打包发布仍待补齐。
 - **界面文案**一律走 `Shared.Strings`（简/繁/英三套），不要在 XAML / VM 里写死中文。
