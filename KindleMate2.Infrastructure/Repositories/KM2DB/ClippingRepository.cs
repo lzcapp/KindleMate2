@@ -368,41 +368,68 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// 批量插入。**先走整批单事务(最快);整批失败则降级为逐条插入** ——
+        /// 逐条时跳过违反约束(如同一源文件里的重复 key)或数据非法的行,
+        /// 使"判重可能还有漏网之鱼"的后果从**整份文件全部导入失败**降为**只少几条**。
+        /// 实际插入的条数由返回值给出,调用方据此展示"导入 N 条"。
+        /// </summary>
         public int Add(List<Clipping> listClippings) {
-            var count = 0;
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            using var transaction = connection.BeginTransaction();
-            try {
-                foreach (Clipping clipping in listClippings) {
-                    var cmd = new SqliteCommand(
-                        "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
-                        connection, transaction);
-                    cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
-                    cmd.Parameters.AddWithValue("@content", clipping.Content);
-                    cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@sync", clipping.Sync ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
-                    if (cmd.ExecuteNonQuery() > 0) {
-                        count++;
+            // ① 快路径:整批单事务
+            using (var transaction = connection.BeginTransaction()) {
+                try {
+                    var count = 0;
+                    foreach (Clipping clipping in listClippings) {
+                        if (InsertOne(connection, transaction, clipping)) {
+                            count++;
+                        }
                     }
+                    transaction.Commit();
+                    return count;
+                } catch {
+                    try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
-                transaction.Commit();
-            } catch {
-                transaction.Rollback();
-                throw;
             }
-            return count;
+
+            // ② 兜底:逐条插入,每条独立事务,单条失败只跳过该条而不影响其余
+            var inserted = 0;
+            foreach (Clipping clipping in listClippings) {
+                using var rowTransaction = connection.BeginTransaction();
+                try {
+                    if (InsertOne(connection, rowTransaction, clipping)) {
+                        inserted++;
+                    }
+                    rowTransaction.Commit();
+                } catch {
+                    try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
+                }
+            }
+            return inserted;
+        }
+
+        /// <summary>插入一行 —— 供"整批"与"逐条降级"两条路径复用。</summary>
+        private static bool InsertOne(SqliteConnection connection, SqliteTransaction transaction, Clipping clipping) {
+            using var cmd = new SqliteCommand(
+                "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber) VALUES (@key, @content, @bookname, @authorname, @brieftype, @clippingtypelocation, @clippingdate, @read, @clipping_importdate, @tag, @sync, @newbookname, @colorRGB, @pagenumber)",
+                connection, transaction);
+            cmd.Parameters.AddWithValue("@key", clipping.Key ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@content", clipping.Content);
+            cmd.Parameters.AddWithValue("@bookname", clipping.BookName ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@authorname", clipping.AuthorName ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@brieftype", clipping.BriefType ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@clippingtypelocation", clipping.ClippingTypeLocation ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@clippingdate", clipping.ClippingDate ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@read", clipping.Read ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@clipping_importdate", clipping.ClippingImportDate ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@tag", clipping.Tag ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@sync", clipping.Sync ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@newbookname", clipping.NewBookName ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@colorRGB", clipping.ColorRgb ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@pagenumber", clipping.PageNumber ?? (object)DBNull.Value);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         public bool Update(Clipping clipping) {
@@ -476,7 +503,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 }
                 transaction.Commit();
             } catch {
-                transaction.Rollback();
+                try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 throw;
             }
             return count;

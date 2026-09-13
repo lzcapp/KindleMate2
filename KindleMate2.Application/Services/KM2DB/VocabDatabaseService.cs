@@ -6,6 +6,7 @@ using KindleMate2.Shared.Constants;
 using IVocabLookupRepository = KindleMate2.Domain.Interfaces.VocabDB.ILookupRepository;
 using IKm2DbLookupRepository = KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository;
 using Lookup = KindleMate2.Domain.Entities.VocabDB.Lookup;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class VocabDatabaseService {
@@ -139,7 +140,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(e.Message);
+                AppLog.Write(e.Message);
                 result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };

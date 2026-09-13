@@ -1,5 +1,6 @@
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -40,8 +41,14 @@ public class ImportManager : IImportManager {
     /// On any failure, throws <see cref="InvalidOperationException"/> with the underlying message —
     /// the UI layer distinguishes success/failure by result presence vs thrown exception.
     /// </summary>
-    public string Import(string kindleClippingsPath, string kindleWordsPath) {
-        var clippingsResult = ImportKindleClippings(kindleClippingsPath);
+    /// <summary>
+    /// 合并导入:标注 + 生词。原版「从设备导入」把文件拉回本地后走的就是这条。
+    /// 两者都返回空串即视为失败(与 <c>RunBackgroundTask</c> 的契约一致)。
+    /// </summary>
+    public string Import(string kindleClippingsPath, string kindleWordsPath,
+        IProgress<OperationProgress>? progress = null) {
+        // 耗时主要在标注解析,把进度透传下去
+        var clippingsResult = ImportKindleClippings(kindleClippingsPath, progress);
         var wordResult = ImportKindleWords(kindleWordsPath);
 
         if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
@@ -56,8 +63,9 @@ public class ImportManager : IImportManager {
         return clippingsResult + Environment.NewLine + wordResult;
     }
 
-    public string ImportKindleClippings(string clippingsPath) {
-        if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result)) {
+    /// <summary>导入 Kindle 标注(My Clippings.txt)。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
+    public string ImportKindleClippings(string clippingsPath, IProgress<OperationProgress>? progress = null) {
+        if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result, progress)) {
             var exception = result[AppConstants.Exception];
             throw new InvalidOperationException(exception);
         }

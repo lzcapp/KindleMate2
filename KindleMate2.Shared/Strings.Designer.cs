@@ -69,14 +69,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 解析： 的本地化字符串。
-        /// </summary>
-        public static string Analyzed {
-            get {
-                return ResourceManager.GetString("Analyzed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 作者 的本地化字符串。
@@ -87,14 +79,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 自动 自動 Auto 的本地化字符串。
-        /// </summary>
-        public static string AutomaticDetection {
-            get {
-                return ResourceManager.GetString("AutomaticDetection", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 备份 的本地化字符串。
@@ -114,14 +98,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 备份失败 的本地化字符串。
-        /// </summary>
-        public static string Backup_Failed {
-            get {
-                return ResourceManager.GetString("Backup_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 备份完成！ 的本地化字符串。
@@ -132,14 +108,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 生词本备份失败 的本地化字符串。
-        /// </summary>
-        public static string Backup_Vocabs_Failed {
-            get {
-                return ResourceManager.GetString("Backup_Vocabs_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 书籍重命名失败 的本地化字符串。
@@ -204,14 +172,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 清理数据库失败 的本地化字符串。
-        /// </summary>
-        public static string Clean_Failed {
-            get {
-                return ResourceManager.GetString("Clean_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 清理 的本地化字符串。
@@ -222,14 +182,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 清空数据 的本地化字符串。
-        /// </summary>
-        public static string Clear_Data {
-            get {
-                return ResourceManager.GetString("Clear_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 清空失败 的本地化字符串。
@@ -285,14 +237,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 确定 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Button {
-            get {
-                return ResourceManager.GetString("Confirm_Button", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 确认要清空全部数据吗？ 的本地化字符串。
@@ -366,23 +310,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 您需要导入Kindle Mate2的数据库文件吗？ 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Import_Kindle_Mate_2_Database {
-            get {
-                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_2_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 您需要导入Kindle Mate的数据库文件吗？ 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Import_Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 确认要重建数据库吗? 的本地化字符串。
@@ -546,14 +474,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 标注数据为空 的本地化字符串。
-        /// </summary>
-        public static string Empty_Clippings_Data {
-            get {
-                return ResourceManager.GetString("Empty_Clippings_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 空内容 的本地化字符串。
@@ -564,14 +484,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 生词本数据为空 的本地化字符串。
-        /// </summary>
-        public static string Empty_Lookups_Data {
-            get {
-                return ResourceManager.GetString("Empty_Lookups_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 English 的本地化字符串。
@@ -609,14 +521,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导出为Markdown 的本地化字符串。
-        /// </summary>
-        public static string Export_To_Markdown {
-            get {
-                return ResourceManager.GetString("Export_To_Markdown", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 失败 的本地化字符串。
@@ -654,14 +558,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 GitHub仓库 的本地化字符串。
-        /// </summary>
-        public static string GitHub_Repo {
-            get {
-                return ResourceManager.GetString("GitHub_Repo", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 帮助 的本地化字符串。
@@ -681,113 +577,17 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导入Kindle标注文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clipping_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clipping_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle标注 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clippings {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clippings", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 从Kindle设备导入标注 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clippings_From_Kindle {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clippings_From_Kindle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate 2数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_2_Database_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_2_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate数据库 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_Database {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入KMate数据库 的本地化字符串。
-        /// </summary>
-        public static string Import_KMate_Database {
-            get {
-                return ResourceManager.GetString("Import_KMate_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入KMate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_KMate_Database_File {
-            get {
-                return ResourceManager.GetString("Import_KMate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 KMate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string KMate_Database_File {
-            get {
-                return ResourceManager.GetString("KMate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle生词本文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Vocab_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Vocab_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle生词本 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Vocabs {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Vocabs", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入成功 的本地化字符串。
-        /// </summary>
-        public static string Import_Successful {
-            get {
-                return ResourceManager.GetString("Import_Successful", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 导入 的本地化字符串。
@@ -807,14 +607,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Kindle标注文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Clipping_File {
-            get {
-                return ResourceManager.GetString("Kindle_Clipping_File", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 Kindle设备连接失败 的本地化字符串。
@@ -825,14 +617,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 您连接了Kindle设备，需要从Kindle中导入数据吗？ 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Connected_Confirm_Import {
-            get {
-                return ResourceManager.GetString("Kindle_Connected_Confirm_Import", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 Kindle设备已连接 的本地化字符串。
@@ -843,41 +627,9 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Kindle Mate 2数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Mate_2_Database_File {
-            get {
-                return ResourceManager.GetString("Kindle_Mate_2_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle Mate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle生词本文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Vocab_File {
-            get {
-                return ResourceManager.GetString("Kindle_Vocab_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle生词本文件不存在 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Vocab_Not_Exist {
-            get {
-                return ResourceManager.GetString("Kindle_Vocab_Not_Exist", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 语言 的本地化字符串。
@@ -888,14 +640,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 （ 的本地化字符串。
-        /// </summary>
-        public static string Left_Parenthesis {
-            get {
-                return ResourceManager.GetString("Left_Parenthesis", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 管理 的本地化字符串。
@@ -1032,14 +776,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 重命名书籍 的本地化字符串。
-        /// </summary>
-        public static string Rename_Book {
-            get {
-                return ResourceManager.GetString("Rename_Book", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 URL已经复制到剪贴板 的本地化字符串。
@@ -1059,14 +795,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 ） 的本地化字符串。
-        /// </summary>
-        public static string Right_Parenthesis {
-            get {
-                return ResourceManager.GetString("Right_Parenthesis", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 保存 的本地化字符串。
@@ -1149,14 +877,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 ： 的本地化字符串。
-        /// </summary>
-        public static string Symbol_Colon {
-            get {
-                return ResourceManager.GetString("Symbol_Colon", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 ， 的本地化字符串。
@@ -1212,14 +932,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 本书中有 的本地化字符串。
-        /// </summary>
-        public static string Total_Clippings {
-            get {
-                return ResourceManager.GetString("Total_Clippings", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 共 的本地化字符串。
@@ -1230,23 +942,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 在标注中共出现 的本地化字符串。
-        /// </summary>
-        public static string Totally_Other_Books {
-            get {
-                return ResourceManager.GetString("Totally_Other_Books", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 本词共有 的本地化字符串。
-        /// </summary>
-        public static string Totally_Vocabs {
-            get {
-                return ResourceManager.GetString("Totally_Vocabs", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 修剪 的本地化字符串。
@@ -1284,14 +980,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 位作者 的本地化字符串。
-        /// </summary>
-        public static string X_Authors {
-            get {
-                return ResourceManager.GetString("X_Authors", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 本书 的本地化字符串。
@@ -1311,14 +999,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 天内 的本地化字符串。
-        /// </summary>
-        public static string X_Days {
-            get {
-                return ResourceManager.GetString("X_Days", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 次查询 的本地化字符串。
@@ -1329,23 +1009,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 次 的本地化字符串。
-        /// </summary>
-        public static string X_Other_Books {
-            get {
-                return ResourceManager.GetString("X_Other_Books", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 页 的本地化字符串。
-        /// </summary>
-        public static string X_Page {
-            get {
-                return ResourceManager.GetString("X_Page", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 条记录 的本地化字符串。
@@ -1383,22 +1047,120 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Type 的本地化字符串。
-        /// </summary>
-        public static string Type_Column {
-            get {
-                return ResourceManager.GetString("Type_Column", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Only notes can be edited. 的本地化字符串。
-        /// </summary>
-        public static string Edit_Notes_Only {
-            get {
-                return ResourceManager.GetString("Edit_Notes_Only", resourceCulture);
-            }
-        }
+
+        // ── Avalonia 界面文案(2026-09-13 抽取) ──
+
+        public static string Ui_Menu_File => ResourceManager.GetString("Ui_Menu_File", resourceCulture);
+        public static string Ui_Menu_Manage => ResourceManager.GetString("Ui_Menu_Manage", resourceCulture);
+        public static string Ui_Menu_Help => ResourceManager.GetString("Ui_Menu_Help", resourceCulture);
+        public static string Ui_Menu_Statistics => ResourceManager.GetString("Ui_Menu_Statistics", resourceCulture);
+        public static string Ui_Menu_ImportClippings => ResourceManager.GetString("Ui_Menu_ImportClippings", resourceCulture);
+        public static string Ui_Menu_ImportWords => ResourceManager.GetString("Ui_Menu_ImportWords", resourceCulture);
+        public static string Ui_Menu_ImportKmDatabase => ResourceManager.GetString("Ui_Menu_ImportKmDatabase", resourceCulture);
+        public static string Ui_Menu_ImportKmateDatabase => ResourceManager.GetString("Ui_Menu_ImportKmateDatabase", resourceCulture);
+        public static string Ui_Menu_ImportFromDevice => ResourceManager.GetString("Ui_Menu_ImportFromDevice", resourceCulture);
+        public static string Ui_Menu_SyncToDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice", resourceCulture);
+        public static string Ui_Menu_ExportMarkdown => ResourceManager.GetString("Ui_Menu_ExportMarkdown", resourceCulture);
+        public static string Ui_Menu_CleanDatabase => ResourceManager.GetString("Ui_Menu_CleanDatabase", resourceCulture);
+        public static string Ui_Menu_RebuildDatabase => ResourceManager.GetString("Ui_Menu_RebuildDatabase", resourceCulture);
+        public static string Ui_Menu_ClearData => ResourceManager.GetString("Ui_Menu_ClearData", resourceCulture);
+        public static string Ui_Menu_Github => ResourceManager.GetString("Ui_Menu_Github", resourceCulture);
+        public static string Ui_Search_Placeholder => ResourceManager.GetString("Ui_Search_Placeholder", resourceCulture);
+        public static string Ui_View_List => ResourceManager.GetString("Ui_View_List", resourceCulture);
+        public static string Ui_View_Table => ResourceManager.GetString("Ui_View_Table", resourceCulture);
+        public static string Ui_Tip_ToggleTheme => ResourceManager.GetString("Ui_Tip_ToggleTheme", resourceCulture);
+        public static string Ui_Tip_Language => ResourceManager.GetString("Ui_Tip_Language", resourceCulture);
+        public static string Ui_Lang_Hans => ResourceManager.GetString("Ui_Lang_Hans", resourceCulture);
+        public static string Ui_Lang_Hant => ResourceManager.GetString("Ui_Lang_Hant", resourceCulture);
+        public static string Ui_Lang_En => ResourceManager.GetString("Ui_Lang_En", resourceCulture);
+        public static string Ui_Lang_Auto => ResourceManager.GetString("Ui_Lang_Auto", resourceCulture);
+        public static string Ui_Search_Type_All => ResourceManager.GetString("Ui_Search_Type_All", resourceCulture);
+        public static string Ui_Search_Type_Books => ResourceManager.GetString("Ui_Search_Type_Books", resourceCulture);
+        public static string Ui_Search_Type_Author => ResourceManager.GetString("Ui_Search_Type_Author", resourceCulture);
+        public static string Ui_Search_Type_Content => ResourceManager.GetString("Ui_Search_Type_Content", resourceCulture);
+        public static string Ui_Search_Type_Note => ResourceManager.GetString("Ui_Search_Type_Note", resourceCulture);
+        public static string Ui_Domain_Vocab => ResourceManager.GetString("Ui_Domain_Vocab", resourceCulture);
+        public static string Ui_Nav_Words => ResourceManager.GetString("Ui_Nav_Words", resourceCulture);
+        public static string Ui_Nav_RecycleBin => ResourceManager.GetString("Ui_Nav_RecycleBin", resourceCulture);
+        public static string Restore => ResourceManager.GetString("Restore", resourceCulture);
+        public static string Restored => ResourceManager.GetString("Restored", resourceCulture);
+        public static string Restore_Failed => ResourceManager.GetString("Restore_Failed", resourceCulture);
+        public static string Purge => ResourceManager.GetString("Purge", resourceCulture);
+        public static string Ui_Menu_PurgeRecycleBin => ResourceManager.GetString("Ui_Menu_PurgeRecycleBin", resourceCulture);
+        public static string Ui_Header_AllClippings => ResourceManager.GetString("Ui_Header_AllClippings", resourceCulture);
+        public static string Ui_Header_AllWords => ResourceManager.GetString("Ui_Header_AllWords", resourceCulture);
+        public static string Ui_Sort_TimeDesc => ResourceManager.GetString("Ui_Sort_TimeDesc", resourceCulture);
+        public static string Ui_Sort_TimeAsc => ResourceManager.GetString("Ui_Sort_TimeAsc", resourceCulture);
+        public static string Ui_Col_Word => ResourceManager.GetString("Ui_Col_Word", resourceCulture);
+        public static string Ui_Col_Date => ResourceManager.GetString("Ui_Col_Date", resourceCulture);
+        public static string Ui_Detail_Empty => ResourceManager.GetString("Ui_Detail_Empty", resourceCulture);
+        public static string Ui_Detail_EmptyHint => ResourceManager.GetString("Ui_Detail_EmptyHint", resourceCulture);
+        public static string Ui_Action_Export => ResourceManager.GetString("Ui_Action_Export", resourceCulture);
+        public static string Ui_Action_Close => ResourceManager.GetString("Ui_Action_Close", resourceCulture);
+        public static string Ui_Action_Ok => ResourceManager.GetString("Ui_Action_Ok", resourceCulture);
+        public static string Ui_Type_Highlight => ResourceManager.GetString("Ui_Type_Highlight", resourceCulture);
+        public static string Ui_Type_Note => ResourceManager.GetString("Ui_Type_Note", resourceCulture);
+        public static string Ui_Type_Bookmark => ResourceManager.GetString("Ui_Type_Bookmark", resourceCulture);
+        public static string Ui_Type_Cut => ResourceManager.GetString("Ui_Type_Cut", resourceCulture);
+        public static string Ui_Status_Initial => ResourceManager.GetString("Ui_Status_Initial", resourceCulture);
+        public static string Ui_Status_Reading => ResourceManager.GetString("Ui_Status_Reading", resourceCulture);
+        public static string Ui_Status_DeviceOffline => ResourceManager.GetString("Ui_Status_DeviceOffline", resourceCulture);
+        public static string Ui_Status_DeviceOnline => ResourceManager.GetString("Ui_Status_DeviceOnline", resourceCulture);
+        public static string Ui_Status_DeviceOnlineDrive => ResourceManager.GetString("Ui_Status_DeviceOnlineDrive", resourceCulture);
+        public static string Ui_Status_NoDatabase => ResourceManager.GetString("Ui_Status_NoDatabase", resourceCulture);
+        public static string Ui_Status_OpenDatabaseFirst => ResourceManager.GetString("Ui_Status_OpenDatabaseFirst", resourceCulture);
+        public static string Ui_Status_NoSelection => ResourceManager.GetString("Ui_Status_NoSelection", resourceCulture);
+        public static string Ui_Status_PickBookFirst => ResourceManager.GetString("Ui_Status_PickBookFirst", resourceCulture);
+        public static string Ui_Status_NoDevice => ResourceManager.GetString("Ui_Status_NoDevice", resourceCulture);
+        public static string Ui_Status_Copied => ResourceManager.GetString("Ui_Status_Copied", resourceCulture);
+        public static string Ui_Status_NothingToCopy => ResourceManager.GetString("Ui_Status_NothingToCopy", resourceCulture);
+        public static string Ui_Status_ClipboardUnavailable => ResourceManager.GetString("Ui_Status_ClipboardUnavailable", resourceCulture);
+        public static string Ui_Status_BadPath => ResourceManager.GetString("Ui_Status_BadPath", resourceCulture);
+        public static string Ui_Status_Loading => ResourceManager.GetString("Ui_Status_Loading", resourceCulture);
+        public static string Ui_Status_FileNotFound => ResourceManager.GetString("Ui_Status_FileNotFound", resourceCulture);
+        public static string Ui_Status_OpenFailed => ResourceManager.GetString("Ui_Status_OpenFailed", resourceCulture);
+        public static string Ui_Status_SummaryClippings => ResourceManager.GetString("Ui_Status_SummaryClippings", resourceCulture);
+        public static string Ui_Status_SummaryVocab => ResourceManager.GetString("Ui_Status_SummaryVocab", resourceCulture);
+        public static string Ui_Text_Page => ResourceManager.GetString("Ui_Text_Page", resourceCulture);
+        public static string Ui_Text_Stem => ResourceManager.GetString("Ui_Text_Stem", resourceCulture);
+        public static string Ui_Text_Frequency => ResourceManager.GetString("Ui_Text_Frequency", resourceCulture);
+        public static string Ui_Text_ClippingCount => ResourceManager.GetString("Ui_Text_ClippingCount", resourceCulture);
+        public static string Ui_Text_LookupCount => ResourceManager.GetString("Ui_Text_LookupCount", resourceCulture);
+        public static string Ui_Op_RenameBook => ResourceManager.GetString("Ui_Op_RenameBook", resourceCulture);
+        public static string Ui_Result_NothingToExport => ResourceManager.GetString("Ui_Result_NothingToExport", resourceCulture);
+        public static string Ui_Result_LanguageSet => ResourceManager.GetString("Ui_Result_LanguageSet", resourceCulture);
+        public static string Ui_Pick_Clippings => ResourceManager.GetString("Ui_Pick_Clippings", resourceCulture);
+        public static string Ui_Pick_Words => ResourceManager.GetString("Ui_Pick_Words", resourceCulture);
+        public static string Ui_Pick_KmDatabase => ResourceManager.GetString("Ui_Pick_KmDatabase", resourceCulture);
+        public static string Ui_Pick_KmateDatabase => ResourceManager.GetString("Ui_Pick_KmateDatabase", resourceCulture);
+        public static string Ui_FileType_Clippings => ResourceManager.GetString("Ui_FileType_Clippings", resourceCulture);
+        public static string Ui_FileType_Words => ResourceManager.GetString("Ui_FileType_Words", resourceCulture);
+        public static string Ui_FileType_KmDatabase => ResourceManager.GetString("Ui_FileType_KmDatabase", resourceCulture);
+        public static string Ui_FileType_KmateDatabase => ResourceManager.GetString("Ui_FileType_KmateDatabase", resourceCulture);
+        public static string Ui_Dlg_CleanMessage => ResourceManager.GetString("Ui_Dlg_CleanMessage", resourceCulture);
+        public static string Ui_Dlg_CleanOk => ResourceManager.GetString("Ui_Dlg_CleanOk", resourceCulture);
+        public static string Ui_Stats_ByDate => ResourceManager.GetString("Ui_Stats_ByDate", resourceCulture);
+        public static string Ui_Stats_ByHour => ResourceManager.GetString("Ui_Stats_ByHour", resourceCulture);
+        public static string Ui_Stats_ByWeekday => ResourceManager.GetString("Ui_Stats_ByWeekday", resourceCulture);
+        public static string Ui_Stats_ExportImage => ResourceManager.GetString("Ui_Stats_ExportImage", resourceCulture);
+        public static string Ui_Stats_Empty => ResourceManager.GetString("Ui_Stats_Empty", resourceCulture);
+        public static string Ui_Stats_SummaryClippings => ResourceManager.GetString("Ui_Stats_SummaryClippings", resourceCulture);
+        public static string Ui_Stats_SummaryClippingsNoSpan => ResourceManager.GetString("Ui_Stats_SummaryClippingsNoSpan", resourceCulture);
+        public static string Ui_Stats_SummaryVocab => ResourceManager.GetString("Ui_Stats_SummaryVocab", resourceCulture);
+        public static string Ui_Stats_SummaryVocabNoSpan => ResourceManager.GetString("Ui_Stats_SummaryVocabNoSpan", resourceCulture);
+        public static string Ui_Stats_Saved => ResourceManager.GetString("Ui_Stats_Saved", resourceCulture);
+        public static string Ui_Stats_SaveFailed => ResourceManager.GetString("Ui_Stats_SaveFailed", resourceCulture);
+        public static string Ui_Progress_ReadingFile => ResourceManager.GetString("Ui_Progress_ReadingFile", resourceCulture);
+        public static string Ui_Progress_Parsing => ResourceManager.GetString("Ui_Progress_Parsing", resourceCulture);
+        public static string Ui_Progress_Preparing => ResourceManager.GetString("Ui_Progress_Preparing", resourceCulture);
+        public static string Ui_Progress_Writing => ResourceManager.GetString("Ui_Progress_Writing", resourceCulture);
+        public static string Ui_Progress_Reloading => ResourceManager.GetString("Ui_Progress_Reloading", resourceCulture);
+        public static string Ui_About_Title => ResourceManager.GetString("Ui_About_Title", resourceCulture);
+        public static string Ui_About_Version => ResourceManager.GetString("Ui_About_Version", resourceCulture);
+        public static string Ui_About_Runtime => ResourceManager.GetString("Ui_About_Runtime", resourceCulture);
+        public static string Ui_About_Repo => ResourceManager.GetString("Ui_About_Repo", resourceCulture);
+        public static string Ui_About_NoDatabase => ResourceManager.GetString("Ui_About_NoDatabase", resourceCulture);
+        public static string Ui_About_RuntimeFormat => ResourceManager.GetString("Ui_About_RuntimeFormat", resourceCulture);
     }
 }

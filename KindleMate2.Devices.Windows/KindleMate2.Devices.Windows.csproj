@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KindleMate2.Devices.Windows</RootNamespace>
+    <AssemblyName>KindleMate2.Devices.Windows</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    平台专有的 Kindle 设备实现(USB 盘符枚举 + MTP)。
+    之所以独立成项目:Application 层要跨平台,而 System.Management 与 MediaDevices
+    都是 Windows 专有依赖。IDeviceManager 接口留在 Application(net8.0),
+    本程序集只提供 Windows 实现;其他平台由 Application 的 NullDeviceManager 兜底。
+  -->
+  <ItemGroup>
+    <PackageReference Include="MediaDevices" Version="2.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
+    <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

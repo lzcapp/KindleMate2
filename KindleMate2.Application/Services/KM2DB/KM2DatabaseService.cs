@@ -4,8 +4,10 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.MyClippings;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class Km2DatabaseService(
@@ -14,11 +16,14 @@ namespace KindleMate2.Application.Services.KM2DB {
         IOriginalClippingLineRepository originalClippingLineRepository,
         ISettingRepository settingRepository,
         IVocabRepository vocabRepository) : IKm2DatabaseService {
-        public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result) {
+        public bool ImportKindleClippings(string clippingsPath, out Dictionary<string, string> result,
+            IProgress<OperationProgress>? progress = null) {
             try {
+                progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
                 List<string> lines = [
                     .. File.ReadAllLines(clippingsPath)
                 ];
+                progress?.Report(OperationProgress.At(OperationStage.Parsing));
 
                 var delimiterIndex = new List<int>();
 
@@ -59,7 +64,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
 
-                var insertedCount = HandleClippings(myClippings, out var skipCounts);
+                var insertedCount = HandleClippings(myClippings, out var skipCounts, progress: progress);
 
                 result = new Dictionary<string, string> {
                     { AppConstants.ParsedCount, delimiterIndex.Count.ToString() },
@@ -111,7 +116,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
                 result = new  Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
@@ -125,9 +130,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             public int DateFailed;
         }
 
-        private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false) {
+        private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false,
+            IProgress<OperationProgress>? progress = null) {
             skipCounts = new SkipCounts();
             var insertResult = 0;
+            // 准备阶段按「已处理 / 解析出总数」上报确定进度(每 100 条一次,避免过于频繁)
+            var processed = 0;
 
             var allClippings = clippingRepository.GetAll();
             var allClippingsKeys = allClippings.Select(c => c.Key).ToHashSet();
@@ -142,6 +150,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             var listAddOriginalClippings = new List<OriginalClippingLine>();
             
             foreach (MyClipping myClipping in clippings) {
+                processed++;
+                if (processed % 100 == 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, processed, clippings.Count));
+                }
                 try {
                     var clipping = new Clipping {
                         Key = string.Empty
@@ -236,6 +248,21 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     listAddClippings.Add(clipping);
 
+                    // ★ 同步判重集合:此前这三个集合只在开批前从库里取一次,批内不再更新,
+                    //   于是同一份源文件里出现**重复 key** 时两条都会进批次,插入时撞
+                    //   UNIQUE(clippings.key) 导致**整批导入失败**(用户可见「导入失败」弹窗)。
+                    //   key = 日期|位置,两条内容不同但同日期同位置的条目就会算出同一个 key。
+                    //   KMate 导入路径(KMDatabaseService)早已这么做,这里补齐。
+                    allClippingsKeys.Add(key);
+                    if (contentByKey.TryGetValue(key, out var acceptedContents)) {
+                        acceptedContents.Add(content);
+                    } else {
+                        contentByKey[key] = [content];
+                    }
+                    if (!isRebuild) {
+                        originalKeys.Add(key);
+                    }
+
                     if (!isRebuild) {
                         listAddOriginalClippings.Add(new OriginalClippingLine {
                             Key = key, 
@@ -247,12 +274,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                         });
                     }
                 } catch (Exception e) {
-                    Console.WriteLine(StringHelper.GetExceptionMessage(nameof(HandleClippings), e));
+                    AppLog.Write(StringHelper.GetExceptionMessage(nameof(HandleClippings), e));
                 }
             }
 
             if (listAddClippings.Count > 0) {
+                progress?.Report(new OperationProgress(OperationStage.Writing, 0, listAddClippings.Count));
                 insertResult = clippingRepository.Add(listAddClippings);
+                progress?.Report(new OperationProgress(OperationStage.Writing, listAddClippings.Count, listAddClippings.Count));
             }
 
             if (listAddOriginalClippings.Count > 0) {
@@ -284,7 +313,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 });
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetClippingsBriefTypeHide), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(SetClippingsBriefTypeHide), e));
                 return false;
             }
         }
@@ -318,13 +347,73 @@ namespace KindleMate2.Application.Services.KM2DB {
             return true;
         }
         
-        public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result) {
+        // —— 回收站(2026-09-13 新增功能;原版无此概念) ——
+        //
+        // 语义:回收站 = 「原始行仍在、但 clippings 里已不存在」的条目 ——
+        // 与原版状态栏"已删除 N 条"的统计口径**完全一致**(origin 行数 − clippings 行数)。
+        // 因此无需新增 schema:original_clipping_lines 本身就是每条目的原始 5 行快照。
+
+        /// <summary>回收站内容(已删除、可恢复的条目)。</summary>
+        public List<OriginalClippingLine> GetDeletedOriginalLines() {
+            var liveKeys = clippingRepository.GetAll().Select(c => c.Key).ToHashSet(StringComparer.Ordinal);
+            return originalClippingLineRepository.GetAll()
+                .Where(line => !liveKeys.Contains(line.Key))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 从回收站恢复一条标注。
+        /// **复用导入的解析路径**(<c>isRebuild: true</c>)—— 这样解析口径与导入完全一致,
+        /// 且不会重复写入原始行(它本来就在,这正是"已删除"的判据)。
+        /// 返回 true 表示确实插回了一条。
+        /// </summary>
+        public bool RestoreFromOriginalLine(OriginalClippingLine originalLine) {
+            if (originalLine == null) return false;
+
+            var entries = new List<MyClipping> {
+                new() {
+                    Header = originalLine.Line1 ?? string.Empty,
+                    Metadata = originalLine.Line2 ?? string.Empty,
+                    Content = originalLine.Line4 ?? string.Empty,
+                    Delimiter = originalLine.Line5 ?? "=========="
+                }
+            };
+            return HandleClippings(entries, out _, isRebuild: true) > 0;
+        }
+
+        /// <summary>彻底删除回收站中的条目(只删传入的 key,不影响仍在使用的原始行)。</summary>
+        public int PurgeDeletedOriginalLines(IEnumerable<string> keys) {
+            var removed = 0;
+            foreach (var key in keys) {
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                originalClippingLineRepository.Delete(key);
+                removed++;
+            }
+            return removed;
+        }
+
+        public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result,
+            IProgress<OperationProgress>? progress = null) {
+            // 清理最耗时的是判重扫描与随后的 VACUUM,都在这两个阶段里上报
+            progress?.Report(OperationProgress.At(OperationStage.Preparing));
             var clippings = clippingRepository.GetAll();
 
             try {
-                var fileInfo = new FileInfo(databaseFilePath);
-                var originFileSize = fileInfo.Length;
+                // 路径可能为空:导入流程收尾的清理只关心数据卫生(空内容/重复项),不关心文件体积,
+                // 调用方传的是 string.Empty。此前直接 new FileInfo("") 会抛
+                // "The path is empty",导致导入在最后一步整个失败。
+                // 文件不存在时同样跳过体积统计,但不影响清理本身。
+                FileInfo? fileInfo = null;
+                long originFileSize = 0;
+                if (!string.IsNullOrWhiteSpace(databaseFilePath)) {
+                    var candidate = new FileInfo(databaseFilePath);
+                    if (candidate.Exists) {
+                        fileInfo = candidate;
+                        originFileSize = candidate.Length;
+                    }
+                }
                 
+                progress?.Report(OperationProgress.At(OperationStage.Writing));
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 
@@ -336,13 +425,22 @@ namespace KindleMate2.Application.Services.KM2DB {
                 // Equivalent result, but: exact duplicates resolved by grouping (O(n)),
                 // containment checks run only on remaining unique contents with length
                 // pruning and early exit.
-                var duplicatedClippings = FindDuplicatedClippings(clippings);
+                var duplicatedClippings = FindDuplicatedClippings(clippings, progress);
 
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
-                
-                DatabaseHelper.VacuumDatabase(databaseFilePath);
-                
-                var newFileSize = fileInfo.Length;
+
+                // 让「回收体积」成为真实值:
+                // SQLite 的 DELETE 只把页归还空闲列表,文件大小通常不变 —— 必须 VACUUM 才会真正收缩。
+                // 仅在确有删除、且路径有效时才执行,避免无谓的全库重写(大库上这步不便宜);
+                // "无需清理"的路径保持瞬时。注意此处必须只 VACUUM 一次 ——
+                // 重复 VACUUM 会白白重写两遍整个库文件。
+                if (fileInfo != null && emptyCount + duplicatedCount > 0) {
+                    DatabaseHelper.VacuumDatabase(databaseFilePath);
+                    // FileInfo.Length 首次读取后会缓存,不 Refresh 就永远读到旧值 —— 这正是此前恒为 0 的原因。
+                    fileInfo.Refresh();
+                }
+
+                var newFileSize = fileInfo?.Length ?? 0;
                 var fileSizeDelta = originFileSize - newFileSize;
 
                 if (emptyCount == 0 && duplicatedCount == 0) {
@@ -356,7 +454,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
                 result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
@@ -375,7 +473,8 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// "other row" that makes a candidate duplicated (including rows with a blank key
         /// that are themselves never deleted).
         /// </summary>
-        private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings) {
+        private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings,
+            IProgress<OperationProgress>? progress = null) {
             var candidates = clippings
                 .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
                 .ToList();
@@ -416,7 +515,14 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             // Shortest targets first so shallow hits are found quickly.
             remaining.Sort((a, b) => a.Key.Length.CompareTo(b.Key.Length));
+            var scanned = 0;
             foreach (var (content, rows) in remaining) {
+                scanned++;
+                // 判重扫描是清理里最耗时的一段(每条候选都要与更长的内容做包含判断),
+                // 每 200 条上报一次确定进度。
+                if (scanned % 200 == 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, scanned, remaining.Count));
+                }
                 foreach (var container in containers) {
                     if (container.Length <= content.Length) {
                         break; // descending order: nothing after this can contain the target
@@ -439,7 +545,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 result += vocabRepository.GetCount();
                 return result == 0;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
                 throw;
             }
         }
@@ -464,7 +570,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 return table.Count == 0 ? true : throw new Exception($"Clear table [{string.Join(", ", table)}] failed.");
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
                 return false;
             }
         }

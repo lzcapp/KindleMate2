@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows;net8.0</TargetFrameworks>
+    <!-- Windows 上用 WinExe(不弹控制台);其他平台用普通 Exe -->
+    <OutputType Condition="'$(TargetFramework)' == 'net8.0-windows'">WinExe</OutputType>
+    <OutputType Condition="'$(TargetFramework)' != 'net8.0-windows'">Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>KindleMate2.Avalonia</RootNamespace>
+    <AssemblyName>KindleMate2.Avalonia</AssemblyName>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <Product>Kindle Mate 2</Product>
+    <Company>lzcapp</Company>
+    <Copyright>Copyright © 2026 lzcapp</Copyright>
+    <Version>2026.09.13</Version>
+  </PropertyGroup>
+
+  <!-- 程序图标:沿用原版 WinForms 壳的 bookmark.ico(与仓库根 bookmark.ico 字节一致)。
+       ApplicationIcon 是属性 → 决定 exe 的 Win32 图标;AvaloniaResource 是项 → 供窗口 Icon 在运行时加载。 -->
+  <PropertyGroup>
+    <ApplicationIcon>Assets/bookmark.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/bookmark.ico" />
+    <!-- 关于窗口的图标位需要 IImage,而 WindowIcon 不能直接给 Image 用,
+         故另附一份从 .ico 的 256×256 PNG 帧抽出的 PNG(自带透明通道)。 -->
+    <AvaloniaResource Include="Assets/bookmark.png" />
+    <!-- 菜单栏「Kindle设备已连接」按钮的图标,取自原版 WinForms 的 Resources
+         (带 tRNS 透明背景,深浅主题下都能用)。 -->
+    <AvaloniaResource Include="Assets/mobile-phone-with-arrow.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 复用现有分层:Application(导入/导出/维护/设备接口)+ Infrastructure(仓储/SQLite)+ Domain(实体)+ Shared(常量/文案) -->
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
+    <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <!-- Windows 专有的 Kindle 设备实现只在 Windows TFM 下引入;其他平台由 NullDeviceManager 兜底 -->
+    <ProjectReference Include="..\KindleMate2.Devices.Windows\KindleMate2.Devices.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

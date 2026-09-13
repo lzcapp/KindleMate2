@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="KindleMate2.Avalonia.Views.AppDialog"
+        mc:Ignorable="d"
+        Width="420" SizeToContent="Height" MinHeight="140"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False" ShowInTaskbar="False"
+        Title="Kindle Mate 2">
+
+  <Grid RowDefinitions="Auto,Auto" Margin="20,18,20,16">
+
+    <StackPanel Grid.Row="0" Spacing="10">
+      <TextBlock x:Name="TitleText" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <TextBlock x:Name="MessageText" FontSize="13" TextWrapping="Wrap"
+                 Foreground="{DynamicResource KmTextSecondaryBrush}" />
+      <TextBox x:Name="InputBox" IsVisible="False" />
+
+      <!-- 双字段输入(重命名书籍:书名 + 作者)。默认隐藏,由 PromptTwoFieldsAsync 启用;
+           原版此处两个字段都不允许为空,故两个框任一为空时「确定」不可用。 -->
+      <StackPanel x:Name="SecondField" IsVisible="False" Spacing="6">
+        <TextBlock x:Name="SecondLabel" FontSize="12"
+                   Foreground="{DynamicResource KmTextSecondaryBrush}" />
+        <TextBox x:Name="SecondInputBox" />
+      </StackPanel>
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,20,0,0">
+      <Button Grid.Column="1" x:Name="CancelButton" Margin="0,0,8,0" Click="OnCancel" />
+      <Button Grid.Column="2" x:Name="OkButton" Click="OnOk" />
+    </Grid>
+  </Grid>
+</Window>

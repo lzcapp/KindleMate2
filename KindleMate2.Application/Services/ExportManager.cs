@@ -2,6 +2,7 @@ using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services;
 
@@ -36,7 +37,7 @@ public class ExportManager : IExportManager {
         try {
             return _clippingService.ClippingsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), bookName);
         } catch (Exception ex) {
-            Console.WriteLine($"[ClippingsToMarkdown] {ex}");
+            AppLog.Write($"[ClippingsToMarkdown] {ex}");
             return false;
         }
     }
@@ -48,7 +49,7 @@ public class ExportManager : IExportManager {
         try {
             return _lookupService.LookupsToMarkdown(Path.Combine(_programPath, AppConstants.ExportsPathName), word);
         } catch (Exception ex) {
-            Console.WriteLine($"[VocabsToMarkdown] {ex}");
+            AppLog.Write($"[VocabsToMarkdown] {ex}");
             return false;
         }
     }
