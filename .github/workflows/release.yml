@@ -13,7 +13,13 @@ name: release
 #   -f net8.0-windows(该工程多目标 net8.0-windows;net8.0)。
 #   同时移除 PublishSingleFile —— 单文件打包属于待办 #11「各平台打包发布」的范围,
 #   在未实机验证前先用普通目录式 publish(打包成 zip 后同样免安装)。
-#   另:LinuX/macOS 产物(linux-x64 / osx-arm64 等)同样留待 #11 补齐。
+#   另:Linux/macOS 产物(linux-x64 / osx-arm64 等)同样留待 #11 补齐。
+#
+#   构建 SDK 必须 **10.x**(同日在下方删掉了"钉 SDK 8"的临时 global.json 步骤):
+#   Avalonia 12 的源生成器(Avalonia 包内 analyzers/dotnet/cs/Avalonia.Generators.dll)
+#   引用 Microsoft.CodeAnalysis 4.14.0.0,而 SDK 8 的 Roslyn 是 4.8(SDK 9 是 4.12)——
+#   Roslyn 会拒绝加载它(只发一条 CS9057 警告)并**静默跳过**,于是
+#   InitializeComponent 与所有 x:Name 字段都没被声明,每个 .axaml.cs 满屏 CS0103、六变体全挂。
 #
 # 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
@@ -55,13 +61,15 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 8.0.x
+          # 必须 10.x(见文件头说明):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
+          dotnet-version: 10.0.x
 
-      # runner 预装 .NET 10,host 无 global.json 时会选 10;而 SDK10 发布 net8(-r + 旧 assets)
-      # 触发 NuGet restore 崩溃(MSB4181/path1 null)。项目 net8.0-windows,钉 8 发布。
-      - name: Pin SDK 8 (temporary global.json)
-        shell: pwsh
-        run: Set-Content -Path global.json -Value '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}'
+      # (2026-09-13 移除)此处原有一步「Pin SDK 8 (temporary global.json)」,写一个钉 8.0.100 的
+      # global.json 到仓根。它是 WinForms 时代的补丁(躲「SDK10 发布 net8 + -r + 旧 assets 触发
+      # NuGet restore 崩溃 MSB4181/path1 null」),换到 Avalonia 壳后已变成有害的遗留:
+      # SDK 8 的 Roslyn 4.8 < 生成器要求的 4.14 → 生成器被静默跳过 → CS0103 满屏(2026-09-13 实测)。
+      # 旧理由对现在的工程也不再成立:本地用 SDK 10 + 同样的 -r/--self-contained 参数发布通过,
+      # `dotnet restore -r win-x64 --force` 同样干净。故改为直接钉 SDK 10,不再写临时 global.json。
 
       - name: Resolve version
         id: ver
