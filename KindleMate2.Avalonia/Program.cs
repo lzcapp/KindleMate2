@@ -290,6 +290,11 @@ internal static class Program {
             var cleanResult = vm.CleanDatabaseAsync().GetAwaiter().GetResult();
             report.AppendLine($"clean: ok={cleanResult.Ok} title={cleanResult.Title} msg={cleanResult.Message}");
 
+            // 从设备导入:本机无 Kindle,应走「设备未连接」前置守卫 —— 返回失败而不是崩溃/静默。
+            // (真实取文件与导入需要接上设备,自检覆盖不到。)
+            var deviceImport = vm.ImportFromDeviceAsync().GetAwaiter().GetResult();
+            report.AppendLine($"import from device: ok={deviceImport.Ok} title={deviceImport.Title} msg={deviceImport.Message}");
+
             // 清理的进度上报核对(同步 sink 捕获阶段序列)
             var cleanStages = new List<KindleMate2.Application.Models.OperationProgress>();
             vm.Session!.Km2DatabaseService.CleanDatabase(vm.Session.DatabasePath, out _, new SyncProgress(cleanStages.Add));

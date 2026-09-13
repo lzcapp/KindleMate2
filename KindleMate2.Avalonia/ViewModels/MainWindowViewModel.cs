@@ -536,6 +536,35 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         RunOperationAsync(() => _session!.ImportManager.ImportKindleClippings(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
+    /// <summary>
+    /// 从设备导入(设备 → 库)—— 对齐原版 <c>ImportFromKindle</c>(FrmMain.cs:1272):
+    /// ① 把设备上的 My Clippings.txt 与 vocab.db 取到 &lt;Backups&gt;/Imports/(文件名带时间戳,
+    ///    既当备份也便于追溯);② 再走合并导入(标注 + 生词)。
+    /// 成功标题 Successful、失败 Import_Failed;取文件失败时把异常抛出去,
+    /// 由统一契约呈现「失败标题 + 异常详情」。
+    /// </summary>
+    public Task<OperationResult> ImportFromDeviceAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        if (!session.DeviceManager.IsKindleConnected()) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoDevice));
+        }
+
+        var importDir = Path.Combine(session.BackupDirectory, AppConstants.ImportsPathName);
+        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+        var clippingsFile = Path.Combine(importDir, "MyClippings_" + stamp + FileExtension.TXT);
+        var wordsFile = Path.Combine(importDir, "vocab_" + stamp + FileExtension.DB);
+
+        return RunOperationAsync(() => {
+            Directory.CreateDirectory(importDir);
+            if (!session.DeviceManager.ImportFilesFromDevice(clippingsFile, wordsFile, out var failure)) {
+                throw failure ?? new InvalidOperationException(Strings.Import_Failed);
+            }
+            return session.ImportManager.Import(clippingsFile, wordsFile, ProgressReporter);
+        }, true, Strings.Successful, Strings.Import_Failed);
+    }
+
     public Task<OperationResult> ImportKindleWordsAsync(string path) =>
         RunOperationAsync(() => _session!.ImportManager.ImportKindleWords(path), true,
             Strings.Successful, Strings.Import_Failed);

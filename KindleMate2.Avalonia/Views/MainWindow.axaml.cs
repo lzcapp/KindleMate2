@@ -468,8 +468,13 @@ public partial class MainWindow : Window {
         await new AboutWindow(about).ShowDialog(this);
     }
 
-    private void OnMenuImportFromDevice(object? sender, RoutedEventArgs e) {
-        if (Vm is { } vm) vm.StatusText = Strings.Ui_Menu_ImportFromDevice;
+    /// <summary>
+    /// 从设备导入(设备 → 库)。原版此操作**没有确认框** —— 点了就直接取文件并导入,
+    /// 故这里也不加确认;设备未连接时由 VM 返回「设备未连接」而不是静默失败。
+    /// </summary>
+    private async void OnMenuImportFromDevice(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ImportFromDeviceAsync());
     }
 
     private void OnMenuGithub(object? sender, RoutedEventArgs e) {

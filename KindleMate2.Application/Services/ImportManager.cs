@@ -41,8 +41,14 @@ public class ImportManager : IImportManager {
     /// On any failure, throws <see cref="InvalidOperationException"/> with the underlying message —
     /// the UI layer distinguishes success/failure by result presence vs thrown exception.
     /// </summary>
-    public string Import(string kindleClippingsPath, string kindleWordsPath) {
-        var clippingsResult = ImportKindleClippings(kindleClippingsPath);
+    /// <summary>
+    /// 合并导入:标注 + 生词。原版「从设备导入」把文件拉回本地后走的就是这条。
+    /// 两者都返回空串即视为失败(与 <c>RunBackgroundTask</c> 的契约一致)。
+    /// </summary>
+    public string Import(string kindleClippingsPath, string kindleWordsPath,
+        IProgress<OperationProgress>? progress = null) {
+        // 耗时主要在标注解析,把进度透传下去
+        var clippingsResult = ImportKindleClippings(kindleClippingsPath, progress);
         var wordResult = ImportKindleWords(kindleWordsPath);
 
         if (string.IsNullOrWhiteSpace(clippingsResult) && string.IsNullOrWhiteSpace(wordResult)) {
