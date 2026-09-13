@@ -1,29 +1,33 @@
 name: release
 
 # 发布即自动化:push 日期式 tag(如 2026.09.13)或手动 dispatch 触发。
-# 六变体矩阵(资产命名与正式发布一致,下划线、不带版本号):
-#   arm64 / x64 / x86 × framework-dependent / self-contained
+#
+# 资产命名(与正式发布一致,不带版本号):
+#   Windows(6 个,zip):KindleMate2_{arm64,x64,x86}[_runtime].zip
+#   非 Windows(8 个,tar.gz):KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz
 # 命名规则(2026-09-06 用户确认):**_runtime = 自包含(打包 .NET Runtime,免装)**;
-#   无后缀 = framework-dependent(需系统安装 .NET 8 Desktop Runtime)。
-# 产物:KindleMate2_arm64[_runtime].zip、KindleMate2_x64[_runtime].zip、KindleMate2_x86[_runtime].zip
+#   无该后缀 = framework-dependent(需目标机自行安装 .NET 8 运行时)。
 #   → 合并进 GitHub Release(免手动登录 gh)。
 #
-# 2026-09-13 变更:WinForms 壳与 DarkModeForms 子模块已退休,发布目标改为 Avalonia 壳
-#   (KindleMate2.Avalonia)。因此本流程不再需要 checkout 子模块,并需显式指定
-#   -f net8.0-windows(该工程多目标 net8.0-windows;net8.0)。
-#   同时移除 PublishSingleFile —— 单文件打包属于待办 #11「各平台打包发布」的范围,
-#   在未实机验证前先用普通目录式 publish(打包成 zip 后同样免安装)。
-#   另:Linux/macOS 产物(linux-x64 / osx-arm64 等)同样留待 #11 补齐。
+# 2026-09-13 变更 A:WinForms 壳与 DarkModeForms 子模块已退休,发布目标改为 Avalonia 壳
+#   (KindleMate2.Avalonia)。因此本流程不再需要 checkout 子模块;需显式指定目标框架 ——
+#   Windows 用 -f net8.0-windows,非 Windows 用 -f net8.0(该工程多目标 net8.0-windows;net8.0)。
+#   同时移除 PublishSingleFile(单文件打包未实机验证,先用普通目录式 publish,打包后同样免安装)。
 #
-#   构建 SDK 必须 **10.x**(同日在下方删掉了"钉 SDK 8"的临时 global.json 步骤):
+# 2026-09-13 变更 B:补齐 Linux/macOS 产物(待办 #11)。
+#   **非 Windows 产物必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS 生成时记录不出可执行位,
+#   解压出来是 644,用户直接运行会 permission denied。故 publish-unix 在 ubuntu 上交叉发布 4 个 RID
+#   (交叉发布只依赖 RID 资产,不依赖宿主系统),chmod +x 后打成 tar.gz;macOS 的真机验证另用一个
+#   macOS job 做(仅验证、不在 macOS 上铺开打包,以避免 10 倍计费)。
+#
+# 2026-09-13 变更 C:构建 SDK 必须 **10.x**(并删掉了"钉 SDK 8"的临时 global.json 步骤):
 #   Avalonia 12 的源生成器(Avalonia 包内 analyzers/dotnet/cs/Avalonia.Generators.dll)
 #   引用 Microsoft.CodeAnalysis 4.14.0.0,而 SDK 8 的 Roslyn 是 4.8(SDK 9 是 4.12)——
-#   Roslyn 会拒绝加载它(只发一条 CS9057 警告)并**静默跳过**,于是
-#   InitializeComponent 与所有 x:Name 字段都没被声明,每个 .axaml.cs 满屏 CS0103、六变体全挂。
+#   Roslyn 会拒绝加载它(只发一条 CS9057 警告)并**静默跳过**,于是 InitializeComponent
+#   与所有 x:Name 字段都没被声明,每个 .axaml.cs 满屏 CS0103、所有变体一起失败。
 #
 # 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
-# framework-dependent 变体需要目标机安装 .NET 8 Desktop Runtime。
 
 permissions:
   contents: write
@@ -40,7 +44,32 @@ on:
         default: ''
 
 jobs:
+  # 版本号只解析一次,供各构建与发布 job 复用(原先在 publish / release 各写一遍,改一处容易漏另一处;
+  # 版本号错了会让 Release 打错 tag,所以收敛成单一来源)。
+  version:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
+          else { $v = "${{ github.event.inputs.version }}" }
+          if ($v -eq '') {
+            $m = Select-String -Path 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj' -Pattern '<Version>([^<]+)</Version>'
+            $v = $m.Matches[0].Groups[1].Value
+          }
+          if ($v -eq '') { throw '无法解析版本号:请显式传入 version,或检查 csproj 里的 <Version>' }
+          Write-Output "本次发布版本号: $v"
+          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
+
   publish:
+    needs: version
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -61,37 +90,21 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          # 必须 10.x(见文件头说明):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
+          # 必须 10.x(见文件头变更 C):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
           dotnet-version: 10.0.x
 
-      # (2026-09-13 移除)此处原有一步「Pin SDK 8 (temporary global.json)」,写一个钉 8.0.100 的
-      # global.json 到仓根。它是 WinForms 时代的补丁(躲「SDK10 发布 net8 + -r + 旧 assets 触发
-      # NuGet restore 崩溃 MSB4181/path1 null」),换到 Avalonia 壳后已变成有害的遗留:
-      # SDK 8 的 Roslyn 4.8 < 生成器要求的 4.14 → 生成器被静默跳过 → CS0103 满屏(2026-09-13 实测)。
-      # 旧理由对现在的工程也不再成立:本地用 SDK 10 + 同样的 -r/--self-contained 参数发布通过,
-      # `dotnet restore -r win-x64 --force` 同样干净。故改为直接钉 SDK 10,不再写临时 global.json。
-
-      - name: Resolve version
-        id: ver
-        shell: pwsh
-        run: |
-          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
-          else { $v = "${{ github.event.inputs.version }}" }
-          if ($v -eq '') {
-            $m = Select-String -Path 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj' -Pattern '<Version>([^<]+)</Version>'
-            $v = $m.Matches[0].Groups[1].Value
-          }
-          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
+      # 注:此处 2026-09-13 删除了「Pin SDK 8 (temporary global.json)」—— 它是 WinForms 时代
+      # 为躲「SDK10 发布 net8 + -r + 旧 assets 触发 NuGet restore 崩溃(MSB4181)」加的补丁,
+      # 换到 Avalonia 壳后已变成有害的遗留(详见文件头变更 C)。
 
       - name: Publish (${{ matrix.suffix }})
-        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ steps.ver.outputs.version }} -o publish/${{ matrix.suffix }}
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
       - name: Package zip (KindleMate2_${{ matrix.suffix }}.zip)
         shell: pwsh
         run: |
           $name = "KindleMate2_${{ matrix.suffix }}.zip"
           Compress-Archive -Path "publish/${{ matrix.suffix }}/*" -DestinationPath $name
-          Write-Output "asset=$name" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -100,26 +113,108 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
+  # 非 Windows 产物(见文件头变更 B)。用 -f net8.0:设备层在非 Windows 上由 NullDeviceManager
+  # 兜底,Windows 专有实现只在 net8.0-windows 下参与编译($(TargetFramework) 条件引用)。
+  publish-unix:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: linux-x64,   self: 'false', suffix: linux-x64 }
+          - { rid: linux-x64,   self: 'true',  suffix: linux-x64_runtime }
+          - { rid: linux-arm64, self: 'false', suffix: linux-arm64 }
+          - { rid: linux-arm64, self: 'true',  suffix: linux-arm64_runtime }
+          - { rid: osx-x64,     self: 'false', suffix: osx-x64 }
+          - { rid: osx-x64,     self: 'true',  suffix: osx-x64_runtime }
+          - { rid: osx-arm64,   self: 'false', suffix: osx-arm64 }
+          - { rid: osx-arm64,   self: 'true',  suffix: osx-arm64_runtime }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish (${{ matrix.suffix }})
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+
+      - name: Package tarball (KindleMate2_${{ matrix.suffix }}.tar.gz)
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="publish/${{ matrix.suffix }}"
+          # 关键:可执行位必须在这里补上 —— 这是不用 zip、且必须在 Unix 上打包的原因。
+          chmod +x "$d/KindleMate2.Avalonia"
+          # 自包含包多一个 createdump 辅助程序,同样要可执行(不存在则跳过,别让 set -e 提前退出)
+          if [ -f "$d/createdump" ]; then chmod +x "$d/createdump"; fi
+          tar -czf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$d" .
+
+      # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期降级为 NullDeviceManager。
+      # 只需跑一个自包含变体(不依赖宿主是否装了 .NET 8),顺带验证了打包后的可执行位。
+      - name: Boot self-check (linux-x64_runtime)
+        if: matrix.suffix == 'linux-x64_runtime'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          tar -xzf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$work"
+          touch "$work/empty.dat"
+          "$work/KindleMate2.Avalonia" --smoke "$work/empty.dat" "$work/smoke.txt"
+          cat "$work/smoke.txt"
+          grep -q "NullDeviceManager" "$work/smoke.txt"
+          echo "unix 产物启动自检通过:${{ matrix.suffix }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: assets-${{ matrix.suffix }}
+          path: KindleMate2_${{ matrix.suffix }}.tar.gz
+          retention-days: 1
+
+  # macOS 产物的真机自检:取 ubuntu 上交叉打出的 osx 包解压实跑。
+  # 按 runner 自身架构选要验的那个包(用 uname 判断,不依赖对 macos-latest 是 arm64 还是 x64 的假设)。
+  smoke-macos:
+    needs: publish-unix
+    runs-on: macos-latest
+    steps:
+      - name: Download macOS assets
+        uses: actions/download-artifact@v8
+        with:
+          pattern: assets-osx-*
+          path: pkg
+
+      - name: Extract and boot (host arch)
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$(uname -m)" in
+            arm64) suffix=osx-arm64_runtime ;;
+            *)     suffix=osx-x64_runtime ;;
+          esac
+          echo "runner 架构 $(uname -m) → 验证 $suffix"
+          work="$(mktemp -d)"
+          tar -xzf "pkg/assets-$suffix/KindleMate2_$suffix.tar.gz" -C "$work"
+          # 从网络取回的未签名二进制可能带 quarantine 标记而被 Gatekeeper 拦下(用户从浏览器
+          # 下载后同样如此)。这里清掉以便验证;README 里也需提示用户这一步。
+          xattr -dr com.apple.quarantine "$work" || true
+          touch "$work/empty.dat"
+          "$work/KindleMate2.Avalonia" --smoke "$work/empty.dat" "$work/smoke.txt"
+          cat "$work/smoke.txt"
+          grep -q "NullDeviceManager" "$work/smoke.txt"
+          echo "macOS 产物启动自检通过:$suffix"
+
   release:
-    needs: publish
+    needs: [version, publish, publish-unix, smoke-macos]
     runs-on: windows-latest
     steps:
       - name: Checkout (full history for notes)
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Resolve version
-        id: ver
-        shell: pwsh
-        run: |
-          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
-          else { $v = "${{ github.event.inputs.version }}" }
-          if ($v -eq '') {
-            $m = Select-String -Path 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj' -Pattern '<Version>([^<]+)</Version>'
-            $v = $m.Matches[0].Groups[1].Value
-          }
-          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
 
       - name: Download all assets
         uses: actions/download-artifact@v8
@@ -134,14 +229,25 @@ jobs:
           $prev = $null
           if ($tags.Count -gt 1) { $prev = $tags[1] }
           $log = if ($prev) { git log "$prev..HEAD" --oneline } else { git log -20 --oneline }
-          $body = @('## Changes', '') + $log + @('', 'Auto-built by GitHub Actions (release workflow).')
+          $body = @('## Changes', '') + $log + @(
+            '',
+            '### 资产说明',
+            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip`',
+            '- Linux / macOS:`KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`',
+            '- 带 `_runtime` = 自包含(免装 .NET 8 运行时);不带 = 需先安装对应平台的 .NET 8 运行时。',
+            '- Linux:`tar -xzf` 后直接运行 `./KindleMate2.Avalonia`(归档已保留可执行位)。',
+            '- macOS:未签名,首次运行前需清除隔离标记 —— `xattr -dr com.apple.quarantine <解压目录>`。',
+            '- 非 Windows 系统的 Kindle 设备同步不可用(设备层降级为 NullDeviceManager),其余功能完整。',
+            '',
+            'Auto-built by GitHub Actions (release workflow).'
+          )
           $body | Out-File -FilePath notes.md -Encoding utf8
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.ver.outputs.version }}
-          name: ${{ steps.ver.outputs.version }}
+          tag_name: ${{ needs.version.outputs.version }}
+          name: ${{ needs.version.outputs.version }}
           body_path: notes.md
           files: dist/*
           fail_on_unmatched_files: true
