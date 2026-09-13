@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia.Views;
@@ -17,12 +20,28 @@ public partial class AboutWindow : Window {
         DataContext = vm;
     }
 
-    private void OnOpenRepo(object? sender, RoutedEventArgs e) {
+    /// <summary>
+    /// 点击「GitHub 仓库」→ 打开浏览器。打不开时**复制地址到剪贴板并告知用户**
+    /// —— 对齐原版 <c>OpenUrl()</c>(FrmMain.cs:1562)的兜底分支,而不是静默失败
+    /// (至少让用户能手动粘贴打开)。
+    /// </summary>
+    private async void OnOpenRepo(object? sender, RoutedEventArgs e) {
         try {
             Process.Start(new ProcessStartInfo { FileName = AppConstants.RepoUrl, UseShellExecute = true });
         } catch {
-            // 打不开浏览器时静默忽略,不影响对话框可用性
+            await CopyToClipboardAndTellAsync(AppConstants.RepoUrl);
         }
+    }
+
+    /// <summary>复制文本到剪贴板并提示 —— 对应原版 OpenUrl 的兜底分支。</summary>
+    private async Task CopyToClipboardAndTellAsync(string text) {
+        try {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard != null) await clipboard.SetTextAsync(text);
+        } catch {
+            // 剪贴板不可用也只能作罢,不能因此再抛
+        }
+        await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Repo_URL_Copied);
     }
 
     /// <summary>

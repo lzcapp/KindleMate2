@@ -69,14 +69,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 解析： 的本地化字符串。
-        /// </summary>
-        public static string Analyzed {
-            get {
-                return ResourceManager.GetString("Analyzed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 作者 的本地化字符串。
@@ -87,14 +79,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 自动 自動 Auto 的本地化字符串。
-        /// </summary>
-        public static string AutomaticDetection {
-            get {
-                return ResourceManager.GetString("AutomaticDetection", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 备份 的本地化字符串。
@@ -114,14 +98,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 备份失败 的本地化字符串。
-        /// </summary>
-        public static string Backup_Failed {
-            get {
-                return ResourceManager.GetString("Backup_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 备份完成！ 的本地化字符串。
@@ -132,14 +108,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 生词本备份失败 的本地化字符串。
-        /// </summary>
-        public static string Backup_Vocabs_Failed {
-            get {
-                return ResourceManager.GetString("Backup_Vocabs_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 书籍重命名失败 的本地化字符串。
@@ -204,14 +172,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 清理数据库失败 的本地化字符串。
-        /// </summary>
-        public static string Clean_Failed {
-            get {
-                return ResourceManager.GetString("Clean_Failed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 清理 的本地化字符串。
@@ -222,14 +182,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 清空数据 的本地化字符串。
-        /// </summary>
-        public static string Clear_Data {
-            get {
-                return ResourceManager.GetString("Clear_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 清空失败 的本地化字符串。
@@ -285,14 +237,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 确定 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Button {
-            get {
-                return ResourceManager.GetString("Confirm_Button", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 确认要清空全部数据吗？ 的本地化字符串。
@@ -366,23 +310,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 您需要导入Kindle Mate2的数据库文件吗？ 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Import_Kindle_Mate_2_Database {
-            get {
-                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_2_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 您需要导入Kindle Mate的数据库文件吗？ 的本地化字符串。
-        /// </summary>
-        public static string Confirm_Import_Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Confirm_Import_Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 确认要重建数据库吗? 的本地化字符串。
@@ -546,14 +474,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 标注数据为空 的本地化字符串。
-        /// </summary>
-        public static string Empty_Clippings_Data {
-            get {
-                return ResourceManager.GetString("Empty_Clippings_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 空内容 的本地化字符串。
@@ -564,14 +484,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 生词本数据为空 的本地化字符串。
-        /// </summary>
-        public static string Empty_Lookups_Data {
-            get {
-                return ResourceManager.GetString("Empty_Lookups_Data", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 English 的本地化字符串。
@@ -609,14 +521,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导出为Markdown 的本地化字符串。
-        /// </summary>
-        public static string Export_To_Markdown {
-            get {
-                return ResourceManager.GetString("Export_To_Markdown", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 失败 的本地化字符串。
@@ -654,14 +558,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 GitHub仓库 的本地化字符串。
-        /// </summary>
-        public static string GitHub_Repo {
-            get {
-                return ResourceManager.GetString("GitHub_Repo", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 帮助 的本地化字符串。
@@ -681,113 +577,17 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导入Kindle标注文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clipping_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clipping_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle标注 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clippings {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clippings", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 从Kindle设备导入标注 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Clippings_From_Kindle {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Clippings_From_Kindle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate 2数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_2_Database_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_2_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate数据库 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_Database {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle Mate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入KMate数据库 的本地化字符串。
-        /// </summary>
-        public static string Import_KMate_Database {
-            get {
-                return ResourceManager.GetString("Import_KMate_Database", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入KMate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Import_KMate_Database_File {
-            get {
-                return ResourceManager.GetString("Import_KMate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 KMate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string KMate_Database_File {
-            get {
-                return ResourceManager.GetString("KMate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle生词本文件 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Vocab_File {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Vocab_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入Kindle生词本 的本地化字符串。
-        /// </summary>
-        public static string Import_Kindle_Vocabs {
-            get {
-                return ResourceManager.GetString("Import_Kindle_Vocabs", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入成功 的本地化字符串。
-        /// </summary>
-        public static string Import_Successful {
-            get {
-                return ResourceManager.GetString("Import_Successful", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 导入 的本地化字符串。
@@ -807,14 +607,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Kindle标注文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Clipping_File {
-            get {
-                return ResourceManager.GetString("Kindle_Clipping_File", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 Kindle设备连接失败 的本地化字符串。
@@ -825,14 +617,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 您连接了Kindle设备，需要从Kindle中导入数据吗？ 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Connected_Confirm_Import {
-            get {
-                return ResourceManager.GetString("Kindle_Connected_Confirm_Import", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 Kindle设备已连接 的本地化字符串。
@@ -843,41 +627,9 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Kindle Mate 2数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Mate_2_Database_File {
-            get {
-                return ResourceManager.GetString("Kindle_Mate_2_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle Mate数据库文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Mate_Database_File {
-            get {
-                return ResourceManager.GetString("Kindle_Mate_Database_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle生词本文件 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Vocab_File {
-            get {
-                return ResourceManager.GetString("Kindle_Vocab_File", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Kindle生词本文件不存在 的本地化字符串。
-        /// </summary>
-        public static string Kindle_Vocab_Not_Exist {
-            get {
-                return ResourceManager.GetString("Kindle_Vocab_Not_Exist", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 语言 的本地化字符串。
@@ -888,14 +640,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 （ 的本地化字符串。
-        /// </summary>
-        public static string Left_Parenthesis {
-            get {
-                return ResourceManager.GetString("Left_Parenthesis", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 管理 的本地化字符串。
@@ -1032,14 +776,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 重命名书籍 的本地化字符串。
-        /// </summary>
-        public static string Rename_Book {
-            get {
-                return ResourceManager.GetString("Rename_Book", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 URL已经复制到剪贴板 的本地化字符串。
@@ -1059,14 +795,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 ） 的本地化字符串。
-        /// </summary>
-        public static string Right_Parenthesis {
-            get {
-                return ResourceManager.GetString("Right_Parenthesis", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 保存 的本地化字符串。
@@ -1149,14 +877,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 ： 的本地化字符串。
-        /// </summary>
-        public static string Symbol_Colon {
-            get {
-                return ResourceManager.GetString("Symbol_Colon", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 ， 的本地化字符串。
@@ -1212,14 +932,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 本书中有 的本地化字符串。
-        /// </summary>
-        public static string Total_Clippings {
-            get {
-                return ResourceManager.GetString("Total_Clippings", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 共 的本地化字符串。
@@ -1230,23 +942,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 在标注中共出现 的本地化字符串。
-        /// </summary>
-        public static string Totally_Other_Books {
-            get {
-                return ResourceManager.GetString("Totally_Other_Books", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 本词共有 的本地化字符串。
-        /// </summary>
-        public static string Totally_Vocabs {
-            get {
-                return ResourceManager.GetString("Totally_Vocabs", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 修剪 的本地化字符串。
@@ -1284,14 +980,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 位作者 的本地化字符串。
-        /// </summary>
-        public static string X_Authors {
-            get {
-                return ResourceManager.GetString("X_Authors", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 本书 的本地化字符串。
@@ -1311,14 +999,6 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 天内 的本地化字符串。
-        /// </summary>
-        public static string X_Days {
-            get {
-                return ResourceManager.GetString("X_Days", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 次查询 的本地化字符串。
@@ -1329,23 +1009,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 次 的本地化字符串。
-        /// </summary>
-        public static string X_Other_Books {
-            get {
-                return ResourceManager.GetString("X_Other_Books", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 页 的本地化字符串。
-        /// </summary>
-        public static string X_Page {
-            get {
-                return ResourceManager.GetString("X_Page", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 条记录 的本地化字符串。
@@ -1383,23 +1047,7 @@ namespace KindleMate2.Shared {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Type 的本地化字符串。
-        /// </summary>
-        public static string Type_Column {
-            get {
-                return ResourceManager.GetString("Type_Column", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Only notes can be edited. 的本地化字符串。
-        /// </summary>
-        public static string Edit_Notes_Only {
-            get {
-                return ResourceManager.GetString("Edit_Notes_Only", resourceCulture);
-            }
-        }
 
         // ── Avalonia 界面文案(2026-09-13 抽取) ──
 

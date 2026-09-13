@@ -189,6 +189,43 @@ public partial class MainWindow : Window {
         WordGrid.SelectedItem = wordSelection;
     }
 
+    /// <summary>
+    /// 删除左栏当前节点 —— 对齐原版 <c>DeleteNodes()</c> + <c>MenuBooksDelete_Click</c>。
+    /// 按节点类型用**不同的确认文案**(原版如此,标题统一 Strings.Confirm):
+    /// 全部标注 / 某本书的全部标注 / 全部生词 / 某个词的全部查询。
+    /// 删除本身成功**不弹提示**(与原版一致),失败才弹 Delete_Failed。
+    /// </summary>
+    private async void OnDeleteNavNode(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (vm.SelectedNav is not { } nav) return;
+
+        var isClip = vm.IsClipDomain;
+        var message = nav.IsAll
+            ? (isClip ? Strings.Confirm_Clear_Clippings : Strings.Confirm_Clear_Vocabulary)
+            : (isClip ? Strings.Confirm_Delete_Clippings_Book : Strings.Confirm_Delete_Lookups_Vocabs);
+
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm, message, Strings.Ui_Action_Ok);
+        if (!ok) return;   // 原版选「否」直接返回
+
+        await ShowResultAsync(await vm.DeleteCurrentNavNodeAsync());
+        // 原版删除后把选中切回「全部」节点(此时原节点已不存在)
+        vm.SelectedNav = vm.NavItems.FirstOrDefault();
+    }
+
+    /// <summary>左栏键盘操作 —— 对齐原版两棵树的 KeyDown:Delete 删节点,Enter 重命名。</summary>
+    private void OnNavKeyDown(object? sender, KeyEventArgs e) {
+        switch (e.Key) {
+            case Key.Delete:
+                OnDeleteNavNode(sender, e);
+                e.Handled = true;
+                break;
+            case Key.Enter:
+                OnRenameCurrent(sender, e);
+                e.Handled = true;
+                break;
+        }
+    }
+
     private void OnToggleSort(object? sender, RoutedEventArgs e) {
         if (Vm is { } vm) vm.SortDescending = !vm.SortDescending;
     }
@@ -397,8 +434,13 @@ public partial class MainWindow : Window {
             vm.StatusText = Strings.Ui_Status_NoSelection;
             return;
         }
+        // 原版对「删除选中的查询」另有一条文案(DeleteLookupRows → Confirm_Delete_Lookups),
+        // 与删除标注区分开;这里按选中项类型选择,保持与原版文案一致。
+        var confirmText = vm.IsLookupSelected
+            ? Strings.Confirm_Delete_Lookups
+            : Strings.Confirm_Delete_Selected_Clippings;
         var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm,
-            Strings.Confirm_Delete_Selected_Clippings, Strings.Ui_Action_Ok, danger: true);
+            confirmText, Strings.Ui_Action_Ok, danger: true);
         if (!ok) return;
         await ShowResultAsync(await vm.DeleteSelectedAsync());
     }

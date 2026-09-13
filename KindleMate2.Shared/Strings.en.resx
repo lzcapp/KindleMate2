@@ -129,21 +129,6 @@
   <data name="Error" xml:space="preserve">
     <value>Error</value>
   </data>
-  <data name="Confirm_Import_Kindle_Mate_2_Database" xml:space="preserve">
-    <value>Do you need to import Kindle Mate 2's database file?</value>
-  </data>
-  <data name="Kindle_Mate_2_Database_File" xml:space="preserve">
-    <value>Kindle Mate 2's Database File</value>
-  </data>
-  <data name="Import_Kindle_Mate_2_Database_File" xml:space="preserve">
-    <value>Import Kindle Mate 2's Database File</value>
-  </data>
-  <data name="Kindle_Connected_Confirm_Import" xml:space="preserve">
-    <value>You have connected a Kindle device. Do you want to import data from the Kindle?</value>
-  </data>
-  <data name="Kindle_Vocab_Not_Exist" xml:space="preserve">
-    <value>Kindle's vocabulary file does not exist</value>
-  </data>
   <data name="Page" xml:space="preserve">
     <value>Page</value>
   </data>
@@ -152,9 +137,6 @@
   </data>
   <data name="Author" xml:space="preserve">
     <value>Author(s)</value>
-  </data>
-  <data name="Total_Clippings" xml:space="preserve">
-    <value>Totally</value>
   </data>
   <data name="X_Clippings" xml:space="preserve">
     <value>clipping(s)</value>
@@ -180,9 +162,6 @@
   <data name="Book_Renamed_Failed" xml:space="preserve">
     <value>Book Renamed Failed</value>
   </data>
-  <data name="Totally_Vocabs" xml:space="preserve">
-    <value>Totally</value>
-  </data>
   <data name="X_Lookups" xml:space="preserve">
     <value>lookup(s)</value>
   </data>
@@ -194,12 +173,6 @@
   </data>
   <data name="Data_Cleared" xml:space="preserve">
     <value>Data has been cleared</value>
-  </data>
-  <data name="Left_Parenthesis" xml:space="preserve">
-    <value> (</value>
-  </data>
-  <data name="Right_Parenthesis" xml:space="preserve">
-    <value>) </value>
   </data>
   <data name="Books" xml:space="preserve">
     <value>Books</value>
@@ -225,12 +198,6 @@
   <data name="Stem" xml:space="preserve">
     <value>Stem</value>
   </data>
-  <data name="Kindle_Vocab_File" xml:space="preserve">
-    <value>Kindle's Vocabulary File</value>
-  </data>
-  <data name="Import_Kindle_Vocab_File" xml:space="preserve">
-    <value>Import Kindle's Vocabulary File</value>
-  </data>
   <data name="Books_Renamed" xml:space="preserve">
     <value>Books renamed</value>
   </data>
@@ -239,12 +206,6 @@
   </data>
   <data name="Kindle_Device_Connected" xml:space="preserve">
     <value>Kindle Connected</value>
-  </data>
-  <data name="Kindle_Clipping_File" xml:space="preserve">
-    <value>Kindle's Clippings File</value>
-  </data>
-  <data name="Import_Kindle_Clipping_File" xml:space="preserve">
-    <value>Import Kindle's Clippings File</value>
   </data>
   <data name="Clippings_Revised" xml:space="preserve">
     <value>Clipping(s) revised</value>
@@ -255,29 +216,11 @@
   <data name="Frequency" xml:space="preserve">
     <value>Frequency</value>
   </data>
-  <data name="Symbol_Colon" xml:space="preserve">
-    <value>: </value>
-  </data>
   <data name="Confirm_Same_Title_Combine" xml:space="preserve">
     <value>A book with the same name already exists. Are you sure you want to merge it?</value>
   </data>
   <data name="No_Data_To_Backup" xml:space="preserve">
     <value>There is no data to backup</value>
-  </data>
-  <data name="Kindle_Mate_Database_File" xml:space="preserve">
-    <value>Kindle Mate's Database File</value>
-  </data>
-  <data name="Import_Kindle_Mate_Database_File" xml:space="preserve">
-    <value>Import Kindle Mate's Database File</value>
-  </data>
-  <data name="Import_KMate_Database" xml:space="preserve">
-    <value>Import KMate Database</value>
-  </data>
-  <data name="Import_KMate_Database_File" xml:space="preserve">
-    <value>Import KMate Database File</value>
-  </data>
-  <data name="KMate_Database_File" xml:space="preserve">
-    <value>KMate Database File</value>
   </data>
   <data name="Confirm_Delete_Selected_Clippings" xml:space="preserve">
     <value>Are you sure you want to delete the selected clipping(s)?</value>
@@ -303,9 +246,6 @@
   <data name="Confirm_Delete_Lookups_Vocabs" xml:space="preserve">
     <value>Are you sure you want to delete all lookup(s) of this vocabulary?</value>
   </data>
-  <data name="Backup_Failed" xml:space="preserve">
-    <value>Failed to backup</value>
-  </data>
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -324,14 +264,8 @@
   <data name="Clipping" xml:space="preserve">
     <value>Clipping</value>
   </data>
-  <data name="GitHub_Repo" xml:space="preserve">
-    <value>GitHub Repo</value>
-  </data>
   <data name="Management" xml:space="preserve">
     <value>Management</value>
-  </data>
-  <data name="Import_Kindle_Clippings" xml:space="preserve">
-    <value>Import Kindle's Clippings</value>
   </data>
   <data name="Files" xml:space="preserve">
     <value>Files</value>
@@ -342,20 +276,8 @@
   <data name="Exit" xml:space="preserve">
     <value>Exit</value>
   </data>
-  <data name="Import_Kindle_Vocabs" xml:space="preserve">
-    <value>Import Kindle's Vocabulary List</value>
-  </data>
-  <data name="Import_Kindle_Mate_Database" xml:space="preserve">
-    <value>Import Kindle Mate's Database</value>
-  </data>
-  <data name="Import_Kindle_Clippings_From_Kindle" xml:space="preserve">
-    <value>Import from Kindle</value>
-  </data>
   <data name="Backup" xml:space="preserve">
     <value>Backup</value>
-  </data>
-  <data name="Clear_Data" xml:space="preserve">
-    <value>Clear Data</value>
   </data>
   <data name="Help" xml:space="preserve">
     <value>Help</value>
@@ -381,9 +303,6 @@
   <data name="Edit_Clippings" xml:space="preserve">
     <value>Edit Clippings</value>
   </data>
-  <data name="Rename_Book" xml:space="preserve">
-    <value>Rename Book</value>
-  </data>
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
@@ -396,9 +315,6 @@
   <data name="Database" xml:space="preserve">
     <value>Database</value>
   </data>
-  <data name="Confirm_Button" xml:space="preserve">
-    <value>Confirm</value>
-  </data>
   <data name="Clean_Database" xml:space="preserve">
     <value>Clean Database</value>
   </data>
@@ -408,29 +324,17 @@
   <data name="Database_No_Need_Clean" xml:space="preserve">
     <value>Database does not need to be cleaned</value>
   </data>
-  <data name="Empty_Clippings_Data" xml:space="preserve">
-    <value>Clipping's data is empty</value>
-  </data>
   <data name="Backup_Clippings_Failed" xml:space="preserve">
     <value>Failed to backup clipping's data</value>
   </data>
-  <data name="Backup_Vocabs_Failed" xml:space="preserve">
-    <value>Failed to backup vocabulary list</value>
-  </data>
   <data name="Backup_Successful" xml:space="preserve">
     <value>Backup completed! </value>
-  </data>
-  <data name="Confirm_Import_Kindle_Mate_Database_File" xml:space="preserve">
-    <value>Do you need to import Kindle Mate's database file?</value>
   </data>
   <data name="Database_Empty" xml:space="preserve">
     <value>Database is empty</value>
   </data>
   <data name="File" xml:space="preserve">
     <value>File</value>
-  </data>
-  <data name="Empty_Lookups_Data" xml:space="preserve">
-    <value>Vocabulary list is empty</value>
   </data>
   <data name="Confirm_Restore_Database" xml:space="preserve">
     <value>A backup has been detected. Do you want to restore from the backup?</value>
@@ -450,23 +354,11 @@
   <data name="Export_Successful" xml:space="preserve">
     <value>Export Successful! </value>
   </data>
-  <data name="Export_To_Markdown" xml:space="preserve">
-    <value>Export as Markdown</value>
-  </data>
   <data name="Statistics" xml:space="preserve">
     <value>Statistics</value>
   </data>
-  <data name="X_Authors" xml:space="preserve">
-    <value>author(s)</value>
-  </data>
-  <data name="X_Days" xml:space="preserve">
-    <value>day(s)</value>
-  </data>
   <data name="In" xml:space="preserve">
     <value>In</value>
-  </data>
-  <data name="Analyzed" xml:space="preserve">
-    <value>Parsed: </value>
   </data>
   <data name="Statistics_Screenshot_Successful" xml:space="preserve">
     <value>Statistics screenshot successful</value>
@@ -489,17 +381,11 @@
   <data name="TC" xml:space="preserve">
     <value>繁體中文</value>
   </data>
-  <data name="AutomaticDetection" xml:space="preserve">
-    <value>自动 自動 Auto</value>
-  </data>
   <data name="Import_Failed" xml:space="preserve">
     <value>Import Failed</value>
   </data>
   <data name="Duplicate_Content" xml:space="preserve">
     <value>duplicate content</value>
-  </data>
-  <data name="Clean_Failed" xml:space="preserve">
-    <value>Failed to clean up the database</value>
   </data>
   <data name="New_Version" xml:space="preserve">
     <value>New version detected: </value>
@@ -522,20 +408,11 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>Failed to create database</value>
   </data>
-  <data name="Totally_Other_Books" xml:space="preserve">
-    <value>Totally</value>
-  </data>
-  <data name="X_Other_Books" xml:space="preserve">
-    <value>lookup(s) in clippings</value>
-  </data>
   <data name="Confirm_Clear_Clippings" xml:space="preserve">
     <value>Are you sure you want to clear all clippings? </value>
   </data>
   <data name="Confirm_Clear_Vocabulary" xml:space="preserve">
     <value>Are you sure you want to clear the vocabulary list? </value>
-  </data>
-  <data name="X_Page" xml:space="preserve">
-	  <value />
   </data>
   <data name="Sync_To_Kindle" xml:space="preserve">
     <value>Sync to Kindle</value>
@@ -551,15 +428,6 @@
   </data>
   <data name="Kindle_Connect_Failed" xml:space="preserve">
 	  <value>Failed to connected to Kindle</value>
-  </data>
-  <data name="Import_Successful" xml:space="preserve">
-	  <value>Import Successful</value>
-  </data>
-  <data name="Type_Column" xml:space="preserve">
-    <value>Type</value>
-  </data>
-  <data name="Edit_Notes_Only" xml:space="preserve">
-    <value>Only notes can be edited.</value>
   </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>_File</value>

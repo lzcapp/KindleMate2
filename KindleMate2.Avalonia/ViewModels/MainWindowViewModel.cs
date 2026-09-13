@@ -719,6 +719,70 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 删除 / 重命名 ——
 
     /// <summary>
+    /// 删除左栏当前节点 —— 对齐原版 <c>DeleteNodes()</c>(FrmMain.cs:1019):
+    /// 按当前页分发(标注页 → 书籍节点;生词页 → 生词节点)。
+    /// 原版由两棵树的 **Delete 键** 与右键菜单「删除」触发。
+    /// </summary>
+    public Task<OperationResult> DeleteCurrentNavNodeAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        if (_selectedNav is not { } nav) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
+        }
+        return IsClipDomain ? DeleteBookNodeAsync(session, nav) : DeleteWordNodeAsync(session, nav);
+    }
+
+    /// <summary>
+    /// 删除「全部标注」或某一本书的全部标注 —— 对齐原版 <c>DeleteBookNodes()</c>(FrmMain.cs:1032)。
+    /// **成功不弹窗**(原版只有 deletedCount == 0 时才报 Delete_Failed);
+    /// 「全部标注」分支只清 clippings + original_clipping_lines,**不做备份、不动生词本**
+    /// (与管理菜单的「清空数据」不是同一个操作)。
+    /// </summary>
+    private Task<OperationResult> DeleteBookNodeAsync(DatabaseSession session, NavItem nav) {
+        var bookName = nav.Key;
+        return RunOperationAsync(() => {
+            if (nav.IsAll) {
+                session.ClippingService.DeleteAllClippings();
+                session.OriginalClippingLineService.DeleteAllOriginalClippingLines();
+                return "-";
+            }
+
+            var clippings = session.ClippingService.GetClippingsByBookName(bookName);
+            var deleted = 0;
+            foreach (var clipping in clippings) {
+                if (!session.ClippingService.DeleteClipping(clipping.Key)) continue;
+                session.OriginalClippingLineService.DeleteOriginalClippingLine(clipping.Key);
+                deleted++;
+            }
+            return deleted == 0 ? string.Empty : "-";
+        }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
+    }
+
+    /// <summary>
+    /// 删除「全部生词」或某个词的全部查询 —— 对齐原版 <c>DeleteWordNodes()</c>(FrmMain.cs:1062)。
+    /// 原版判定:仅当「删 Vocab」与「删 Lookup」**都失败**时才报 Delete_Failed;
+    /// 且按 <c>Word</c> 找**第一个**匹配的 WordKey(原版行为,保持一致)。
+    /// </summary>
+    private Task<OperationResult> DeleteWordNodeAsync(DatabaseSession session, NavItem nav) {
+        var word = nav.Key;
+        return RunOperationAsync(() => {
+            if (nav.IsAll) {
+                session.VocabService.DeleteAllVocabs();
+                return "-";
+            }
+
+            var wordKey = session.VocabService.GetAllVocabs()
+                .FirstOrDefault(v => string.Equals(v.Word, word, StringComparison.Ordinal))?.WordKey;
+            if (wordKey == null) return string.Empty;
+
+            var vocabDeleted = session.VocabService.DeleteVocabByWordKey(wordKey);
+            var lookupDeleted = session.LookupService.DeleteLookup(wordKey);
+            return vocabDeleted || lookupDeleted ? "-" : string.Empty;
+        }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
+    }
+
+    /// <summary>
     /// 删除选中的标注 / 查询 —— 原版语义:确认框由视图层弹,**成功不弹窗**,
     /// 只有失败才弹 <c>Delete_Failed</c>(故成功时返回 Silent)。
     /// </summary>
@@ -739,6 +803,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
     }
+
+    /// <summary>当前选中的是「查询(生词)」而非「标注」—— 决定删除确认用哪条文案。</summary>
+    public bool IsLookupSelected => _selectedItem?.Lookup != null;
 
     public bool CanRenameCurrentBook => _selectedNav is { IsAll: false };
 

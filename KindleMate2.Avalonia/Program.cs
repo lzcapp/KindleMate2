@@ -378,6 +378,31 @@ internal static class Program {
                 report.AppendLine($"reimport vocab: {swVocab.ElapsedMilliseconds} ms -> lookups={vm.LookupTable.Count}");
             }
 
+            // 回归:删除左栏节点 —— 对齐原版 DeleteBookNodes() / DeleteWordNodes()
+            // (整本删除 / 整词删除;成功静默,只有失败才弹 Delete_Failed)
+            vm.DomainIndex = 0;
+            if (vm.NavItems.Count > 1) {
+                vm.SelectedNav = vm.NavItems[1];
+                var bookToDrop = vm.SelectedNav.Key;
+                var bookDropResult = vm.DeleteCurrentNavNodeAsync().GetAwaiter().GetResult();
+                var remain = vm.Session!.ClippingService.GetClippingsByBookName(bookToDrop).Count;
+                report.AppendLine($"delete book node: ok={bookDropResult.Ok} kind={bookDropResult.Kind} '{bookToDrop}' 剩余={remain} 条(期望 0)");
+            }
+            vm.DomainIndex = 1;
+            if (vm.NavItems.Count > 1) {
+                vm.SelectedNav = vm.NavItems[1];
+                var wordToDrop = vm.SelectedNav.Key;
+                var wordKeyToDrop = vm.Session!.VocabService.GetAllVocabs()
+                    .FirstOrDefault(v => string.Equals(v.Word, wordToDrop, StringComparison.Ordinal))?.WordKey;
+                var lookupsBefore = wordKeyToDrop == null ? 0
+                    : vm.Session.LookupService.GetAllLookups().Count(l => l.WordKey == wordKeyToDrop);
+                var wordDropResult = vm.DeleteCurrentNavNodeAsync().GetAwaiter().GetResult();
+                var lookupsAfter = wordKeyToDrop == null ? 0
+                    : vm.Session.LookupService.GetAllLookups().Count(l => l.WordKey == wordKeyToDrop);
+                report.AppendLine($"delete word node: ok={wordDropResult.Ok} kind={wordDropResult.Kind} '{wordToDrop}' 查询 {lookupsBefore} -> {lookupsAfter} 条(期望 0)");
+            }
+            vm.DomainIndex = 0;
+
             Environment.CurrentDirectory = originalCwd;
             File.WriteAllText(outFile, report.ToString());
             return 0;
