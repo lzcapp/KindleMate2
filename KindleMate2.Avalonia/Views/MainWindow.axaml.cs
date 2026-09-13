@@ -114,14 +114,15 @@ public partial class MainWindow : Window {
 
     private async Task RefreshDeviceStatusAsync() {
         if (Vm is not { } vm || !vm.HasSession) return;
-        string status;
+        (string Text, bool Connected) probe;
         try {
-            status = await Task.Run(vm.ProbeDeviceStatus);
+            probe = await Task.Run(vm.ProbeDevice);
         } catch {
             // 走与正常路径同一个本地化键 —— 此前硬编码中文,英文界面下会漏出中文
-            status = Strings.Ui_Status_DeviceOffline;
+            probe = (Strings.Ui_Status_DeviceOffline, false);
         }
-        vm.DeviceStatus = status;
+        vm.DeviceStatus = probe.Text;
+        vm.IsDeviceConnected = probe.Connected;
     }
 
     /// <summary>
@@ -473,6 +474,16 @@ public partial class MainWindow : Window {
     /// 故这里也不加确认;设备未连接时由 VM 返回「设备未连接」而不是静默失败。
     /// </summary>
     private async void OnMenuImportFromDevice(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ImportFromDeviceAsync());
+    }
+
+    /// <summary>
+    /// 菜单栏「Kindle设备已连接」按钮 —— 对齐原版 <c>menuKindle</c>:
+    /// 设备连接时才出现,点击即执行「从设备导入」(与原版同样**不弹确认框**)。
+    /// 这也是原版对该功能**唯一对用户可见**的入口。
+    /// </summary>
+    private async void OnMenuKindleConnected(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         await ShowResultAsync(await vm.ImportFromDeviceAsync());
     }

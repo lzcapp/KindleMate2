@@ -68,7 +68,9 @@
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportWords}" Click="OnMenuImportVocab" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmDatabase}" Click="OnMenuImportKmDatabase" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmateDatabase}" Click="OnMenuImportKmateDatabase" />
-              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportFromDevice}" Click="OnMenuImportFromDevice" />
+              <!-- 原版此项(menuSyncFromKindle)就是 Visible=false,真正对用户可见的入口
+                   是菜单栏那个「Kindle设备已连接」按钮 —— 故这里保持隐藏,不要"顺手打开"。 -->
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportFromDevice}" Click="OnMenuImportFromDevice" IsVisible="False" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_SyncToDevice}" Click="OnMenuSyncToDevice" />
               <Separator />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportMarkdown}" Click="OnMenuExportMarkdown" />
@@ -80,6 +82,21 @@
             <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Help}">
               <MenuItem Header="{x:Static shared:Strings.About}" Click="OnMenuAbout" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Github}" Click="OnMenuGithub" />
+            </MenuItem>
+
+            <!--
+              对齐原版 menuKindle:菜单栏里的一等项、带手机图标,文案「Kindle设备已连接」。
+              原版行为:Visible = isConnected(设备连上才出现)、点击即执行「从设备导入」、
+              悬停变手型光标。位置也在「帮助」之后。
+            -->
+            <MenuItem Header="{x:Static shared:Strings.Kindle_Device_Connected}"
+                      Click="OnMenuKindleConnected"
+                      IsVisible="{Binding IsDeviceConnected}"
+                      Cursor="Hand">
+              <MenuItem.Icon>
+                <Image Width="16" Height="16" Source="/Assets/mobile-phone-with-arrow.png"
+                       Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+              </MenuItem.Icon>
             </MenuItem>
           </Menu>
         </StackPanel>

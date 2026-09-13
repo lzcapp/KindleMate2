@@ -777,22 +777,42 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     // —— 设备 ——
 
-    /// <summary>探测设备状态(可后台线程调用,不触碰绑定属性)。</summary>
-    public string ProbeDeviceStatus() {
-        if (_session == null) return Strings.Ui_Status_DeviceOffline;
+    /// <summary>
+    /// 探测设备状态(可后台线程调用,不触碰绑定属性)。
+    /// 同时返回"是否已连接",供菜单栏「Kindle设备已连接」按钮的显隐使用 ——
+    /// 文案与连接判定出自同一次探测,避免再探一次设备或靠文案字符串反推状态。
+    /// </summary>
+    public (string Text, bool Connected) ProbeDevice() {
+        if (_session == null) return (Strings.Ui_Status_DeviceOffline, false);
         try {
-            if (!_session.DeviceManager.IsKindleConnected()) return Strings.Ui_Status_DeviceOffline;
+            if (!_session.DeviceManager.IsKindleConnected()) return (Strings.Ui_Status_DeviceOffline, false);
             var drive = _session.DeviceManager.DriveLetter;
-            return string.IsNullOrWhiteSpace(drive)
+            var text = string.IsNullOrWhiteSpace(drive)
                 ? Strings.Ui_Status_DeviceOnline
                 : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_DeviceOnlineDrive, drive);
+            return (text, true);
         } catch {
-            return Strings.Ui_Status_DeviceOffline;
+            return (Strings.Ui_Status_DeviceOffline, false);
         }
     }
 
-    /// <summary>在 UI 线程刷新设备状态。</summary>
-    public void RefreshDeviceStatus() => DeviceStatus = ProbeDeviceStatus();
+    /// <summary>仅取状态文案(自检用;内部复用 <see cref="ProbeDevice"/>)。</summary>
+    public string ProbeDeviceStatus() => ProbeDevice().Text;
+
+    private bool _isDeviceConnected;
+
+    /// <summary>设备是否已连接 —— 菜单栏「Kindle设备已连接」按钮的显隐依据(对齐原版 menuKindle)。</summary>
+    public bool IsDeviceConnected {
+        get => _isDeviceConnected;
+        set { if (_isDeviceConnected == value) return; _isDeviceConnected = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>在 UI 线程刷新设备状态(文案 + 按钮显隐)。</summary>
+    public void RefreshDeviceStatus() {
+        var probe = ProbeDevice();
+        DeviceStatus = probe.Text;
+        IsDeviceConnected = probe.Connected;
+    }
 
     /// <summary>同步到设备 —— 原版:确认框(视图层)后,成功 <c>Sync_Successful</c>;失败弹 <c>Sync_Failed</c>。</summary>
     public Task<OperationResult> SyncToDeviceAsync() {

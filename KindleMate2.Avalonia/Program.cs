@@ -295,6 +295,10 @@ internal static class Program {
             var deviceImport = vm.ImportFromDeviceAsync().GetAwaiter().GetResult();
             report.AppendLine($"import from device: ok={deviceImport.Ok} title={deviceImport.Title} msg={deviceImport.Message}");
 
+            // 设备状态:无设备时文案与「菜单栏按钮显隐」标志应同时为未连接(二者出自同一次探测)
+            vm.RefreshDeviceStatus();
+            report.AppendLine($"device status: text='{vm.DeviceStatus}' connected={vm.IsDeviceConnected}");
+
             // 清理的进度上报核对(同步 sink 捕获阶段序列)
             var cleanStages = new List<KindleMate2.Application.Models.OperationProgress>();
             vm.Session!.Km2DatabaseService.CleanDatabase(vm.Session.DatabasePath, out _, new SyncProgress(cleanStages.Add));
