@@ -246,7 +246,7 @@
 
         <Grid Grid.Row="1">
 
-          <ListBox IsVisible="{Binding ShowList}" ItemsSource="{Binding Items}"
+          <ListBox x:Name="ItemList" IsVisible="{Binding ShowList}" ItemsSource="{Binding Items}"
                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                    DoubleTapped="OnEditClipping">
             <ListBox.ContextMenu>
@@ -282,7 +282,7 @@
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <dg:DataGrid IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
+          <dg:DataGrid x:Name="ClipGrid" IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
                        SelectedItem="{Binding SelectedClipTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True"
                        DoubleTapped="OnEditClipping">
@@ -302,7 +302,7 @@
             </dg:DataGrid.Columns>
           </dg:DataGrid>
 
-          <dg:DataGrid IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
+          <dg:DataGrid x:Name="WordGrid" IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
                        SelectedItem="{Binding SelectedLookupTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True">
             <dg:DataGrid.ContextMenu>
