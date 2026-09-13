@@ -2,25 +2,36 @@ name: release
 
 # 发布即自动化:push 日期式 tag(如 2026.09.13)或手动 dispatch 触发。
 #
-# 资产命名(与正式发布一致,不带版本号):
-#   Windows(6 个,zip):KindleMate2_{arm64,x64,x86}[_runtime].zip
-#   非 Windows(8 个,tar.gz):KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz
+# 共 12 个资产(不带版本号):
+#   Windows(6 个 zip):KindleMate2_{arm64,x64,x86}[_runtime].zip
+#   Linux(4 个 tar.gz):KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz
+#   macOS(2 个 dmg):KindleMate2_{macos-arm64,macos-x64}.dmg —— 内含 KindleMate2.app
 # 命名规则(2026-09-06 用户确认):**_runtime = 自包含(打包 .NET Runtime,免装)**;
 #   无该后缀 = framework-dependent(需目标机自行安装 .NET 8 运行时)。
+#   macOS 只出自包含的 dmg(要求 mac 用户先装 .NET 运行时体验不值当),故不带该后缀。
 #   → 合并进 GitHub Release(免手动登录 gh)。
 #
-# 2026-09-13 变更 A:WinForms 壳与 DarkModeForms 子模块已退休,发布目标改为 Avalonia 壳
-#   (KindleMate2.Avalonia)。因此本流程不再需要 checkout 子模块;需显式指定目标框架 ——
+# 2026-09-13 变更 A:WinForms 壳与 DarkModeForms 子模块退休,发布目标改为 Avalonia 壳
+#   (KindleMate2.Avalonia)。本流程不再需要 checkout 子模块;需显式指定目标框架 ——
 #   Windows 用 -f net8.0-windows,非 Windows 用 -f net8.0(该工程多目标 net8.0-windows;net8.0)。
-#   同时移除 PublishSingleFile(单文件打包未实机验证,先用普通目录式 publish,打包后同样免安装)。
+#   同时移除 PublishSingleFile(单文件打包未实机验证,先用普通目录式 publish)。
 #
-# 2026-09-13 变更 B:补齐 Linux/macOS 产物(待办 #11)。
-#   **非 Windows 产物必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS 生成时记录不出可执行位,
-#   解压出来是 644,用户直接运行会 permission denied。故 publish-unix 在 ubuntu 上交叉发布 4 个 RID
-#   (交叉发布只依赖 RID 资产,不依赖宿主系统),chmod +x 后打成 tar.gz;macOS 的真机验证另用一个
-#   macOS job 做(仅验证、不在 macOS 上铺开打包,以避免 10 倍计费)。
+# 2026-09-13 变更 B:Linux 产物。**必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS
+#   生成时记录不出可执行位,解压出来是 644、直接运行会 permission denied。故用 tar.gz
+#   且打包前 chmod +x。
 #
-# 2026-09-13 变更 C:构建 SDK 必须 **10.x**(并删掉了"钉 SDK 8"的临时 global.json 步骤):
+# 2026-09-13 变更 C:macOS 产物改为 .app + .dmg,并在 **macOS runner** 上构建。
+#   原因:① Apple Silicon 要求可执行文件带有效签名,在 macOS 上发布才会走原生签名路径;
+#   ② 做图标(sips/iconutil)、bundle 签名(codesign)、磁盘映像(hdiutil)都需要 macOS 工具;
+#   ③ 本仓库是公开的,GitHub 托管的 macOS runner 不计费。
+#   两个已解决的坑:
+#     - **Finder 启动时工作目录是 `/`**,而本程序的库路径按「当前目录」解析(与原版一致,
+#       刻意不改代码),所以 bundle 里放一个 launcher 脚本当 CFBundleExecutable,先切到
+#       ~/Library/Application Support/KindleMate2/ 再 exec 真程序。
+#       不能切到 .app 内部:那样既会在应用更新时丢数据,也会破坏 bundle 的代码签名。
+#     - 未做公证(无 Apple 开发者账号),用户首次启动需清 quarantine,已在 Release 正文提示。
+#
+# 2026-09-13 变更 D:构建 SDK 必须 **10.x**(并删掉了"钉 SDK 8"的临时 global.json 步骤):
 #   Avalonia 12 的源生成器(Avalonia 包内 analyzers/dotnet/cs/Avalonia.Generators.dll)
 #   引用 Microsoft.CodeAnalysis 4.14.0.0,而 SDK 8 的 Roslyn 是 4.8(SDK 9 是 4.12)——
 #   Roslyn 会拒绝加载它(只发一条 CS9057 警告)并**静默跳过**,于是 InitializeComponent
@@ -90,12 +101,12 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          # 必须 10.x(见文件头变更 C):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
+          # 必须 10.x(见文件头变更 D):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
           dotnet-version: 10.0.x
 
       # 注:此处 2026-09-13 删除了「Pin SDK 8 (temporary global.json)」—— 它是 WinForms 时代
       # 为躲「SDK10 发布 net8 + -r + 旧 assets 触发 NuGet restore 崩溃(MSB4181)」加的补丁,
-      # 换到 Avalonia 壳后已变成有害的遗留(详见文件头变更 C)。
+      # 换到 Avalonia 壳后已变成有害的遗留(详见文件头变更 D)。
 
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
@@ -113,9 +124,9 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
-  # 非 Windows 产物(见文件头变更 B)。用 -f net8.0:设备层在非 Windows 上由 NullDeviceManager
+  # Linux 产物(见文件头变更 B)。用 -f net8.0:设备层在非 Windows 上由 NullDeviceManager
   # 兜底,Windows 专有实现只在 net8.0-windows 下参与编译($(TargetFramework) 条件引用)。
-  publish-unix:
+  publish-linux:
     needs: version
     runs-on: ubuntu-latest
     strategy:
@@ -126,10 +137,6 @@ jobs:
           - { rid: linux-x64,   self: 'true',  suffix: linux-x64_runtime }
           - { rid: linux-arm64, self: 'false', suffix: linux-arm64 }
           - { rid: linux-arm64, self: 'true',  suffix: linux-arm64_runtime }
-          - { rid: osx-x64,     self: 'false', suffix: osx-x64 }
-          - { rid: osx-x64,     self: 'true',  suffix: osx-x64_runtime }
-          - { rid: osx-arm64,   self: 'false', suffix: osx-arm64 }
-          - { rid: osx-arm64,   self: 'true',  suffix: osx-arm64_runtime }
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -175,40 +182,142 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.tar.gz
           retention-days: 1
 
-  # macOS 产物的真机自检:取 ubuntu 上交叉打出的 osx 包解压实跑。
-  # 按 runner 自身架构选要验的那个包(用 uname 判断,不依赖对 macos-latest 是 arm64 还是 x64 的假设)。
-  smoke-macos:
-    needs: publish-unix
+  # macOS 产物:.app 装在 .dmg 里(见文件头变更 C)。
+  # 只出自包含版;框架依赖版在 macOS 上要求用户自行安装 .NET 运行时,不值当为对称多发两个。
+  publish-macos:
+    needs: version
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # minos:.NET 8 的下限是 10.15,但 Apple Silicon 机型本身从 macOS 11 起
+          - { rid: osx-arm64, suffix: macos-arm64, minos: '11.0' }
+          - { rid: osx-x64,   suffix: macos-x64,   minos: '10.15' }
     steps:
-      - name: Download macOS assets
-        uses: actions/download-artifact@v8
-        with:
-          pattern: assets-osx-*
-          path: pkg
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Extract and boot (host arch)
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish (${{ matrix.suffix }})
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release -r ${{ matrix.rid }} --self-contained true -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+
+      # 图标:仓库里最大的图标源是 Assets/bookmark.png(256×256),512/1024 两档只能插值放大。
+      - name: Build .icns from bookmark.png
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p build/icon.iconset
+          for s in 16 32 128 256 512; do
+            sips -z "$s" "$s" KindleMate2.Avalonia/Assets/bookmark.png \
+                 --out "build/icon.iconset/icon_${s}x${s}.png" >/dev/null
+            d=$((s * 2))
+            sips -z "$d" "$d" KindleMate2.Avalonia/Assets/bookmark.png \
+                 --out "build/icon.iconset/icon_${s}x${s}@2x.png" >/dev/null
+          done
+          iconutil -c icns build/icon.iconset -o build/KindleMate2.icns
+          ls -l build/KindleMate2.icns
+
+      - name: Build .app bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="build/KindleMate2.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp -R "publish/${{ matrix.suffix }}/." "$APP/Contents/MacOS/"
+          cp build/KindleMate2.icns "$APP/Contents/Resources/KindleMate2.icns"
+
+          # launcher:Finder/Launchpad 启动时工作目录是 /,而库路径按「当前目录」解析,
+          # 所以先切到用户数据目录再 exec 真程序(绝不切进 .app 内部:会丢数据且破坏签名)。
+          cat > "$APP/Contents/MacOS/launch" <<'LAUNCH'
+          #!/bin/bash
+          data="$HOME/Library/Application Support/KindleMate2"
+          mkdir -p "$data" || exit 1
+          cd "$data" || exit 1
+          exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/KindleMate2.Avalonia" "$@"
+          LAUNCH
+          chmod +x "$APP/Contents/MacOS/launch" "$APP/Contents/MacOS/KindleMate2.Avalonia"
+
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleName</key><string>Kindle Mate 2</string>
+            <key>CFBundleDisplayName</key><string>Kindle Mate 2</string>
+            <key>CFBundleIdentifier</key><string>app.lzc.KindleMate2</string>
+            <key>CFBundleExecutable</key><string>launch</string>
+            <key>CFBundleIconFile</key><string>KindleMate2</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>${{ needs.version.outputs.version }}</string>
+            <key>CFBundleVersion</key><string>${{ needs.version.outputs.version }}</string>
+            <key>LSMinimumSystemVersion</key><string>${{ matrix.minos }}</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict></plist>
+          PLIST
+
+          # ad-hoc 签名:没有 Apple 开发者账号做不了公证,但 arm64 上「有有效签名」是硬要求。
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=2 "$APP"
+          echo "app bundle 就绪:$(du -sh "$APP" | cut -f1)"
+
+      - name: Package dmg (KindleMate2_${{ matrix.suffix }}.dmg)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/dmg
+          cp -R build/KindleMate2.app build/dmg/
+          ln -s /Applications "build/dmg/Applications"   # 打开镜像后可直接拖入 Applications
+          hdiutil create -volname "Kindle Mate 2" -srcfolder build/dmg -ov -format UDZO \
+            "KindleMate2_${{ matrix.suffix }}.dmg"
+          ls -l "KindleMate2_${{ matrix.suffix }}.dmg"
+
+      # 发版前把产物真验一遍:挂载镜像 → 校验 bundle 签名 → 架构匹配时用 launcher 实跑 --smoke。
+      # 签名、权限、架构、launcher 的 cd 逻辑,任何一项不对都在这里变红灯,而不是发一个跑不起来的包。
+      - name: Verify dmg (mount / signature / boot)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmg="KindleMate2_${{ matrix.suffix }}.dmg"
+          mnt="$(mktemp -d)"
+          trap 'hdiutil detach "$mnt" >/dev/null 2>&1 || true' EXIT
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt"
+          ls -la "$mnt"
+          codesign --verify --verbose=2 "$mnt/KindleMate2.app"
+
           case "$(uname -m)" in
-            arm64) suffix=osx-arm64_runtime ;;
-            *)     suffix=osx-x64_runtime ;;
+            arm64) host_rid=osx-arm64 ;;
+            *)     host_rid=osx-x64 ;;
           esac
-          echo "runner 架构 $(uname -m) → 验证 $suffix"
+          if [ "$host_rid" != "${{ matrix.rid }}" ]; then
+            echo "runner 架构 $host_rid ≠ ${{ matrix.rid }},本机无法实跑,只做签名与结构校验"
+            exit 0
+          fi
+
           work="$(mktemp -d)"
-          tar -xzf "pkg/assets-$suffix/KindleMate2_$suffix.tar.gz" -C "$work"
-          # 从网络取回的未签名二进制可能带 quarantine 标记而被 Gatekeeper 拦下(用户从浏览器
-          # 下载后同样如此)。这里清掉以便验证;README 里也需提示用户这一步。
-          xattr -dr com.apple.quarantine "$work" || true
+          cp -R "$mnt/KindleMate2.app" "$work/"
+          # 从网络取回的未签名应用会带 quarantine 标记而被 Gatekeeper 拦(用户下载后同理)
+          xattr -dr com.apple.quarantine "$work/KindleMate2.app" || true
           touch "$work/empty.dat"
-          "$work/KindleMate2.Avalonia" --smoke "$work/empty.dat" "$work/smoke.txt"
+          # 故意走 launcher(而不是直接调 apphost),这样连「先 cd 到数据目录」也一并验证;
+          # 因此这里必须用绝对路径传参。
+          "$work/KindleMate2.app/Contents/MacOS/launch" --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
           grep -q "NullDeviceManager" "$work/smoke.txt"
-          echo "macOS 产物启动自检通过:$suffix"
+          echo "macOS 产物启动自检通过:${{ matrix.suffix }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: assets-${{ matrix.suffix }}
+          path: KindleMate2_${{ matrix.suffix }}.dmg
+          retention-days: 1
 
   release:
-    needs: [version, publish, publish-unix, smoke-macos]
+    needs: [version, publish, publish-linux, publish-macos]
     runs-on: windows-latest
     steps:
       - name: Checkout (full history for notes)
@@ -232,12 +341,13 @@ jobs:
           $body = @('## Changes', '') + $log + @(
             '',
             '### 资产说明',
-            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip`',
-            '- Linux / macOS:`KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`',
+            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.Avalonia.exe`。',
+            '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后**先 cd 进解压目录**再运行 `./KindleMate2.Avalonia`(库文件建在当前目录)。',
+            '- macOS:`KindleMate2_{macos-arm64,macos-x64}.dmg` —— 打开后把 `KindleMate2.app` 拖进 Applications。',
             '- 带 `_runtime` = 自包含(免装 .NET 8 运行时);不带 = 需先安装对应平台的 .NET 8 运行时。',
-            '- Linux:`tar -xzf` 后直接运行 `./KindleMate2.Avalonia`(归档已保留可执行位)。',
-            '- macOS:未签名,首次运行前需清除隔离标记 —— `xattr -dr com.apple.quarantine <解压目录>`。',
-            '- 非 Windows 系统的 Kindle 设备同步不可用(设备层降级为 NullDeviceManager),其余功能完整。',
+            '- macOS 库文件位置:`~/Library/Application Support/KindleMate2/`。',
+            '- macOS 未做公证(无 Apple 开发者账号),首次启动请先清除隔离标记:`xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"`,或右键应用选「打开」。',
+            '- 非 Windows 无 Kindle 设备同步(设备层降级为 NullDeviceManager),其余功能完整。',
             '',
             'Auto-built by GitHub Actions (release workflow).'
           )

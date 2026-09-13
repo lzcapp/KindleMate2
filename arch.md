@@ -167,7 +167,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
 | 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
 | CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
-| CI（发布） | `.github/workflows/release.yml` | 14 个资产：Windows 6 变体 zip + Linux/macOS 8 变体 tar.gz；发布前对 `linux-x64_runtime` 与 osx 产物各做一次「解压即跑」自检 |
+| CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz + macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
 
 两套自检**全程在临时副本上执行**，不会改动传入的真实数据库。
 
@@ -178,10 +178,16 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 - **非 Windows 的 Kindle 设备支持**尚未实现（`NullDeviceManager` 兜底）；
   macOS / Linux 的挂载点与 libmtp 需要各自实现。
   **因此非 Windows 虽有发布包，设备同步仍不可用**，其余功能完整。
-- **各平台打包发布已完成**：`release.yml` 共 14 个资产 —— Windows 六变体 zip（x64/x86/arm64 ×
-  框架依赖/自包含）+ Linux/macOS 八变体 tar.gz（linux-x64 / linux-arm64 / osx-x64 / osx-arm64 × 两种）。
-  ⚠️ **非 Windows 产物必须在 Unix runner 上发布并打包** —— 从 NTFS 打出的归档记录不出可执行位，
+- **各平台打包发布已完成**：`release.yml` 共 12 个资产 —— Windows 六变体 zip（x64/x86/arm64 ×
+  框架依赖/自包含）+ Linux 四变体 tar.gz（linux-x64 / linux-arm64 × 两种）+ macOS 两个 dmg
+  （macos-arm64 / macos-x64，均自包含，内含 `KindleMate2.app`）。
+  ⚠️ **Linux 产物必须在 Unix runner 上发布并打包** —— 从 NTFS 打出的归档记录不出可执行位，
   解压出来是 644、运行即 permission denied；故用 `tar.gz` 且打包前 `chmod +x`。
+  **macOS 产物必须在 macOS runner 上做**（arm64 要求可执行文件签名有效，只有原生路径会签；
+  iconutil / codesign / hdiutil 也只有 macOS 有）：bundle 内放一个 `launch` 脚本当 `CFBundleExecutable`，
+  先 `cd` 到 `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，
+  而库路径按「当前目录」解析（与原版一致）；**不能切进 .app 内部**（更新应用会丢数据，且改动 bundle
+  内容会破坏代码签名）。签名只到 ad-hoc（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine。
   单文件打包（`PublishSingleFile`）仍未启用（未实机验证）。
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏

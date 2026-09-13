@@ -16,26 +16,31 @@
 
 ## System Requirements
 
-- **Windows**: `Windows 10 1809` or later (required by .NET 8) — packages: `KindleMate2_{arm64,x64,x86}[_runtime].zip`
-- **macOS / Linux**: packages: `KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`;
-  **feature complete except Kindle device sync (Windows only)**
+- **Windows**: `Windows 10 1809` or later (required by .NET 8) — `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **macOS**: `macOS 11` (Apple Silicon) / `macOS 10.15` (Intel) or later — `KindleMate2_macos-{arm64,x64}.dmg`
+- **Linux**: `KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **Architecture**: `x86` or `x64` or `ARM64`
+- **Feature complete on all three platforms** except Kindle device sync (Windows only)
 
-The runtime-dependent builds require the platform's [.NET 8 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation.
+The runtime-dependent builds require the platform's [.NET 8 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
 
 ### Download & Run
 
-Each platform ships two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
+Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
 
 - **Windows**: unzip the `.zip` and run `KindleMate2.Avalonia.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit)
-- **Linux**: `tar -xzf KindleMate2_linux-x64_runtime.tar.gz && ./KindleMate2.Avalonia`
-- **macOS**: extract and run `./KindleMate2.Avalonia`. The build is **unsigned**, so clear the quarantine
-  attribute first or Gatekeeper will block it:
+- **Linux**: `cd` into the extracted folder first, then run (the library file is created in the working directory)
   ```bash
-  xattr -dr com.apple.quarantine <extracted-dir>
+  mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
+  cd ~/KindleMate2 && ./KindleMate2.Avalonia
   ```
-
-The archives preserve the executable bit; if a GUI extractor drops it, just run `chmod +x KindleMate2.Avalonia`.
+  The archives preserve the executable bit; if a GUI extractor drops it, just run `chmod +x KindleMate2.Avalonia`.
+- **macOS**: open the `.dmg` and drag `KindleMate2.app` into Applications. The build is **not notarized**
+  (no Apple Developer account), so clear the quarantine attribute first, or right-click the app and choose Open:
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
+  ```
+  The library lives in `~/Library/Application Support/KindleMate2/`.
 
 ## Building
 

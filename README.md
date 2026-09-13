@@ -16,26 +16,31 @@
 
 ## 系统要求
 
-- **Windows**：`Windows 10 1809` 或更高（.NET 8 的要求）—— 发布包 `KindleMate2_{arm64,x64,x86}[_runtime].zip`
-- **macOS / Linux**：发布包 `KindleMate2_{linux-x64,linux-arm64,osx-x64,osx-arm64}[_runtime].tar.gz`；
-  **除 Kindle 设备同步（仅 Windows 可用）外功能完整**
+- **Windows**：`Windows 10 1809` 或更高（.NET 8 的要求）—— `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **macOS**：`macOS 11`（Apple Silicon）/ `macOS 10.15`（Intel）或更高 —— `KindleMate2_macos-{arm64,x64}.dmg`
+- **Linux**：`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **架构**: `x86` 或 `x64` 或 `ARM64`
+- 三个平台**除 Kindle 设备同步（仅 Windows 可用）外功能完整**
 
-依赖运行时（runtime）的版本需要安装对应平台的 [.NET 8 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。
+依赖运行时（runtime）的版本需要安装对应平台的 [.NET 8 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
 
 ### 下载与运行
 
-每个平台提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
+Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
 
 - **Windows**：解压 `.zip` 后运行 `KindleMate2.Avalonia.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）
-- **Linux**：`tar -xzf KindleMate2_linux-x64_runtime.tar.gz && ./KindleMate2.Avalonia`
-- **macOS**：解压后运行 `./KindleMate2.Avalonia`。产物**未签名**，首次运行前需清除隔离标记，
-  否则会被 Gatekeeper 拦下：
+- **Linux**：先 `cd` 进解压目录再运行（库文件建在当前目录）
   ```bash
-  xattr -dr com.apple.quarantine <解压目录>
+  mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
+  cd ~/KindleMate2 && ./KindleMate2.Avalonia
   ```
-
-归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x KindleMate2.Avalonia` 即可。
+  归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x KindleMate2.Avalonia` 即可。
+- **macOS**：打开 `.dmg`，把 `KindleMate2.app` 拖进 Applications。产物**未做公证**（无 Apple 开发者账号），
+  首次启动需清除隔离标记，或右键应用选「打开」：
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
+  ```
+  库文件固定在 `~/Library/Application Support/KindleMate2/`。
 
 ## 构建
 

@@ -74,7 +74,7 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   测试夹具目录，仅供回归测试用）。旧数据的迁入通道是
   「管理 → 导入 Kindle Mate 数据库 / 导入 KMate 数据库」。
 - **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
-  **各平台发布包已由 `release.yml` 覆盖**（Windows 6 个 zip + Linux/macOS 8 个 tar.gz）。
+  **各平台发布包已由 `release.yml` 覆盖**（Windows 6 个 zip + Linux 4 个 tar.gz + macOS 2 个 dmg）。
   仍待补齐的是**非 Windows 的设备支持本身**（挂载点 / libmtp）：那边由 `NullDeviceManager` 兜底，
   所以即便有这个平台的包，设备同步也不可用。
 - **界面文案**一律走 `Shared.Strings`（简/繁/英三套），不要在 XAML / VM 里写死中文。
@@ -87,7 +87,11 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
 - **CI**：`.github/workflows/build.yml` 在 windows 上跑全量构建 + 单测，在
   ubuntu/macOS 上跑跨平台构建 + 单测 + 启动自检。
   **`release.yml`** 负责发布：`version`（版本号唯一来源）→ `publish`（Windows 6 变体 zip）→
-  `publish-unix`（ubuntu 上交叉发布 linux-x64 / linux-arm64 / osx-x64 / osx-arm64 × 框架依赖/自包含，
-  tar.gz）→ `smoke-macos`（解压 osx 产物实跑自检）→ `release`。
-  **非 Windows 产物必须在 Unix runner 上打包** —— 从 NTFS 打出的归档记录不出可执行位，
+  `publish-linux`（ubuntu 上发布 linux-x64 / linux-arm64 × 框架依赖/自包含，tar.gz）→
+  `publish-macos`（macOS 上发布自包含 .app，打包成 .dmg）→ `release`。
+  **Linux 产物必须在 Unix runner 上打包** —— 从 NTFS 打出的归档记录不出可执行位，
   解压出来是 644、直接运行会 permission denied；打包前必须 `chmod +x`。
+  **macOS 必须在 macOS runner 上做**：arm64 要求可执行文件签名有效（原生路径才会签），
+  且 iconutil / codesign / hdiutil 只有 macOS 有。`.app` 里的 `launch` 脚本负责先 `cd` 到
+  `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，
+  而库路径按「当前目录」解析（与原版一致）；**不能切进 .app 内部**（会丢数据且破坏 bundle 签名）。
