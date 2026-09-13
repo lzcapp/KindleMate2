@@ -366,6 +366,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 
                 DatabaseHelper.VacuumDatabase(databaseFilePath);
                 
+                // 让「回收体积」成为真实值:
+                // SQLite 的 DELETE 只把页归还空闲列表,文件大小通常不变 —— 必须 VACUUM 才会真正收缩。
+                // 仅在确有删除时执行,避免无谓的全库重写;"无需清理"的路径保持瞬时。
+                if (fileInfo != null && emptyCount + duplicatedCount > 0) {
+                    DatabaseHelper.VacuumDatabase(databaseFilePath);
+                    // FileInfo.Length 首次读取后会缓存,不 Refresh 就永远读到旧值 —— 这正是此前恒为 0 的原因。
+                    fileInfo.Refresh();
+                }
+
                 var newFileSize = fileInfo?.Length ?? 0;
                 var fileSizeDelta = originFileSize - newFileSize;
 
