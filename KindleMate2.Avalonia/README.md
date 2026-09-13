@@ -19,7 +19,9 @@ Kindle Mate 2 的 **Avalonia 桌面客户端**。数据/业务层（`Shared` / `
 
 > **有意偏离原版之处**（均在代码注释与提交说明中标注）：导出失败改为弹窗（原版静默）、
 > 清理数据库增加确认框（原版无）、统计截图成功后 Yes/No 追问（原版无条件打开）、
-> **删除进回收站且可恢复**（原版直接连原始行一起删）。
+> **删除进回收站且可恢复**（原版直接连原始行一起删）、
+> **新增菜单「导入 Kindle Mate 2 数据库」**（原版只有「导入 Kindle Mate 数据库」一条 ——
+> 两者底层是同一套扁平 schema，单列入口是为了让用户看清导入的是哪种来源）。
 
 ## 平台与目标框架
 
@@ -72,7 +74,8 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   仓库根原有的 `KM2.db` 属于另一套关系型 schema（`books` + `clippings.book_id` +
   `source_clippings`），**任何现有导入器都不支持**，已从仓库移除（样本保留在仓库外的
   测试夹具目录，仅供回归测试用）。旧数据的迁入通道是
-  「管理 → 导入 Kindle Mate 数据库 / 导入 KMate 数据库」。
+  「管理 → 导入 Kindle Mate 数据库 / 导入 Kindle Mate 2 数据库 / 导入 KMate 数据库」——
+  其中「Kindle Mate 2 数据库」是本程序**自己的**库格式（`KM2.dat`），用于把别处一份库合并进来。
 - **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
   **各平台发布包已由 `release.yml` 覆盖**（Windows 6 个 zip + Linux 4 个 tar.gz + macOS 2 个 dmg）。
   仍待补齐的是**非 Windows 的设备支持本身**（挂载点 / libmtp）：那边由 `NullDeviceManager` 兜底，

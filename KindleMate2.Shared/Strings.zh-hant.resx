@@ -453,6 +453,9 @@
   <data name="Ui_Menu_ImportKmDatabase" xml:space="preserve">
     <value>匯入 Kindle Mate 資料庫</value>
   </data>
+  <data name="Ui_Menu_ImportKm2Database" xml:space="preserve">
+    <value>匯入 Kindle Mate 2 資料庫</value>
+  </data>
   <data name="Ui_Menu_ImportKmateDatabase" xml:space="preserve">
     <value>匯入 KMate 資料庫</value>
   </data>
@@ -663,6 +666,9 @@
   <data name="Ui_Pick_KmDatabase" xml:space="preserve">
     <value>選擇 Kindle Mate 資料庫</value>
   </data>
+  <data name="Ui_Pick_Km2Database" xml:space="preserve">
+    <value>選擇 Kindle Mate 2 資料庫</value>
+  </data>
   <data name="Ui_Pick_KmateDatabase" xml:space="preserve">
     <value>選擇 KMate 資料庫</value>
   </data>
@@ -674,6 +680,9 @@
   </data>
   <data name="Ui_FileType_KmDatabase" xml:space="preserve">
     <value>Kindle Mate 資料庫</value>
+  </data>
+  <data name="Ui_FileType_Km2Database" xml:space="preserve">
+    <value>Kindle Mate 2 資料庫</value>
   </data>
   <data name="Ui_FileType_KmateDatabase" xml:space="preserve">
     <value>KMate 資料庫</value>

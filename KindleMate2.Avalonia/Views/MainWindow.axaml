@@ -67,6 +67,8 @@
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportClippings}" Click="OnMenuImportClippings" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportWords}" Click="OnMenuImportVocab" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmDatabase}" Click="OnMenuImportKmDatabase" />
+              <!-- 本程序自己的库格式(KM2.dat),把别处一份库合并进来;菜单上单列是为了让来源一目了然 -->
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKm2Database}" Click="OnMenuImportKm2Database" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportKmateDatabase}" Click="OnMenuImportKmateDatabase" />
               <!-- 原版此项(menuSyncFromKindle)就是 Visible=false,真正对用户可见的入口
                    是菜单栏那个「Kindle设备已连接」按钮 —— 故这里保持隐藏,不要"顺手打开"。 -->

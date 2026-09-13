@@ -76,6 +76,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 导入标注（`My Clippings.txt`）
 - [x] 导入生词本（`vocab.db`）
 - [x] 导入 Kindle Mate 数据库（迁移旧库）
+- [x] 导入 Kindle Mate 2 数据库（`KM2.dat`，把别处一份库合并进来）
 - [x] 导入 KMate 数据库（`km3.dat`）
 - [x] 从已连接的 Kindle 设备导入（标注 + 生词本）
 - [x] 同步到已连接的 Kindle 设备

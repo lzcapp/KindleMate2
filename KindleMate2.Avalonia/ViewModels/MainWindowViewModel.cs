@@ -573,6 +573,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         RunOperationAsync(() => _session!.ImportManager.ImportKmDatabase(path), true,
             Strings.Successful, Strings.Import_Failed);
 
+    /// <summary>导入另一个 Kindle Mate 2 数据库(本程序自己的库格式)。</summary>
+    public Task<OperationResult> ImportKm2DatabaseAsync(string path) =>
+        RunOperationAsync(() => _session!.ImportManager.ImportKm2Database(path), true,
+            Strings.Successful, Strings.Import_Failed);
+
     public Task<OperationResult> ImportKmateDatabaseAsync(string path) =>
         RunOperationAsync(() => _session!.ImportManager.ImportKmateDatabase(path), true,
             Strings.Successful, Strings.Import_Failed);

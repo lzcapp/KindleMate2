@@ -94,14 +94,30 @@ public class ImportManager : IImportManager {
                Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
     }
 
-    public string ImportKmDatabase(string filePath) {
+    public string ImportKmDatabase(string filePath) => ImportFlatSchemaDatabase(filePath, "KM_");
+
+    /// <summary>
+    /// 导入另一个 <b>Kindle Mate 2</b> 数据库(本程序自己的库格式,即 KM2.dat)。
+    /// 用于把别处的一份库(另一台机器 / 旧备份)的标注与生词合并进当前库,按 key 与
+    /// 「书名+作者+内容」双重判重,重复的跳过。
+    /// </summary>
+    /// <remarks>
+    /// 它与原版 Kindle Mate 的库是**同一套扁平 schema**(clippings / lookups /
+    /// original_clipping_lines / settings / vocab),所以合并逻辑完全复用同一个服务;
+    /// 单独留一个入口是为了让用户在菜单上一眼看清"导入的是哪种来源",并把备份文件名
+    /// 区分开(KM2_ 前缀),便于事后分辨。
+    /// </remarks>
+    public string ImportKm2Database(string filePath) => ImportFlatSchemaDatabase(filePath, "KM2_");
+
+    /// <summary>原版 Kindle Mate 与本程序自己的库共用同一套扁平 schema,合并逻辑写在这里一份。</summary>
+    private string ImportFlatSchemaDatabase(string filePath, string backupFileNamePrefix) {
         var kmDatabaseService = _kmDatabaseServiceFactory.Create(filePath);
 
         var clippingsCount = _clippingService.GetCount();
         var vocabCount = _vocabService.GetCount();
 
         if (File.Exists(filePath)) {
-            var backupFilePath = Path.Combine(_importPath, "KM_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
+            var backupFilePath = Path.Combine(_importPath, backupFileNamePrefix + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DAT);
             File.Copy(filePath, backupFilePath, true);
         }
 

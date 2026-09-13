@@ -75,6 +75,7 @@ and the headless self-checks.
 - [x] Import Highlights (`My Clippings.txt`)
 - [x] Import Vocabulary List (`vocab.db`)
 - [x] Import Kindle Mate Database (migrate an old library)
+- [x] Import Kindle Mate 2 Database (`KM2.dat` — merge another library into the current one)
 - [x] Import KMate Database (`km3.dat`)
 - [x] Import from a connected Kindle device (highlights + vocabulary)
 - [x] Sync to a connected Kindle device

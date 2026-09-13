@@ -450,6 +450,9 @@
   <data name="Ui_Menu_ImportKmDatabase" xml:space="preserve">
     <value>Import Kindle Mate database</value>
   </data>
+  <data name="Ui_Menu_ImportKm2Database" xml:space="preserve">
+    <value>Import Kindle Mate 2 database</value>
+  </data>
   <data name="Ui_Menu_ImportKmateDatabase" xml:space="preserve">
     <value>Import KMate database</value>
   </data>
@@ -660,6 +663,9 @@
   <data name="Ui_Pick_KmDatabase" xml:space="preserve">
     <value>Choose a Kindle Mate database</value>
   </data>
+  <data name="Ui_Pick_Km2Database" xml:space="preserve">
+    <value>Choose a Kindle Mate 2 database</value>
+  </data>
   <data name="Ui_Pick_KmateDatabase" xml:space="preserve">
     <value>Choose a KMate database</value>
   </data>
@@ -671,6 +677,9 @@
   </data>
   <data name="Ui_FileType_KmDatabase" xml:space="preserve">
     <value>Kindle Mate database</value>
+  </data>
+  <data name="Ui_FileType_Km2Database" xml:space="preserve">
+    <value>Kindle Mate 2 database</value>
   </data>
   <data name="Ui_FileType_KmateDatabase" xml:space="preserve">
     <value>KMate database</value>

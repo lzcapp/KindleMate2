@@ -204,6 +204,9 @@ internal static class Program {
         try {
             if (Directory.Exists(work)) Directory.Delete(work, true);
             Directory.CreateDirectory(work);
+            // 在原当前目录下先把源库解析成绝对路径 —— 下面会把 cwd 切到临时目录,
+            // 末尾的「导入 Kindle Mate 2 数据库」回归还要用它当源。
+            var sourceDbFull = Path.GetFullPath(dbPath);
             // 与原版一致的固定路径模型:库文件名必须是 KM2.dat,且当前目录即"程序目录"。
             // 这样备份 / 导出 / 导入目录全部落在临时副本上 —— 既不碰真实数据,走的又是产品真实路径。
             var dbCopy = Path.Combine(work, AppConstants.DatabaseFileName);
@@ -466,6 +469,17 @@ internal static class Program {
 
             }
             vm.DomainIndex = 0;
+
+            // 回归:新增入口「导入 Kindle Mate 2 数据库」(本程序自己的库格式)。
+            // 用命令行传入的**原始库**当 KM2 源(它与工作副本同格式、且全程未被改动),
+            // 先清空工作副本再整批导回来 —— 断言条数回到 baseline,证明合并分支真的走通,
+            // 而不是"不抛异常就算过"。放在最后:它会把工作副本填满,不影响前面各步的统计。
+            vm.ClearAllDataAsync().GetAwaiter().GetResult();
+            var km2AfterClear = vm.Session!.ClippingService.GetCount();
+            var km2ImportResult = vm.ImportKm2DatabaseAsync(sourceDbFull).GetAwaiter().GetResult();
+            var km2After = vm.Session.ClippingService.GetCount();
+            report.AppendLine($"import KM2 db: ok={km2ImportResult.Ok} title={km2ImportResult.Title} msg={km2ImportResult.Message}");
+            report.AppendLine($"  -> clips 清空后 {km2AfterClear} / 导入后 {km2After}(期望 0 -> baseline {clips0})");
 
             Environment.CurrentDirectory = originalCwd;
             File.WriteAllText(outFile, report.ToString());

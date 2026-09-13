@@ -1058,6 +1058,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Menu_ImportClippings => ResourceManager.GetString("Ui_Menu_ImportClippings", resourceCulture);
         public static string Ui_Menu_ImportWords => ResourceManager.GetString("Ui_Menu_ImportWords", resourceCulture);
         public static string Ui_Menu_ImportKmDatabase => ResourceManager.GetString("Ui_Menu_ImportKmDatabase", resourceCulture);
+        public static string Ui_Menu_ImportKm2Database => ResourceManager.GetString("Ui_Menu_ImportKm2Database", resourceCulture);
         public static string Ui_Menu_ImportKmateDatabase => ResourceManager.GetString("Ui_Menu_ImportKmateDatabase", resourceCulture);
         public static string Ui_Menu_ImportFromDevice => ResourceManager.GetString("Ui_Menu_ImportFromDevice", resourceCulture);
         public static string Ui_Menu_SyncToDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice", resourceCulture);
@@ -1133,10 +1134,12 @@ namespace KindleMate2.Shared {
         public static string Ui_Pick_Clippings => ResourceManager.GetString("Ui_Pick_Clippings", resourceCulture);
         public static string Ui_Pick_Words => ResourceManager.GetString("Ui_Pick_Words", resourceCulture);
         public static string Ui_Pick_KmDatabase => ResourceManager.GetString("Ui_Pick_KmDatabase", resourceCulture);
+        public static string Ui_Pick_Km2Database => ResourceManager.GetString("Ui_Pick_Km2Database", resourceCulture);
         public static string Ui_Pick_KmateDatabase => ResourceManager.GetString("Ui_Pick_KmateDatabase", resourceCulture);
         public static string Ui_FileType_Clippings => ResourceManager.GetString("Ui_FileType_Clippings", resourceCulture);
         public static string Ui_FileType_Words => ResourceManager.GetString("Ui_FileType_Words", resourceCulture);
         public static string Ui_FileType_KmDatabase => ResourceManager.GetString("Ui_FileType_KmDatabase", resourceCulture);
+        public static string Ui_FileType_Km2Database => ResourceManager.GetString("Ui_FileType_Km2Database", resourceCulture);
         public static string Ui_FileType_KmateDatabase => ResourceManager.GetString("Ui_FileType_KmateDatabase", resourceCulture);
         public static string Ui_Dlg_CleanMessage => ResourceManager.GetString("Ui_Dlg_CleanMessage", resourceCulture);
         public static string Ui_Dlg_CleanOk => ResourceManager.GetString("Ui_Dlg_CleanOk", resourceCulture);

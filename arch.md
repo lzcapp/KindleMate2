@@ -127,9 +127,9 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 当前格式的 schema 由 `DatabaseHelper.CreateDatabase()` 定义（`clippings` / `lookups` /
 `original_clipping_lines` / `settings` / `vocab`）。
 
-> **旧格式库不能直接打开。** 原版 Kindle Mate 的库虽有 `clippings` 表但**没有 `key` 列**，
-> 直接打开会报 `no such column: key`。迁入旧数据的正确通道是
-> **菜单「管理 → 导入 Kindle Mate 数据库 / 导入 KMate 数据库」**（迁移，而非原地读取）。
+> **旧格式库不能直接打开。** 那套关系型旧库（样本在仓库外 fixtures）虽有 `clippings` 表但**没有 `key` 列**，
+> 直接打开会报 `no such column: key`。迁入旧数据的通道是
+> **菜单「管理 → 导入 Kindle Mate 数据库 / 导入 Kindle Mate 2 数据库 / 导入 KMate 数据库」**（迁移，而非原地读取）。
 
 ---
 

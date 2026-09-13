@@ -260,6 +260,17 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ImportKmDatabaseAsync(path));
     }
 
+    /// <summary>
+    /// 导入另一个 Kindle Mate 2 数据库(本程序自己的库格式,通常来自另一台机器或旧备份)。
+    /// 与原版 Kindle Mate 的库同 schema,故合并逻辑复用;入口单列只为让来源一目了然。
+    /// </summary>
+    private async void OnMenuImportKm2Database(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var path = await PickFileAsync(Strings.Ui_Pick_Km2Database, Strings.Ui_FileType_Km2Database, new[] { "*.dat", "*.db" });
+        if (path == null) return;
+        await ShowResultAsync(await vm.ImportKm2DatabaseAsync(path));
+    }
+
     private async void OnMenuImportKmateDatabase(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var path = await PickFileAsync(Strings.Ui_Pick_KmateDatabase, Strings.Ui_FileType_KmateDatabase, new[] { "*.dat", "*.db" });
