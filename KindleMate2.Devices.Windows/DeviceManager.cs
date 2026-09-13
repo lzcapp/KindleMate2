@@ -6,6 +6,7 @@ using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using KindleMate2.Infrastructure.Helpers;
 using MediaDevices;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Devices.Windows;
 
@@ -73,7 +74,7 @@ public class DeviceManager : IDeviceManager {
 
             return isConnected;
             } catch (Exception ex) {
-                Console.WriteLine($"[IsKindleConnected] {ex}");
+                AppLog.Write($"[IsKindleConnected] {ex}");
                 return false;
             }
         }
@@ -92,7 +93,7 @@ public class DeviceManager : IDeviceManager {
                 versionText = reader.ReadToEnd();
             }
         } catch (Exception ex) {
-            Console.WriteLine($"[GetKindleVersionText] {ex}");
+            AppLog.Write($"[GetKindleVersionText] {ex}");
         }
         return versionText;
     }
@@ -124,7 +125,7 @@ public class DeviceManager : IDeviceManager {
             IsKindleConnected();
             ConnectionChanged?.Invoke(IsConnected);
         } catch (Exception ex) {
-            Console.WriteLine($"[HandleUsbDeviceEvent] {ex}");
+            AppLog.Write($"[HandleUsbDeviceEvent] {ex}");
         }
     }
 
@@ -150,7 +151,7 @@ public class DeviceManager : IDeviceManager {
             }
             return false;
         } catch (Exception e) {
-            Console.WriteLine(e);
+            AppLog.Write(e);
             return false;
         }
     }
@@ -180,7 +181,7 @@ public class DeviceManager : IDeviceManager {
                 _deviceType = Device.Type.MTP;
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(e);
+                AppLog.Write(e);
                 // Reset partial state if _driveLetter was set before failure
                 if (string.Equals(_driveLetter, @"\Internal Storage\", StringComparison.Ordinal)) {
                     _driveLetter = string.Empty;
@@ -190,7 +191,7 @@ public class DeviceManager : IDeviceManager {
                 try { device.Disconnect(); } catch { /* best effort */ }
             }
         } catch (Exception e) {
-            Console.WriteLine(e);
+            AppLog.Write(e);
             return false;
         }
     }
@@ -295,7 +296,7 @@ public class DeviceManager : IDeviceManager {
         try {
             File.WriteAllBytes(filePath, memoryStream.ToArray());
         } catch (Exception ex) {
-            Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ReadMtpFile), ex));
+            AppLog.Write(StringHelper.GetExceptionMessage(nameof(ReadMtpFile), ex));
         }
     }
 

@@ -294,7 +294,7 @@ public partial class MainWindow : Window {
             Directory.CreateDirectory(path);
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
         } catch (Exception ex) {
-            KindleMate2.Avalonia.Services.AppLog.Write(ex);
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
         }
     }
 
@@ -380,7 +380,7 @@ public partial class MainWindow : Window {
             }
             Environment.Exit(0);
         } catch (Exception ex) {
-            KindleMate2.Avalonia.Services.AppLog.Write(ex);
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
         }
     }
 
@@ -516,7 +516,7 @@ public partial class MainWindow : Window {
             (previous?.DataContext as MainWindowViewModel)?.ReleaseSession();
             return true;
         } catch (Exception ex) {
-            KindleMate2.Avalonia.Services.AppLog.Write(ex);
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
             return false;
         }
     }

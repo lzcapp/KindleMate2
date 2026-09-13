@@ -2,6 +2,7 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services.KM2DB {
     /// <summary>
@@ -135,7 +136,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(ImportFromKmateDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(ImportFromKmateDatabase), e));
                 return false;
             }
         }

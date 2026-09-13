@@ -7,6 +7,7 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class Km2DatabaseService(
@@ -115,7 +116,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
                 result = new  Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
@@ -273,7 +274,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         });
                     }
                 } catch (Exception e) {
-                    Console.WriteLine(StringHelper.GetExceptionMessage(nameof(HandleClippings), e));
+                    AppLog.Write(StringHelper.GetExceptionMessage(nameof(HandleClippings), e));
                 }
             }
 
@@ -312,7 +313,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 });
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(SetClippingsBriefTypeHide), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(SetClippingsBriefTypeHide), e));
                 return false;
             }
         }
@@ -408,7 +409,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return true;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
                 result = new Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
@@ -499,7 +500,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 result += vocabRepository.GetCount();
                 return result == 0;
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(IsDatabaseEmpty), e));
                 throw;
             }
         }
@@ -524,7 +525,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 return table.Count == 0 ? true : throw new Exception($"Clear table [{string.Join(", ", table)}] failed.");
             } catch (Exception e) {
-                Console.WriteLine(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
                 return false;
             }
         }

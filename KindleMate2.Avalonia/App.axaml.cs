@@ -12,6 +12,7 @@ using KindleMate2.Avalonia.Views;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Avalonia;
 

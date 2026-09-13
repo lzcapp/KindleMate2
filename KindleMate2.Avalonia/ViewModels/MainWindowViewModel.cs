@@ -408,7 +408,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
             // 这里刻意吞掉异常(不向上抛),因此必须自己留痕:否则该错误只会短暂出现在状态栏,
             // 用户切走就再无从查起。WinExe 下 Console.WriteLine 无处可去,走文件日志。
-            KindleMate2.Avalonia.Services.AppLog.Write(ex);
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
         } finally {
             IsBusy = false;
             OnPropertyChanged(nameof(StatusLeft));

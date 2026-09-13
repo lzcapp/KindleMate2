@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Avalonia.Services;
 
