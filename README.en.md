@@ -16,41 +16,54 @@
 
 ## System Requirements
 
-- **Minimum**: `Windows 7` or later / `Windows 2008 R2 SP1` or later
-- **Recommended**: `Windows 11`
+- **Windows**: `Windows 10 1809` or later (required by .NET 8); all published builds are Windows
+- **macOS / Linux**: buildable and runnable from source (cross-platform) — **feature complete except Kindle device sync**; no official packages yet
 - **Architecture**: `x86` or `x64` or `ARM64`
 
 [.NET Desktop Runtime 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) required for runtime dependent version.
 
 ## Building
 
-`Visual Studio` & `C#`
+Requires .NET SDK 9 or later (Avalonia 12's XAML compiler needs Roslyn ≥ 4.14).
 
-### Submodules
+```bash
+dotnet build KindleMate2.sln -c Debug
+dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
+```
 
-- Do `git submodule update --init --recursive` first after cloning this repo.
-
-> [`lzcapp/Dark-Mode-Forms`](https://github.com/lzcapp/Dark-Mode-Forms): forked from [`BlueMystical/Dark-Mode-Forms`](https://github.com/BlueMystical/Dark-Mode-Forms)
+> **This repository contains no git submodules** — the `DarkModeForms` submodule was retired along
+> with the old shell, so no `submodule update` is needed.
 
 ### Projects
 
-- `KindleMate2` (WinForm): Current version.
-- `KindleMate2_WPF` (WPF): Not yet done, much work to do.
+The solution contains 7 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
+layering, and [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md) for building, running
+and the headless self-checks.
+
+> The earlier Windows Forms / WPF shells have been retired. To compare against the old behaviour use the
+> read-only tag **`winforms-final`**; a ready-to-use old build is Release **`2026.09.07`**
+> (WinForms, single file, no install).
 
 ## Features
 
 - [x] Import Highlights (`My Clippings.txt`)
 - [x] Import Vocabulary List (`vocab.db`)
+- [x] Import Kindle Mate Database (migrate an old library)
 - [x] Import KMate Database (`km3.dat`)
-- [x] Sync Connected Kindle Devices
+- [x] Import from a connected Kindle device (highlights + vocabulary)
+- [x] Sync to a connected Kindle device
 - [x] Edit Highlights
 - [x] Edit Vocabulary List
-- [x] Cleaning Function
-- [x] Export Function
+- [x] Delete (single / whole book / single word) and **recycle bin** (deletions are restorable)
+- [x] Rename books (title + author)
+- [x] Clean / Rebuild / Backup / Clear database
+- [x] Export Function (Markdown)
 - [x] Statistics Function
 - [x] Night Mode (Dark Mode)
-- [x] Language Switch
-- [x] Search Function
+- [x] Language Switch (简体中文 / 繁體中文 / English)
+- [x] Search Function (book / author / content / note)
+- [x] **Cross-platform** (full feature set on Windows; everything but device sync on macOS / Linux)
 
 ## Screenshots
 

@@ -6,15 +6,20 @@ Kindle Mate 2 的 **Avalonia 桌面客户端**。数据/业务层（`Shared` / `
 > 2026-09-13：原 WinForms 壳（`KindleMate2/`）与 `DarkModeForms` 子模块已**退役**，
 > 本工程即当前唯一的桌面 UI，并已加入 `KindleMate2.sln`。
 
-## 设计规范（2026-09-12 修订）
+## 设计规范
 
-**不再照搬 WinForms 布局，也不使用 DarkModeForms 配色。** 界面按设计系统自主构建：
-
-- 信息架构：内容优先列表 + 右侧预览面板（邮件客户端范式），搜索为全局命令栏。
+**核心原则：UI 与跨平台可变；功能与行为须与原 WinForms 版完全一致。**
+界面按原版布局复刻（内容优先列表 + 右侧预览面板、搜索命令栏），并按设计系统自主打磨：
 - 设计令牌：5 阶冷中性表面 + 唯一强调色 `#7B8CFF` + 4 类标注标签色；正文对比度
   15.2:1、次要 6.3:1（过 WCAG AA）。深浅双主题，默认跟随系统。
 - 全部定义在 `App.axaml`（`ThemeDictionaries` + 控件样式），无第三方 UI 库。
 - 图表是自研的 `Charts/ChartControl.cs`（重写 `Render(DrawingContext)` 自绘，零依赖）。
+- 若用到 `DataGrid`，其主题须在 `App.axaml` 显式包含
+  （`avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml`）—— 缺它会**整个渲染不出来**。
+
+> **有意偏离原版之处**（均在代码注释与提交说明中标注）：导出失败改为弹窗（原版静默）、
+> 清理数据库增加确认框（原版无）、统计截图成功后 Yes/No 追问（原版无条件打开）、
+> **删除进回收站且可恢复**（原版直接连原始行一起删）。
 
 ## 平台与目标框架
 
@@ -52,8 +57,10 @@ dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Debug
 # 只读链路：列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言
 KindleMate2.Avalonia(.exe) --smoke <db> [out.txt]
 
-# 写操作端到端：导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导
-KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt>
+# 写操作端到端：导入 → 导出 → 备份 → 重命名 → 编辑标注 → 删除 → 清理 → 重建
+#              → 清空 → 空库重导 → 删整本/删整词 → 回收站(删除→可见→恢复→回主表)
+#              → 重复 key 导入 → 批量插入降级 → 日志出口
+KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧格式库样本]
 ```
 
 `--ops` **全程在临时副本上执行**，不会改动传入的库。测试夹具见
@@ -70,5 +77,10 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt>
   非 Windows 的设备支持（挂载点 / libmtp）与各平台打包发布仍待补齐。
 - **界面文案**一律走 `Shared.Strings`（简/繁/英三套），不要在 XAML / VM 里写死中文。
   新增文案需同步改 4 个 resx 并手工补 `Strings.Designer.cs` 的强类型属性。
+- **日志**：库层（`Application` / `Infrastructure` / `Devices.Windows`）一律用
+  `Shared.Diagnostics.AppLog`，**不要写 `Console.WriteLine`** —— Windows 上是 `WinExe`（无控制台），
+  写 Console 的消息无人接收。App 层用 `Services.FileLogSink` 注入 sink，落到**程序目录**的
+  `error.log`（已被 `.gitignore` 的 `*.log` 覆盖）。
+  **自检路径（`--smoke` / `--ops`）不注入文件 sink** —— 它们的日志打在 stderr，避免污染 `error.log`。
 - **CI**：`.github/workflows/build.yml` 在 windows 上跑全量构建 + 单测，在
   ubuntu/macOS 上跑跨平台构建 + 单测 + 启动自检。
