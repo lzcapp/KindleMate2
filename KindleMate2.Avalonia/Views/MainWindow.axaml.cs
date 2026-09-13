@@ -364,8 +364,24 @@ public partial class MainWindow : Window {
         await new StatisticsWindow(stats).ShowDialog(this);
     }
 
+    /// <summary>
+    /// 重启程序 —— 对齐原版 <c>Restart()</c>(FrmMain.cs:1573):
+    /// 启动同路径的新进程后立即退出当前进程。
+    /// (原版为 <c>Process.Start(ExecutablePath)</c> + <c>Environment.Exit(0)</c>;
+    /// 退出会触发 App 层的 ProcessExit 备份,与原版一致。)
+    /// 此前这里只是把「重启」写进状态栏的占位。
+    /// </summary>
     private void OnMenuRestart(object? sender, RoutedEventArgs e) {
-        if (Vm is { } vm) vm.StatusText = Strings.Restart;
+        try {
+            // ProcessPath 比 Assembly.Location 更可靠(单文件发布/裁剪场景同样有效)
+            var executable = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(executable)) {
+                Process.Start(new ProcessStartInfo { FileName = executable, UseShellExecute = true });
+            }
+            Environment.Exit(0);
+        } catch (Exception ex) {
+            KindleMate2.Avalonia.Services.AppLog.Write(ex);
+        }
     }
 
     private void OnMenuExit(object? sender, RoutedEventArgs e) => Close();
