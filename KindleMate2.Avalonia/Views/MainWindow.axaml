@@ -49,7 +49,10 @@
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="Auto,*" Margin="12,0">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-          <Border Width="13" Height="13" CornerRadius="3" Background="{DynamicResource KmAccentBrush}" />
+          <!-- 品牌标记:用真实图标。原为 13×13 纯色占位方块 —— 图标自带透明留白,
+               13px 下细节会糊掉(红色书签仅约 2px 宽),故放大到 16px 保住可辨识度。 -->
+          <Image Width="16" Height="16" Source="/Assets/bookmark.png"
+                 Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
           <TextBlock Text="Kindle Mate 2" FontSize="12" VerticalAlignment="Center"
                      Foreground="{DynamicResource KmTextSecondaryBrush}" Margin="0,0,8,0" />
           <Menu VerticalAlignment="Center">

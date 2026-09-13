@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/bookmark.ico" />
+    <!-- 关于窗口的图标位需要 IImage,而 WindowIcon 不能直接给 Image 用,
+         故另附一份从 .ico 的 256×256 PNG 帧抽出的 PNG(自带透明通道)。 -->
+    <AvaloniaResource Include="Assets/bookmark.png" />
   </ItemGroup>
 
   <ItemGroup>

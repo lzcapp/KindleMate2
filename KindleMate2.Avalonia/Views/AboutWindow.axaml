@@ -16,7 +16,8 @@
   <StackPanel Margin="24,20,24,18" Spacing="16">
 
     <StackPanel Orientation="Horizontal" Spacing="12">
-      <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource KmAccentBrush}" />
+      <Image Width="40" Height="40" Source="/Assets/bookmark.png"
+             Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
       <StackPanel VerticalAlignment="Center">
         <TextBlock Text="{Binding Product}" FontSize="16" FontWeight="SemiBold" />
         <TextBlock Classes="tt" Text="{Binding VersionLabel}" />
