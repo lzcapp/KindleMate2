@@ -390,7 +390,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     transaction.Commit();
                     return count;
                 } catch {
-                    transaction.Rollback();
+                    try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }
 
@@ -404,7 +404,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     }
                     rowTransaction.Commit();
                 } catch {
-                    rowTransaction.Rollback();
+                    try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }
             return inserted;
@@ -503,7 +503,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 }
                 transaction.Commit();
             } catch {
-                transaction.Rollback();
+                try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 throw;
             }
             return count;

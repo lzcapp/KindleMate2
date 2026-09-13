@@ -13,11 +13,6 @@ namespace KindleMate2.Avalonia;
 internal static class Program {
     [STAThread]
     public static int Main(string[] args) {
-        // 最早注入日志出口:此后库层(Application/Infrastructure/Devices)的 AppLog.Write
-        // 都会落到程序目录的 error.log —— 它们不再依赖 UI,也不再像 Console.WriteLine 那样写进虚空。
-        // 放在分支之前,故窗口、--smoke、--ops 三条路径的日志都能收到。
-        FileLogSink.Initialize();
-
         // 无头自检:--smoke <db> [out.txt] —— 不开窗口,验证数据库读取链路 + 列表/详情成型后退出。
         if (args.Length >= 2 && args[0] == "--smoke") {
             return RunSmoke(args[1], args.Length > 2 ? args[2] : null);
@@ -28,6 +23,11 @@ internal static class Program {
         if (args.Length >= 5 && args[0] == "--ops") {
             return RunOperations(args[1], args[2], args[3], args[4]);
         }
+
+        // 只有**窗口路径**才把库层日志落到程序目录 error.log。
+        // 自检是控制台程序:它们的日志(含故意打开坏库的堆栈)应当打在 stderr 上,
+        // 而不是灌进 error.log —— 否则这份"查线上问题用"的日志会被自检噪音淹没。
+        FileLogSink.Initialize();
 
         return BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
@@ -356,8 +356,11 @@ internal static class Program {
                 report.AppendLine($"batch fallback: 抛异常 {ex.GetType().Name}: {ex.Message}");
             }
 
-            // 日志出口自检:Shared 的 AppLog 写出的内容应落到(当时的)程序目录下的 error.log。
+            // 日志出口自检:Shared 的 AppLog 写出的内容应能落到(当时的)程序目录下的 error.log。
             // 库层那 18 处 AppLog.Write 走的是同一个出口,故这里验证通过即代表库层日志可被收走。
+            // 注意:自检路径**故意不自动**初始化文件 sink(否则自检噪音会灌进应用的 error.log),
+            // 所以这里显式初始化一次再验证。
+            FileLogSink.Initialize();
             var logPath = Path.Combine(work, FileLogSink.FileName);
             if (File.Exists(logPath)) File.Delete(logPath);
             KindleMate2.Shared.Diagnostics.AppLog.Write("自检:日志出口探针");
