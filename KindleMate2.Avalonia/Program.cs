@@ -334,6 +334,23 @@ internal static class Program {
                 report.AppendLine($"bulk-collection probe: 抛异常 {ex.GetType().Name}: {ex.Message}");
             }
 
+            // 回归:批量插入的"逐条降级"兜底 —— 批次里故意放两条同 key 的行,整批必然失败;
+            // 应降级为逐条插入:成功 1 条、跳过 1 条(而不是整批回滚、一条都没有)。
+            try {
+                const string stamp = "2099-01-01 00:00:00";
+                var dupKey = stamp + "|位置 #9999-9999";
+                var repo = vm.Session!.ClippingRepository;
+                var batch = new List<KindleMate2.Domain.Entities.KM2DB.Clipping> {
+                    new() { Key = dupKey, Content = "自检-A", BookName = "自检书", AuthorName = "自检", ClippingDate = stamp, PageNumber = 9999 },
+                    new() { Key = dupKey, Content = "自检-B", BookName = "自检书", AuthorName = "自检", ClippingDate = stamp, PageNumber = 9999 },
+                };
+                var inserted = repo.Add(batch);
+                var inDb = repo.GetAll().Count(c => c.Key == dupKey);
+                report.AppendLine($"batch fallback: Add 返回={inserted}(期望 1),库内该 key={inDb} 条(期望 1)");
+            } catch (Exception ex) {
+                report.AppendLine($"batch fallback: 抛异常 {ex.GetType().Name}: {ex.Message}");
+            }
+
             report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
 
             // 回归:完整走一遍「导入旧版 Kindle Mate 数据库」。

@@ -130,27 +130,58 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// 批量插入。与 <c>ClippingRepository.Add(List&lt;Clipping&gt;)</c> 同样的策略:
+        /// **先走整批单事务,失败则降级为逐条插入并跳过冲突项** —— 避免一条重复 key
+        /// 让整批回滚(否则"判重漏网"的代价就是整份文件导不进来)。
+        /// </summary>
         public int Add(List<OriginalClippingLine> listOriginalClippings) {
-            var count = 0;
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
-            using var transaction = connection.BeginTransaction();
 
-            foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
-                var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection, transaction);
-                cmd.Parameters.AddWithValue("@key", originalClippingLine.Key ?? throw new InvalidOperationException());
-                cmd.Parameters.AddWithValue("@line1", originalClippingLine.Line1 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line2", originalClippingLine.Line2 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line3", originalClippingLine.Line3 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line4", originalClippingLine.Line4 ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@line5", originalClippingLine.Line5 ?? (object)DBNull.Value);
-                if (cmd.ExecuteNonQuery() > 0) {
-                    count++;
+            // ① 快路径:整批单事务
+            using (var transaction = connection.BeginTransaction()) {
+                try {
+                    var count = 0;
+                    foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
+                        if (InsertOne(connection, transaction, originalClippingLine)) {
+                            count++;
+                        }
+                    }
+                    transaction.Commit();
+                    return count;
+                } catch {
+                    transaction.Rollback();
                 }
             }
 
-            transaction.Commit();
-            return count;
+            // ② 兜底:逐条插入,每条独立事务,单条失败只跳过该条
+            var inserted = 0;
+            foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
+                using var rowTransaction = connection.BeginTransaction();
+                try {
+                    if (InsertOne(connection, rowTransaction, originalClippingLine)) {
+                        inserted++;
+                    }
+                    rowTransaction.Commit();
+                } catch {
+                    rowTransaction.Rollback();
+                }
+            }
+            return inserted;
+        }
+
+        /// <summary>插入一行 —— 供"整批"与"逐条降级"两条路径复用。</summary>
+        private static bool InsertOne(SqliteConnection connection, SqliteTransaction transaction,
+            OriginalClippingLine originalClippingLine) {
+            using var cmd = new SqliteCommand("INSERT INTO original_clipping_lines (key, line1, line2, line3, line4, line5) VALUES (@key, @line1, @line2, @line3, @line4, @line5)", connection, transaction);
+            cmd.Parameters.AddWithValue("@key", originalClippingLine.Key ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@line1", originalClippingLine.Line1 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line2", originalClippingLine.Line2 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line3", originalClippingLine.Line3 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line4", originalClippingLine.Line4 ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@line5", originalClippingLine.Line5 ?? (object)DBNull.Value);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         public bool Update(OriginalClippingLine originalClippingLine) {
