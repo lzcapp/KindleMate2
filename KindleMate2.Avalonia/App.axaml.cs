@@ -65,7 +65,7 @@ public partial class App : global::Avalonia.Application {
             } catch (Exception ex) {
                 // WinExe 没有控制台,Console.WriteLine 的消息无处可去 —— 写进文件日志。
                 // 这里不弹窗:进程正在退出,弹窗没有意义。
-                LogCrash(ex);
+                AppLog.Write(ex);
             }
         };
 
@@ -74,24 +74,13 @@ public partial class App : global::Avalonia.Application {
 
     private static bool _crashReported;
 
-    /// <summary>把异常追加到程序目录下的 error.log。**绝不抛异常**。</summary>
-    private static void LogCrash(Exception ex) {
-        try {
-            File.AppendAllText(
-                Path.Combine(Environment.CurrentDirectory, "error.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}{Environment.NewLine}{Environment.NewLine}");
-        } catch {
-            // 日志写不下去只能作罢,不能因此再抛
-        }
-    }
-
     /// <summary>
     /// 记录未捕获异常并提示一次。
     /// **自身绝不能抛异常** —— 兜底代码再抛会把"可提示的错误"变成"静默崩溃"。
     /// </summary>
     private void ReportCrash(Exception? ex) {
         if (ex == null) return;
-        LogCrash(ex);
+        AppLog.Write(ex);
 
         // 异常风暴(如重绘循环里连续抛)只提示第一次,避免弹窗刷屏
         if (_crashReported) return;

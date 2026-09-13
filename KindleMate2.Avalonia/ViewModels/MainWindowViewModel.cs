@@ -365,6 +365,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 库损坏时就是让异常发生,由调用方(视图层)按原版方式弹错误框。
     /// 失败时必须把会话清干净,否则 <c>HasSession</c> 会说谎,后续刷新会在坏会话上重演异常。
     /// </summary>
+    /// <summary>
+    /// 释放当前数据库会话。主窗口被重建(切换语言)时,旧 VM 会连同窗口一起被丢弃 ——
+    /// 但 <c>DatabaseSession</c> 持有 DeviceManager 等资源,**必须显式释放**,
+    /// 否则每次切换语言都会泄漏一份会话(调用方见 MainWindow.TryRebuildWindow)。
+    /// </summary>
+    public void ReleaseSession() {
+        _session?.Dispose();
+        _session = null;
+        OnPropertyChanged(nameof(HasSession));
+        OnPropertyChanged(nameof(Session));
+    }
+
     public async Task OpenDatabaseAsync(string path) {
         if (IsBusy) return;
         if (!File.Exists(path)) {
@@ -394,7 +406,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             OnPropertyChanged(nameof(HasSession));
             OnPropertyChanged(nameof(Session));
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
-            Console.WriteLine(ex);
+            // 这里刻意吞掉异常(不向上抛),因此必须自己留痕:否则该错误只会短暂出现在状态栏,
+            // 用户切走就再无从查起。WinExe 下 Console.WriteLine 无处可去,走文件日志。
+            KindleMate2.Avalonia.Services.AppLog.Write(ex);
         } finally {
             IsBusy = false;
             OnPropertyChanged(nameof(StatusLeft));

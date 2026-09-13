@@ -42,7 +42,7 @@ public sealed class AppSettings {
                 return loaded;
             }
         } catch (Exception ex) {
-            Console.WriteLine($"[AppSettings.Load] {ex.Message}");
+            AppLog.Write(ex);
         }
         return new AppSettings { FilePath = path };
     }
@@ -53,7 +53,7 @@ public sealed class AppSettings {
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
             File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Options));
         } catch (Exception ex) {
-            Console.WriteLine($"[AppSettings.Save] {ex.Message}");
+            AppLog.Write(ex);
         }
     }
 

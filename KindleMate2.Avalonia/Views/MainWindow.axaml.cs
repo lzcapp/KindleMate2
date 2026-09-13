@@ -124,6 +124,18 @@ public partial class MainWindow : Window {
         vm.DeviceStatus = status;
     }
 
+    /// <summary>
+    /// 关窗时停掉设备轮询。
+    /// **必须停**:DispatcherTimer 通过 Tick 委托**强引用**窗口,不停表则窗口与 VM 永不被回收,
+    /// 且旧表会继续每 8 秒轮询一次。切换语言会重建主窗口(TryRebuildWindow → previous.Close()),
+    /// 因此这段是"每次切语言都会泄漏一份轮询"的正解。
+    /// </summary>
+    protected override void OnClosed(EventArgs e) {
+        _deviceTimer?.Stop();
+        _deviceTimer = null;
+        base.OnClosed(e);
+    }
+
     // —— 域 / 视图 / 排序 / 主题 ——
 
     private void OnSelectClipDomain(object? sender, RoutedEventArgs e) {
@@ -244,7 +256,7 @@ public partial class MainWindow : Window {
             Directory.CreateDirectory(path);
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
         } catch (Exception ex) {
-            Console.WriteLine($"[OpenInExplorer] {ex.Message}");
+            KindleMate2.Avalonia.Services.AppLog.Write(ex);
         }
     }
 
@@ -440,9 +452,12 @@ public partial class MainWindow : Window {
             desktop.MainWindow = replacement;
             replacement.Show();
             previous?.Close();
+            // 旧窗口只 Close 不会释放会话:DatabaseSession 持有 DeviceManager 等资源,
+            // 不显式释放则每切一次语言都泄漏一份。Stop 由 OnClosed 负责。
+            (previous?.DataContext as MainWindowViewModel)?.ReleaseSession();
             return true;
         } catch (Exception ex) {
-            Console.WriteLine($"[TryRebuildWindow] {ex}");
+            KindleMate2.Avalonia.Services.AppLog.Write(ex);
             return false;
         }
     }

@@ -17,7 +17,7 @@
                  Foreground="{DynamicResource KmTextSecondaryBrush}" />
       <TextBox x:Name="InputBox" IsVisible="False" />
 
-      <!-- 双字段输入(重命名书籍:书名 + 作者)。默认隐藏,由 ConfigureTwoFields 启用;
+      <!-- 双字段输入(重命名书籍:书名 + 作者)。默认隐藏,由 PromptTwoFieldsAsync 启用;
            原版此处两个字段都不允许为空,故两个框任一为空时「确定」不可用。 -->
       <StackPanel x:Name="SecondField" IsVisible="False" Spacing="6">
         <TextBlock x:Name="SecondLabel" FontSize="12"
