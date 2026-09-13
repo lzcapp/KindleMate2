@@ -27,9 +27,6 @@ namespace KindleMate2.Avalonia.ViewModels;
 /// 数据全部来自现有分层(仓储 / 实体),UI 零业务逻辑。
 /// </summary>
 public sealed class MainWindowViewModel : INotifyPropertyChanged {
-    private const string DomainClipping = "标注";
-    private const string DomainWord = "生词本";
-
     private string _searchText = string.Empty;
     private string _searchType = TypeTextMap.SearchTypes[0];
     private string _statusText = Strings.Ui_Status_Initial;

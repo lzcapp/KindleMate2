@@ -118,7 +118,8 @@ public partial class MainWindow : Window {
         try {
             status = await Task.Run(vm.ProbeDeviceStatus);
         } catch {
-            status = "设备未连接";
+            // 走与正常路径同一个本地化键 —— 此前硬编码中文,英文界面下会漏出中文
+            status = Strings.Ui_Status_DeviceOffline;
         }
         vm.DeviceStatus = status;
     }

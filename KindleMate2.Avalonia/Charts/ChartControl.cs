@@ -88,7 +88,7 @@ public sealed class ChartControl : Control {
 
         var points = Points;
         if (points == null || points.Count == 0) {
-            DrawText(context, "暂无数据", padLeft, padTop, labelBrush);
+            DrawText(context, KindleMate2.Shared.Strings.Ui_Stats_Empty, padLeft, padTop, labelBrush);
             return;
         }
 

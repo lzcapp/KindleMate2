@@ -27,8 +27,8 @@
     </StackPanel>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,20,0,0">
-      <Button Grid.Column="1" x:Name="CancelButton" Content="取消" Margin="0,0,8,0" Click="OnCancel" />
-      <Button Grid.Column="2" x:Name="OkButton" Content="确定" Click="OnOk" />
+      <Button Grid.Column="1" x:Name="CancelButton" Margin="0,0,8,0" Click="OnCancel" />
+      <Button Grid.Column="2" x:Name="OkButton" Click="OnOk" />
     </Grid>
   </Grid>
 </Window>

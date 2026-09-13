@@ -75,7 +75,8 @@ internal static class Program {
 
             // 搜索
             vm.DomainIndex = 0;
-            vm.SearchType = "内容";
+            // 从本地化键取搜索类型,而不是硬编码中文 —— 否则自检只在中文 locale 下有效
+            vm.SearchType = KindleMate2.Shared.Strings.Ui_Search_Type_Content;
             vm.SearchText = "的";
             report.AppendLine($"search '的'(内容) -> {vm.Items.Count} 条");
 

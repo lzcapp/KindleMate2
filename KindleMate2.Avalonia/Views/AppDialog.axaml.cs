@@ -21,7 +21,7 @@ public partial class AppDialog : Window {
 
     /// <summary>确认对话框。返回 true 表示用户点了确定。</summary>
     public static async Task<bool> ConfirmAsync(Window owner, string title, string message,
-        string okText = "确定", bool danger = false) {
+        string okText = "", bool danger = false) {
         var dialog = new AppDialog();
         dialog.Configure(title, message, okText, danger, null);
         return await dialog.ShowDialog<bool>(owner);
@@ -40,7 +40,7 @@ public partial class AppDialog : Window {
 
     /// <summary>文本输入对话框。返回 null 表示取消。</summary>
     public static async Task<string?> PromptAsync(Window owner, string title, string message,
-        string initial = "", string okText = "确定") {
+        string initial = "", string okText = "") {
         var dialog = new AppDialog();
         dialog.Configure(title, message, okText, false, initial);
         var ok = await dialog.ShowDialog<bool>(owner);
@@ -52,7 +52,7 @@ public partial class AppDialog : Window {
     /// (标注编辑用正文是多行文本)。返回 null 表示取消。
     /// </summary>
     public static async Task<string?> PromptMultilineAsync(Window owner, string title, string message,
-        string initial = "", string okText = "确定", int lines = 8) {
+        string initial = "", string okText = "", int lines = 8) {
         var dialog = new AppDialog();
         dialog.Configure(title, message, okText, false, initial);
         dialog._isMultiline = true;
@@ -91,11 +91,15 @@ public partial class AppDialog : Window {
         return ok ? (dialog.InputBox.Text ?? string.Empty, dialog.SecondInputBox.Text ?? string.Empty) : null;
     }
 
-    private void Configure(string title, string message, string okText, bool danger, string? initial) {        Title = title;
+    private void Configure(string title, string message, string okText, bool danger, string? initial) {
+        Title = title;
         TitleText.Text = title;
         MessageText.Text = message;
         MessageText.IsVisible = message.Length > 0;
-        OkButton.Content = okText;
+        // 按钮文案统一在此解析:默认参数不能用 Strings(它不是编译期常量),
+        // 故签名默认给空串,这里回落到本地化键 —— 否则英文界面会漏出硬编码中文。
+        OkButton.Content = okText.Length > 0 ? okText : Strings.Ui_Action_Ok;
+        CancelButton.Content = Strings.Cancel;
         OkButton.Classes.Clear();
         OkButton.Classes.Add(danger ? "danger" : "primary");
 
