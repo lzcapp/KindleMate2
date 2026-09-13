@@ -621,7 +621,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_No_Need_Clean));
         }
         return RunOperationAsync(() => {
-            if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result)) {
+            // 清理最耗时的是判重扫描与 VACUUM,接上进度后不再"卡着不动"
+            if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result, ProgressReporter)) {
                 return string.Empty;
             }
             // 严格按原版 CleanDatabase() 的正文拼接格式与键名

@@ -331,7 +331,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             return true;
         }
         
-        public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result) {
+        public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result,
+            IProgress<OperationProgress>? progress = null) {
+            // 清理最耗时的是判重扫描与随后的 VACUUM,都在这两个阶段里上报
+            progress?.Report(OperationProgress.At(OperationStage.Preparing));
             var clippings = clippingRepository.GetAll();
 
             try {
@@ -349,6 +352,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                 }
                 
+                progress?.Report(OperationProgress.At(OperationStage.Writing));
                 var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 
@@ -360,15 +364,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 // Equivalent result, but: exact duplicates resolved by grouping (O(n)),
                 // containment checks run only on remaining unique contents with length
                 // pruning and early exit.
-                var duplicatedClippings = FindDuplicatedClippings(clippings);
+                var duplicatedClippings = FindDuplicatedClippings(clippings, progress);
 
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
-                
-                DatabaseHelper.VacuumDatabase(databaseFilePath);
-                
+
                 // 让「回收体积」成为真实值:
                 // SQLite 的 DELETE 只把页归还空闲列表,文件大小通常不变 —— 必须 VACUUM 才会真正收缩。
-                // 仅在确有删除时执行,避免无谓的全库重写;"无需清理"的路径保持瞬时。
+                // 仅在确有删除、且路径有效时才执行,避免无谓的全库重写(大库上这步不便宜);
+                // "无需清理"的路径保持瞬时。注意此处必须只 VACUUM 一次 ——
+                // 重复 VACUUM 会白白重写两遍整个库文件。
                 if (fileInfo != null && emptyCount + duplicatedCount > 0) {
                     DatabaseHelper.VacuumDatabase(databaseFilePath);
                     // FileInfo.Length 首次读取后会缓存,不 Refresh 就永远读到旧值 —— 这正是此前恒为 0 的原因。
@@ -408,7 +412,8 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// "other row" that makes a candidate duplicated (including rows with a blank key
         /// that are themselves never deleted).
         /// </summary>
-        private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings) {
+        private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings,
+            IProgress<OperationProgress>? progress = null) {
             var candidates = clippings
                 .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
                 .ToList();
@@ -449,7 +454,14 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             // Shortest targets first so shallow hits are found quickly.
             remaining.Sort((a, b) => a.Key.Length.CompareTo(b.Key.Length));
+            var scanned = 0;
             foreach (var (content, rows) in remaining) {
+                scanned++;
+                // 判重扫描是清理里最耗时的一段(每条候选都要与更长的内容做包含判断),
+                // 每 200 条上报一次确定进度。
+                if (scanned % 200 == 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, scanned, remaining.Count));
+                }
                 foreach (var container in containers) {
                     if (container.Length <= content.Length) {
                         break; // descending order: nothing after this can contain the target

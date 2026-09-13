@@ -265,6 +265,13 @@ internal static class Program {
             var cleanResult = vm.CleanDatabaseAsync().GetAwaiter().GetResult();
             report.AppendLine($"clean: ok={cleanResult.Ok} title={cleanResult.Title} msg={cleanResult.Message}");
 
+            // 清理的进度上报核对(同步 sink 捕获阶段序列)
+            var cleanStages = new List<KindleMate2.Application.Models.OperationProgress>();
+            vm.Session!.Km2DatabaseService.CleanDatabase(vm.Session.DatabasePath, out _, new SyncProgress(cleanStages.Add));
+            report.AppendLine($"  clean progress stages: {string.Join(" > ", cleanStages.Select(p => p.Stage).Distinct())}");
+            var cleanMax = cleanStages.LastOrDefault(p => p.Total > 0);
+            report.AppendLine($"  清理末次带数量的上报: {cleanMax.Stage} {cleanMax.Current}/{cleanMax.Total}");
+
             // 回归:CleanDatabase 传入空路径不得抛异常。
             // 导入 Kindle Mate / KMate 数据库的收尾清理正是传 string.Empty,
             // 此前 new FileInfo("") 抛 "The path is empty",导致整条导入在最后一步失败。
