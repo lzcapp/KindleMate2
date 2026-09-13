@@ -704,17 +704,35 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     public string CurrentBookName => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
 
-    /// <summary>重命名书籍 —— 成功标题 Successful、正文 <c>Books_Renamed</c>;失败 <c>Book_Renamed_Failed</c>。</summary>
-    public Task<OperationResult> RenameCurrentBookAsync(string newName) {
+    /// <summary>当前选中书籍的作者(重命名对话框的初值)。</summary>
+    public string CurrentBookAuthor =>
+        _selectedNav is { IsAll: false } nav ? GetBookAuthor(nav.Key) : string.Empty;
+
+    /// <summary>取某本书的作者 —— 取第一行,与原版 <c>resultRows[0].AuthorName</c> 一致。</summary>
+    public string GetBookAuthor(string bookName) =>
+        _allClippings.FirstOrDefault(c => string.Equals(c.BookName, bookName, StringComparison.Ordinal))?.AuthorName
+        ?? string.Empty;
+
+    /// <summary>该书名是否已被其它书籍占用(原版据此弹「同名合并」确认)。</summary>
+    public bool IsBookNameTaken(string bookName) =>
+        _allClippings.Any(c => string.Equals(c.BookName, bookName, StringComparison.Ordinal));
+
+    /// <summary>
+    /// 重命名书籍 —— 成功标题 Successful、正文 <c>Books_Renamed</c>;失败 <c>Book_Renamed_Failed</c>。
+    /// 对齐原版:书名与作者**都要**改,且**生词本与标注两处都要**改 ——
+    /// 此前只调了 ClippingService,导致改完书名后生词本里仍显示旧书名(见原版 FrmMain.cs:1196-1197)。
+    /// </summary>
+    public Task<OperationResult> RenameCurrentBookAsync(string newName, string newAuthor) {
         if (_session is not { } session || _selectedNav is not { IsAll: false } nav) {
             return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Ui_Status_PickBookFirst));
         }
         var oldName = nav.Key;
-        var author = _allClippings
-            .FirstOrDefault(c => string.Equals(c.BookName, oldName, StringComparison.Ordinal))?.AuthorName ?? string.Empty;
-        return RunOperationAsync(() => session.ClippingService.RenameBook(oldName, newName, author)
-            ? Strings.Books_Renamed
-            : string.Empty, true, Strings.Successful, Strings.Book_Renamed_Failed);
+        return RunOperationAsync(() => {
+            session.LookupService.RenameBook(oldName, newName, newAuthor);
+            return session.ClippingService.RenameBook(oldName, newName, newAuthor)
+                ? Strings.Books_Renamed
+                : string.Empty;
+        }, true, Strings.Successful, Strings.Book_Renamed_Failed);
     }
 
     // —— 设备 ——

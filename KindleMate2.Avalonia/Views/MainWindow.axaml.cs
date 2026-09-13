@@ -355,25 +355,47 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.DeleteSelectedAsync());
     }
 
+    /// <summary>
+    /// 重命名书籍 —— 严格对齐原版 <c>ShowBookRenameDialog</c>(FrmMain.cs:1160-1206):
+    /// ① 双字段「书名 + 作者」,两者都必填(由对话框禁用「确定」实现原版的 e.Cancel 校验);
+    /// ② 两个值都未变 → 提示 Books_Title_Not_Changed;
+    /// ③ 目标书名已存在 → 确认「同名合并」,确认后改用**旧书的作者**(原版行为,保证合并后作者一致);
+    /// ④ 改名同时落到生词本与标注两处(在 VM 内完成)。
+    /// </summary>
     private async void OnRenameCurrent(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         if (!vm.CanRenameCurrentBook) {
             vm.StatusText = Strings.Ui_Status_PickBookFirst;
             return;
         }
-        var name = await AppDialog.PromptAsync(this, Strings.Rename,
-            Strings.Book_Title, vm.CurrentBookName, Strings.Ui_Action_Ok);
-        if (name == null) return;
-        if (string.IsNullOrWhiteSpace(name)) {
-            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Ui_Status_BookNameEmpty);
-            return;
-        }
-        if (string.Equals(name, vm.CurrentBookName, StringComparison.Ordinal)) {
-            // 原版:书名未变 → 提示 Books_Title_Not_Changed(标题 Prompt)
+
+        var oldName = vm.CurrentBookName;
+        var oldAuthor = vm.CurrentBookAuthor;
+
+        var input = await AppDialog.PromptTwoFieldsAsync(this, Strings.Rename,
+            Strings.Book_Title, oldName, Strings.Author, oldAuthor);
+        if (input is not { } fields) return;
+
+        var newName = fields.First.Trim();
+        var newAuthor = fields.Second.Trim();
+
+        if (newName.Length == 0) return;
+        if (oldAuthor.Length > 0 && newAuthor.Length == 0) newAuthor = oldAuthor;
+
+        if (string.Equals(newName, oldName, StringComparison.Ordinal) &&
+            string.Equals(newAuthor, oldAuthor, StringComparison.Ordinal)) {
             await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Books_Title_Not_Changed);
             return;
         }
-        await ShowResultAsync(await vm.RenameCurrentBookAsync(name.Trim()));
+
+        if (vm.IsBookNameTaken(newName)) {
+            var combine = await AppDialog.ConfirmAsync(this, Strings.Confirm,
+                Strings.Confirm_Same_Title_Combine, Strings.Ui_Action_Ok);
+            if (!combine) return;
+            newAuthor = vm.GetBookAuthor(oldName);
+        }
+
+        await ShowResultAsync(await vm.RenameCurrentBookAsync(newName, newAuthor));
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {

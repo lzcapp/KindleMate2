@@ -1459,7 +1459,6 @@ namespace KindleMate2.Shared {
         public static string Ui_Status_OpenDatabaseFirst => ResourceManager.GetString("Ui_Status_OpenDatabaseFirst", resourceCulture);
         public static string Ui_Status_NoSelection => ResourceManager.GetString("Ui_Status_NoSelection", resourceCulture);
         public static string Ui_Status_PickBookFirst => ResourceManager.GetString("Ui_Status_PickBookFirst", resourceCulture);
-        public static string Ui_Status_BookNameEmpty => ResourceManager.GetString("Ui_Status_BookNameEmpty", resourceCulture);
         public static string Ui_Status_NoDevice => ResourceManager.GetString("Ui_Status_NoDevice", resourceCulture);
         public static string Ui_Status_Copied => ResourceManager.GetString("Ui_Status_Copied", resourceCulture);
         public static string Ui_Status_NothingToCopy => ResourceManager.GetString("Ui_Status_NothingToCopy", resourceCulture);

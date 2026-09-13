@@ -729,9 +729,6 @@
   <data name="Ui_Status_PickBookFirst" xml:space="preserve">
     <value>Pick a book on the left first</value>
   </data>
-  <data name="Ui_Status_BookNameEmpty" xml:space="preserve">
-    <value>Book name cannot be empty</value>
-  </data>
   <data name="Ui_Status_NoDevice" xml:space="preserve">
     <value>No Kindle device detected</value>
   </data>

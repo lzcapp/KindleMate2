@@ -732,9 +732,6 @@
   <data name="Ui_Status_PickBookFirst" xml:space="preserve">
     <value>請先在左側選擇一本書</value>
   </data>
-  <data name="Ui_Status_BookNameEmpty" xml:space="preserve">
-    <value>書名不能為空</value>
-  </data>
   <data name="Ui_Status_NoDevice" xml:space="preserve">
     <value>未偵測到 Kindle 裝置</value>
   </data>

@@ -237,11 +237,35 @@ internal static class Program {
 
             // 5. 重命名第一本书
             // 5. 重命名第一本书(契约:成功标题 Successful、正文 Books_Renamed)
-            vm.SelectedNav = vm.NavItems[1];
+            // 5. 重命名书籍(契约:成功标题 Successful、正文 Books_Renamed)
+            //    刻意选一本**在生词本里有记录**的书,好验证改名是否同步到生词本 ——
+            //    原版同时调 LookupService 与 ClippingService;此前只调了后者,是个真 bug。
+            var lookupRepo = vm.Session!.LookupRepository;
+            var booksWithLookups = lookupRepo.GetAll()
+                .Where(l => !string.IsNullOrWhiteSpace(l.Title))
+                .Select(l => l.Title!)
+                .ToHashSet(StringComparer.Ordinal);
+            var navIndex = 1;
+            for (var i = 1; i < vm.NavItems.Count; i++) {
+                if (booksWithLookups.Contains(vm.NavItems[i].Name)) {
+                    navIndex = i;
+                    break;
+                }
+            }
+            vm.SelectedNav = vm.NavItems[navIndex];
             var oldName = vm.CurrentBookName;
-            var renameResult = vm.RenameCurrentBookAsync(oldName + "_renamed").GetAwaiter().GetResult();
+            var oldAuthor = vm.CurrentBookAuthor;
+            var lookupsOldBefore = lookupRepo.GetAll()
+                .Count(l => string.Equals(l.Title, oldName, StringComparison.Ordinal));
+
+            var renameResult = vm.RenameCurrentBookAsync(oldName + "_renamed", oldAuthor).GetAwaiter().GetResult();
             report.AppendLine($"rename: ok={renameResult.Ok} title={renameResult.Title} msg={renameResult.Message}");
             report.AppendLine($"  -> nav 含新名={vm.NavItems.Any(n => n.Name == oldName + "_renamed")}");
+
+            var allLookups = lookupRepo.GetAll();
+            var lookupsNewAfter = allLookups.Count(l => string.Equals(l.Title, oldName + "_renamed", StringComparison.Ordinal));
+            var lookupsStillOld = allLookups.Count(l => string.Equals(l.Title, oldName, StringComparison.Ordinal));
+            report.AppendLine($"  -> 生词本同步改名: 改名前该书 {lookupsOldBefore} 条 -> 改名后 新名 {lookupsNewAfter} 条 / 仍为旧名 {lookupsStillOld} 条");
 
             // 5b. 编辑标注正文(对齐原版 ShowContentEditDialog:同时写 clippings 与 original_clipping_lines.line4)
             vm.SelectedNav = vm.NavItems[0];
