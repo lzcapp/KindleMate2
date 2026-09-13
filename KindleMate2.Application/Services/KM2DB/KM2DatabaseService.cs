@@ -247,6 +247,21 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     listAddClippings.Add(clipping);
 
+                    // ★ 同步判重集合:此前这三个集合只在开批前从库里取一次,批内不再更新,
+                    //   于是同一份源文件里出现**重复 key** 时两条都会进批次,插入时撞
+                    //   UNIQUE(clippings.key) 导致**整批导入失败**(用户可见「导入失败」弹窗)。
+                    //   key = 日期|位置,两条内容不同但同日期同位置的条目就会算出同一个 key。
+                    //   KMate 导入路径(KMDatabaseService)早已这么做,这里补齐。
+                    allClippingsKeys.Add(key);
+                    if (contentByKey.TryGetValue(key, out var acceptedContents)) {
+                        acceptedContents.Add(content);
+                    } else {
+                        contentByKey[key] = [content];
+                    }
+                    if (!isRebuild) {
+                        originalKeys.Add(key);
+                    }
+
                     if (!isRebuild) {
                         listAddOriginalClippings.Add(new OriginalClippingLine {
                             Key = key, 

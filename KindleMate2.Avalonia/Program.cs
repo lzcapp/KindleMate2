@@ -336,6 +336,27 @@ internal static class Program {
                 report.AppendLine($"import legacy KM db: 跳过(未提供旧格式样本;可选第 6 参数)");
             }
 
+            // 回归:同一份 My Clippings 里出现**重复 key** 时,整批导入不得失败。
+            // key = 「日期|位置」,两条内容不同但日期与位置相同的条目会算出同一个 key。
+            // 判重集合若不在批内同步更新,两条都会进批次,插入时撞 UNIQUE(clippings.key)。
+            // 放在最后并先清空,避免影响前面各步的统计。
+            vm.ClearAllDataAsync().GetAwaiter().GetResult();
+            if (File.Exists(clippingsPath)) {
+                var raw = File.ReadAllLines(clippingsPath);
+                var firstSep = Array.IndexOf(raw, "==========");
+                if (firstSep > 0) {
+                    var oneEntry = raw.Take(firstSep + 1).ToArray();
+                    var dupSample = Path.Combine(work, "dup_key_clippings.txt");
+                    File.WriteAllLines(dupSample, oneEntry.Concat(oneEntry).ToArray());
+
+                    var dupVm = new MainWindowViewModel();
+                    dupVm.OpenDatabaseAsync(Path.Combine(work, AppConstants.DatabaseFileName)).GetAwaiter().GetResult();
+                    var dupResult = dupVm.ImportKindleClippingsAsync(dupSample).GetAwaiter().GetResult();
+                    report.AppendLine($"duplicate-key import: ok={dupResult.Ok} title={dupResult.Title} msg={dupResult.Message}");
+                    report.AppendLine($"  -> clips={dupVm.ClipTable.Count}(期望 1:重复 key 应被跳过而不是让整批失败)");
+                }
+            }
+
             // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条),同时测量真实批量导入耗时
             if (File.Exists(clippingsPath)) {
                 // 进度上报核对:用同步 sink 捕获阶段序列,确认应用层确实在按阶段上报(含条数)
