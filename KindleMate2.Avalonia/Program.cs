@@ -318,6 +318,22 @@ internal static class Program {
             var clearResult = vm.ClearAllDataAsync().GetAwaiter().GetResult();
             report.AppendLine($"clear: ok={clearResult.Ok} title={clearResult.Title} msg={clearResult.Message} -> clips={vm.ClipTable.Count}");
 
+            // 不变量:整批替换(只发一次 Reset)必须能被 ItemsControl 感知。
+            // 这是"大列表整批替换"方案的前提 —— 一旦此断言失败,说明该优化不可用,
+            // 界面会出现"集合有数据但列表空白"。
+            try {
+                var probeBag = new KindleMate2.Avalonia.Collections.BulkObservableCollection<int>();
+                var probeList = new global::Avalonia.Controls.ListBox { ItemsSource = probeBag };
+                probeBag.ReplaceAll(Enumerable.Range(1, 5));
+                var afterFirst = probeList.ItemCount;
+                probeBag.ReplaceAll(Enumerable.Range(1, 3));
+                var afterSecond = probeList.ItemCount;
+                var ok = afterFirst == 5 && afterSecond == 3;
+                report.AppendLine($"bulk-collection probe: ItemCount {afterFirst}/{afterSecond}(期望 5/3) -> {(ok ? "OK" : "失败!Reset 未被控件感知")}");
+            } catch (Exception ex) {
+                report.AppendLine($"bulk-collection probe: 抛异常 {ex.GetType().Name}: {ex.Message}");
+            }
+
             report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
 
             // 回归:完整走一遍「导入旧版 Kindle Mate 数据库」。
