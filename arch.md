@@ -167,7 +167,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
 | 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
 | CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
-| CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz + macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
+| CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz（内含 `kindlemate2` 启动器）+ macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
 
 两套自检**全程在临时副本上执行**，不会改动传入的真实数据库。
 
@@ -183,11 +183,17 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
   （macos-arm64 / macos-x64，均自包含，内含 `KindleMate2.app`）。
   ⚠️ **Linux 产物必须在 Unix runner 上发布并打包** —— 从 NTFS 打出的归档记录不出可执行位，
   解压出来是 644、运行即 permission denied；故用 `tar.gz` 且打包前 `chmod +x`。
+  包内另带 `kindlemate2` 启动器：程序按「当前工作目录」定位库（与原版一致），而双击或从别处调用时
+  工作目录并不在解压目录 —— 启动器先切到 XDG 数据目录（`$KINDLEMATE2_HOME`，否则
+  `${XDG_DATA_HOME:-~/.local/share}/KindleMate2`）再 exec 真程序。自检也走启动器，这段逻辑同样被验到。
   **macOS 产物必须在 macOS runner 上做**（arm64 要求可执行文件签名有效，只有原生路径会签；
   iconutil / codesign / hdiutil 也只有 macOS 有）：bundle 内放一个 `launch` 脚本当 `CFBundleExecutable`，
   先 `cd` 到 `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，
   而库路径按「当前目录」解析（与原版一致）；**不能切进 .app 内部**（更新应用会丢数据，且改动 bundle
-  内容会破坏代码签名）。签名只到 ad-hoc（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine。
+  内容会破坏代码签名）。  签名只到 ad-hoc（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine。
+  **三平台数据目录约定**：Windows = 程序所在目录（同旧版，双击 exe 的默认工作目录）；
+  Linux = `~/.local/share/KindleMate2/`；macOS = `~/Library/Application Support/KindleMate2/`。
+  库文件与 `Backups`/`Imports`/`Temp`/`Exports` 都在这之下（由启动器切换工作目录实现，程序本身不改）。
   单文件打包（`PublishSingleFile`）仍未启用（未实机验证）。
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏

@@ -28,13 +28,16 @@ The runtime-dependent builds require the platform's [.NET 8 runtime](https://dot
 
 Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
 
-- **Windows**: unzip the `.zip` and run `KindleMate2.Avalonia.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit)
-- **Linux**: `cd` into the extracted folder first, then run (the library file is created in the working directory)
+- **Windows**: unzip the `.zip` and run `KindleMate2.Avalonia.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit); the library lives next to the program (same as older versions)
+- **Linux**: extract, then run `./kindlemate2` — the launcher switches to the data directory for you, no manual `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
-  cd ~/KindleMate2 && ./KindleMate2.Avalonia
+  ~/KindleMate2/kindlemate2
   ```
-  The archives preserve the executable bit; if a GUI extractor drops it, just run `chmod +x KindleMate2.Avalonia`.
+  The library lives in `~/.local/share/KindleMate2/` (XDG; override with the `KINDLEMATE2_HOME` environment variable).
+  The archives preserve the executable bit; if a GUI extractor drops it, run `chmod +x kindlemate2 KindleMate2.Avalonia`.
+  > **Upgrading from an older tar.gz**: your library is still in the old extracted folder — move it once:
+  > `mkdir -p ~/.local/share/KindleMate2 && cp <old-dir>/KM2.dat ~/.local/share/KindleMate2/`
 - **macOS**: open the `.dmg` and drag `KindleMate2.app` into Applications. The build is **not notarized**
   (no Apple Developer account), so clear the quarantine attribute first, or right-click the app and choose Open:
   ```bash

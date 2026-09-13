@@ -91,6 +91,9 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   `publish-macos`（macOS 上发布自包含 .app，打包成 .dmg）→ `release`。
   **Linux 产物必须在 Unix runner 上打包** —— 从 NTFS 打出的归档记录不出可执行位，
   解压出来是 644、直接运行会 permission denied；打包前必须 `chmod +x`。
+  包内另带 `kindlemate2` 启动器：程序按「当前工作目录」定位库（与原版一致），而双击/从别处调用时
+  工作目录并不在解压目录 —— 启动器先切到 XDG 数据目录（`$KINDLEMATE2_HOME` 或
+  `~/.local/share/KindleMate2`）再 exec 真程序；自检也走启动器，所以这段逻辑同样被验到。
   **macOS 必须在 macOS runner 上做**：arm64 要求可执行文件签名有效（原生路径才会签），
   且 iconutil / codesign / hdiutil 只有 macOS 有。`.app` 里的 `launch` 脚本负责先 `cd` 到
   `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，

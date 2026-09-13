@@ -28,13 +28,16 @@
 
 Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
 
-- **Windows**：解压 `.zip` 后运行 `KindleMate2.Avalonia.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）
-- **Linux**：先 `cd` 进解压目录再运行（库文件建在当前目录）
+- **Windows**：解压 `.zip` 后运行 `KindleMate2.Avalonia.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）；库文件建在程序所在目录（与旧版一致）
+- **Linux**：解压后运行 `./kindlemate2` —— 启动器会自动切到数据目录再拉起程序，不必手动 `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
-  cd ~/KindleMate2 && ./KindleMate2.Avalonia
+  ~/KindleMate2/kindlemate2
   ```
-  归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x KindleMate2.Avalonia` 即可。
+  库文件在 `~/.local/share/KindleMate2/`（遵守 XDG，可用环境变量 `KINDLEMATE2_HOME` 覆盖）。
+  归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x kindlemate2 KindleMate2.Avalonia` 即可。
+  > **从旧版 tar.gz 升级**：旧库还在原解压目录，先搬一次 ——
+  > `mkdir -p ~/.local/share/KindleMate2 && cp 旧目录/KM2.dat ~/.local/share/KindleMate2/`
 - **macOS**：打开 `.dmg`，把 `KindleMate2.app` 拖进 Applications。产物**未做公证**（无 Apple 开发者账号），
   首次启动需清除隔离标记，或右键应用选「打开」：
   ```bash

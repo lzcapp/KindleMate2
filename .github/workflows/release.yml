@@ -19,6 +19,11 @@ name: release
 # 2026-09-13 变更 B:Linux 产物。**必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS
 #   生成时记录不出可执行位,解压出来是 644、直接运行会 permission denied。故用 tar.gz
 #   且打包前 chmod +x。
+#   包内另带一个 `kindlemate2` 启动器:程序按「当前工作目录」定位数据库(与原版一致,刻意不改
+#   代码),而从文件管理器双击或从别处调用时工作目录并不在解压目录 —— 启动器先切到数据目录再
+#   exec 真程序。数据目录遵守 XDG:优先 $KINDLEMATE2_HOME,否则 ${XDG_DATA_HOME:-~/.local/share}/KindleMate2。
+#   自检也走启动器,因此「先切目录」这段逻辑同样在发版前被验证。
+#   ⚠️ 从旧版 tar.gz 升级的用户,库还留在原解压目录 → 发布说明里给了迁移命令。
 #
 # 2026-09-13 变更 C:macOS 产物改为 .app + .dmg,并在 **macOS runner** 上构建。
 #   原因:① Apple Silicon 要求可执行文件带有效签名,在 macOS 上发布才会走原生签名路径;
@@ -149,19 +154,39 @@ jobs:
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
-      - name: Package tarball (KindleMate2_${{ matrix.suffix }}.tar.gz)
+      - name: Add launcher + package tarball (KindleMate2_${{ matrix.suffix }}.tar.gz)
         shell: bash
         run: |
           set -euo pipefail
           d="publish/${{ matrix.suffix }}"
-          # 关键:可执行位必须在这里补上 —— 这是不用 zip、且必须在 Unix 上打包的原因。
-          chmod +x "$d/KindleMate2.Avalonia"
+
+          # 启动器。程序按「当前工作目录」定位数据库(与原版一致,刻意不改代码),
+          # 而从文件管理器双击或从别处调用时,工作目录并不在解压目录 —— 先切到数据目录再启动真程序。
+          # 数据目录遵守 XDG:优先 $KINDLEMATE2_HOME,否则 ${XDG_DATA_HOME:-~/.local/share}/KindleMate2。
+          cat > "$d/kindlemate2" <<'LAUNCH'
+          #!/bin/bash
+          set -e
+          self="$(readlink -f "$0" 2>/dev/null || echo "$0")"   # 允许被软链到 ~/.local/bin 等位置
+          here="$(cd "$(dirname "$self")" && pwd)"
+          if [ -n "${KINDLEMATE2_HOME:-}" ]; then
+            data="$KINDLEMATE2_HOME"
+          else
+            data="${XDG_DATA_HOME:-$HOME/.local/share}/KindleMate2"
+          fi
+          mkdir -p "$data"
+          cd "$data"
+          exec "$here/KindleMate2.Avalonia" "$@"
+          LAUNCH
+
+          # 可执行位必须在这里补上 —— 这是不用 zip、且必须在 Unix 上打包的原因。
+          chmod +x "$d/KindleMate2.Avalonia" "$d/kindlemate2"
           # 自包含包多一个 createdump 辅助程序,同样要可执行(不存在则跳过,别让 set -e 提前退出)
           if [ -f "$d/createdump" ]; then chmod +x "$d/createdump"; fi
           tar -czf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$d" .
 
       # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期降级为 NullDeviceManager。
-      # 只需跑一个自包含变体(不依赖宿主是否装了 .NET 8),顺带验证了打包后的可执行位。
+      # 走 kindlemate2 启动器(而不是直接调 apphost),这样「先切到数据目录」的逻辑也一并验到;
+      # 因此传参必须用绝对路径(切目录后相对路径的含义就变了)。
       - name: Boot self-check (linux-x64_runtime)
         if: matrix.suffix == 'linux-x64_runtime'
         shell: bash
@@ -169,11 +194,14 @@ jobs:
           set -euo pipefail
           work="$(mktemp -d)"
           tar -xzf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$work"
+          test -x "$work/kindlemate2"
           touch "$work/empty.dat"
-          "$work/KindleMate2.Avalonia" --smoke "$work/empty.dat" "$work/smoke.txt"
+          "$work/kindlemate2" --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
           grep -q "NullDeviceManager" "$work/smoke.txt"
-          echo "unix 产物启动自检通过:${{ matrix.suffix }}"
+          # 启动器建了 XDG 数据目录,说明它确实跑到并切过去了(而不只是 apphost 能跑)
+          test -d "${XDG_DATA_HOME:-$HOME/.local/share}/KindleMate2"
+          echo "unix 产物 + 启动器自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -342,10 +370,15 @@ jobs:
             '',
             '### 资产说明',
             '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.Avalonia.exe`。',
-            '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后**先 cd 进解压目录**再运行 `./KindleMate2.Avalonia`(库文件建在当前目录)。',
+            '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后运行 `./kindlemate2`(启动器会自动切到数据目录,不必手动 cd)。',
             '- macOS:`KindleMate2_{macos-arm64,macos-x64}.dmg` —— 打开后把 `KindleMate2.app` 拖进 Applications。',
-            '- 带 `_runtime` = 自包含(免装 .NET 8 运行时);不带 = 需先安装对应平台的 .NET 8 运行时。',
-            '- macOS 库文件位置:`~/Library/Application Support/KindleMate2/`。',
+            '- 带 `_runtime` = 自包含(免装 .NET 8 运行时);不带 = 需先安装对应平台的 .NET 8 运行时。macOS 只提供自包含包。',
+            '',
+            '**各平台数据目录**',
+            '- Windows:程序所在目录(与旧版一致)。',
+            '- Linux:`~/.local/share/KindleMate2/`(可用环境变量 `KINDLEMATE2_HOME` 覆盖)。**从旧版 tar.gz 升级的用户**库还在原解压目录,请先执行 `mkdir -p ~/.local/share/KindleMate2 && cp 旧目录/KM2.dat ~/.local/share/KindleMate2/`。',
+            '- macOS:`~/Library/Application Support/KindleMate2/`。',
+            '',
             '- macOS 未做公证(无 Apple 开发者账号),首次启动请先清除隔离标记:`xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"`,或右键应用选「打开」。',
             '- 非 Windows 无 Kindle 设备同步(设备层降级为 NullDeviceManager),其余功能完整。',
             '',
