@@ -1,215 +1,699 @@
 ﻿<!DOCTYPE html>
-<html lang="en-US">
-
+<html lang="zh-CN" data-lang="zh">
 <head>
-    <meta content="IE=edge" http-equiv="X-UA-Compatible">
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-    <!-- Begin Jekyll SEO tag v2.8.0 -->
-    <title>Kindle Mate 2 | KindleMate2</title>
-    <meta content="Jekyll v3.10.0" name="generator">
-    <meta content="Kindle Mate 2" property="og:title">
-    <meta content="en_US" property="og:locale">
-    <meta
-        content="Kindle Mate 2 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 Kindle Mate 停止更新后提供替代的解决方案。 Kindle Mate 2 is a program for managing Kindle’s clippings/notes and Kindle’s vocabulary list, aiming to provide an alternative solution after the Kindle Mate stopped updating."
-        name="description">
-    <meta
-        content="Kindle Mate 2 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 Kindle Mate 停止更新后提供替代的解决方案。 Kindle Mate 2 is a program for managing Kindle’s clippings/notes and Kindle’s vocabulary list, aiming to provide an alternative solution after the Kindle Mate stopped updating."
-        property="og:description">
-    <link href="https://github.lzc.app/KindleMate2/" rel="canonical">
-    <meta content="https://github.lzc.app/KindleMate2/" property="og:url">
-    <meta content="KindleMate2" property="og:site_name">
-    <meta content="website" property="og:type">
-    <meta content="summary" name="twitter:card">
-    <meta content="Kindle Mate 2" property="twitter:title">
-    <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "description": "Kindle Mate 2 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 Kindle Mate 停止更新后提供替代的解决方案。 Kindle Mate 2 is a program for managing Kindle’s clippings/notes and Kindle’s vocabulary list, aiming to provide an alternative solution after the Kindle Mate stopped updating.",
-            "headline": "Kindle Mate 2",
-            "name": "KindleMate2",
-            "url": "https://github.lzc.app/KindleMate2/"
-        }</script>
-    <!-- End Jekyll SEO tag -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindle Mate 2 — Kindle 标注 / 生词本管理工具</title>
+<meta name="description" content="Kindle Mate 2 是一款 Kindle 标注、笔记与生词本内容管理程序，在 Kindle Mate 停止更新后提供替代方案。跨平台（Windows / macOS / Linux），基于 .NET 10 与 Avalonia 12。">
+<meta name="author" content="lzcapp">
+<link rel="canonical" href="https://github.lzc.app/KindleMate2/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KindleMate2">
+<meta property="og:title" content="Kindle Mate 2">
+<meta property="og:description" content="Kindle 标注、笔记与生词本内容管理程序，Kindle Mate 停止更新后的替代方案。Cross-platform manager for Kindle clippings, notes and vocabulary list.">
+<meta property="og:url" content="https://github.lzc.app/KindleMate2/">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131313" media="(prefers-color-scheme: dark)">
+<script>
+  // 尽早落定语言与主题，避免闪烁 / settle language & theme before first paint
+  (function () {
+    var d = document.documentElement;
+    try {
+      var l = localStorage.getItem('km2-lang');
+      if (!l) l = (navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+      d.setAttribute('data-lang', l);
+      d.lang = l === 'en' ? 'en' : 'zh-CN';
+      var th = localStorage.getItem('km2-theme');
+      if (th === 'dark' || th === 'light') d.setAttribute('data-theme', th);
+    } catch (e) { /* 隐私模式下静默降级 / silently degrade in private mode */ }
+  })();
+</script>
+<style>
+  :root{
+    --bg:#fbfaf8; --bg-soft:#f4f2ee; --fg:#17171a; --fg-soft:#5d5b56; --fg-mute:#8b877e;
+    --line:#e4e0d7; --card:#ffffff; --accent:#b81f3c; --accent-soft:#fbe9ed; --code:#efede8;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","SimSun",Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"Cascadia Code",Consolas,"SFMono-Regular","Liberation Mono",Menlo,monospace;
+    --shadow:0 1px 2px rgba(23,23,26,.04),0 8px 24px rgba(23,23,26,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#131313; --bg-soft:#1b1b1b; --fg:#f2f0ec; --fg-soft:#a8a49d; --fg-mute:#77736c;
+    --line:#2c2a27; --card:#191919; --accent:#ef6b83; --accent-soft:#2a1c20; --code:#232323;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#131313; --bg-soft:#1b1b1b; --fg:#f2f0ec; --fg-soft:#a8a49d; --fg-mute:#77736c;
+      --line:#2c2a27; --card:#191919; --accent:#ef6b83; --accent-soft:#2a1c20; --code:#232323;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    }
+  }
 
-    <link href="./index.css" rel="stylesheet">
-    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg); font-family:var(--sans);
+    font-size:16px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 24px}
+  a{color:inherit; text-decoration:none}
+  a:hover{color:var(--accent)}
+  h1,h2,h3{font-family:var(--serif); font-weight:600; letter-spacing:.01em; line-height:1.3}
+  h2{font-size:clamp(24px,3.4vw,32px); margin:0 0 6px}
+  h3{font-size:17px; margin:0 0 6px}
+  p{margin:0 0 14px}
+  code{font-family:var(--mono); font-size:.875em; background:var(--code); padding:.12em .4em; border-radius:2px}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-    <!-- Setup Google Analytics -->
+  /* ---- 语言切换：默认中文，英文隐藏 ---- */
+  .t-en{display:none}
+  html[data-lang="en"] .t-en{display:revert}
+  html[data-lang="en"] .t-zh{display:none}
 
+  /* ---- 顶栏 ---- */
+  header.top{
+    position:sticky; top:0; z-index:40; backdrop-filter:saturate(180%) blur(12px);
+    background:var(--bg); /* 老浏览器兜底 / fallback */
+    background:color-mix(in srgb, var(--bg) 84%, transparent); border-bottom:1px solid var(--line);
+  }
+  .bar{display:flex; align-items:center; gap:18px; height:58px}
+  .brand{font-family:var(--serif); font-size:17px; font-weight:600; white-space:nowrap}
+  .brand b{color:var(--accent); font-style:normal}
+  .bar nav{display:flex; gap:20px; margin-left:auto; font-size:14px; color:var(--fg-soft)}
+  .bar nav a{position:relative; padding:2px 0}
+  .bar nav a:hover{color:var(--accent)}
+  .tools{display:flex; align-items:center; gap:10px}
+  .seg{display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden}
+  .seg button{
+    font:inherit; font-size:13px; padding:4px 10px; border:0; background:transparent; color:var(--fg-soft); cursor:pointer;
+  }
+  .seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+  .icon{
+    font:inherit; font-size:14px; width:30px; height:28px; line-height:1; cursor:pointer;
+    border:1px solid var(--line); background:transparent; color:var(--fg-soft); border-radius:3px;
+  }
+  .icon:hover{border-color:var(--accent); color:var(--accent)}
+  @media (max-width:820px){ .bar nav{display:none} }
 
-    <!-- You can set your favicon here -->
-    <!-- link rel="shortcut icon" type="image/x-icon" href="/KindleMate2/favicon.ico" -->
+  /* ---- Hero ---- */
+  .hero{padding:56px 0 8px; text-align:center}
+  .banner{display:block; max-width:620px; margin:0 auto 26px}
+  .banner img{width:100%; height:auto; display:block}
+  .banner .b-dark{display:none}
+  :root[data-theme="dark"] .banner .b-light{display:none}
+  :root[data-theme="dark"] .banner .b-dark{display:block}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .banner .b-light{display:none}
+    :root:not([data-theme="light"]) .banner .b-dark{display:block}
+  }
+  .lede{font-family:var(--serif); font-size:clamp(18px,2.4vw,22px); line-height:1.7; color:var(--fg); max-width:44em; margin:0 auto 10px}
+  .lede-sub{color:var(--fg-soft); font-size:15px; max-width:42em; margin:0 auto 26px}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:26px}
+  .badges img{height:22px; display:block}
+  .cta{display:flex; flex-wrap:wrap; gap:12px; justify-content:center}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:3px;
+    border:1px solid var(--line); font-size:14.5px; background:var(--card); box-shadow:var(--shadow);
+  }
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{color:#fff; opacity:.9}
+  .btn:hover{color:var(--accent); border-color:var(--accent)}
 
-    <!-- end custom head snippets -->
+  /* ---- 区块 ---- */
+  section{padding:64px 0 8px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:28px}
+  .num{font-family:var(--mono); font-size:13px; color:var(--accent); letter-spacing:.08em; padding-top:6px}
+  .sec-head p{margin:4px 0 0; font-size:14.5px; color:var(--fg-soft)}
 
+  /* ---- 特性 ---- */
+  .grid{display:grid; gap:14px}
+  .g-feat{grid-template-columns:repeat(auto-fill,minmax(238px,1fr))}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:3px; padding:18px 18px 14px}
+  .card h3{display:flex; align-items:center; gap:8px}
+  .card h3::before{content:""; width:6px; height:6px; background:var(--accent); border-radius:50%; flex:none}
+  .card p{margin:0; font-size:14px; color:var(--fg-soft); line-height:1.65}
+  .card.win h3::before{background:var(--fg-mute)}
+
+  /* ---- 下载 ---- */
+  .plat{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+  .plat .card{padding:20px}
+  .plat .card h3{font-size:16px; margin-bottom:10px}
+  .kv{font-size:14px; color:var(--fg-soft); margin:0 0 8px; padding-left:0; list-style:none}
+  .kv li{display:flex; gap:8px; margin-bottom:5px}
+  .kv li span.k{color:var(--fg-mute); min-width:5.6em; flex:none}
+  .tag{display:inline-block; font-family:var(--mono); font-size:12px; border:1px solid var(--line); border-radius:2px; padding:1px 6px; color:var(--fg-soft); margin:2px 4px 2px 0}
+  .note{
+    display:flex; gap:12px; border-left:3px solid var(--accent); background:var(--accent-soft);
+    padding:14px 18px; font-size:14px; color:var(--fg); border-radius:0 3px 3px 0; margin-top:20px;
+  }
+  .note p{margin:0}
+  .note strong{font-weight:600}
+
+  /* ---- 截图 ---- */
+  .g-shot{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .shot{border:1px solid var(--line); border-radius:3px; overflow:hidden; background:var(--card); cursor:zoom-in; padding:0; display:block; width:100%}
+  .shot img{width:100%; height:auto; display:block}
+  .shot:hover{border-color:var(--accent)}
+
+  /* ---- 代码 ---- */
+  pre{
+    font-family:var(--mono); font-size:13.5px; line-height:1.7; background:var(--code);
+    border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:0 3px 3px 0;
+    padding:16px 18px; overflow-x:auto; margin:0 0 14px;
+  }
+  pre code{background:none; padding:0}
+
+  /* ---- 表格 ---- */
+  table{width:100%; border-collapse:collapse; font-size:14.5px; margin:0 0 16px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-family:var(--serif); font-weight:600; color:var(--fg); background:var(--bg-soft); white-space:nowrap}
+  td.soft{color:var(--fg-soft)}
+  .tbl-wrap{overflow-x:auto}
+
+  /* ---- 灯箱 ---- */
+  .lb{
+    position:fixed; inset:0; z-index:90; background:rgba(12,12,12,.9); display:none;
+    align-items:center; justify-content:center; padding:3vmin;
+  }
+  .lb.on{display:flex}
+  .lb img{max-width:100%; max-height:92vh; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .lb nav{position:absolute; bottom:2.4vmin; display:flex; gap:10px; align-items:center}
+  .lb button{
+    font:inherit; font-size:13px; padding:6px 14px; border-radius:3px; cursor:pointer;
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); color:#fff;
+  }
+  .lb button:hover{background:rgba(255,255,255,.24)}
+
+  /* ---- 页脚 ---- */
+  footer{margin-top:72px; border-top:1px solid var(--line); padding:32px 0 56px; font-size:14px; color:var(--fg-soft)}
+  .foot-links{display:flex; flex-wrap:wrap; gap:8px 22px; margin-bottom:18px}
+  .foot-meta{font-size:13px; color:var(--fg-mute); display:flex; flex-wrap:wrap; gap:6px 18px}
+  .stars{margin-top:28px}
+  .stars img{width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:3px}
+</style>
 </head>
+<body id="top">
 
-<body>
-    <div class="container-lg px-3 my-5 markdown-body">
-        <p>
-            <img alt="" src="https://github.lzc.app/KindleMate2/Screenshots/banner.png#gh-light-mode-only">
-        </p>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#top">Kindle Mate <b>2</b></a>
+    <nav>
+      <a href="#about"><span class="t-zh">简介</span><span class="t-en">About</span></a>
+      <a href="#features"><span class="t-zh">特性</span><span class="t-en">Features</span></a>
+      <a href="#download"><span class="t-zh">下载</span><span class="t-en">Download</span></a>
+      <a href="#screens"><span class="t-zh">截图</span><span class="t-en">Screenshots</span></a>
+      <a href="#build"><span class="t-zh">构建</span><span class="t-en">Build</span></a>
+      <a href="#arch"><span class="t-zh">架构</span><span class="t-en">Architecture</span></a>
+      <a href="https://github.com/lzcapp/KindleMate2" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Language / 语言">
+        <button type="button" data-lang="zh" aria-pressed="true">中文</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <button type="button" class="icon" id="themeBtn" title="切换深浅色 / Toggle theme" aria-label="Toggle theme">◐</button>
+    </div>
+  </div>
+</header>
 
-        <h1 id="kindle-mate-2">Kindle Mate <code class="language-plaintext highlighter-rouge">2</code></h1>
+<main class="wrap">
 
-        <p>
-            <a href="https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file">
-                <img alt="GitHub License"
-                    src="https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge">
-            </a>
-            <a href="https://github.com/lzcapp/KindleMate2/releases/latest">
-                <img alt="GitHub Release"
-                    src="https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge">
+  <!-- ================= HERO ================= -->
+  <section class="hero" id="about" style="padding-top:56px">
+    <h1 class="sr">Kindle Mate 2</h1>
+    <picture class="banner">
+      <img class="b-light" src="./images/banner.png" alt="Kindle Mate 2" width="1280" height="292">
+      <img class="b-dark" src="./images/banner_dark.png" alt="Kindle Mate 2" width="1280" height="292">
+    </picture>
 
-            </a>
-            <a href="https://github.com/lzcapp/KindleMate2/releases">
-                <img alt="GitHub Release"
-                    src="https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge">
-            </a>
-        </p>
+    <p class="lede t-zh">Kindle 标注、笔记与生词本的内容管理程序。</p>
+    <p class="lede t-en">A content manager for Kindle clippings, notes and vocabulary lists.</p>
 
-        <p><strong>Kindle Mate 2</strong> 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 <a
-                href="https://web.archive.org/web/20231205072358/https://kmate.me/">Kindle Mate</a> 停止更新后提供替代的解决方案。
-        </p>
+    <p class="lede-sub t-zh">
+      在 Kindle Mate 停止更新之后，提供一套可继续用下去的替代方案：把散落在设备里的标注与生词统一收进本地数据库，
+      支持检索、编辑、整理、统计与导出。基于 .NET 10 与 Avalonia 12 重写，Windows / macOS / Linux 三平台均有发布包。
+    </p>
+    <p class="lede-sub t-en">
+      After Kindle Mate stopped updating, this is a replacement that keeps working: gather clippings and vocabulary
+      from your devices into one local database, then search, edit, organize, analyze and export them.
+      Rewritten on .NET 10 + Avalonia 12, with release packages for Windows, macOS and Linux.
+    </p>
 
-        <p>
-            <strong>Kindle Mate 2</strong> is a program for managing Kindle’s clippings/notes and Kindle’s vocabulary
-            list,
-            aiming to provide an alternative solution after the <a
-                href="https://web.archive.org/web/20231205072358/https://kmate.me/">Kindle Mate</a> stopped updating.
-        </p>
-
-        <p>
-            <img src="https://github.com/user-attachments/assets/cfaeb54e-f237-4803-af61-23beb77a65f8" width="35px">
-            <strong>README</strong>
-             
-            <a href="#">
-                <img alt="中文" src="https://img.shields.io/badge/README-%E4%B8%AD%E6%96%87-red?style=for-the-badge">
-            </a>
-             
-            <a href="https://github.lzc.app/KindleMate2/en/">
-                <img alt="English" src="https://img.shields.io/badge/README-English-blue?style=for-the-badge">
-            </a>
-        </p>
-
-        <h2 id="系统要求">系统要求<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E7%B3%BB%E7%BB%9F%E8%A6%81%E6%B1%82"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-
-        <ul>
-            <li><strong>最低</strong>: <code class="language-plaintext highlighter-rouge">Windows 7</code></li>
-            <li><strong>推荐</strong>: <code class="language-plaintext highlighter-rouge">Windows 11</code></li>
-            <li><strong>架构</strong>: <code class="language-plaintext highlighter-rouge">x86</code> 或 <code
-                    class="language-plaintext highlighter-rouge">x64</code> 或 <code
-                    class="language-plaintext highlighter-rouge">ARM64</code>
-            </li>
-        </ul>
-
-        <p>依赖运行时（runtime）的版本需要安装 <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET Desktop
-                Runtime 8.0</a> 。</p>
-
-        <h2 id="构建">构建<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E6%9E%84%E5%BB%BA"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-
-        <p><code class="language-plaintext highlighter-rouge">Visual Studio</code> 和 <code
-                class="language-plaintext highlighter-rouge">C#</code></p>
-
-        <h3 id="子模块">子模块<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E5%AD%90%E6%A8%A1%E5%9D%97"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
-
-        <ul>
-            <li>克隆项目后在项目目录下执行：<code class="language-plaintext highlighter-rouge">git submodule update --init
-            --recursive</code></li>
-        </ul>
-
-        <blockquote>
-            <p><a href="https://github.com/lzcapp/Dark-Mode-Forms"><code
-                        class="language-plaintext highlighter-rouge">lzcapp/Dark-Mode-Forms</code></a>:
-                forked from <a href="https://github.com/BlueMystical/Dark-Mode-Forms"><code
-                        class="language-plaintext highlighter-rouge">BlueMystical/Dark-Mode-Forms</code></a></p>
-        </blockquote>
-
-        <h3 id="项目">项目<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E9%A1%B9%E7%9B%AE"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
-
-        <ul>
-            <li><code class="language-plaintext highlighter-rouge">KindleMate2</code> (WinForm): 当前的版本</li>
-            <li><code class="language-plaintext highlighter-rouge">KindleMate2_WPF</code> (WPF): 还未完工，需要重构为WPF的UI
-            </li>
-        </ul>
-
-        <h2 id="特性">特性<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E7%89%B9%E6%80%A7"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-
-        <ul class="task-list">
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 导入标注（<code class="language-plaintext highlighter-rouge">My
-            Clippings.txt</code>）
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 导入生词本（<code class="language-plaintext highlighter-rouge">vocab.db</code>）
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 同步已连接的Kindle设备
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 编辑标注
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 编辑生词本
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 清理功能
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 导出功能
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 统计功能
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 夜间模式（深色模式）
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 语言切换
-            </li>
-            <li class="task-list-item"><input checked="checked" class="task-list-item-checkbox" disabled="disabled"
-                    type="checkbox"> 搜索功能
-            </li>
-        </ul>
-
-        <h2 id="截图">截图<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E6%88%AA%E5%9B%BE"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-
-        <p>
-            <img src="./screenshots/01.png" width="100%">
-            <img src="./screenshots/02.png" width="100%">
-            <img src="./screenshots/03.png" width="100%">
-            <img src="./screenshots/04.png" width="100%">
-        </p>
-
-        <h2 id="小星星历史">小星星⭐历史<a aria-label="Anchor" class="anchorjs-link " data-anchorjs-icon=""
-                href="https://github.lzc.app/KindleMate2/#%E5%B0%8F%E6%98%9F%E6%98%9F%E5%8E%86%E5%8F%B2"
-                style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
-
-        <img src="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date" width="100%">
-
-
-        <div class="footer border-top border-gray-light mt-5 pt-3 text-right text-gray">
-            This site is open source. <a href="https://github.com/lzcapp/KindleMate2/edit/main/README.md">Improve this
-                page</a>.
-        </div>
+    <div class="badges">
+      <a href="https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge" alt="License: MIT">
+      </a>
+      <a href="https://github.com/lzcapp/KindleMate2/releases/latest" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge" alt="Latest release">
+      </a>
+      <a href="https://github.com/lzcapp/KindleMate2/releases" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge" alt="All releases">
+      </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/anchor-js/anchor.min.js"></script>
-    <script>anchors.add();</script>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/lzcapp/KindleMate2/releases/latest" target="_blank" rel="noopener">
+        <span class="t-zh">下载最新版本</span><span class="t-en">Download latest</span>
+      </a>
+      <a class="btn" href="https://github.com/lzcapp/KindleMate2" target="_blank" rel="noopener">
+        <span class="t-zh">浏览源码</span><span class="t-en">Source code</span>
+      </a>
+      <a class="btn" href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">
+        <span class="t-zh">架构文档</span><span class="t-en">Architecture doc</span>
+      </a>
+    </div>
+  </section>
 
+  <!-- ================= 特性 ================= -->
+  <section id="features">
+    <div class="sec-head">
+      <div class="num">01</div>
+      <div>
+        <h2><span class="t-zh">特性</span><span class="t-en">Features</span></h2>
+        <p class="t-zh">导入、整理、输出与应用体验，四组能力覆盖日常使用全流程。</p>
+        <p class="t-en">Import, organize, export and experience — four groups covering the everyday workflow.</p>
+      </div>
+    </div>
+
+    <div class="grid g-feat">
+      <article class="card">
+        <h3><span class="t-zh">导入标注</span><span class="t-en">Import clippings</span></h3>
+        <p class="t-zh">解析 <code>My Clippings.txt</code>，保留原始行以便回溯与去重。</p>
+        <p class="t-en">Parses <code>My Clippings.txt</code>, keeping original lines for auditing and de-duplication.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">导入生词本</span><span class="t-en">Import vocabulary</span></h3>
+        <p class="t-zh">读取 <code>vocab.db</code>，把生词、释义与用法一并纳入库中。</p>
+        <p class="t-en">Reads <code>vocab.db</code>, bringing words, definitions and usage into the database.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">迁移旧库</span><span class="t-en">Migrate old databases</span></h3>
+        <p class="t-zh">支持导入 Kindle Mate、Kindle Mate 2（<code>KM2.dat</code>）与 KMate（<code>km3.dat</code>）的库。</p>
+        <p class="t-en">Imports databases from Kindle Mate, Kindle Mate 2 (<code>KM2.dat</code>) and KMate (<code>km3.dat</code>).</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">设备直连</span><span class="t-en">Direct device access</span></h3>
+        <p class="t-zh">从已连接的 Kindle 导入标注与生词本，也可把库内内容同步回设备。</p>
+        <p class="t-en">Import clippings and vocabulary from a connected Kindle, or sync content back to the device.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">编辑标注与生词</span><span class="t-en">Edit clippings &amp; words</span></h3>
+        <p class="t-zh">正文、笔记、释义均可直接修改，改完即落库。</p>
+        <p class="t-en">Edit text, notes and definitions directly; changes are saved to the database.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">删除与回收站</span><span class="t-en">Delete with recycle bin</span></h3>
+        <p class="t-zh">支持删除单条、整本书或某个词，且删除可恢复。</p>
+        <p class="t-en">Delete a single entry, a whole book or a single word — and restore it from the recycle bin.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">重命名书籍</span><span class="t-en">Rename books</span></h3>
+        <p class="t-zh">批量修正书名与作者，统一同书不同源的命名差异。</p>
+        <p class="t-en">Fix titles and authors in bulk, unifying the same book imported from different sources.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">库维护</span><span class="t-en">Database maintenance</span></h3>
+        <p class="t-zh">清理、重建、备份、清空，四个动作一键完成，退出时自动备份。</p>
+        <p class="t-en">Clean, rebuild, back up or empty the database in one click; a backup is taken automatically on exit.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">搜索</span><span class="t-en">Search</span></h3>
+        <p class="t-zh">按书名、作者、标注内容或笔记内容检索。</p>
+        <p class="t-en">Search across book titles, authors, clipping text and notes.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">导出 Markdown</span><span class="t-en">Export to Markdown</span></h3>
+        <p class="t-zh">按书导出为 Markdown，便于接入笔记软件与静态站点。</p>
+        <p class="t-en">Export per book to Markdown, ready for note apps and static sites.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">统计</span><span class="t-en">Statistics</span></h3>
+        <p class="t-zh">自绘图表呈现阅读量、标注分布与生词积累情况。</p>
+        <p class="t-en">Self-drawn charts show reading volume, clipping distribution and vocabulary growth.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">夜间模式</span><span class="t-en">Dark mode</span></h3>
+        <p class="t-zh">深浅双主题，设计令牌统一下发，跟随设置即时切换。</p>
+        <p class="t-en">Light and dark themes driven by shared design tokens, switched instantly.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">界面多语言</span><span class="t-en">UI languages</span></h3>
+        <p class="t-zh">简体中文 / 繁体中文 / English 三套资源，全部文案走资源文件。</p>
+        <p class="t-en">Simplified Chinese, Traditional Chinese and English resources; every string lives in resource files.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">跨平台</span><span class="t-en">Cross-platform</span></h3>
+        <p class="t-zh">Windows / Linux / macOS 均有发布包，非 Windows 除设备同步外功能完整。</p>
+        <p class="t-en">Release packages for Windows, Linux and macOS; on non-Windows everything works except device sync.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= 下载 ================= -->
+  <section id="download">
+    <div class="sec-head">
+      <div class="num">02</div>
+      <div>
+        <h2><span class="t-zh">下载与系统要求</span><span class="t-en">Download &amp; requirements</span></h2>
+        <p class="t-zh">文件名带 <code>_runtime</code> 的是自包含包，无需预装 .NET 运行时。</p>
+        <p class="t-en">Assets ending in <code>_runtime</code> are self-contained and need no .NET runtime installed.</p>
+      </div>
+    </div>
+
+    <div class="plat">
+      <article class="card">
+        <h3>Windows</h3>
+        <ul class="kv">
+          <li><span class="k"><span class="t-zh">系统要求</span><span class="t-en">Requires</span></span>
+            <span class="t-zh">Windows 10 1809 或更高（.NET 10 的要求）</span>
+            <span class="t-en">Windows 10 1809 or later (a .NET 10 requirement)</span></li>
+          <li><span class="k"><span class="t-zh">架构</span><span class="t-en">Arch</span></span>
+            <span>x64&nbsp;/&nbsp;x86&nbsp;/&nbsp;ARM64</span></li>
+          <li><span class="k"><span class="t-zh">下载</span><span class="t-en">Assets</span></span>
+            <span><span class="tag">KindleMate2_x64[_runtime].zip</span><span class="tag">x86</span><span class="tag">arm64</span></span></li>
+          <li><span class="k"><span class="t-zh">运行</span><span class="t-en">Run</span></span>
+            <span class="t-zh">解压后运行 <code>KindleMate2.Avalonia.exe</code></span>
+            <span class="t-en">Unzip and run <code>KindleMate2.Avalonia.exe</code></span></li>
+          <li><span class="k"><span class="t-zh">库文件</span><span class="t-en">Data</span></span>
+            <span class="t-zh">程序所在目录（同旧版）</span>
+            <span class="t-en">Next to the executable (same as the legacy version)</span></li>
+        </ul>
+        <p class="t-zh" style="font-size:13.5px;margin:0"><span class="tag">设备同步仅 Windows 可用</span></p>
+        <p class="t-en" style="font-size:13.5px;margin:0"><span class="tag">Kindle device sync is Windows-only</span></p>
+      </article>
+
+      <article class="card">
+        <h3>macOS</h3>
+        <ul class="kv">
+          <li><span class="k"><span class="t-zh">系统要求</span><span class="t-en">Requires</span></span>
+            <span class="t-zh">macOS 11（Apple Silicon）/ macOS 10.15（Intel）或更高</span>
+            <span class="t-en">macOS 11 (Apple Silicon) / macOS 10.15 (Intel) or later</span></li>
+          <li><span class="k"><span class="t-zh">下载</span><span class="t-en">Assets</span></span>
+            <span><span class="tag">KindleMate2_macos-arm64.dmg</span><span class="tag">macos-x64.dmg</span></span></li>
+          <li><span class="k"><span class="t-zh">安装</span><span class="t-en">Install</span></span>
+            <span class="t-zh">打开 dmg，把 <code>KindleMate2.app</code> 拖入 Applications</span>
+            <span class="t-en">Open the dmg and drag <code>KindleMate2.app</code> into Applications</span></li>
+          <li><span class="k"><span class="t-zh">库文件</span><span class="t-en">Data</span></span>
+            <span><code>~/Library/Application Support/KindleMate2/</code></span></li>
+        </ul>
+        <p class="t-zh" style="font-size:13.5px;margin:0">产物未做公证（无 Apple 开发者账号），首次启动需清除隔离标记：<code>xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"</code></p>
+        <p class="t-en" style="font-size:13.5px;margin:0">Builds are not notarized (no Apple Developer account). Clear the quarantine flag on first launch: <code>xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"</code></p>
+      </article>
+
+      <article class="card">
+        <h3>Linux</h3>
+        <ul class="kv">
+          <li><span class="k"><span class="t-zh">下载</span><span class="t-en">Assets</span></span>
+            <span><span class="tag">KindleMate2_linux-x64[_runtime].tar.gz</span><span class="tag">linux-arm64</span></span></li>
+          <li><span class="k"><span class="t-zh">运行</span><span class="t-en">Run</span></span>
+            <span class="t-zh">解压后执行 <code>./kindlemate2</code>，启动器会先切到数据目录再拉起程序</span>
+            <span class="t-en">Unpack and run <code>./kindlemate2</code>; the launcher switches to the data directory first</span></li>
+          <li><span class="k"><span class="t-zh">库文件</span><span class="t-en">Data</span></span>
+            <span><code>~/.local/share/KindleMate2/</code><span class="t-zh">（遵循 XDG，可用 <code>KINDLEMATE2_HOME</code> 覆盖）</span><span class="t-en"> (XDG-compliant, overridable via <code>KINDLEMATE2_HOME</code>)</span></span></li>
+        </ul>
+        <p class="t-zh" style="font-size:13.5px;margin:0">归档已保留可执行位；若用图形化解压工具导致权限丢失，<code>chmod +x kindlemate2 KindleMate2.Avalonia</code> 即可。</p>
+        <p class="t-en" style="font-size:13.5px;margin:0">The tarball keeps executable bits; if a GUI extractor drops them, run <code>chmod +x kindlemate2 KindleMate2.Avalonia</code>.</p>
+      </article>
+    </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>关于运行时包：</strong>不带 <code>_runtime</code> 后缀的版本需要先安装对应平台的
+        <a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" target="_blank" rel="noopener">.NET 10 运行时</a>
+        （Windows 需 Desktop Runtime）；macOS 只提供自包含包。</p>
+      <p class="t-en"><strong>About runtime-dependent builds:</strong> assets without the <code>_runtime</code> suffix require the
+        <a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" target="_blank" rel="noopener">.NET 10 runtime</a>
+        (Desktop Runtime on Windows). macOS ships self-contained packages only.</p>
+    </div>
+  </section>
+
+  <!-- ================= 截图 ================= -->
+  <section id="screens">
+    <div class="sec-head">
+      <div class="num">03</div>
+      <div>
+        <h2><span class="t-zh">界面截图</span><span class="t-en">Screenshots</span></h2>
+        <p class="t-zh">点击任意图片可放大查看。</p>
+        <p class="t-en">Click any image to enlarge.</p>
+      </div>
+    </div>
+
+    <div class="grid g-shot">
+      <button type="button" class="shot"><img src="./screenshots/01.png" alt="Kindle Mate 2 界面截图 01" loading="lazy"></button>
+      <button type="button" class="shot"><img src="./screenshots/02.png" alt="Kindle Mate 2 界面截图 02" loading="lazy"></button>
+      <button type="button" class="shot"><img src="./screenshots/03.png" alt="Kindle Mate 2 界面截图 03" loading="lazy"></button>
+      <button type="button" class="shot"><img src="./screenshots/04.png" alt="Kindle Mate 2 界面截图 04" loading="lazy"></button>
+      <button type="button" class="shot"><img src="./screenshots/05.png" alt="Kindle Mate 2 界面截图 05" loading="lazy"></button>
+    </div>
+  </section>
+
+  <!-- ================= 构建 ================= -->
+  <section id="build">
+    <div class="sec-head">
+      <div class="num">04</div>
+      <div>
+        <h2><span class="t-zh">构建</span><span class="t-en">Build</span></h2>
+        <p class="t-zh">需要 .NET SDK 10 或更高。</p>
+        <p class="t-en">Requires .NET SDK 10 or later.</p>
+      </div>
+    </div>
+
+<pre><code>dotnet build KindleMate2.sln -c Debug
+dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
+
+    <div class="note">
+      <p class="t-zh"><strong>SDK 必须 ≥ 10：</strong>Avalonia 12 的 XAML 源生成器要求 Roslyn ≥ 4.14。在 SDK 8 / 9 上它会被
+        <em>静默跳过</em>（只发一条 CS9057 警告），表现为满屏 <code>CS0103: The name 'InitializeComponent' does not exist</code>。</p>
+      <p class="t-en"><strong>SDK must be ≥ 10:</strong> Avalonia 12's XAML source generator needs Roslyn ≥ 4.14. On SDK 8 / 9 it is
+        <em>silently skipped</em> (only a CS9057 warning), which shows up as a wall of <code>CS0103: The name 'InitializeComponent' does not exist</code>.</p>
+    </div>
+
+    <p class="t-zh" style="margin-top:20px">解决方案含 7 个工程；本仓库<strong>不含任何 git 子模块</strong>（随旧壳退役），克隆后无需 <code>submodule update</code>。</p>
+    <p class="t-en" style="margin-top:20px">The solution contains 7 projects; this repository has <strong>no git submodules</strong> (retired with the legacy shells), so no <code>submodule update</code> is needed.</p>
+  </section>
+
+  <!-- ================= 架构 ================= -->
+  <section id="arch">
+    <div class="sec-head">
+      <div class="num">05</div>
+      <div>
+        <h2><span class="t-zh">架构</span><span class="t-en">Architecture</span></h2>
+        <p class="t-zh">分层组织，平台专有代码一律收敛到独立程序集。完整说明见 <a href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">arch.md</a>。</p>
+        <p class="t-en">Layered by design; platform-specific code is confined to a dedicated assembly. Full details in <a href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">arch.md</a>.</p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><span class="t-zh">层</span><span class="t-en">Layer</span></th>
+            <th><span class="t-zh">项目</span><span class="t-en">Project</span></th>
+            <th><span class="t-zh">职责</span><span class="t-en">Responsibility</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="t-zh">表现层</span><span class="t-en">UI</span></td>
+            <td><code>KindleMate2.Avalonia</code></td>
+            <td class="soft"><span class="t-zh">界面与交互（Avalonia 12，零第三方 UI 库）</span><span class="t-en">Views and interaction (Avalonia 12, no third-party UI libraries)</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">应用层</span><span class="t-en">Application</span></td>
+            <td><code>KindleMate2.Application</code></td>
+            <td class="soft"><span class="t-zh">协调领域与基础设施；导入 / 导出 / 维护 / 设备接口</span><span class="t-en">Coordinates domain and infrastructure; import / export / maintenance / device interfaces</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">领域层</span><span class="t-en">Domain</span></td>
+            <td><code>KindleMate2.Domain</code></td>
+            <td class="soft"><span class="t-zh">实体与仓储接口</span><span class="t-en">Entities and repository interfaces</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">基础设施层</span><span class="t-en">Infrastructure</span></td>
+            <td><code>KindleMate2.Infrastructure</code></td>
+            <td class="soft"><span class="t-zh">SQLite 仓储实现、建库 / 迁移 / 备份、Markdown 导出</span><span class="t-en">SQLite repositories, database creation / migration / backup, Markdown export</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">共享层</span><span class="t-en">Shared</span></td>
+            <td><code>KindleMate2.Shared</code></td>
+            <td class="soft"><span class="t-zh">常量、实体、多语言资源</span><span class="t-en">Constants, entities, localized resources</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">平台实现</span><span class="t-en">Platform</span></td>
+            <td><code>KindleMate2.Devices.Windows</code></td>
+            <td class="soft"><span class="t-zh">Windows 专有设备实现（USB 盘符 + MTP + WMI）</span><span class="t-en">Windows-only device support (USB drive letters + MTP + WMI)</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">测试</span><span class="t-en">Tests</span></td>
+            <td><code>KindleMate2.Tests</code></td>
+            <td class="soft"><span class="t-zh">单元测试，可跨平台运行</span><span class="t-en">Unit tests, runnable cross-platform</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:22px">
+      <article class="card">
+        <h3><span class="t-zh">技术栈</span><span class="t-en">Tech stack</span></h3>
+        <p class="t-zh">
+          <strong>.NET 10</strong> — 构建 SDK 与目标框架<br>
+          <strong>Avalonia 12</strong> — 自研 <code>ChartControl</code> 自绘图表，设计令牌 + 深浅双主题<br>
+          <strong>SQLite</strong> — <code>Microsoft.Data.Sqlite</code><br>
+          <strong>Markdown</strong> — <code>Markdig</code> + <code>Leisn.MarkdigToc</code><br>
+          <strong>设备</strong> — <code>MediaDevices</code> + <code>System.Management</code>（仅 Devices.Windows）
+        </p>
+        <p class="t-en">
+          <strong>.NET 10</strong> — build SDK and target framework<br>
+          <strong>Avalonia 12</strong> — custom <code>ChartControl</code>, design tokens with light/dark themes<br>
+          <strong>SQLite</strong> — <code>Microsoft.Data.Sqlite</code><br>
+          <strong>Markdown</strong> — <code>Markdig</code> + <code>Leisn.MarkdigToc</code><br>
+          <strong>Devices</strong> — <code>MediaDevices</code> + <code>System.Management</code> (Devices.Windows only)
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">平台边界</span><span class="t-en">Platform boundary</span></h3>
+        <p class="t-zh">唯一平台专有程序集是 <code>KindleMate2.Devices.Windows</code>。应用层只定义跨平台接口
+          <code>IDeviceManager</code>，非 Windows 平台由 <code>NullDeviceManager</code> 兜底 —— 如实报告“未连接”，
+          同步操作抛异常而不是静默失败。因此 <code>KindleMate2.Devices.Windows.dll</code> 只出现在 Windows 输出目录中。</p>
+        <p class="t-en">The only platform-specific assembly is <code>KindleMate2.Devices.Windows</code>. The application layer defines
+          just the <code>IDeviceManager</code> interface; non-Windows falls back to <code>NullDeviceManager</code> — reporting
+          "not connected" honestly and throwing on sync instead of failing silently. That is why
+          <code>KindleMate2.Devices.Windows.dll</code> only appears in Windows output.</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">验证手段</span><span class="t-en">Verification</span></h3>
+        <p class="t-zh">
+          <code>--smoke &lt;db&gt;</code> 只读自检：列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言<br>
+          <code>--ops &lt;db&gt; …</code> 写操作端到端：导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空<br>
+          单元测试跨平台 TFM 运行；CI 覆盖 windows 全量构建 + ubuntu / macOS 构建、单测与启动自检
+        </p>
+        <p class="t-en">
+          <code>--smoke &lt;db&gt;</code> read-only self-check: list / detail / stats / about / settings / search / localization<br>
+          <code>--ops &lt;db&gt; …</code> end-to-end write ops: import → export → backup → rename → delete → clean → rebuild → empty<br>
+          Unit tests run on cross-platform TFMs; CI covers a full Windows build plus ubuntu / macOS build, tests and launch checks
+        </p>
+      </article>
+
+      <article class="card win">
+        <h3><span class="t-zh">已知边界</span><span class="t-en">Known limits</span></h3>
+        <p class="t-zh">非 Windows 的 Kindle 设备支持尚未实现（macOS / Linux 的挂载点与 libmtp 需各自实现），
+          故非 Windows 虽有发布包，<strong>设备同步仍不可用</strong>，其余功能完整；自动更新尚未迁移到 Avalonia 壳。</p>
+        <p class="t-en">Kindle device support on non-Windows is not implemented yet (macOS / Linux mount points and libmtp are
+          still to be built), so non-Windows packages ship <strong>without device sync</strong>; everything else is complete.
+          Auto-update has not been ported to the Avalonia shell.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="https://github.com/lzcapp/KindleMate2" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/lzcapp/KindleMate2/releases" target="_blank" rel="noopener"><span class="t-zh">所有版本</span><span class="t-en">All releases</span></a>
+      <a href="https://github.com/lzcapp/KindleMate2/blob/main/README.md" target="_blank" rel="noopener">README（中文）</a>
+      <a href="https://github.com/lzcapp/KindleMate2/blob/main/README.en.md" target="_blank" rel="noopener">README (English)</a>
+      <a href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">arch.md</a>
+      <a href="https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file" target="_blank" rel="noopener">MIT License</a>
+      <a href="https://github.com/lzcapp/KindleMate2/issues" target="_blank" rel="noopener"><span class="t-zh">问题反馈</span><span class="t-en">Issues</span></a>
+    </div>
+
+    <div class="stars">
+      <a href="https://star-history.com/#lzcapp/KindleMate2&amp;Date" target="_blank" rel="noopener">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&amp;type=Date&amp;theme=dark">
+          <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&amp;type=Date" loading="lazy">
+        </picture>
+      </a>
+    </div>
+
+    <div class="foot-meta" style="margin-top:24px">
+      <span>Kindle Mate 2 · MIT License</span>
+      <span class="t-zh">本页最后更新：2026-09-14</span>
+      <span class="t-en">Page last updated: 2026-09-14</span>
+      <a href="https://github.com/lzcapp/KindleMate2/edit/main/README.md" target="_blank" rel="noopener">
+        <span class="t-zh">改进本页</span><span class="t-en">Improve this page</span>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<!-- ================= 灯箱 / Lightbox ================= -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+  <img id="lbImg" src="" alt="">
+  <nav>
+    <button type="button" id="lbPrev">← <span class="t-zh">上一张</span><span class="t-en">Prev</span></button>
+    <button type="button" id="lbNext"><span class="t-zh">下一张</span><span class="t-en">Next</span> →</button>
+    <button type="button" id="lbClose"><span class="t-zh">关闭</span><span class="t-en">Close</span> (Esc)</button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+
+  /* ---------- 语言切换 / language toggle ---------- */
+  var langBtns = document.querySelectorAll('.seg button');
+  function applyLang(l) {
+    root.setAttribute('data-lang', l);
+    root.lang = l === 'en' ? 'en' : 'zh-CN';
+    langBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === l)); });
+    try { localStorage.setItem('km2-lang', l); } catch (e) {}
+  }
+  langBtns.forEach(function (b) {
+    b.addEventListener('click', function () { applyLang(b.dataset.lang); });
+  });
+  applyLang(root.getAttribute('data-lang') === 'en' ? 'en' : 'zh');
+
+  /* ---------- 主题切换 / theme toggle ---------- */
+  var themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme')
+      ? root.getAttribute('data-theme') === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = isDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('km2-theme', next); } catch (e) {}
+  });
+
+  /* ---------- 截图灯箱 / screenshot lightbox ---------- */
+  var shots = Array.prototype.slice.call(document.querySelectorAll('.shot img'));
+  var lb = document.getElementById('lb'), lbImg = document.getElementById('lbImg'), idx = 0;
+  function show(i) {
+    idx = (i + shots.length) % shots.length;
+    lbImg.src = shots[idx].src;
+    lbImg.alt = shots[idx].alt;
+  }
+  function open(i) { show(i); lb.classList.add('on'); }
+  function close() { lb.classList.remove('on'); }
+  shots.forEach(function (img, i) { img.parentElement.addEventListener('click', function () { open(i); }); });
+  document.getElementById('lbPrev').addEventListener('click', function (e) { e.stopPropagation(); show(idx - 1); });
+  document.getElementById('lbNext').addEventListener('click', function (e) { e.stopPropagation(); show(idx + 1); });
+  document.getElementById('lbClose').addEventListener('click', function (e) { e.stopPropagation(); close(); });
+  lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
+  document.addEventListener('keydown', function (e) {
+    if (!lb.classList.contains('on')) return;
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowLeft') show(idx - 1);
+    else if (e.key === 'ArrowRight') show(idx + 1);
+  });
+})();
+</script>
 </body>
-
 </html>
