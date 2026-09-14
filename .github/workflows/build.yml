@@ -22,7 +22,10 @@ jobs:
       #      x:Name 字段都没被声明,满屏 CS0103(2026-09-13 的 release 六变体即因此全挂)。
       #   ② 原本这句写 8.0.x 也是无效的:setup-dotnet 把 SDK 装进镜像默认目录,没有 global.json 时
       #      dotnet 仍按「已装最高版」解析(即镜像预装的 10.x),声明与实际跑的版本并不一致。
-      # 注:这是**构建用 SDK**,产物目标框架仍是 net8.0,不抬高用户端的 .NET 运行时要求。
+      # 注:2026-09-14 起产物目标框架已一并升到 net10.0。此前是「构建用 SDK 10 + 产物 TFM 8」的
+      #     错位组合(当初刻意只抬 SDK,以维持用户端 .NET 8 运行时要求),现两者版本一致;
+      #     框架依赖变体的用户端要求随之变为 .NET 10 Desktop Runtime,
+      #     而 .NET 8 运行时本身在 2026-11-10 停更,故该变化是收拢而非新增负担。
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
@@ -45,11 +48,11 @@ jobs:
 
       # 发布冒烟(-r + --self-contained):补一个长期盲区 —— 上面几步只走普通 build/test,
       # 从不碰发布专属的 RID 路径,于是 2026-09-06 那类"只有发版才炸"的故障(SDK 10 发布
-      # net8 + -r + 旧 assets 触发 NuGet restore 崩溃 MSB4181/path1 null)只能等打 tag
+      # net8 目标 + -r + 旧 assets 触发 NuGet restore 崩溃 MSB4181/path1 null)只能等打 tag
       # 那天在 Release 里暴露。这里只跑 win-x64 自包含一档 —— 矩阵里风险最高的组合,
       # 足以覆盖该路径,又不必为六变体矩阵付 CI 成本。
       - name: Publish smoke (win-x64, self-contained)
-        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r win-x64 --self-contained true -o publish/smoke
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows -c Release -r win-x64 --self-contained true -o publish/smoke
 
       # 实跑发布产物:验证 apphost、SQLite 原生库、卫星资源与平台设备实现都随发布产物一起
       # 落地 —— 也就是 release 真正交付的那个形态(上面各步验的是 obj/bin 里的中间产物)。
@@ -72,10 +75,10 @@ jobs:
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
   # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),
-  # 因此这里能构建**整个解决方案**并跨平台跑单测,而不只是壳的 net8.0 子集。
+  # 因此这里能构建**整个解决方案**并跨平台跑单测,而不只是壳的 net10.0 子集。
   #
-  # 说明:Devices.Windows 与 Avalonia 的 net8.0-windows TFM 在 Linux/macOS 上可以还原与编译
-  # (Windows 引用包可由 NuGet 还原),只是不能运行;net8.0 变体才是运行时目标。
+  # 说明:Devices.Windows 与 Avalonia 的 net10.0-windows TFM 在 Linux/macOS 上可以还原与编译
+  # (Windows 引用包可由 NuGet 还原),只是不能运行;net10.0 变体才是运行时目标。
   cross-platform-build:
     name: cross-platform (${{ matrix.os }})
     strategy:
@@ -110,7 +113,7 @@ jobs:
           set -euo pipefail
           work="$(mktemp -d)"
           touch "$work/empty.dat"
-          dotnet KindleMate2.Avalonia/bin/Release/net8.0/KindleMate2.Avalonia.dll \
+          dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.Avalonia.dll \
             --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
           grep -q "NullDeviceManager" "$work/smoke.txt"

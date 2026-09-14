@@ -16,13 +16,13 @@
 
 ## System Requirements
 
-- **Windows**: `Windows 10 1809` or later (required by .NET 8) — `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **Windows**: `Windows 10 1809` or later (required by .NET 10) — `KindleMate2_{arm64,x64,x86}[_runtime].zip`
 - **macOS**: `macOS 11` (Apple Silicon) / `macOS 10.15` (Intel) or later — `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**: `KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **Architecture**: `x86` or `x64` or `ARM64`
 - **Feature complete on all three platforms** except Kindle device sync (Windows only)
 
-The runtime-dependent builds require the platform's [.NET 8 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
+The runtime-dependent builds require the platform's [.NET 10 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
 
 ### Download & Run
 

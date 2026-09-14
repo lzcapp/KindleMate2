@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- 跨平台:设备等 Windows 专有实现已拆到 KindleMate2.Devices.Windows -->
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
