@@ -35,23 +35,23 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 
 | 项目 | TFM | 说明 |
 |---|---|---|
-| `KindleMate2.Shared` | `net8.0` | 纯跨平台 |
-| `KindleMate2.Domain` | `net8.0` | 纯跨平台 |
-| `KindleMate2.Infrastructure` | `net8.0` | 纯跨平台 |
-| `KindleMate2.Application` | `net8.0` | 纯跨平台 |
-| `KindleMate2.Avalonia` | `net8.0-windows;net8.0` | Windows 用 `WinExe`，其他平台用 `Exe` |
-| `KindleMate2.Devices.Windows` | `net8.0-windows` | 仅被 Avalonia 的 Windows TFM 引用 |
-| `KindleMate2.Tests` | `net8.0` | 只引用 Application / Infrastructure / Domain，可跨平台运行 |
+| `KindleMate2.Shared` | `net10.0` | 纯跨平台 |
+| `KindleMate2.Domain` | `net10.0` | 纯跨平台 |
+| `KindleMate2.Infrastructure` | `net10.0` | 纯跨平台 |
+| `KindleMate2.Application` | `net10.0` | 纯跨平台 |
+| `KindleMate2.Avalonia` | `net10.0-windows;net10.0` | Windows 用 `WinExe`，其他平台用 `Exe` |
+| `KindleMate2.Devices.Windows` | `net10.0-windows` | 仅被 Avalonia 的 Windows TFM 引用 |
+| `KindleMate2.Tests` | `net10.0` | 只引用 Application / Infrastructure / Domain，可跨平台运行 |
 
 ### 3. 项目依赖关系
 
 ```mermaid
 graph TD
-    UI["KindleMate2.Avalonia<br/>net8.0-windows;net8.0"] --> APP["KindleMate2.Application<br/>net8.0"]
-    UI --> INF["KindleMate2.Infrastructure<br/>net8.0"]
-    UI --> DOM["KindleMate2.Domain<br/>net8.0"]
-    UI --> SH["KindleMate2.Shared<br/>net8.0"]
-    UI -. "仅 Windows TFM" .-> DEV["KindleMate2.Devices.Windows<br/>net8.0-windows"]
+    UI["KindleMate2.Avalonia<br/>net10.0-windows;net10.0"] --> APP["KindleMate2.Application<br/>net10.0"]
+    UI --> INF["KindleMate2.Infrastructure<br/>net10.0"]
+    UI --> DOM["KindleMate2.Domain<br/>net10.0"]
+    UI --> SH["KindleMate2.Shared<br/>net10.0"]
+    UI -. "仅 Windows TFM" .-> DEV["KindleMate2.Devices.Windows<br/>net10.0-windows"]
 
     APP --> DOM
     APP --> INF
@@ -67,7 +67,7 @@ graph TD
 
     DOM --> SH
 
-    T["KindleMate2.Tests<br/>net8.0"] --> APP
+    T["KindleMate2.Tests<br/>net10.0"] --> APP
     T --> INF
     T --> DOM
 ```
@@ -84,7 +84,7 @@ graph TD
   否则 Application 就得引用 Windows 专有程序集。Avalonia 在
   `Services/DatabaseSession.cs` 内按 `#if WINDOWS` 选择实现。
 - Avalonia 壳仅在 Windows TFM 下引用设备项目，因此 `KindleMate2.Devices.Windows.dll`
-  只出现在 `net8.0-windows` 的输出目录中。
+  只出现在 `net10.0-windows` 的输出目录中。
 
 ---
 
@@ -150,7 +150,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 
 ## 技术栈
 
-- **框架**：.NET 8
+- **框架**：.NET 10（构建 SDK 与目标框架自 2026-09-14 起统一为 10.x）
 - **UI**：Avalonia 12（自研 `Charts/ChartControl` 自绘图表，零第三方 UI 库；
   设计令牌 + `ThemeDictionaries` 深浅双主题）
 - **数据库**：SQLite（`Microsoft.Data.Sqlite`）

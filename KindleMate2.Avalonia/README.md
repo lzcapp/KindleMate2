@@ -27,24 +27,26 @@ Kindle Mate 2 的 **Avalonia 桌面客户端**。数据/业务层（`Shared` / `
 
 | 工程 | TFM | 说明 |
 |---|---|---|
-| `KindleMate2.Avalonia` | `net8.0-windows;net8.0` | 双 TFM。Windows 用 `WinExe`，其他平台用 `Exe` |
-| `KindleMate2.Devices.Windows` | `net8.0-windows` | Kindle 设备 USB/MTP 实现，仅 Windows TFM 引用 |
-| 其余类库 | `net8.0` | 纯跨平台 |
+| `KindleMate2.Avalonia` | `net10.0-windows;net10.0` | 双 TFM。Windows 用 `WinExe`，其他平台用 `Exe` |
+| `KindleMate2.Devices.Windows` | `net10.0-windows` | Kindle 设备 USB/MTP 实现，仅 Windows TFM 引用 |
+| 其余类库 | `net10.0` | 纯跨平台 |
 
 设备层通过 `IDeviceManager` 抽象：Windows 用真实实现，其他平台由
 `Application.Services.NullDeviceManager` 兜底（如实报告「未连接」）。
 
 ## 构建与运行
 
-Avalonia 12.x 的 XAML 生成器要求 Roslyn ≥ 4.14（**SDK ≥ 9**；本机用 SDK 10 构建）。
+Avalonia 12.x 的 XAML 生成器要求 Roslyn ≥ 4.14，因此**最低可用 SDK 是 10**（SDK 8 的 Roslyn 是 4.8、
+SDK 9 是 4.12，都不够）。低版 SDK 下 Roslyn 不报错，只发一条 CS9057 警告就**静默跳过**生成器，
+于是 `InitializeComponent` 与所有 x:Name 字段都未被声明，每个 `.axaml.cs` 满屏 CS0103。
 
 ```bash
 # Windows（含设备支持）
-dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Debug
-dotnet run   --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows
+dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows -c Debug
+dotnet run   --project KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows
 
 # 跨平台
-dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Debug
+dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Debug
 ```
 
 启动后**自动使用程序当前目录下的 `KM2.dat`**：文件不存在会按当前 schema 自动建库；
@@ -76,7 +78,7 @@ KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧�
   测试夹具目录，仅供回归测试用）。旧数据的迁入通道是
   「管理 → 导入 Kindle Mate 数据库 / 导入 Kindle Mate 2 数据库 / 导入 KMate 数据库」——
   其中「Kindle Mate 2 数据库」是本程序**自己的**库格式（`KM2.dat`），用于把别处一份库合并进来。
-- **跨平台现状**：`net8.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
+- **跨平台现状**：`net10.0` 变体可构建、可运行，除 **Kindle 设备同步**外功能完整。
   **各平台发布包已由 `release.yml` 覆盖**（Windows 6 个 zip + Linux 4 个 tar.gz + macOS 2 个 dmg）。
   仍待补齐的是**非 Windows 的设备支持本身**（挂载点 / libmtp）：那边由 `NullDeviceManager` 兜底，
   所以即便有这个平台的包，设备同步也不可用。

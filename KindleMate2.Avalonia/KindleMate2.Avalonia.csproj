@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows;net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0-windows;net10.0</TargetFrameworks>
     <!-- Windows 上用 WinExe(不弹控制台);其他平台用普通 Exe -->
-    <OutputType Condition="'$(TargetFramework)' == 'net8.0-windows'">WinExe</OutputType>
-    <OutputType Condition="'$(TargetFramework)' != 'net8.0-windows'">Exe</OutputType>
+    <OutputType Condition="'$(TargetFramework)' == 'net10.0-windows'">WinExe</OutputType>
+    <OutputType Condition="'$(TargetFramework)' != 'net10.0-windows'">Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
@@ -50,7 +50,7 @@
     <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
     <!-- Windows 专有的 Kindle 设备实现只在 Windows TFM 下引入;其他平台由 NullDeviceManager 兜底 -->
     <ProjectReference Include="..\KindleMate2.Devices.Windows\KindleMate2.Devices.Windows.csproj" />
   </ItemGroup>

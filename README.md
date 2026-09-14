@@ -16,13 +16,13 @@
 
 ## 系统要求
 
-- **Windows**：`Windows 10 1809` 或更高（.NET 8 的要求）—— `KindleMate2_{arm64,x64,x86}[_runtime].zip`
+- **Windows**：`Windows 10 1809` 或更高（.NET 10 的要求）—— `KindleMate2_{arm64,x64,x86}[_runtime].zip`
 - **macOS**：`macOS 11`（Apple Silicon）/ `macOS 10.15`（Intel）或更高 —— `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**：`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **架构**: `x86` 或 `x64` 或 `ARM64`
 - 三个平台**除 Kindle 设备同步（仅 Windows 可用）外功能完整**
 
-依赖运行时（runtime）的版本需要安装对应平台的 [.NET 8 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
+依赖运行时（runtime）的版本需要安装对应平台的 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
 
 ### 下载与运行
 

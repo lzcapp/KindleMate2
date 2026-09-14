@@ -7,13 +7,13 @@ name: release
 #   Linux(4 个 tar.gz):KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz
 #   macOS(2 个 dmg):KindleMate2_{macos-arm64,macos-x64}.dmg —— 内含 KindleMate2.app
 # 命名规则(2026-09-06 用户确认):**_runtime = 自包含(打包 .NET Runtime,免装)**;
-#   无该后缀 = framework-dependent(需目标机自行安装 .NET 8 运行时)。
+#   无该后缀 = framework-dependent(需目标机自行安装 .NET 10 运行时)。
 #   macOS 只出自包含的 dmg(要求 mac 用户先装 .NET 运行时体验不值当),故不带该后缀。
 #   → 合并进 GitHub Release(免手动登录 gh)。
 #
 # 2026-09-13 变更 A:WinForms 壳与 DarkModeForms 子模块退休,发布目标改为 Avalonia 壳
 #   (KindleMate2.Avalonia)。本流程不再需要 checkout 子模块;需显式指定目标框架 ——
-#   Windows 用 -f net8.0-windows,非 Windows 用 -f net8.0(该工程多目标 net8.0-windows;net8.0)。
+#   Windows 用 -f net10.0-windows,非 Windows 用 -f net10.0(该工程多目标 net10.0-windows;net10.0)。
 #   同时移除 PublishSingleFile(单文件打包未实机验证,先用普通目录式 publish)。
 #
 # 2026-09-13 变更 B:Linux 产物。**必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS
@@ -41,6 +41,17 @@ name: release
 #   引用 Microsoft.CodeAnalysis 4.14.0.0,而 SDK 8 的 Roslyn 是 4.8(SDK 9 是 4.12)——
 #   Roslyn 会拒绝加载它(只发一条 CS9057 警告)并**静默跳过**,于是 InitializeComponent
 #   与所有 x:Name 字段都没被声明,每个 .axaml.cs 满屏 CS0103、所有变体一起失败。
+#
+# 2026-09-14 变更 E:目标框架 net8.0 → net10.0(Windows 侧 net8.0-windows → net10.0-windows)。
+#   动机:① .NET 8 支持终止于 2026-11-10(与 .NET 9 同日);
+#         ② 依赖栈已全面站到 10.x(Microsoft.Data.Sqlite / Microsoft.Extensions.DependencyInjection /
+#            System.Management / Microsoft.NET.Test.Sdk 均已是 10.x),且 Avalonia 12.1.2 与
+#            MediaDevices 2.0.0 都自带 net10.0 资产,原先反而是「net8 壳调 net10 库」;
+#         ③ 构建 SDK 自 2026-09-13 起已是 10.x,TFM 跟上后两者不再错位。
+#   ⚠️ 用户端影响(发布说明需写明):本矩阵中**无后缀的 3 个 Windows 框架依赖变体**,运行时要求由
+#      .NET 8 Desktop Runtime 变为 .NET 10 Desktop Runtime(_runtime 后缀的自包含变体不受影响);
+#      Linux 的 glibc 底线由 2.23 抬到 2.27(CentOS 7 这类 glibc 2.17 的发行版不再可运行)。
+#      Windows / macOS 的 OS 下限不变(两份 supported-os 表逐字相同)。
 #
 # 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
@@ -110,11 +121,11 @@ jobs:
           dotnet-version: 10.0.x
 
       # 注:此处 2026-09-13 删除了「Pin SDK 8 (temporary global.json)」—— 它是 WinForms 时代
-      # 为躲「SDK10 发布 net8 + -r + 旧 assets 触发 NuGet restore 崩溃(MSB4181)」加的补丁,
+      # 为躲「SDK10 发布 net8 目标 + -r + 旧 assets 触发 NuGet restore 崩溃(MSB4181)」加的补丁,
       # 换到 Avalonia 壳后已变成有害的遗留(详见文件头变更 D)。
 
       - name: Publish (${{ matrix.suffix }})
-        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
       - name: Package zip (KindleMate2_${{ matrix.suffix }}.zip)
         shell: pwsh
@@ -129,8 +140,8 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
-  # Linux 产物(见文件头变更 B)。用 -f net8.0:设备层在非 Windows 上由 NullDeviceManager
-  # 兜底,Windows 专有实现只在 net8.0-windows 下参与编译($(TargetFramework) 条件引用)。
+  # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在非 Windows 上由 NullDeviceManager
+  # 兜底,Windows 专有实现只在 net10.0-windows 下参与编译($(TargetFramework) 条件引用)。
   publish-linux:
     needs: version
     runs-on: ubuntu-latest
@@ -152,7 +163,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish (${{ matrix.suffix }})
-        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
       - name: Add launcher + package tarball (KindleMate2_${{ matrix.suffix }}.tar.gz)
         shell: bash
@@ -219,7 +230,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # minos:.NET 8 的下限是 10.15,但 Apple Silicon 机型本身从 macOS 11 起
+          # minos:声明 .app 的最低系统版本。原值按「.NET 8 下限 = macOS 10.15」设定,本次 TFM 升级
+          # **刻意未改** —— 微软现行 supported-os 表把 .NET 10 的 macOS 支持面收窄到 26/15/14,
+          # 但该表是**支持政策**而非运行时硬门槛(官方已澄清:老系统通常仍可运行,只是不受理 bug),
+          # 而真实运行下限我无法在本地验证。故保守保留,待实测老 macOS 后再决定是否抬高。
           - { rid: osx-arm64, suffix: macos-arm64, minos: '11.0' }
           - { rid: osx-x64,   suffix: macos-x64,   minos: '10.15' }
     steps:
@@ -232,7 +246,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish (${{ matrix.suffix }})
-        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0 -c Release -r ${{ matrix.rid }} --self-contained true -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Release -r ${{ matrix.rid }} --self-contained true -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
       # 图标:仓库里最大的图标源是 Assets/bookmark.png(256×256),512/1024 两档只能插值放大。
       - name: Build .icns from bookmark.png
@@ -372,7 +386,9 @@ jobs:
             '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.Avalonia.exe`。',
             '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后运行 `./kindlemate2`(启动器会自动切到数据目录,不必手动 cd)。',
             '- macOS:`KindleMate2_{macos-arm64,macos-x64}.dmg` —— 打开后把 `KindleMate2.app` 拖进 Applications。',
-            '- 带 `_runtime` = 自包含(免装 .NET 8 运行时);不带 = 需先安装对应平台的 .NET 8 运行时。macOS 只提供自包含包。',
+            '- 带 `_runtime` = 自包含(免装 .NET 运行时);不带 = 需先安装对应平台的 .NET 10 运行时。macOS 只提供自包含包。',
+            '- **本版起目标框架由 .NET 8 升到 .NET 10**(.NET 8 支持于 2026-11-10 终止):使用**不带 `_runtime` 后缀**的包,请把 .NET 8 运行时替换为 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)(Windows 需 Desktop Runtime);改用带 `_runtime` 的包则无需安装任何运行时。',
+            '- Linux 自本版起要求 glibc ≥ 2.27(此前为 2.23):CentOS 7 等老发行版请改用自包含包或先升级系统。',
             '',
             '**各平台数据目录**',
             '- Windows:程序所在目录(与旧版一致)。',
