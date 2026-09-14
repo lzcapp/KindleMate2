@@ -15,7 +15,7 @@
     <Product>Kindle Mate 2</Product>
     <Company>lzcapp</Company>
     <Copyright>Copyright © 2026 lzcapp</Copyright>
-    <Version>2026.09.13</Version>
+    <Version>2026.09.14</Version>
   </PropertyGroup>
 
   <!-- 程序图标:沿用原版 WinForms 壳的 bookmark.ico(与仓库根 bookmark.ico 字节一致)。
