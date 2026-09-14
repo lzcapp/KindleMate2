@@ -43,6 +43,33 @@ jobs:
       - name: Run tests
         run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore
 
+      # 发布冒烟(-r + --self-contained):补一个长期盲区 —— 上面几步只走普通 build/test,
+      # 从不碰发布专属的 RID 路径,于是 2026-09-06 那类"只有发版才炸"的故障(SDK 10 发布
+      # net8 + -r + 旧 assets 触发 NuGet restore 崩溃 MSB4181/path1 null)只能等打 tag
+      # 那天在 Release 里暴露。这里只跑 win-x64 自包含一档 —— 矩阵里风险最高的组合,
+      # 足以覆盖该路径,又不必为六变体矩阵付 CI 成本。
+      - name: Publish smoke (win-x64, self-contained)
+        run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net8.0-windows -c Release -r win-x64 --self-contained true -o publish/smoke
+
+      # 实跑发布产物:验证 apphost、SQLite 原生库、卫星资源与平台设备实现都随发布产物一起
+      # 落地 —— 也就是 release 真正交付的那个形态(上面各步验的是 obj/bin 里的中间产物)。
+      # Windows 上设备实现应为 Devices.Windows.DeviceManager(非 Windows 才是 NullDeviceManager)。
+      # shell 必须用 bash:pwsh 调用 GUI 子系统(WinExe)不会等待进程退出,断言会读到空文件。
+      - name: Boot self-check (published)
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          touch "$work/empty.dat"
+          # 原生 exe 只认 Windows 路径,而 mktemp 给的是 MSYS 形式(/tmp/...),故转一下;
+          # 且 --smoke 内部会切换当前目录,所以传参一律用绝对路径。
+          db="$(cygpath -w "$work/empty.dat")"
+          out="$(cygpath -w "$work/smoke.txt")"
+          ./publish/smoke/KindleMate2.Avalonia.exe --smoke "$db" "$out"
+          cat "$out"
+          grep -q "Devices.Windows.DeviceManager" "$out"
+          echo "windows 发布产物自检通过(win-x64 self-contained)"
+
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
   # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),
   # 因此这里能构建**整个解决方案**并跨平台跑单测,而不只是壳的 net8.0 子集。
