@@ -55,10 +55,20 @@ public class ExportManager : IExportManager {
     }
 
     /// <summary>
-    /// Exports original clippings for backup.
+    /// 把原始标注行导出到 Backups 目录，作为数据库备份之外的一份可读副本。
     /// </summary>
+    /// <remarks>
+    /// 文件名此前误用了 <see cref="AppConstants.DatabaseFileName"/>（"KM2.dat"），于是
+    /// Backups 里会出现一个名为 KM2.dat 的**纯文本**文件：用 SQLite 打开报
+    /// "file is not a database"，而且极易与真正的库备份（KM2_backup_&lt;时间戳&gt;.dat）
+    /// 混淆 —— 用户很可能把它当数据库备份去恢复，然后打不开。此外它是固定名，每次
+    /// 备份都覆盖上一份。
+    /// 现改为与 <see cref="SyncToKindle"/> 一致的命名：MyClippings_&lt;时间戳&gt;.txt，
+    /// 既表明这是标注文本而非数据库，也不再互相覆盖。
+    /// </remarks>
     public bool BackupClippings(out Exception? exception) {
-        return _originalClippingLineService.Export(_backupPath, AppConstants.DatabaseFileName, out exception);
+        var fileName = "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT;
+        return _originalClippingLineService.Export(_backupPath, fileName, out exception);
     }
 
     /// <summary>
