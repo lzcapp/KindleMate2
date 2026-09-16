@@ -205,6 +205,30 @@ public sealed class ClippingMaintenanceTests : IDisposable {
         Assert.Equal(2, _clippingRepo.GetAll().Count);
     }
 
+    // ————————————————————————— 重建 —————————————————————————
+
+    /// <summary>
+    /// 重建 = 从 <c>original_clipping_lines</c> 重新解析出 <c>clippings</c>。
+    /// 它和回收站共用同一个前提(原始行一直在),所以被删掉的条目应当能被重建带回。
+    /// </summary>
+    [Fact]
+    public void RebuildDatabase_RegeneratesClippingsFromOriginalLines() {
+        var key = ImportOneClipping("内容一");
+        Assert.True(_clippingService.DeleteClipping(key));
+        Assert.Empty(_clippingRepo.GetAll());
+
+        Assert.True(_km2.RebuildDatabase(out _));
+
+        Assert.Contains(_clippingRepo.GetAll(), c => c.Content == "内容一");
+    }
+
+    [Fact]
+    public void RebuildDatabase_OnEmptyDatabase_DoesNotThrow() {
+        _km2.RebuildDatabase(out _);
+
+        Assert.Empty(_clippingRepo.GetAll());
+    }
+
     // ————————————————————————— helpers —————————————————————————
 
     /// <summary>
