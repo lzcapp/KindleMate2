@@ -329,6 +329,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         try {
             DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
+            // 老库补建 [clippings] 的查询索引(幂等;新建的库已由建库脚本带上)。
+            DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
         } catch (Exception ex) {
             // 原版此处只弹一个警告框,不阻断启动
             MigrationWarning = ex.Message;
