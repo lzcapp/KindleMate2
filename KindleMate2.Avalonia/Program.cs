@@ -457,13 +457,21 @@ internal static class Program {
             // 显式挑一条真正是标注的项:此前直接取 FirstOrDefault() 的 key,而 SelectedClippingKey
             // 在选不到标注时返回空串 —— binKey 一空,下面四项断言就全 False,
             // 看着像回收站坏了,其实只是选样失败(产品链路本身另有单测覆盖)。
-            vm.SelectedItem = vm.Items.FirstOrDefault(i => i.Clipping != null);
+            // ⚠️ 必须排除本探针自己造的合成条目(batch fallback 插的「自检书」):它走的是
+            // repository.Add,没有对应的 original_clipping_lines 行 —— 而「已删除」的判据恰恰是
+            // 「原始行还在、clippings 已删」,拿它测必然四项全 False(此前那四个 False 就是这么来的;
+            // 产品链路本身由 DataLayerFixTests.DeleteClipping_EntersRecycleBin_AndCanBeRestored 覆盖)。
+            vm.SelectedItem = vm.Items.FirstOrDefault(i => i.Clipping != null
+                && !string.Equals(i.Clipping.BookName, "自检书", StringComparison.Ordinal));
             var binKey = vm.SelectedClippingKey;
             if (string.IsNullOrEmpty(binKey)) {
                 report.AppendLine("recycle bin: 跳过(当前没有可选的标注,取不到 key)");
             } else {
+                var beforeCount = vm.Session!.Km2DatabaseService.GetDeletedOriginalLines().Count;
                 vm.DeleteSelectedAsync().GetAwaiter().GetResult();
-                var inBin = vm.Session!.Km2DatabaseService.GetDeletedOriginalLines().Any(l => l.Key == binKey);
+                var afterList = vm.Session.Km2DatabaseService.GetDeletedOriginalLines();
+                var inBin = afterList.Any(l => l.Key == binKey);
+                report.AppendLine($"  -> binKey={binKey} / 删除前回收站={beforeCount} 条 / 删除后={afterList.Count} 条");
                 vm.LoadRecycleBinAsync().GetAwaiter().GetResult();
                 var binShows = vm.ClipTable.Any(c => c.Key == binKey);
                 vm.SelectedItem = vm.Items.FirstOrDefault(i => i.Clipping?.Key == binKey);
