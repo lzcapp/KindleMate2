@@ -46,13 +46,14 @@
     <!--
       图表区(2026-09-17 改版,用户要求"统计图表更多样化")。
       形态与数据性质的对应关系:时间序列 → 折线;离散分类且项少 → 竖柱;排名且项多/标签长 → 横向条形;
-      构成占比 → 环形(批次 2 落地);日期密度 → 热力图(批次 2 落地)。
-      色彩只用唯一强调色 #7B8CFF 及其透明度阶梯,不引入第二色系 —— 四种新形态仍属同一视觉语言。
+      构成占比 → 环形;日期密度 → 热力图。
+      色彩只用唯一强调色 #7B8CFF 及其透明度阶梯,不引入第二色系 —— 五种形态仍属同一视觉语言。
       所有图表共用同一套内边距(左右 6 / 上 16 / 下 20)、10.5pt 标签与 0.5px 参考线,新图不另起一套。
-      布局:行1 = 趋势(跨两列) + 构成;行2 = 按小时 / 按星期 / 排名;Grid 的 * 行吃掉窗口剩余空间
-      (ChartControl.Render 基于 Bounds,给多大画多大)。批次 2 会在末尾追加整幅宽的热力图一行。
+      布局:行1 = 趋势(跨两列) + 构成环形;行2 = 按小时 / 按星期 / 排名;行3 = 整幅宽的年历热力图。
+      Grid 的 * 行吃掉窗口剩余空间(ChartControl.DrawCore 基于 Bounds,给多大画多大);
+      所有图表都支持悬停显示数值(命中测试见 ChartControl.HitTest)。
     -->
-    <Grid x:Name="ChartHost" Margin="16" RowDefinitions="*,*,Auto" RowSpacing="14">
+    <Grid x:Name="ChartHost" Margin="16" RowDefinitions="*,*,0.8*,Auto" RowSpacing="14">
 
       <Grid Grid.Row="0" ColumnDefinitions="2*,*" ColumnSpacing="14">
         <Border Grid.Column="0" Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
@@ -69,7 +70,7 @@
                 BorderThickness="0.5" CornerRadius="10" Padding="14,12">
           <Grid RowDefinitions="Auto,*" RowSpacing="8">
             <TextBlock Grid.Row="0" x:Name="CompositionTitle" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
-            <charts:ChartControl Grid.Row="1" x:Name="CompositionChart" Kind="Bar"
+            <charts:ChartControl Grid.Row="1" x:Name="CompositionChart" Kind="Donut"
                                  Accent="{DynamicResource KmAccentBrush}"
                                  Axis="{DynamicResource KmBorderBrush}"
                                  Label="{DynamicResource KmTextTertiaryBrush}" />
@@ -110,7 +111,18 @@
         </Border>
       </Grid>
 
-      <TextBlock Grid.Row="2" x:Name="EmptyHint" Classes="tt" Text="{x:Static shared:Strings.Ui_Stats_Empty}" IsVisible="False" Margin="2,0" />
+      <Border Grid.Row="2" Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
+              BorderThickness="0.5" CornerRadius="10" Padding="14,12">
+        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+          <TextBlock Grid.Row="0" Text="{x:Static shared:Strings.Ui_Stats_Calendar}" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+          <charts:ChartControl Grid.Row="1" x:Name="CalendarChart" Kind="Heatmap"
+                               Accent="{DynamicResource KmAccentBrush}"
+                               Axis="{DynamicResource KmBorderBrush}"
+                               Label="{DynamicResource KmTextTertiaryBrush}" />
+        </Grid>
+      </Border>
+
+      <TextBlock Grid.Row="3" x:Name="EmptyHint" Classes="tt" Text="{x:Static shared:Strings.Ui_Stats_Empty}" IsVisible="False" Margin="2,0" />
     </Grid>
 
   </DockPanel>

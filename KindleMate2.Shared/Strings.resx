@@ -237,9 +237,6 @@
   <data name="Parsed_X" xml:space="preserve">
     <value>共解析</value>
   </data>
-  <data name="X_Records" xml:space="preserve">
-    <value>条记录</value>
-  </data>
   <data name="Imported_X" xml:space="preserve">
     <value>导入</value>
   </data>
@@ -713,6 +710,9 @@
   </data>
   <data name="Ui_Stats_ByFrequency" xml:space="preserve">
     <value>查询次数分布</value>
+  </data>
+  <data name="Ui_Stats_Calendar" xml:space="preserve">
+    <value>年历热力图</value>
   </data>
   <data name="Ui_Stats_ExportImage" xml:space="preserve">
     <value>导出图片</value>

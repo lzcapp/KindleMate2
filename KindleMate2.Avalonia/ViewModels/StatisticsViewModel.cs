@@ -41,6 +41,15 @@ public sealed class StatisticsViewModel {
     /// </summary>
     public IReadOnlyList<ChartPoint> VocabFrequencyBuckets { get; private init; } = Array.Empty<ChartPoint>();
 
+    /// <summary>
+    /// 年历热力图数据。Label **固定**用不变文化的 <c>yyyy-MM-dd</c> ——
+    /// <c>ChartControl</c> 的 Heatmap 分支按这个格式解析日期,改格式会让热力图画不出来。
+    /// </summary>
+    public IReadOnlyList<ChartPoint> ClippingsCalendar { get; private init; } = Array.Empty<ChartPoint>();
+
+    /// <inheritdoc cref="ClippingsCalendar"/>
+    public IReadOnlyList<ChartPoint> VocabsCalendar { get; private init; } = Array.Empty<ChartPoint>();
+
     // 排名类图表的项数上限:横向条形再多就挤得看不清了。
     private const int TopBooksTake = 10;
     private const int TopWordsTake = 20;
@@ -79,6 +88,8 @@ public sealed class StatisticsViewModel {
             VocabsByHour = ByHour(vocabDates),
             VocabsByWeekday = ByWeekday(vocabDates),
             VocabFrequencyBuckets = ByFrequencyBuckets(vocabs),
+            ClippingsCalendar = ByCalendarDay(clippingDates),
+            VocabsCalendar = ByCalendarDay(vocabDates),
             TopWords = TopWordsOf(vocabs),
             HasVocabs = vocabs.Count > 0,
             ClippingSummary = clippingDates.Count > 0
@@ -172,6 +183,16 @@ public sealed class StatisticsViewModel {
         }
         return result;
     }
+
+    /// <summary>
+    /// 年历热力图数据:按日聚合。标签**必须**是不变文化的 <c>yyyy-MM-dd</c> ——
+    /// 热力图那一侧按这个格式反解日期,换成 CurrentCulture 的写法(某些区域会用别的分隔符)就会画不出来。
+    /// </summary>
+    private static IReadOnlyList<ChartPoint> ByCalendarDay(IEnumerable<DateTime> dates) =>
+        dates.GroupBy(d => new DateTime(d.Year, d.Month, d.Day))
+            .OrderBy(g => g.Key)
+            .Select(g => new ChartPoint(g.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), g.Count()))
+            .ToList();
 
     private static DateTime? ParseDate(string? field) {
         if (string.IsNullOrWhiteSpace(field)) return null;

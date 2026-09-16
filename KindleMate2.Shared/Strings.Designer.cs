@@ -1012,15 +1012,6 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
-        ///   查找类似 条记录 的本地化字符串。
-        /// </summary>
-        public static string X_Records {
-            get {
-                return ResourceManager.GetString("X_Records", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 条 的本地化字符串。
         /// </summary>
         public static string X_Rows {
@@ -1150,6 +1141,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Stats_TopBooks => ResourceManager.GetString("Ui_Stats_TopBooks", resourceCulture);
         public static string Ui_Stats_TopWords => ResourceManager.GetString("Ui_Stats_TopWords", resourceCulture);
         public static string Ui_Stats_ByFrequency => ResourceManager.GetString("Ui_Stats_ByFrequency", resourceCulture);
+        public static string Ui_Stats_Calendar => ResourceManager.GetString("Ui_Stats_Calendar", resourceCulture);
         public static string Ui_Stats_ExportImage => ResourceManager.GetString("Ui_Stats_ExportImage", resourceCulture);
         public static string Ui_Stats_Empty => ResourceManager.GetString("Ui_Stats_Empty", resourceCulture);
         public static string Ui_Stats_SummaryClippings => ResourceManager.GetString("Ui_Stats_SummaryClippings", resourceCulture);

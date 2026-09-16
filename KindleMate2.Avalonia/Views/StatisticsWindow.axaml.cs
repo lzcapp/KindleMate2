@@ -46,6 +46,7 @@ public partial class StatisticsWindow : Window {
             CompositionTitle.Text = Strings.Ui_Stats_ByType;
             TopChart.Points = vm.TopBooks;
             TopTitle.Text = Strings.Ui_Stats_TopBooks;
+            CalendarChart.Points = vm.ClippingsCalendar;
             SummaryText.Text = vm.ClippingSummary;
         } else {
             DateChart.Points = vm.VocabsByDate;
@@ -55,6 +56,7 @@ public partial class StatisticsWindow : Window {
             CompositionTitle.Text = Strings.Ui_Stats_ByFrequency;
             TopChart.Points = vm.TopWords;
             TopTitle.Text = Strings.Ui_Stats_TopWords;
+            CalendarChart.Points = vm.VocabsCalendar;
             SummaryText.Text = vm.VocabSummary;
         }
 
