@@ -1154,6 +1154,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Stats_SummaryVocabNoSpan => ResourceManager.GetString("Ui_Stats_SummaryVocabNoSpan", resourceCulture);
         public static string Ui_Stats_Saved => ResourceManager.GetString("Ui_Stats_Saved", resourceCulture);
         public static string Ui_Stats_SaveFailed => ResourceManager.GetString("Ui_Stats_SaveFailed", resourceCulture);
+        public static string Ui_Progress_Starting => ResourceManager.GetString("Ui_Progress_Starting", resourceCulture);
         public static string Ui_Progress_ReadingFile => ResourceManager.GetString("Ui_Progress_ReadingFile", resourceCulture);
         public static string Ui_Progress_Parsing => ResourceManager.GetString("Ui_Progress_Parsing", resourceCulture);
         public static string Ui_Progress_Preparing => ResourceManager.GetString("Ui_Progress_Preparing", resourceCulture);

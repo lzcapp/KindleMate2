@@ -9,6 +9,8 @@ public interface IDeviceManager : IDisposable {
     void StartWatching();
     bool IsKindleConnected();
     string GetKindleVersionText();
-    bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception);
+    /// <summary>把设备上的 My Clippings.txt 与 vocab.db 取回本地。<paramref name="progress"/> 按「第几个文件」上报。</summary>
+    bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception,
+        IProgress<KindleMate2.Application.Models.OperationProgress>? progress = null);
     void SyncFileToDevice(string exportedFilePath, string targetFileName);
 }

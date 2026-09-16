@@ -1,4 +1,5 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+﻿using KindleMate2.Application.Models;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Domain.Interfaces.VocabDB;
@@ -10,6 +11,9 @@ using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services.KM2DB {
     public class VocabDatabaseService {
+        /// <summary>上报进度的条数间隔:构建/判重阶段每这么多行切一次 UI 线程。</summary>
+        private const int ProgressReportInterval = 100;
+
         private readonly IBookInfoRepository _bookInfoRepository;
         private readonly IVocabLookupRepository _vocabLookupRepository;
         private readonly IWordRepository _wordRepository;
@@ -25,8 +29,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             _vocabRepository = vocabRepository;
         }
 
-        public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, string> result) {
+        /// <summary>导入设备上 vocab.db 里的生词与查询记录。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
+        public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, string> result,
+            IProgress<OperationProgress>? progress = null) {
             try {
+                // 读的是另一份库(vocab.db),词量大时有可感知耗时
+                progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
                 var words = _wordRepository.GetAll();
                 var lookups = _vocabLookupRepository.GetAll();
                 var bookInfos = _bookInfoRepository.GetAll();
@@ -44,8 +52,16 @@ namespace KindleMate2.Application.Services.KM2DB {
                     .Select(v => v.Id!)
                     .ToHashSet(StringComparer.Ordinal);
 
+                // 判重与构建是纯内存操作,但要走完两份源表 —— 共用一条进度轴,分母 = 词 + 查询记录
+                var prepareTotal = words.Count + lookups.Count;
+                var processedRows = 0;
+                progress?.Report(new OperationProgress(OperationStage.Preparing, 0, prepareTotal));
+
                 var newVocabs = new List<Vocab>();
                 foreach (Word item in words) {
+                    ReportProgress(progress, OperationStage.Preparing, processedRows, prepareTotal);
+                    processedRows++;
+
                     var id = item.Id;
                     var word = item.WordText;
                     var stem = item.Stem;
@@ -73,7 +89,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
                 if (newVocabs.Count > 0) {
+                    // 批量插入各自是单事务,内部无法细分 —— 前后各报一次
+                    progress?.Report(new OperationProgress(OperationStage.Writing, 0, newVocabs.Count));
                     insertedVocabCount = _vocabRepository.Add(newVocabs);
+                    progress?.Report(new OperationProgress(OperationStage.Writing, newVocabs.Count, newVocabs.Count));
                 }
 
                 var newLookups = new List<Domain.Entities.KM2DB.Lookup>();
@@ -89,6 +108,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                     .Select(l => l.WordKey + "\u0000" + l.Timestamp)
                     .ToHashSet(StringComparer.Ordinal);
                 foreach (Lookup item in lookups) {
+                    ReportProgress(progress, OperationStage.Preparing, processedRows, prepareTotal);
+                    processedRows++;
+
                     var wordKey = item.WordKey;
                     var bookKey = item.BookKey;
                     var usage = item.Usage;
@@ -127,10 +149,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                     });
                 }
                 if (newLookups.Count > 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Writing, 0, newLookups.Count));
                     insertedLookupCount = _km2DbLookupRepository.Add(newLookups);
+                    progress?.Report(new OperationProgress(OperationStage.Writing, newLookups.Count, newLookups.Count));
                 }
 
-                UpdateFrequency();
+                UpdateFrequency(progress);
 
                 result = new Dictionary<string, string> {
                     { AppConstants.LookupCount, lookupCount.ToString() },
@@ -149,7 +173,9 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
 
-        private void UpdateFrequency() {
+        /// <summary>重算词频。<paramref name="progress"/> 供界面展示(读全表 + 批量回写)。</summary>
+        private void UpdateFrequency(IProgress<OperationProgress>? progress = null) {
+            progress?.Report(OperationProgress.At(OperationStage.Preparing));
             var vocabs = _vocabRepository.GetAll();
             var lookups = _km2DbLookupRepository.GetAll();
             var frequencyMap = lookups
@@ -174,7 +200,17 @@ namespace KindleMate2.Application.Services.KM2DB {
                 });
             }
             if (updates.Count > 0) {
+                progress?.Report(new OperationProgress(OperationStage.Writing, 0, updates.Count));
                 _vocabRepository.UpdateFrequencyByWordKey(updates);
+                progress?.Report(new OperationProgress(OperationStage.Writing, updates.Count, updates.Count));
+            }
+        }
+
+        /// <summary>按条数上报(每 <see cref="ProgressReportInterval"/> 条一次),避免过于频繁地切回 UI 线程。</summary>
+        private static void ReportProgress(IProgress<OperationProgress>? progress, OperationStage stage,
+            int processed, int total) {
+            if (total > 0 && (processed % ProgressReportInterval == 0 || processed == total)) {
+                progress?.Report(new OperationProgress(stage, processed, total));
             }
         }
     }

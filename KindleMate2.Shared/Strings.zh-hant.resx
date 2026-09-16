@@ -744,6 +744,9 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_Progress_Starting" xml:space="preserve">
+    <value>正在處理…</value>
+  </data>
   <data name="Ui_Progress_ReadingFile" xml:space="preserve">
     <value>正在讀取檔案…</value>
   </data>

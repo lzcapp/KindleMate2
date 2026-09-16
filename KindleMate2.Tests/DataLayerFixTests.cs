@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Xunit;
+using KindleMate2.Application.Models;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -157,6 +158,56 @@ public sealed class DataLayerFixTests : IDisposable {
 
         Assert.True(svc.ImportFromKmDatabase());
         Assert.Equal(2, targetClipRepo.GetAll().Count); // cross-book same content kept
+    }
+
+    /// <summary>
+    /// 进度上报回归:导入原版 KM / 本程序 KM2 库(扁平 schema)必须走出
+    /// 「读取 → 比对 → 写入」三个阶段,写入进度按源行数推进到饱和。
+    /// </summary>
+    [Fact]
+    public void KmDatabaseServiceImport_ReportsStagedProgress() {
+        var targetDb = NewDb("t6b-target.db");
+        var kmDb = NewDb("t6b-km.db");
+
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(kmDb))) {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "INSERT INTO clippings (key, content, bookname, authorname, clippingdate) VALUES " +
+                "('p1', 'first quote', 'Book P', 'Author P', '2026-01-01 00:00:00'), " +
+                "('p2', 'second quote', 'Book P', 'Author P', '2026-01-02 00:00:00');";
+            cmd.ExecuteNonQuery();
+        }
+
+        var targetClipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = new KmDatabaseService(
+            targetClipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new ClippingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new LookupRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(kmDb)));
+
+        var reports = new List<OperationProgress>();
+        Assert.True(svc.ImportFromKmDatabase(new TestProgress(reports.Add)));
+
+        Assert.Equal(OperationStage.ReadingFile, reports[0].Stage);
+        Assert.Contains(reports, r => r.Stage == OperationStage.Preparing);
+
+        // 分母 = 源库标注行数(2),收尾必须饱和到 2/2
+        var lastWrite = reports.Last(r => r.Stage == OperationStage.Writing);
+        Assert.Equal(2, lastWrite.Total);
+        Assert.Equal(2, lastWrite.Current);
+
+        // 逐条写入的进度不能倒退
+        var writeCurrent = reports.Where(r => r.Stage == OperationStage.Writing).Select(r => r.Current).ToList();
+        for (var i = 1; i < writeCurrent.Count; i++) {
+            Assert.True(writeCurrent[i] >= writeCurrent[i - 1], "写入进度必须单调不减");
+        }
     }
 
     [Fact]

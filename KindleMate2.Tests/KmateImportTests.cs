@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Xunit;
+using KindleMate2.Application.Models;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -221,5 +222,47 @@ public sealed class KmateImportTests : IDisposable {
 
         Assert.Empty(clipRepo.GetAll());
         Assert.Single(vocabRepo.GetAll()); // only the pre-existing row remains
+    }
+
+    /// <summary>
+    /// 进度上报回归:导入 km3.dat 必须走出「读取 → 比对 → 写入」三个阶段,
+    /// 判重进度单调不减、写入收尾饱和 —— 否则界面在整段导入期间只剩一个不定态跑马灯。
+    /// </summary>
+    [Fact]
+    public void ImportFromKmateDatabase_ReportsStagedProgress() {
+        var targetDb = NewDb("kt-progress.db");
+        var kmateDb = NewKmateDb("kt-progress-kmate.db");
+
+        using (var conn = new SqliteConnection($"Data Source={kmateDb};Mode=ReadWrite;")) {
+            conn.Open();
+            Execute(conn, "INSERT INTO clippings (key, content, bookname, authorname, brieftype, clippingdate, source) VALUES ('eeee1111222233334444555566667777', 'a progress quote', 'Book P', 'Author P', 0, '2026-08-21 10:00:00', 'Kindle')");
+            Execute(conn, "INSERT INTO original_clipping_lines (key, line1) VALUES ('eeee1111222233334444555566667777', 'Book P (Author P)')");
+        }
+
+        var svc = new KmateDatabaseService(
+            new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            kmateDb,
+            DatabaseHelper.GetConnectionString(targetDb));
+
+        var reports = new List<OperationProgress>();
+        Assert.True(svc.ImportFromKmateDatabase(new TestProgress(reports.Add)));
+
+        Assert.Equal(OperationStage.ReadingFile, reports[0].Stage);
+        Assert.Contains(reports, r => r.Stage == OperationStage.Preparing);
+        Assert.Contains(reports, r => r.Stage == OperationStage.Writing);
+
+        // 判重进度单调不减(源库 2 行 → 0/2 → 2/2)
+        var prepareCurrent = reports.Where(r => r.Stage == OperationStage.Preparing).Select(r => r.Current).ToList();
+        for (var i = 1; i < prepareCurrent.Count; i++) {
+            Assert.True(prepareCurrent[i] >= prepareCurrent[i - 1], "判重进度必须单调不减");
+        }
+
+        // 写入走单事务无法细分,但收尾必须饱和(0/2 → 2/2),否则进度条会停在半路
+        var lastWrite = reports.Last(r => r.Stage == OperationStage.Writing);
+        Assert.True(lastWrite.Total > 0);
+        Assert.Equal(lastWrite.Total, lastWrite.Current);
     }
 }

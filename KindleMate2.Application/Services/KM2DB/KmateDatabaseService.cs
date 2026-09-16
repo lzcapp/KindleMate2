@@ -1,3 +1,4 @@
+using KindleMate2.Application.Models;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -23,6 +24,9 @@ namespace KindleMate2.Application.Services.KM2DB {
     /// The source file is only ever opened read-only.
     /// </remarks>
     public class KmateDatabaseService {
+        /// <summary>上报进度的条数间隔:判重是纯内存比对,每这么多行切一次 UI 线程即可。</summary>
+        private const int ProgressReportInterval = 100;
+
         private readonly IClippingRepository _clippingRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IOriginalClippingLineRepository _originalClippingLineRepository;
@@ -45,8 +49,10 @@ namespace KindleMate2.Application.Services.KM2DB {
             _targetConnectionString = targetConnectionString;
         }
 
-        public bool ImportFromKmateDatabase() {
+        public bool ImportFromKmateDatabase(IProgress<OperationProgress>? progress = null) {
             try {
+                // 读源文件并映射到 km2 schema 都在 TryRead 里,km3.dat 大时有可感知耗时
+                progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
                 if (!KmateSourceReader.TryRead(_sourcePath, out var data, out _)) {
                     return false;
                 }
@@ -55,6 +61,15 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var lineCandidates = new List<OriginalClippingLine>();
                 var lookupCandidates = new List<Lookup>();
                 var vocabCandidates = new List<Vocab>();
+
+                // 判重要走完源库每一行(纯内存比对);四个集合共用一条进度轴,
+                // 分母 = 源库总行数,进度单调递增不倒退。
+                var prepareTotal = data.Clippings.Count + data.OriginalClippingLines.Count
+                                   + data.Lookups.Count + data.Vocabs.Count;
+                var processedRows = 0;
+                if (prepareTotal > 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, 0, prepareTotal));
+                }
 
                 if (data.Clippings.Count > 0 || data.OriginalClippingLines.Count > 0) {
                     // Pre-fetch target data for O(1) in-memory dedup checks.
@@ -67,6 +82,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var targetBookContents = targetClippings.Select(KmateDedup.BookContentKey).ToHashSet();
 
                     foreach (Clipping kmClipping in data.Clippings) {
+                        if (processedRows % ProgressReportInterval == 0) {
+                            progress?.Report(new OperationProgress(OperationStage.Preparing, processedRows, prepareTotal));
+                        }
+                        processedRows++;
+
                         if (string.IsNullOrEmpty(kmClipping.Content)) {
                             continue;
                         }
@@ -82,6 +102,11 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                     var targetOriginalKeys = _originalClippingLineRepository.GetAllKeys().ToHashSet();
                     foreach (OriginalClippingLine kmLine in data.OriginalClippingLines) {
+                        if (processedRows % ProgressReportInterval == 0) {
+                            progress?.Report(new OperationProgress(OperationStage.Preparing, processedRows, prepareTotal));
+                        }
+                        processedRows++;
+
                         // Skip orphan lines whose key was removed from clippings by KMate's cleanup.
                         if (!targetClippingKeys.Contains(kmLine.Key)) {
                             continue;
@@ -100,6 +125,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                         .ToHashSet();
 
                     foreach (Lookup kmLookup in data.Lookups) {
+                        if (processedRows % ProgressReportInterval == 0) {
+                            progress?.Report(new OperationProgress(OperationStage.Preparing, processedRows, prepareTotal));
+                        }
+                        processedRows++;
+
                         if (string.IsNullOrWhiteSpace(kmLookup.WordKey)) {
                             continue;
                         }
@@ -115,6 +145,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
 
                     foreach (Vocab kmVocab in data.Vocabs) {
+                        if (processedRows % ProgressReportInterval == 0) {
+                            progress?.Report(new OperationProgress(OperationStage.Preparing, processedRows, prepareTotal));
+                        }
+                        processedRows++;
+
                         if (string.IsNullOrWhiteSpace(kmVocab.Id)) {
                             continue;
                         }
@@ -125,6 +160,17 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                 }
 
+                if (prepareTotal > 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, prepareTotal, prepareTotal));
+                }
+
+                // 写入走单连接 + 单事务,内部无法再细分进度 —— 因此前后各报一次(0 → 满),
+                // 而不是拆批提交,以免破坏 all-or-nothing 语义。
+                var writeTotal = clippingCandidates.Count + lineCandidates.Count + lookupCandidates.Count + vocabCandidates.Count;
+                if (writeTotal > 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Writing, 0, writeTotal));
+                }
+
                 // All-or-nothing: candidates are written in a single connection + single transaction,
                 // so a failure anywhere rolls the whole import back (no partial migration).
                 KmateAtomicWriter.WriteAll(
@@ -133,6 +179,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                     lineCandidates,
                     lookupCandidates,
                     vocabCandidates);
+
+                if (writeTotal > 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Writing, writeTotal, writeTotal));
+                }
 
                 return true;
             } catch (Exception e) {

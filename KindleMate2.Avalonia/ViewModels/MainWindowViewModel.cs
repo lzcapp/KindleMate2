@@ -148,6 +148,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>阶段文案,如「正在导入标注」。</summary>
     public string ProgressStageText => _progress.Stage switch {
+        // 操作已开始但处理器还没报出第一个阶段:用中性文案,避免与「正在读取文件…」撞车
+        OperationStage.None => Strings.Ui_Progress_Starting,
         OperationStage.ReadingFile => Strings.Ui_Progress_ReadingFile,
         OperationStage.Parsing => Strings.Ui_Progress_Parsing,
         OperationStage.Preparing => Strings.Ui_Progress_Preparing,
@@ -558,7 +560,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         return RunOperationAsync(() => {
             Directory.CreateDirectory(importDir);
-            if (!session.DeviceManager.ImportFilesFromDevice(clippingsFile, wordsFile, out var failure)) {
+            // 设备→本地这一步此前完全没有进度(整文件传输,大库上有可感知耗时),现在按「第几个文件」上报
+            if (!session.DeviceManager.ImportFilesFromDevice(clippingsFile, wordsFile, out var failure, ProgressReporter)) {
                 throw failure ?? new InvalidOperationException(Strings.Import_Failed);
             }
             return session.ImportManager.Import(clippingsFile, wordsFile, ProgressReporter);
@@ -566,20 +569,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     public Task<OperationResult> ImportKindleWordsAsync(string path) =>
-        RunOperationAsync(() => _session!.ImportManager.ImportKindleWords(path), true,
+        RunOperationAsync(() => _session!.ImportManager.ImportKindleWords(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
     public Task<OperationResult> ImportKmDatabaseAsync(string path) =>
-        RunOperationAsync(() => _session!.ImportManager.ImportKmDatabase(path), true,
+        RunOperationAsync(() => _session!.ImportManager.ImportKmDatabase(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
     /// <summary>导入另一个 Kindle Mate 2 数据库(本程序自己的库格式)。</summary>
     public Task<OperationResult> ImportKm2DatabaseAsync(string path) =>
-        RunOperationAsync(() => _session!.ImportManager.ImportKm2Database(path), true,
+        RunOperationAsync(() => _session!.ImportManager.ImportKm2Database(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
     public Task<OperationResult> ImportKmateDatabaseAsync(string path) =>
-        RunOperationAsync(() => _session!.ImportManager.ImportKmateDatabase(path), true,
+        RunOperationAsync(() => _session!.ImportManager.ImportKmateDatabase(path, ProgressReporter), true,
             Strings.Successful, Strings.Import_Failed);
 
     // —— 导出 ——
