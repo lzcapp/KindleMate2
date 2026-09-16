@@ -1092,7 +1092,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
     }
 
-    /// <summary>把 Vocab 的词干 / 词频回填到 Lookup(与 DataDisplayService 口径一致)。</summary>
+    /// <summary>把 Vocab 的词干 / 词频回填到 Lookup。</summary>
     private void EnrichLookups() {
         foreach (var lookup in _allLookups) {
             if (lookup.WordKey == null) continue;
