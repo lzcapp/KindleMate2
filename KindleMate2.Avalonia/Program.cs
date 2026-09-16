@@ -454,9 +454,14 @@ internal static class Program {
                 report.AppendLine($"delete word node: ok={wordDropResult.Ok} kind={wordDropResult.Kind} '{wordToDrop}' 查询 {lookupsBefore} -> {lookupsAfter} 条(期望 0)");
             // 回收站回归(2026-09-13 新功能):删除一条 → 应进入回收站 → 恢复后回到主表。
             vm.DomainIndex = 0;
-            if (vm.Items.Count > 0) {
-                vm.SelectedItem = vm.Items.FirstOrDefault();
-                var binKey = vm.SelectedClippingKey;
+            // 显式挑一条真正是标注的项:此前直接取 FirstOrDefault() 的 key,而 SelectedClippingKey
+            // 在选不到标注时返回空串 —— binKey 一空,下面四项断言就全 False,
+            // 看着像回收站坏了,其实只是选样失败(产品链路本身另有单测覆盖)。
+            vm.SelectedItem = vm.Items.FirstOrDefault(i => i.Clipping != null);
+            var binKey = vm.SelectedClippingKey;
+            if (string.IsNullOrEmpty(binKey)) {
+                report.AppendLine("recycle bin: 跳过(当前没有可选的标注,取不到 key)");
+            } else {
                 vm.DeleteSelectedAsync().GetAwaiter().GetResult();
                 var inBin = vm.Session!.Km2DatabaseService.GetDeletedOriginalLines().Any(l => l.Key == binKey);
                 vm.LoadRecycleBinAsync().GetAwaiter().GetResult();
