@@ -1146,6 +1146,10 @@ namespace KindleMate2.Shared {
         public static string Ui_Stats_ByDate => ResourceManager.GetString("Ui_Stats_ByDate", resourceCulture);
         public static string Ui_Stats_ByHour => ResourceManager.GetString("Ui_Stats_ByHour", resourceCulture);
         public static string Ui_Stats_ByWeekday => ResourceManager.GetString("Ui_Stats_ByWeekday", resourceCulture);
+        public static string Ui_Stats_ByType => ResourceManager.GetString("Ui_Stats_ByType", resourceCulture);
+        public static string Ui_Stats_TopBooks => ResourceManager.GetString("Ui_Stats_TopBooks", resourceCulture);
+        public static string Ui_Stats_TopWords => ResourceManager.GetString("Ui_Stats_TopWords", resourceCulture);
+        public static string Ui_Stats_ByFrequency => ResourceManager.GetString("Ui_Stats_ByFrequency", resourceCulture);
         public static string Ui_Stats_ExportImage => ResourceManager.GetString("Ui_Stats_ExportImage", resourceCulture);
         public static string Ui_Stats_Empty => ResourceManager.GetString("Ui_Stats_Empty", resourceCulture);
         public static string Ui_Stats_SummaryClippings => ResourceManager.GetString("Ui_Stats_SummaryClippings", resourceCulture);

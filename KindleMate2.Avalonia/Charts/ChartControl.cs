@@ -9,7 +9,13 @@ namespace KindleMate2.Avalonia.Charts;
 
 public enum ChartKind {
     Bar,
-    Line
+    Line,
+
+    /// <summary>
+    /// 横向条形 —— 给排名类数据用(书名 / 单词这类长标签,竖排会互相重叠)。
+    /// 与 <see cref="Bar"/> 共用同一套内边距、字号与圆角规范,只换朝向。
+    /// </summary>
+    HBar
 }
 
 /// <summary>图表数据点。</summary>
@@ -84,13 +90,20 @@ public sealed class ChartControl : Control {
         if (plotWidth <= 1 || plotHeight <= 1) return;
 
         var baselineY = padTop + plotHeight;
-        context.DrawLine(new Pen(axis, 1), new Point(padLeft, baselineY), new Point(padLeft + plotWidth, baselineY));
 
         var points = Points;
         if (points == null || points.Count == 0) {
             DrawText(context, KindleMate2.Shared.Strings.Ui_Stats_Empty, padLeft, padTop, labelBrush);
             return;
         }
+
+        // 横向条形自成一套:没有底部基线,改为在每条右端标数值(排名图的逐项数值才是主要信息)
+        if (Kind == ChartKind.HBar) {
+            DrawHorizontalBars(context, points, padLeft, padTop, plotWidth, plotHeight, accent, labelBrush);
+            return;
+        }
+
+        context.DrawLine(new Pen(axis, 1), new Point(padLeft, baselineY), new Point(padLeft + plotWidth, baselineY));
 
         var max = 0d;
         foreach (var point in points) {
@@ -143,18 +156,80 @@ public sealed class ChartControl : Control {
         }
     }
 
+    /// <summary>
+    /// 横向条形。左侧标签区宽度按最长标签实测(上限为绘图区的 40%),超宽标签截断加省略号;
+    /// 数值统一标在条右端。行高随项数自适应,故项数越多条越细,永远不会溢出绘图区。
+    /// </summary>
+    private static void DrawHorizontalBars(DrawingContext context, IReadOnlyList<ChartPoint> points,
+        double padLeft, double padTop, double plotWidth, double plotHeight, IBrush accent, IBrush labelBrush) {
+        var max = 0d;
+        foreach (var point in points) {
+            if (point.Value > max) max = point.Value;
+        }
+        if (max <= 0) max = 1;
+
+        var widestLabel = 0d;
+        foreach (var point in points) {
+            var measured = FormatText(point.Label, labelBrush).Width;
+            if (measured > widestLabel) widestLabel = measured;
+        }
+
+        const double labelGap = 6;
+        const double valueArea = 36;
+        var labelArea = Math.Min(widestLabel, plotWidth * 0.4);
+        var barArea = plotWidth - labelArea - labelGap - valueArea;
+        if (barArea <= 8) return;
+
+        var rowHeight = plotHeight / points.Count;
+        var barHeight = Math.Max(2, Math.Min(rowHeight * 0.62, 18));
+        var barX = padLeft + labelArea + labelGap;
+
+        for (var i = 0; i < points.Count; i++) {
+            var centerY = padTop + rowHeight * i + rowHeight / 2;
+            var value = points[i].Value;
+            var barWidth = value <= 0 ? 0 : Math.Max(1, value / max * barArea);
+
+            context.DrawRectangle(accent, null,
+                new Rect(barX, centerY - barHeight / 2, barWidth, barHeight), 2, 2);
+
+            var labelText = FormatText(FitText(points[i].Label, labelArea, labelBrush), labelBrush);
+            context.DrawText(labelText,
+                new Point(padLeft + labelArea - labelText.Width, centerY - labelText.Height / 2));
+
+            var valueText = FormatText(FormatValue(value), labelBrush);
+            context.DrawText(valueText, new Point(barX + barWidth + 6, centerY - valueText.Height / 2));
+        }
+    }
+
     private static string FormatValue(double value) =>
         value >= 1000 ? value.ToString("N0", CultureInfo.CurrentCulture) : value.ToString("0.#", CultureInfo.CurrentCulture);
 
+    /// <summary>图表统一字号 10.5pt。</summary>
+    private static FormattedText FormatText(string text, IBrush brush) =>
+        new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10.5, brush);
+
+    /// <summary>按可用宽度截断(超宽加省略号)。逐字符回退 —— 标签都是短串,这点开销可忽略。</summary>
+    private static string FitText(string text, double maxWidth, IBrush brush) {
+        if (FormatText(text, brush).Width <= maxWidth) return text;
+
+        const string ellipsis = "…";
+        var available = maxWidth - FormatText(ellipsis, brush).Width;
+        if (available <= 0) return ellipsis;
+
+        for (var length = text.Length - 1; length > 0; length--) {
+            if (FormatText(text[..length], brush).Width <= available) {
+                return text[..length] + ellipsis;
+            }
+        }
+        return ellipsis;
+    }
+
     private static void DrawText(DrawingContext context, string text, double x, double y, IBrush brush) {
-        var formatted = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            Typeface.Default, 10.5, brush);
-        context.DrawText(formatted, new Point(x, y));
+        context.DrawText(FormatText(text, brush), new Point(x, y));
     }
 
     private static void DrawTextCentered(DrawingContext context, string text, double centerX, double y, IBrush brush) {
-        var formatted = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            Typeface.Default, 10.5, brush);
+        var formatted = FormatText(text, brush);
         context.DrawText(formatted, new Point(centerX - formatted.Width / 2, y));
     }
 }

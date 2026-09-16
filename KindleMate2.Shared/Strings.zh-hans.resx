@@ -702,6 +702,18 @@
   <data name="Ui_Stats_ByWeekday" xml:space="preserve">
     <value>按星期</value>
   </data>
+  <data name="Ui_Stats_ByType" xml:space="preserve">
+    <value>标注类型构成</value>
+  </data>
+  <data name="Ui_Stats_TopBooks" xml:space="preserve">
+    <value>标注最多的书籍</value>
+  </data>
+  <data name="Ui_Stats_TopWords" xml:space="preserve">
+    <value>查询最多的生词</value>
+  </data>
+  <data name="Ui_Stats_ByFrequency" xml:space="preserve">
+    <value>查询次数分布</value>
+  </data>
   <data name="Ui_Stats_ExportImage" xml:space="preserve">
     <value>导出图片</value>
   </data>
