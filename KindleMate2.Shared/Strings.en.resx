@@ -426,6 +426,9 @@
   <data name="Sync_Successful" xml:space="preserve">
     <value>Sync Successful</value>
   </data>
+  <data name="Device_Platform_Not_Supported" xml:space="preserve">
+    <value>Kindle device support is not available on this platform.</value>
+  </data>
   <data name="Kindle_Connect_Failed" xml:space="preserve">
 	  <value>Failed to connected to Kindle</value>
   </data>

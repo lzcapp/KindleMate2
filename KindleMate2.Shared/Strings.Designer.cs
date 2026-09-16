@@ -609,6 +609,16 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
+        ///   查找类似 当前平台暂无 Kindle 设备支持。 的本地化字符串。
+        /// </summary>
+        public static string Device_Platform_Not_Supported {
+            get {
+                return ResourceManager.GetString("Device_Platform_Not_Supported", resourceCulture);
+            }
+        }
+        
+        
+        /// <summary>
         ///   查找类似 Kindle设备连接失败 的本地化字符串。
         /// </summary>
         public static string Kindle_Connect_Failed {
