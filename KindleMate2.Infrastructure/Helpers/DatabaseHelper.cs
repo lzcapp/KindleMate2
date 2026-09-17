@@ -206,6 +206,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <exception cref="FileNotFoundException">源数据库文件不存在</exception>
         /// <exception cref="DirectoryNotFoundException">目标目录不存在</exception>
         /// <exception cref="IOException">目标文件已存在且 <paramref name="overwrite"/> 为 false</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="busyTimeoutMs"/> 为负数</exception>
         /// <exception cref="InvalidOperationException">SQLite 执行失败(锁超时、磁盘空间不足等)</exception>
         public static void CreateConsistentSnapshot(string sourcePath, string destPath, bool overwrite = false, int busyTimeoutMs = DefaultSnapshotBusyTimeoutMs) {
             ArgumentNullException.ThrowIfNull(sourcePath);
@@ -217,8 +218,16 @@ namespace KindleMate2.Infrastructure.Helpers {
             if (string.IsNullOrWhiteSpace(destPath)) {
                 throw new ArgumentException("Destination path cannot be empty or whitespace.", nameof(destPath));
             }
-            if (!File.Exists(sourcePath)) {
-                throw new FileNotFoundException($"Database file not found: {sourcePath}");
+            // PRAGMA 不支持参数绑定,只能插值,所以负值必须在这里挡住 —— 否则 SQLite 的行为
+            // 依版本而异(有的当 0 处理,有的直接报语法错)。
+            if (busyTimeoutMs < 0) {
+                throw new ArgumentOutOfRangeException(nameof(busyTimeoutMs), busyTimeoutMs, "Busy timeout cannot be negative.");
+            }
+            // 源路径也取全路径:连接串里的相对路径按进程工作目录解析,工作目录一变,
+            // 同一个调用就会静默指向另一个库 —— 此前只规范化了目标,源漏了这一道。
+            var fullSourcePath = Path.GetFullPath(sourcePath);
+            if (!File.Exists(fullSourcePath)) {
+                throw new FileNotFoundException($"Database file not found: {fullSourcePath}");
             }
 
             // 先把目标路径规范化:VACUUM INTO 拿到什么就写什么,相对路径会随工作目录漂移。
@@ -242,7 +251,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 // 独立连接:VACUUM 不能在调用方的事务里执行。这里也不带 Cache=Shared —— 
                 // 快照连接没有理由加入调用方的共享缓存。
-                using var connection = new SqliteConnection($"Data Source={sourcePath};Mode=ReadOnly;");
+                using var connection = new SqliteConnection($"Data Source={fullSourcePath};Mode=ReadOnly;");
                 connection.Open();
 
                 using (var busyCommand = connection.CreateCommand()) {
@@ -260,7 +269,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                 TryDeleteFile(tempPath);
                 // 刻意**不**退回 File.Copy:宁可明确报告失败,也不交付一份可能不一致的备份。
                 throw new InvalidOperationException(
-                    $"Failed to create a consistent snapshot of '{sourcePath}' at '{fullDestPath}': {ex.Message}", ex);
+                    $"Failed to create a consistent snapshot of '{fullSourcePath}' at '{fullDestPath}': {ex.Message}", ex);
             }
 
             ReplaceFile(tempPath, fullDestPath);
@@ -278,13 +287,22 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// 注意异常类型:目标被占用时 <c>File.Move</c> 在 Windows 上抛的是
         /// <see cref="UnauthorizedAccessException"/>("Access to the path is denied"),它**不继承**
         /// <see cref="IOException"/> —— 两者都要接住,否则这个重试逻辑形同虚设(实测踩过)。
+        /// 两次尝试都失败时,先删掉临时快照再抛出 —— 否则它会在用户的 Backups 目录里永久残留
+        /// (名字带时间戳,下一次备份不会复用同一路径,也就永远轮不到清理)。
         /// </remarks>
         private static void ReplaceFile(string tempPath, string destPath) {
             try {
                 File.Move(tempPath, destPath, overwrite: true);
             } catch (Exception e) when (e is IOException or UnauthorizedAccessException) {
                 SqliteConnection.ClearAllPools();
-                File.Move(tempPath, destPath, overwrite: true);
+                try {
+                    File.Move(tempPath, destPath, overwrite: true);
+                } catch {
+                    // 两次都失败:临时快照不能留在用户的 Backups 目录里 —— 它的名字带时间戳,
+                    // 下一次备份不会复用同一路径,也就永远不会替用户清掉它。
+                    TryDeleteFile(tempPath);
+                    throw;
+                }
             }
         }
 
