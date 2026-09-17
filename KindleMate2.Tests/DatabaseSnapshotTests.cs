@@ -119,6 +119,32 @@ public sealed class DatabaseSnapshotTests : IDisposable {
         Assert.Equal(SeededRows, rows);
     }
 
+    /// <summary>
+    /// 目标被独占占用时,<c>ReplaceFile</c> 的两次 <c>File.Move</c> 都会失败 —— 此时临时快照
+    /// **不能**留在用户的 Backups 目录里:它的名字带时间戳,下一次备份不会复用同一路径,
+    /// 也就永远轮不到清理,只会越积越多。这正是本 PR 要消除的那类"Backups 里的迷惑文件"。
+    /// </summary>
+    [Fact]
+    public void Snapshot_TargetLocked_Throws_andLeavesNoTempFileBehind() {
+        var snapshot = Path.Combine(_dir, "snapshot.dat");
+        File.WriteAllText(snapshot, "occupied");
+
+        using (new FileStream(snapshot, FileMode.Open, FileAccess.Read, FileShare.None)) {
+            var ex = Record.Exception(() =>
+                DatabaseHelper.CreateConsistentSnapshot(_source, snapshot, overwrite: true));
+
+            Assert.NotNull(ex);
+            // 目标被占用时 Windows 抛的是 UnauthorizedAccessException(不继承 IOException),
+            // 两种都接受 —— 这里钉的是"明确失败"这个行为,而不是具体异常类型。
+            Assert.True(ex is IOException or UnauthorizedAccessException,
+                $"非预期的异常类型: {ex.GetType().Name}");
+        }
+
+        Assert.Empty(Directory.GetFiles(_dir, "*.snapshot-tmp"));
+        // 被占用的原文件也不能被动过 —— 它可能是用户上一份有效备份。
+        Assert.Equal("occupied", File.ReadAllText(snapshot));
+    }
+
     // ————————————————————————— 参数与路径 —————————————————————————
 
     [Fact]
@@ -148,6 +174,18 @@ public sealed class DatabaseSnapshotTests : IDisposable {
         Assert.Throws<ArgumentException>(() => DatabaseHelper.CreateConsistentSnapshot(_source, "  "));
     }
 
+    /// <summary>
+    /// PRAGMA busy_timeout 只能插值(不支持参数绑定),所以负值必须在托管层挡住 ——
+    /// 否则 SQLite 的行为依版本而异。
+    /// </summary>
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void Snapshot_NegativeBusyTimeout_Throws(int timeoutMs) {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            DatabaseHelper.CreateConsistentSnapshot(_source, Path.Combine(_dir, "out.dat"), busyTimeoutMs: timeoutMs));
+    }
+
     // ————————————————————————— 并发 —————————————————————————
 
     /// <summary>
@@ -171,7 +209,9 @@ public sealed class DatabaseSnapshotTests : IDisposable {
 
             var (integrity, rows) = Inspect(snapshot);
             Assert.Equal("ok", integrity);
-            Assert.True(rows >= SeededRows, $"快照至少应含种子数据,实际 {rows} 行");
+            // writer 的 2000 行是**未提交**的(COMMIT 在 finally 里),所以快照里必须恰好是种子行数。
+            // 只断言"不少于"等于放过最坏的情况:读到了别处的未提交数据。
+            Assert.Equal(SeededRows, rows);
         } catch (InvalidOperationException) {
             // 锁等待超时是**可接受**的结局 —— 关键是它报了错,而不是留下坏文件。
             Assert.False(File.Exists(snapshot), "明确失败时不应留下目标文件");

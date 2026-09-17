@@ -161,14 +161,26 @@ public sealed class ClippingMaintenanceTests : IDisposable {
 
     // ————————————————————————— 清空与清理 —————————————————————————
 
+    /// <summary>
+    /// 清空数据 = 5 张表一起清(clippings / lookups / original_clipping_lines / settings / vocab,
+    /// 见 <c>Km2DatabaseService.DeleteAllData</c> 的实现)。其中 <c>original_clipping_lines</c>
+    /// 正是回收站的判据来源,所以清空后回收站必须随之变空 —— 而不是留下
+    /// 「删了但还能恢复」的半截状态。
+    /// </summary>
     [Fact]
-    public void DeleteAllData_ClearsClippings() {
+    public void DeleteAllData_ClearsEveryTable_includingRecycleBin() {
         SeedClipping("k1", "内容一");
         SeedClipping("k2", "内容二");
+        SeedLookup("word-1", "apple");
+        SeedVocab("v1", "word-1", "apple");
 
         _km2.DeleteAllData();
 
         Assert.Empty(_clippingRepo.GetAll());
+        Assert.Empty(_lookupRepo.GetAll());
+        Assert.Empty(_vocabRepo.GetAll());
+        Assert.Empty(_originalRepo.GetAll());
+        Assert.Empty(_km2.GetDeletedOriginalLines());
     }
 
     [Fact]
@@ -261,5 +273,19 @@ public sealed class ClippingMaintenanceTests : IDisposable {
             AuthorName = author,
             ClippingTypeLocation = "标注 位置 #1-1",
         });
+    }
+
+    private void SeedLookup(string wordKey, string word) {
+        _lookupRepo.Add(new Lookup {
+            WordKey = wordKey,
+            Usage = $"usage of {word}",
+            Title = "Some Book",
+            Authors = "Some Author",
+            Timestamp = "1",
+        });
+    }
+
+    private void SeedVocab(string id, string wordKey, string word) {
+        _vocabRepo.Add(new Vocab { Id = id, WordKey = wordKey, Word = word });
     }
 }
