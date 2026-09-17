@@ -36,15 +36,27 @@ public partial class StatisticsWindow : Window {
 
     private void Refresh() {
         var vm = _vm;
+        // 构成图与排名图的**标题**随数据域变化 —— 标注页看类型构成与书籍排名,生词页看类别构成与查询排名;
+        // 其余三张(按日期 / 按小时 / 按星期)的维度对两个域都成立,标题固定。
         if (_showClippings) {
             DateChart.Points = vm.ClippingsByDate;
             HourChart.Points = vm.ClippingsByHour;
             WeekdayChart.Points = vm.ClippingsByWeekday;
+            CompositionChart.Points = vm.ClippingsByType;
+            CompositionTitle.Text = Strings.Ui_Stats_ByType;
+            TopChart.Points = vm.TopBooks;
+            TopTitle.Text = Strings.Ui_Stats_TopBooks;
+            CalendarChart.Points = vm.ClippingsCalendar;
             SummaryText.Text = vm.ClippingSummary;
         } else {
             DateChart.Points = vm.VocabsByDate;
             HourChart.Points = vm.VocabsByHour;
             WeekdayChart.Points = vm.VocabsByWeekday;
+            CompositionChart.Points = vm.VocabFrequencyBuckets;
+            CompositionTitle.Text = Strings.Ui_Stats_ByFrequency;
+            TopChart.Points = vm.TopWords;
+            TopTitle.Text = Strings.Ui_Stats_TopWords;
+            CalendarChart.Points = vm.VocabsCalendar;
             SummaryText.Text = vm.VocabSummary;
         }
 

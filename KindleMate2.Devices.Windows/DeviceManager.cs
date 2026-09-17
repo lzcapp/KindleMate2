@@ -1,4 +1,5 @@
 using System.Management;
+using KindleMate2.Application.Models;
 using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
@@ -15,6 +16,9 @@ namespace KindleMate2.Devices.Windows;
 /// 接口 <see cref="IDeviceManager"/> 定义在 Application 层,本类是其 Windows 实现。
 /// </summary>
 public class DeviceManager : IDeviceManager {
+    /// <summary>从设备取回的文件数(My Clippings.txt + vocab.db),用于按「第几个文件」上报进度。</summary>
+    private const int DeviceFileCount = 2;
+
     private ManagementEventWatcher? _usbDeviceArrivalWatcher;
     private ManagementEventWatcher? _usbDeviceRemovalWatcher;
     private ManagementEventWatcher? _mtpDeviceArrivalWatcher;
@@ -198,16 +202,22 @@ public class DeviceManager : IDeviceManager {
 
     /// <summary>
     /// Copies files from the connected Kindle device to local backup paths.
+    /// <paramref name="progress"/> 按「第几个文件」上报(共 <see cref="DeviceFileCount"/> 个):
+    /// 两个文件都是整文件传输,几千条标注 / 几千词的大库上这一步本身就有可感知耗时。
     /// </summary>
-    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception) {
+    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception,
+        IProgress<OperationProgress>? progress = null) {
         exception = null;
         try {
             var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
             var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
             switch (_deviceType) {
                 case Device.Type.USB: {
+                    progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
                     File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
+                    progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
                     File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
+                    progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
                     return true;
                 }
                 case Device.Type.MTP: {
@@ -217,8 +227,11 @@ public class DeviceManager : IDeviceManager {
                     }
                     try {
                         device.Connect();
+                        progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
                         ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                        progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
                         ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                        progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
                         return true;
                     } catch {
                         return false;

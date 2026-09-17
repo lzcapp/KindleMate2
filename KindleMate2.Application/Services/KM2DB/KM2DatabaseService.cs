@@ -318,7 +318,9 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
 
-        public bool UpdateFrequency() {
+        public bool UpdateFrequency(IProgress<OperationProgress>? progress = null) {
+            // 读全表 + 批量回写,单条开销稳定,整体报一次阶段即可
+            progress?.Report(OperationProgress.At(OperationStage.Preparing));
             var lookups = lookupRepository.GetAll();
             var frequencyMap = lookups
                 .Where(l => !string.IsNullOrWhiteSpace(l.WordKey))
@@ -342,7 +344,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 });
             }
             if (updates.Count > 0) {
+                progress?.Report(new OperationProgress(OperationStage.Writing, 0, updates.Count));
                 vocabRepository.UpdateFrequencyByWordKey(updates);
+                progress?.Report(new OperationProgress(OperationStage.Writing, updates.Count, updates.Count));
             }
             return true;
         }

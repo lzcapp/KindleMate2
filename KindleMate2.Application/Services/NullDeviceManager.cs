@@ -1,3 +1,4 @@
+using KindleMate2.Application.Models;
 using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Application.Services;
@@ -30,7 +31,8 @@ public sealed class NullDeviceManager : IDeviceManager {
 
     public string GetKindleVersionText() => string.Empty;
 
-    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception) {
+    public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception,
+        IProgress<OperationProgress>? progress = null) {
         exception = new PlatformNotSupportedException("当前平台暂无 Kindle 设备支持。");
         return false;
     }

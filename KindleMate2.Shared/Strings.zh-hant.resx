@@ -237,9 +237,6 @@
   <data name="Parsed_X" xml:space="preserve">
     <value>共解析</value>
   </data>
-  <data name="X_Records" xml:space="preserve">
-    <value>條記錄</value>
-  </data>
   <data name="Imported_X" xml:space="preserve">
     <value>導入</value>
   </data>
@@ -702,6 +699,21 @@
   <data name="Ui_Stats_ByWeekday" xml:space="preserve">
     <value>按星期</value>
   </data>
+  <data name="Ui_Stats_ByType" xml:space="preserve">
+    <value>標註類型構成</value>
+  </data>
+  <data name="Ui_Stats_TopBooks" xml:space="preserve">
+    <value>標註最多的書籍</value>
+  </data>
+  <data name="Ui_Stats_TopWords" xml:space="preserve">
+    <value>查詢最多的生詞</value>
+  </data>
+  <data name="Ui_Stats_ByFrequency" xml:space="preserve">
+    <value>查詢次數分佈</value>
+  </data>
+  <data name="Ui_Stats_Calendar" xml:space="preserve">
+    <value>年曆熱力圖</value>
+  </data>
   <data name="Ui_Stats_ExportImage" xml:space="preserve">
     <value>匯出圖片</value>
   </data>
@@ -743,6 +755,9 @@
   </data>
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
+  </data>
+  <data name="Ui_Progress_Starting" xml:space="preserve">
+    <value>正在處理…</value>
   </data>
   <data name="Ui_Progress_ReadingFile" xml:space="preserve">
     <value>正在讀取檔案…</value>

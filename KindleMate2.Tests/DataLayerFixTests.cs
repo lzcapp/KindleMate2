@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Xunit;
+using KindleMate2.Application.Models;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -159,6 +160,56 @@ public sealed class DataLayerFixTests : IDisposable {
         Assert.Equal(2, targetClipRepo.GetAll().Count); // cross-book same content kept
     }
 
+    /// <summary>
+    /// 进度上报回归:导入原版 KM / 本程序 KM2 库(扁平 schema)必须走出
+    /// 「读取 → 比对 → 写入」三个阶段,写入进度按源行数推进到饱和。
+    /// </summary>
+    [Fact]
+    public void KmDatabaseServiceImport_ReportsStagedProgress() {
+        var targetDb = NewDb("t6b-target.db");
+        var kmDb = NewDb("t6b-km.db");
+
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(kmDb))) {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "INSERT INTO clippings (key, content, bookname, authorname, clippingdate) VALUES " +
+                "('p1', 'first quote', 'Book P', 'Author P', '2026-01-01 00:00:00'), " +
+                "('p2', 'second quote', 'Book P', 'Author P', '2026-01-02 00:00:00');";
+            cmd.ExecuteNonQuery();
+        }
+
+        var targetClipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = new KmDatabaseService(
+            targetClipRepo,
+            new LookupRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(targetDb)),
+            new ClippingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new LookupRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new OriginalClippingLineRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new SettingRepository(DatabaseHelper.GetConnectionString(kmDb)),
+            new VocabRepository(DatabaseHelper.GetConnectionString(kmDb)));
+
+        var reports = new List<OperationProgress>();
+        Assert.True(svc.ImportFromKmDatabase(new TestProgress(reports.Add)));
+
+        Assert.Equal(OperationStage.ReadingFile, reports[0].Stage);
+        Assert.Contains(reports, r => r.Stage == OperationStage.Preparing);
+
+        // 分母 = 源库标注行数(2),收尾必须饱和到 2/2
+        var lastWrite = reports.Last(r => r.Stage == OperationStage.Writing);
+        Assert.Equal(2, lastWrite.Total);
+        Assert.Equal(2, lastWrite.Current);
+
+        // 逐条写入的进度不能倒退
+        var writeCurrent = reports.Where(r => r.Stage == OperationStage.Writing).Select(r => r.Current).ToList();
+        for (var i = 1; i < writeCurrent.Count; i++) {
+            Assert.True(writeCurrent[i] >= writeCurrent[i - 1], "写入进度必须单调不减");
+        }
+    }
+
     [Fact]
     public void ImportKindleClippings_ReportsDateParseSkipCount() {
         var targetDb = NewDb("t7-clippings.db");
@@ -256,5 +307,57 @@ more content
         Assert.Equal(0, repo.GetById("f0")!.Frequency);
         Assert.Equal(6, repo.GetById("f6")!.Frequency);
         Assert.Equal(4, repo.GetById("f1999")!.Frequency); // 1999 % 7 == 4
+    }
+
+    /// <summary>
+    /// 回收站回归(2026-09-13 新功能,原版无此概念):删除一条标注只应删掉 clippings 行,
+    /// **原始行必须留着** —— 那正是「已删除」的判据(<c>GetDeletedOriginalLines</c>);
+    /// 恢复时复用导入解析路径把标注插回主表。
+    /// <c>--ops</c> 自检里这条链路四项全 False,本用例用于定性:产品缺陷还是探针选样问题。
+    /// </summary>
+    [Fact]
+    public void DeleteClipping_EntersRecycleBin_AndCanBeRestored() {
+        var targetDb = NewDb("t9-recycle.db");
+        var connectionString = DatabaseHelper.GetConnectionString(targetDb);
+        var clipRepo = new ClippingRepository(connectionString);
+        var lineRepo = new OriginalClippingLineRepository(connectionString);
+
+        // 走真实导入路径生成数据 —— key 由 Line2 的元数据解析得出,
+        // 这样「原始行的 key」与「恢复时重算的 key」天然一致(手工硬编码 key 会人为造成不自洽)
+        var clippingsPath = Path.Combine(_dir, "My Clippings.txt");
+        File.WriteAllText(clippingsPath, """
+Book R (Author R)
+- Highlight | Page 5 | Location 100-101 | Added on Thursday, January 1, 2026, 12:00:00 AM
+
+a highlight
+==========
+""");
+
+        // 回收站三个方法在 Km2DatabaseService(目标库)上 —— KmDatabaseService 是源库导入器,别搞混
+        var svc = new Km2DatabaseService(clipRepo,
+            new LookupRepository(connectionString),
+            lineRepo,
+            new SettingRepository(connectionString),
+            new VocabRepository(connectionString));
+
+        Assert.True(svc.ImportKindleClippings(clippingsPath, out _));
+
+        var stored = Assert.Single(clipRepo.GetAll());
+        var key = stored.Key;
+        Assert.Equal(key, Assert.Single(lineRepo.GetAll()).Key);   // 原始行与标注的 key 一致
+
+        // 没删过时回收站应为空(原始行在、clippings 也在)
+        Assert.Empty(svc.GetDeletedOriginalLines());
+
+        Assert.True(clipRepo.Delete(key));
+
+        // ① 删除只作用于 clippings:原始行还在 → 该条目出现在回收站
+        var deleted = Assert.Single(svc.GetDeletedOriginalLines());
+        Assert.Equal(key, deleted.Key);
+
+        // ② 恢复把标注插回主表,**key 必须原样回来**(否则原条目会永远留在回收站),回收站随之清空
+        Assert.True(svc.RestoreFromOriginalLine(deleted));
+        Assert.Equal(key, Assert.Single(clipRepo.GetAll()).Key);
+        Assert.Empty(svc.GetDeletedOriginalLines());
     }
 }
