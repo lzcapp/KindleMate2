@@ -329,6 +329,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         try {
             DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
+            // 老库补建 [clippings] 的查询索引(幂等;新建的库已由建库脚本带上)。
+            DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
         } catch (Exception ex) {
             // 原版此处只弹一个警告框,不阻断启动
             MigrationWarning = ex.Message;
@@ -1090,7 +1092,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
     }
 
-    /// <summary>把 Vocab 的词干 / 词频回填到 Lookup(与 DataDisplayService 口径一致)。</summary>
+    /// <summary>把 Vocab 的词干 / 词频回填到 Lookup。</summary>
     private void EnrichLookups() {
         foreach (var lookup in _allLookups) {
             if (lookup.WordKey == null) continue;

@@ -17,6 +17,13 @@ namespace KindleMate2.Infrastructure.Helpers {
         private const string SnapshotTempSuffix = ".snapshot-tmp";
 
         /// <summary>
+        /// <c>[clippings]</c> 的查询索引。建库脚本与老库迁移共用这一条,避免两处 SQL 漂移。
+        /// 详见 <see cref="EnsureIndexesIfNeeded"/>。
+        /// </summary>
+        private const string ClippingsBookIndexScript =
+            "CREATE INDEX IF NOT EXISTS [ix_clippings_book_page_date] ON [clippings]([bookname], [pagenumber], [clippingdate]);";
+
+        /// <summary>
         /// Creates a new SQLite database with required tables.
         /// </summary>
         /// <param name="filePath">Path where the database file will be created</param>
@@ -114,7 +121,10 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [frequency] INT DEFAULT(0), 
                     [sync] INT DEFAULT(0), 
                     [colorRGB] INTEGER DEFAULT(-1)
-                );"
+                );",
+
+                // [clippings] 的查询索引:新建的库在这里直接带上,老库由 EnsureIndexesIfNeeded 补。
+                ClippingsBookIndexScript
             ];
         }
 
@@ -340,6 +350,34 @@ namespace KindleMate2.Infrastructure.Helpers {
                 command.ExecuteNonQuery();
             } catch (Exception ex) {
                 throw new InvalidOperationException($"Failed to vacuum database '{filePath}': {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 确保 <c>[clippings]</c> 的查询索引存在。幂等(<c>CREATE INDEX IF NOT EXISTS</c>),
+        /// 每次启动调用都无副作用。
+        /// </summary>
+        /// <remarks>
+        /// <c>[clippings]</c> 原本只有 <c>[key]</c> 主键,而按书名取书摘(<c>WHERE bookname = @bookname</c>,
+        /// 仓储里有 6 处)与主列表排序(<c>ORDER BY bookname, pagenumber, clippingdate</c>)都命中不了索引 ——
+        /// 几万条的库上就是全表扫描加临时排序。这里建一个覆盖这三列的复合索引:
+        /// 前缀等值查询与按序扫描都能用上它。
+        /// 老库靠本方法补齐;新建的库由 <see cref="GetTableCreationScripts"/> 直接带上。
+        /// </remarks>
+        /// <param name="filePath">Path to the SQLite database file</param>
+        /// <exception cref="InvalidOperationException">建索引失败</exception>
+        public static void EnsureIndexesIfNeeded(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return;
+            }
+
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+                using var command = new SqliteCommand(ClippingsBookIndexScript, connection);
+                command.ExecuteNonQuery();
+            } catch (Exception e) {
+                throw new InvalidOperationException($"Failed to ensure indexes in '{filePath}': {e.Message}", e);
             }
         }
         

@@ -97,8 +97,11 @@ public sealed class DatabaseSession : IDisposable {
         VocabDatabaseServiceFactory = new VocabDatabaseServiceFactory(LookupRepository, VocabRepository);
         KmDatabaseServiceFactory = new KmDatabaseServiceFactory(
             ClippingRepository, LookupRepository, OriginalClippingLineRepository, SettingRepository, VocabRepository);
+        // 目标库连接串按「当前打开的库」传入 —— 工厂不再依赖 AppConstants 里那个
+        // 写死相对路径 KM2.dat 的常量(库不在 cwd 时它会指向错误的库)。
         KmateDatabaseServiceFactory = new KmateDatabaseServiceFactory(
-            ClippingRepository, LookupRepository, OriginalClippingLineRepository, VocabRepository);
+            ClippingRepository, LookupRepository, OriginalClippingLineRepository, VocabRepository,
+            ConnectionString);
 
         // 设备管理器按平台选择实现(Windows 用真实 USB/MTP,其他平台空实现兜底)。
         DeviceManager = CreateDeviceManager(WorkDirectory);

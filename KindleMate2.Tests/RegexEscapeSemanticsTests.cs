@@ -3,7 +3,12 @@ using Xunit;
 
 namespace KindleMate2.Tests;
 
-/// <summary>Regression tests for the Regex.Escape fix in ContentDetailService (commit 8a8db53).</summary>
+/// <summary>
+/// Regression tests for the Regex.Escape fix (commit 8a8db53)。
+/// 该修复原本位于 ContentDetailService,而那个类后来因零调用被删除 —— 这里保留测试
+/// 是为了把"正则字面量必须转义"这一语义本身固定住:将来任何重新实现相同匹配的代码,
+/// 仍会被这组用例约束。
+/// </summary>
 public sealed class RegexEscapeSemanticsTests {
     [Fact]
     public void WordWithDot_NoLongerMatchesArbitraryCharacter() {
