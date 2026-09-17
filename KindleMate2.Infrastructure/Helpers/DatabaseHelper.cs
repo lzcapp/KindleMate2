@@ -21,7 +21,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// 详见 <see cref="EnsureIndexesIfNeeded"/>。
         /// </summary>
         private const string ClippingsBookIndexScript =
-            "CREATE INDEX IF NOT EXISTS [ix_clippings_book_page_date] ON [clippings]([bookname], [pagenumber], [clippingdate]);"
+            "CREATE INDEX IF NOT EXISTS [ix_clippings_book_page_date] ON [clippings]([bookname], [pagenumber], [clippingdate]);";
 
         /// <summary>
         /// Creates a new SQLite database with required tables.
