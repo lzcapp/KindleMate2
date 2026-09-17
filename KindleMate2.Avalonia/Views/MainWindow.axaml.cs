@@ -25,11 +25,48 @@ public partial class MainWindow : Window {
 
     public MainWindow() {
         InitializeComponent();
+        // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
+        ClampToWorkingArea();
     }
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
 
+    /// <summary>
+    /// 把窗口尺寸夹进当前屏幕的可用区域内。
+    /// </summary>
+    /// <remarks>
+    /// XAML 里写死了 <c>Width="1200" Height="780"</c>,而 <c>WindowStartupLocation=CenterScreen</c>
+    /// 在窗口超出屏幕时会把余量**均分到上下两端** —— 于是在可用高度不足 780 的机器上
+    /// (1366x768 去掉任务栏后约 728;1080p 开 150% 缩放时逻辑可用高度只有约 720),
+    /// 标题栏与底部状态栏会**同时**溢出屏幕。宽度同理。
+    /// 这里按 <c>WorkingArea</c>(已扣除任务栏)夹取;MinWidth/MinHeight 也必须一起夹,
+    /// 否则可用区域比最小值还小时,最小值自身就会顶穿屏幕。
+    /// 可用区域足够大时本方法不改变任何取值 —— 大屏行为与之前完全一致。
+    /// </remarks>
+    private void ClampToWorkingArea() {
+        if (Screens is not { } screens) {
+            return;
+        }
+
+        var screen = screens.ScreenFromWindow(this) ?? screens.Primary;
+        if (screen is not { } current) {
+            return;
+        }
+
+        // WorkingArea 是物理像素,而窗口的 Width/Height 是逻辑单位,必须按缩放换算。
+        var scaling = current.Scaling > 0 ? current.Scaling : 1d;
+        var maxWidth = current.WorkingArea.Width / scaling;
+        var maxHeight = current.WorkingArea.Height / scaling;
+
+        MinWidth = Math.Min(MinWidth, maxWidth);
+        MinHeight = Math.Min(MinHeight, maxHeight);
+        Width = Math.Min(Width, maxWidth);
+        Height = Math.Min(Height, maxHeight);
+    }
+
     private async void OnOpened(object? sender, EventArgs e) {
+        // 构造期若还拿不到屏幕信息,这里兜底;夹取是取小值,重复调用无副作用。
+        ClampToWorkingArea();
         SyncThemeFromApplication();
         if (Vm is { } vm) {
             // 对齐原版 FrmMain 构造函数:固定 KM2.dat → 不存在则建库 → 一次性 lookups 迁移
