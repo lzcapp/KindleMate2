@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+#
+# 把 libmtp + libusb 构建进 macOS 的 .app 包,并修好 install name 与 LGPL 许可文件。
+#
+# 用法:
+#   scripts/bundle-libmtp.sh <KindleMate2.app 路径> [--arch arm64|x86_64|universal] [--build-dir <目录>]
+#
+# 为什么要从源码构建,而不是直接拷 Homebrew 的 dylib:
+#   ① Homebrew 的 bottle 是单一架构的(Apple Silicon 上是 arm64-only),而发布要同时出
+#      osx-arm64 与 osx-x64 —— `--arch universal` 一次构出通用二进制,省掉每架构各构一遍;
+#   ② LGPL-2.1 要求「随包分发该库的可执行文件时,必须同时提供其源码」,而这个脚本下载的
+#      就是那份源码(CI 会把它作为 release 资产一并附上),版本因此是钉死的、可复现的。
+#
+# 构建产物布局:
+#   <app>/Contents/Frameworks/libmtp.9.dylib
+#   <app>/Contents/Frameworks/libusb-1.0.0.dylib
+#   <app>/Contents/Resources/licenses/libmtp-LGPL-2.1.txt
+#   <app>/Contents/Resources/licenses/libusb-LGPL-2.1.txt
+#
+set -euo pipefail
+
+LIBMTP_VERSION="1.1.23"
+LIBUSB_VERSION="1.0.30"
+LIBMTP_TARBALL="libmtp-${LIBMTP_VERSION}.tar.gz"
+LIBUSB_TARBALL="libusb-${LIBUSB_VERSION}.tar.bz2"
+LIBMTP_URL="https://downloads.sourceforge.net/project/libmtp/libmtp/${LIBMTP_VERSION}/${LIBMTP_TARBALL}"
+LIBUSB_URL="https://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-${LIBUSB_VERSION}/${LIBUSB_TARBALL}"
+
+APP=""
+ARCH="universal"
+BUILD_DIR=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --arch)      ARCH="$2"; shift 2 ;;
+    --build-dir) BUILD_DIR="$2"; shift 2 ;;
+    -*)          echo "未知参数:$1" >&2; exit 2 ;;
+    *)           APP="$1"; shift ;;
+  esac
+done
+
+if [ -z "$APP" ]; then
+  echo "用法: $0 <KindleMate2.app 路径> [--arch arm64|x86_64|universal] [--build-dir <目录>]" >&2
+  exit 2
+fi
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "本脚本只能在 macOS 上运行(需要 clang 的 -arch 与 install_name_tool)" >&2
+  exit 1
+fi
+
+case "$ARCH" in
+  arm64)     ARCH_FLAGS=(-arch arm64) ;;
+  x86_64)    ARCH_FLAGS=(-arch x86_64) ;;
+  universal) ARCH_FLAGS=(-arch arm64 -arch x86_64) ;;
+  *)         echo "不支持的架构:$ARCH(可选 arm64 / x86_64 / universal)" >&2; exit 2 ;;
+esac
+
+if [ ! -d "$APP/Contents" ]; then
+  echo "$APP 看起来不是 .app 包(找不到 Contents/)" >&2
+  exit 1
+fi
+
+# libmtp 的 configure 用 pkg-config 的 PKG_CHECK_MODULES 定位 libusb,缺了会直接
+# `configure: error: pkg-config not found`。Homebrew 装的 pkgconf 提供 pkg-config,
+# 但 /opt/homebrew/bin 未必在 PATH 里(本机与不少 CI 环境都是如此),所以显式补上。
+for dir in /opt/homebrew/bin /usr/local/bin; do
+  if [ -x "$dir/pkg-config" ]; then
+    case ":$PATH:" in *":$dir:"*) ;; *) export PATH="$dir:$PATH" ;; esac
+    break
+  fi
+done
+if ! command -v pkg-config >/dev/null 2>&1; then
+  echo "缺少 pkg-config —— libmtp 的 configure 用它定位 libusb。macOS 上执行:brew install pkgconf" >&2
+  exit 1
+fi
+echo "pkg-config:$(command -v pkg-config)(版本 $(pkg-config --version))"
+
+[ -n "$BUILD_DIR" ] || BUILD_DIR="$(mktemp -d)"
+mkdir -p "$BUILD_DIR"
+echo "构建目录:$BUILD_DIR(架构:$ARCH)"
+
+FRAMEWORKS="$APP/Contents/Frameworks"
+LICENSES="$APP/Contents/Resources/licenses"
+mkdir -p "$FRAMEWORKS" "$LICENSES"
+
+# ————————————————————— 下载 —————————————————————
+cd "$BUILD_DIR"
+[ -f "$LIBUSB_TARBALL" ] || curl -sSL -o "$LIBUSB_TARBALL" "$LIBUSB_URL"
+[ -f "$LIBMTP_TARBALL" ] || curl -sSL -o "$LIBMTP_TARBALL" "$LIBMTP_URL"
+
+# 记下校验和:CI 会把它写进构建日志,便于事后核对"随包分发的是哪一份源码"
+shasum -a 256 "$LIBUSB_TARBALL" "$LIBMTP_TARBALL"
+
+tar xf "$LIBUSB_TARBALL"
+tar xf "$LIBMTP_TARBALL"
+
+LIBUSB_SRC="libusb-${LIBUSB_VERSION}"
+LIBMTP_SRC="libmtp-${LIBMTP_VERSION}"
+LIBUSB_PREFIX="$BUILD_DIR/libusb-dist"
+
+# ————————————————————— libusb —————————————————————
+# 注意:-arch 必须同时进 CFLAGS 与 LDFLAGS,只给一边会得到"编译成 arm64、链接成 x86_64"的报错。
+echo "== 构建 libusb $LIBUSB_VERSION"
+cd "$BUILD_DIR/$LIBUSB_SRC"
+./configure --prefix="$LIBUSB_PREFIX" --disable-static --enable-shared \
+  CFLAGS="-O2 ${ARCH_FLAGS[*]}" LDFLAGS="${ARCH_FLAGS[*]}" >/dev/null
+make -j"$(sysctl -n hw.ncpu)" >/dev/null
+make install >/dev/null
+
+# ————————————————————— libmtp —————————————————————
+# libmtp 用 pkg-config 找 libusb,所以要把我们刚装的那份暴露给它 ——
+# 否则它可能链到系统/Homebrew 里的另一份 libusb,随包时就漏带依赖。
+echo "== 构建 libmtp $LIBMTP_VERSION"
+cd "$BUILD_DIR/$LIBMTP_SRC"
+PKG_CONFIG_PATH="$LIBUSB_PREFIX/lib/pkgconfig" ./configure \
+  --prefix="$BUILD_DIR/libmtp-dist" --disable-static --enable-shared \
+  CFLAGS="-O2 ${ARCH_FLAGS[*]}" LDFLAGS="${ARCH_FLAGS[*]}" >/dev/null
+make -j"$(sysctl -n hw.ncpu)" >/dev/null
+
+# ————————————————————— 拷进 .app 并修 install name —————————————————————
+echo "== 放进 .app"
+cp "src/.libs/libmtp.9.dylib" "$FRAMEWORKS/libmtp.9.dylib"
+cp "$LIBUSB_PREFIX/lib/libusb-1.0.0.dylib" "$FRAMEWORKS/libusb-1.0.0.dylib"
+chmod u+w "$FRAMEWORKS"/*.dylib
+
+# 可执行文件通过 @rpath 找库;rpath 指向 .app 内的 Frameworks(由 release.yml 加到主程序上)
+install_name_tool -id "@rpath/libmtp.9.dylib" "$FRAMEWORKS/libmtp.9.dylib"
+install_name_tool -id "@rpath/libusb-1.0.0.dylib" "$FRAMEWORKS/libusb-1.0.0.dylib"
+
+# libmtp 依赖 libusb:构建时它记的是绝对路径(我们的临时前缀),必须改写成 @rpath,
+# 否则用户机上会去找一个不存在的路径 —— 这类错误在本机构建时不会暴露,只在别人的机器上炸。
+install_name_tool -change "$LIBUSB_PREFIX/lib/libusb-1.0.0.dylib" \
+  "@rpath/libusb-1.0.0.dylib" "$FRAMEWORKS/libmtp.9.dylib"
+
+# 光把依赖改成 @rpath 还不够:**得有地方告诉 dyld 这个 @rpath 是什么**。
+# 给 dylib 自己加一条 @loader_path(= 它所在目录),这样无论谁、以何种方式加载它,
+# 都能在同一个目录里找到 libusb —— 不依赖宿主程序的 rpath,自洽且可复制。
+# (macOS 27 的工具链上 -add_rpath 会写入两条相同条目,dyld 忽略重复项,无影响)
+install_name_tool -add_rpath "@loader_path" "$FRAMEWORKS/libmtp.9.dylib"
+install_name_tool -add_rpath "@loader_path" "$FRAMEWORKS/libusb-1.0.0.dylib"
+
+# ————————————————————— LGPL 许可文件 —————————————————————
+# LGPL-2.1 第 6 条:随包分发库的可执行文件时,必须显著声明并随附许可证与源码获取方式。
+cp "$BUILD_DIR/$LIBUSB_SRC/COPYING" "$LICENSES/libusb-LGPL-2.1.txt"
+cp "$BUILD_DIR/$LIBMTP_SRC/COPYING" "$LICENSES/libmtp-LGPL-2.1.txt"
+
+cat > "$LICENSES/README.txt" <<'NOTICE'
+本应用内嵌了以下两个 GNU LGPL-2.1-or-later 库(以动态链接方式使用):
+
+  libmtp 1.1.23   https://libmtp.sourceforge.io/     (用于访问 MTP 模式的 Kindle)
+  libusb 1.0.30   https://libusb.info/               (libmtp 的 USB 传输后端)
+
+上述库的完整对应源码随本应用的发布包一并提供(见同一发布页面的源码压缩包),
+你也可以从上面的官网获取。许可证全文见本目录下的两个 .txt 文件。
+
+这两个库均未被修改。按 LGPL-2.1 第 6b 条,你可以用自行编译的兼容版本替换
+Contents/Frameworks 下的同名动态库 —— 注意替换后需要重新签名(ad-hoc 即可):
+  codesign --force --deep --sign - "/Applications/Kindle Mate 2.app"
+NOTICE
+
+echo "== 结果"
+otool -L "$FRAMEWORKS/libmtp.9.dylib"
+# lipo -archs 一次只接受一个输入文件,所以逐个来(写成两个参数会报
+# "lipo: -archs requires exactly one input file")
+for lib in "$FRAMEWORKS/libmtp.9.dylib" "$FRAMEWORKS/libusb-1.0.0.dylib"; do
+  echo "  $(basename "$lib"): $(lipo -archs "$lib")"
+done
+ls -la "$FRAMEWORKS" "$LICENSES"
