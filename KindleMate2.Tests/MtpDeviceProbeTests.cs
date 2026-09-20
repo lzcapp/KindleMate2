@@ -40,7 +40,7 @@ public sealed class MtpDeviceProbeTests {
 
         _output.WriteLine($"libmtp = {MtpInterop.LoadedPath}");
 
-        using var session = MtpDeviceSession.TryOpenFirst();
+        using var session = MtpDeviceSession.TryOpenKindle();
         if (session == null) {
             // 没插设备 / 未被授权 / 被别的 MTP 客户端占着 —— 都不是失败
             _output.WriteLine("没有可打开的 MTP 设备(未连接、未在系统弹窗点「允许」,或被 Amazon USB File Manager / OpenMTP / Calibre 占用)");
@@ -131,7 +131,7 @@ public sealed class MtpDeviceProbeTests {
         var after = Path.Combine(work, "after.txt");
 
         try {
-            using var session = MtpDeviceSession.TryOpenFirst();
+            using var session = MtpDeviceSession.TryOpenKindle();
             if (session is null) {
                 _output.WriteLine("没有可打开的 MTP 设备 —— 跳过(未插 / 未授权 / 被别的 MTP 程序占用)。");
                 return;
@@ -200,7 +200,7 @@ public sealed class MtpDeviceProbeTests {
     /// 这条同时是**回归防线**:libmtp 给这台设备打了 FORCE_RESET_ON_CLOSE,关闭会话时会复位 USB 口,
     /// 真机实测后果是"关一次会话设备就离开总线、必须物理重插"——那时本用例第 2 轮必然失败,
     /// 而"先导入、再写回"的两段式流程(ExportManager.SyncToKindle)也因此做不完。
-    /// 现在我们在传进去的结构体里清掉了那个标记(见 MtpDeviceSession.TryOpenFirst)。
+    /// 现在我们在传进去的结构体里清掉了那个标记(见 MtpDeviceSession.TryOpenKindle)。
     /// 若哪天新固件开始需要复位才能连第二次,这里会红 —— 那时再改回去,不要盲目放宽断言。
     /// </summary>
     [Fact]
@@ -211,7 +211,7 @@ public sealed class MtpDeviceProbeTests {
         }
 
         string? firstModel = null;
-        using (var first = MtpDeviceSession.TryOpenFirst()) {
+        using (var first = MtpDeviceSession.TryOpenKindle()) {
             if (first is null) {
                 _output.WriteLine("第一次会话就没打开(未插 / 未授权 / 被占用)—— 跳过。");
                 return;
@@ -224,7 +224,7 @@ public sealed class MtpDeviceProbeTests {
         // 第 2、3 次:关键断言。清掉 FORCE_RESET_ON_CLOSE 之前,第 2 次就必然失败
         // (设备已被复位、离开总线,要物理重插)。
         for (var round = 2; round <= 3; round++) {
-            using var again = MtpDeviceSession.TryOpenFirst();
+            using var again = MtpDeviceSession.TryOpenKindle();
             _output.WriteLine(again is null
                 ? $"第 {round} 次会话:打不开"
                 : $"第 {round} 次会话:也能打开 '{again.Model}'");

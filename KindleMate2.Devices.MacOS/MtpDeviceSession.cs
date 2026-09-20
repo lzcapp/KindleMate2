@@ -11,7 +11,7 @@ namespace KindleMate2.Devices.MacOS;
 ///   <item>打开与释放必须配对。历史上的大坑已经解决:libmtp 会在关闭会话时复位 USB 口
 ///         (设备标记 FORCE_RESET_ON_CLOSE),真机实测"关一次会话设备就离开总线、必须物理重插",
 ///         连"先导入再写回"这种两段式流程都做不完。现在我们在传进去的结构体里清掉了那一位
-///         (见 <see cref="TryOpenFirst"/> 的注释),连续会话不再需要重插;
+///         (见 <see cref="TryOpenKindle"/> 的注释),连续会话不再需要重插;
 ///         但 MTP 仍是单会话协议,别长期占着设备不放。</item>
 ///   <item>用户的 Amazon「USB File Manager」/ OpenMTP / Calibre 任一在跑,我们就打不开设备
 ///         (表现为打开返回 NULL)——这属于预期内的互斥,要给人话提示,不是故障。</item>
@@ -43,10 +43,14 @@ internal sealed class MtpDeviceSession : IDisposable {
     internal IReadOnlyList<MtpEntry> RootEntries { get; }
 
     /// <summary>
-    /// 打开第一个 MTP 设备。返回 null 表示**没有可用设备**:没插、没点系统那个"允许配件连接"、
-    /// 或已被别的 MTP 客户端占用。失败细节只写日志 —— 对调用方而言这就是"没连上"。
+    /// 打开第一台 **Amazon** MTP 设备。返回 null 表示**没有可用设备**:没插、没点系统那个
+    /// "允许配件连接"、或已被别的 MTP 客户端占用。失败细节只写日志 —— 对调用方而言这就是"没连上"。
+    ///
+    /// 只认 Amazon 的 VID(`0x1949`)是有意的:① 本应用是给 Kindle 用的,别的 MTP 设备(手机、相机)
+    /// 上根本不会有我们要的文件;② 下面那句"清掉 FORCE_RESET_ON_CLOSE"是针对 Kindle 这个怪癖的补偿,
+    /// **不该施加到别的设备上** —— 那个标记对它们可能是必需的。
     /// </summary>
-    internal static MtpDeviceSession? TryOpenFirst() {
+    internal static MtpDeviceSession? TryOpenKindle() {
         if (!MtpInterop.IsAvailable()) {
             AppLog.Write("[MtpDeviceSession] 未找到 libmtp 动态库");
             return null;
@@ -67,6 +71,10 @@ internal sealed class MtpDeviceSession : IDisposable {
             var stride = Marshal.SizeOf<MtpInterop.MtpRawDevice>();
             for (var i = 0; i < count; i++) {
                 var rawDevice = Marshal.PtrToStructure<MtpInterop.MtpRawDevice>(rawDevices + (i * stride));
+
+                if (!KindleUsbProbe.IsAmazonVendor(rawDevice.DeviceEntry.VendorId)) {
+                    continue;   // 不是 Kindle,不碰
+                }
 
                 // 主动清掉「关闭会话时复位 USB 口」这一位。
                 //

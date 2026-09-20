@@ -327,7 +327,7 @@ public class DeviceManager : IDeviceManager {
         out Exception? exception, IProgress<OperationProgress>? progress) {
         exception = null;
 
-        using var session = MtpDeviceSession.TryOpenFirst();
+        using var session = MtpDeviceSession.TryOpenKindle();
         if (session is null) {
             // libmtp 无法区分「没插」「没授权」「被别的 MTP 客户端占用」——三者都表现为探测不到设备,
             // 所以这里给一条把三种可能都列出来的人话提示(而不是笼统的"连接失败")。
@@ -396,7 +396,7 @@ public class DeviceManager : IDeviceManager {
     /// 多一次同尺寸的传输,换取"任何一步失败都不会让设备处于无法自愈的状态"。
     /// </summary>
     private static void SyncFileToDeviceViaMtp(string exportedFilePath, string targetFileName) {
-        using var session = MtpDeviceSession.TryOpenFirst();
+        using var session = MtpDeviceSession.TryOpenKindle();
         if (session is null) {
             throw new Exception(Strings.Device_Mtp_Connect_Failed);
         }
