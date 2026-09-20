@@ -193,6 +193,30 @@ internal sealed class MtpDeviceSession : IDisposable {
         return true;
     }
 
+    /// <summary>
+    /// 按路径取一个**小文本文件**的内容(用于 <c>system/version.txt</c>),取不到返回空串。
+    /// 在已打开的会话里做,所以调用方不必为"读 27 个字节"再开一次会话。
+    /// </summary>
+    internal string ReadFileText(params string[] segments) {
+        if (_disposed) {
+            return string.Empty;
+        }
+
+        if (FindByPath(segments) is not { } file) {
+            return string.Empty;
+        }
+
+        var tempPath = Path.Combine(Path.GetTempPath(), "km2-mtp-read-" + Guid.NewGuid().ToString("N")[..8]);
+        try {
+            return Download(file.ItemId, tempPath) ? File.ReadAllText(tempPath).Trim() : string.Empty;
+        } catch (Exception ex) {
+            AppLog.Write($"[MtpDeviceSession] 读取文本文件失败:{ex}");
+            return string.Empty;
+        } finally {
+            try { File.Delete(tempPath); } catch { /* 临时文件删不掉不影响结果 */ }
+        }
+    }
+
     /// <summary>删除设备上的一个对象。</summary>
     internal bool Delete(uint objectId) {
         if (_disposed || _device == IntPtr.Zero) {

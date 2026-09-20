@@ -51,6 +51,12 @@ public class DeviceManager : IDeviceManager {
     private Device.Type _deviceType = Device.Type.Unknown;
     private string _driveLetter = string.Empty;
 
+    /// <summary>
+    /// MTP 机型最近一次会话里读到的 <c>system/version.txt</c> 内容(USB 机型不用它,直接读卷)。
+    /// 之所以缓存:版本是"顺手取"的,不该为它单独开一次会话;写的是字符串引用,赋值本身是原子的。
+    /// </summary>
+    private string _mtpVersionText = string.Empty;
+
     private CancellationTokenSource? _pollCts;
     private Task? _pollTask;
     private System.Threading.Timer? _debounceTimer;
@@ -197,6 +203,13 @@ public class DeviceManager : IDeviceManager {
     }
 
     public string GetKindleVersionText() {
+        // MTP 机型没有卷路径,版本是从"最近一次会话"里缓存下来的 —— 见 ImportFilesViaMtp。
+        // 之所以不在本方法里开会话:它可能被界面在任意时机调用,而每次会话都要重新打开设备,
+        // 不能挂在一个看起来"只是读个字符串"的 getter 上。
+        if (_deviceType == Device.Type.MTP) {
+            return _mtpVersionText;
+        }
+
         if (string.IsNullOrWhiteSpace(_driveLetter)) {
             return string.Empty;
         }
@@ -323,7 +336,7 @@ public class DeviceManager : IDeviceManager {
     /// 语义上有意与 USB 路径有一处不同:**My Clippings.txt 必需,vocab.db 尽力而为**。
     /// 生词本缺失(没查过词、老固件没这个库)不该让整个导入失败。
     /// </summary>
-    private static bool ImportFilesViaMtp(string backupClippingsPath, string backupWordsPath,
+    private bool ImportFilesViaMtp(string backupClippingsPath, string backupWordsPath,
         out Exception? exception, IProgress<OperationProgress>? progress) {
         exception = null;
 
@@ -333,6 +346,15 @@ public class DeviceManager : IDeviceManager {
             // 所以这里给一条把三种可能都列出来的人话提示(而不是笼统的"连接失败")。
             exception = new Exception(Strings.Device_Mtp_Connect_Failed);
             return false;
+        }
+
+        // 会话开成功就说明设备确实是 MTP —— 把类型落定。**不走这一步会留下状态不一致**:
+        // GetKindleVersionText() 按类型分支(USB 读卷 / MTP 读缓存),类型还停在 Unknown 时就
+        // 会返回空串,尽管版本已经读到了(实测踩过)。轮询那边也会独立把它设成 MTP,但操作路径
+        // 不能指望别人先跑过。
+        lock (_lockObj) {
+            _deviceType = Device.Type.MTP;
+            _driveLetter = string.Empty;
         }
 
         progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
@@ -360,6 +382,15 @@ public class DeviceManager : IDeviceManager {
             }
         } else {
             AppLog.Write("[DeviceManager] MTP: 设备上没有 vocab.db,跳过生词本");
+        }
+
+        // 顺手读一下固件版本(27 字节):同一个会话里多一次请求,换来 GetKindleVersionText()
+        // 在 MTP 机型上也能返回值。失败不算错,版本本来就是附带信息。
+        var version = session.ReadFileText(
+            AppConstants.SystemPathName, AppConstants.VersionFileName);
+        if (!string.IsNullOrWhiteSpace(version)) {
+            _mtpVersionText = version;
+            AppLog.Write($"[DeviceManager] MTP: 设备固件版本 '{version}'");
         }
 
         progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));

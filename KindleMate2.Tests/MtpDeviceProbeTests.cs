@@ -95,6 +95,12 @@ public sealed class MtpDeviceProbeTests {
             _output.WriteLine($"导入成功。进度上报 {progress.Reports.Count} 次,最后 current={progress.Reports[^1].Current}/{progress.Reports[^1].Total}");
             ReportFile(clippingsPath, "My Clippings.txt");
             ReportFile(vocabPath, "vocab.db");
+
+            // MTP 机型没有卷路径,版本是靠"导入时顺手读 system/version.txt 并缓存"拿到的
+            // (不为读 27 字节单独开一次会话)。导入成功后这里应当非空。
+            var version = device.GetKindleVersionText();
+            _output.WriteLine($"GetKindleVersionText() = '{version}'");
+            Assert.False(string.IsNullOrWhiteSpace(version), "MTP 导入成功后应当已缓存设备固件版本");
         } finally {
             try { Directory.Delete(work, true); } catch { /* best effort */ }
         }
