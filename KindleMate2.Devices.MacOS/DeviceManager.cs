@@ -178,8 +178,8 @@ public class DeviceManager : IDeviceManager {
 
                 // ② 再看 USB 上有没有 Amazon 的设备 —— 那是 MTP 机型(2024 年及以后)的正常状态。
                 //    这里只做**只读枚举**(见 KindleUsbProbe):绝不能开 MTP 会话,
-                //    因为 libmtp 关闭会话时会复位 USB 口,设备会重新枚举并再弹一次授权框,
-                //    而本方法是被 2 秒轮询调用的。
+                //    本方法是被 2 秒轮询调用的:开 MTP 会话是"重"操作(libmtp 历史上还会在关闭时
+                //    复位 USB 口把设备弄下线),轮询绝不能挂上去。
                 _driveLetter = string.Empty;
                 if (_detectMtpDevices && KindleUsbProbe.TryFindKindle(out var productId)) {
                     _deviceType = Device.Type.MTP;
@@ -316,9 +316,9 @@ public class DeviceManager : IDeviceManager {
     }
 
     /// <summary>
-    /// 经 MTP 取回两个文件。**整个流程只开一次会话**(开→列目录→下载两次→释放):
-    /// 真机实测每次会话结束时设备都会重新枚举一次(macOS 上 libusb 释放接口触发 USB reset),
-    /// 系统可能再问一次「允许配件连接?」—— 会话开得越少,用户被打断越少。
+    /// 经 MTP 取回两个文件。整个流程只开一次会话(开 → 列目录 → 下载两次 → 释放):
+    /// MTP 是单会话协议,一次会话做完既快也少占设备(历史上每次会话还会复位 USB 口,现已解决,
+    /// 见 <see cref="MtpDeviceSession"/>)。
     ///
     /// 语义上有意与 USB 路径有一处不同:**My Clippings.txt 必需,vocab.db 尽力而为**。
     /// 生词本缺失(没查过词、老固件没这个库)不该让整个导入失败。
@@ -405,9 +405,8 @@ public class DeviceManager : IDeviceManager {
     }
 
     /// <summary>
-    /// 安全替换的本体,拆出来是为了**能被测试在既有会话上直接调用**:MTP 每开关一次会话设备就会
-    /// 重新枚举一次(macOS 的 USB reset),把编排与"开会话"绑死的话,验证回滚兜底就得多插拔好几次设备。
-    /// 生产路径见 <see cref="SyncFileToDeviceViaMtp"/>。
+    /// 安全替换的本体,拆出来是为了**能被测试在既有会话上直接调用**(不必为验证回滚再开一次会话、
+    /// 也不必让测试去构造一台设备)。生产路径见 <see cref="SyncFileToDeviceViaMtp"/>。
     /// </summary>
     internal static void ReplaceFileOnDevice(MtpDeviceSession session, string exportedFilePath, string targetFileName) {
         // 只覆盖设备上已有的文件:往设备新增任意文件不是本方法承诺的能力。

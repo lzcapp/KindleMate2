@@ -8,9 +8,11 @@ namespace KindleMate2.Devices.MacOS;
 ///
 /// 生命周期:MTP 是**单会话**协议(同一时刻只允许一个客户端连着设备),因此:
 /// <list type="bullet">
-///   <item>打开与释放必须配对,且**尽量在一次会话里做完所有事**再释放 —— 真机实测每次会话结束时
-///         设备会重新枚举(macOS 上 libusb 释放接口触发 USB reset),系统会当成新配件、可能再问一次
-///         "允许配件连接?";会话开得越少,用户被打断的次数越少;</item>
+///   <item>打开与释放必须配对。历史上的大坑已经解决:libmtp 会在关闭会话时复位 USB 口
+///         (设备标记 FORCE_RESET_ON_CLOSE),真机实测"关一次会话设备就离开总线、必须物理重插",
+///         连"先导入再写回"这种两段式流程都做不完。现在我们在传进去的结构体里清掉了那一位
+///         (见 <see cref="TryOpenFirst"/> 的注释),连续会话不再需要重插;
+///         但 MTP 仍是单会话协议,别长期占着设备不放。</item>
 ///   <item>用户的 Amazon「USB File Manager」/ OpenMTP / Calibre 任一在跑,我们就打不开设备
 ///         (表现为打开返回 NULL)——这属于预期内的互斥,要给人话提示,不是故障。</item>
 /// </list>
@@ -65,6 +67,25 @@ internal sealed class MtpDeviceSession : IDisposable {
             var stride = Marshal.SizeOf<MtpInterop.MtpRawDevice>();
             for (var i = 0; i < count; i++) {
                 var rawDevice = Marshal.PtrToStructure<MtpInterop.MtpRawDevice>(rawDevices + (i * stride));
+
+                // 主动清掉「关闭会话时复位 USB 口」这一位。
+                //
+                // 为什么必须清:本机 Kindle(PID 0x9981)在 libmtp 设备库里带 DEVICE_FLAG_FORCE_RESET_ON_CLOSE,
+                // 而 libusb1-glue.c 的 close_usb() 会据此调 libusb_reset_device()。真机实测后果是:
+                // **关闭一次会话后设备就离开总线,必须物理重插才能再打开** —— 于是
+                // "先导入、再写回"这类两段式操作根本做不完(SyncToKindle 就是这么两步)。
+                //
+                // 为什么可以在这里清:设备标记是 libmtp 在 Detect 时填进**返回给我们的结构体**的
+                // (libusb1-glue.c: retdevs[i].device_entry.device_flags = mtp_device_table[j].device_flags),
+                // 而 Open 又把它整体拷进内部状态(memcpy(&ptp_usb->rawdevice, device, ...)),
+                // 所有 FLAG_* 判断读的都是这份副本。所以改这里等价于改设备库,**libmtp 无需修改**
+                // (也就没有"修改后须按 LGPL 公开"的义务)。
+                //
+                // 风险与验证:libmtp 给设备打这个标记是因为"有些设备不复位就连不上第二次"。
+                // 所以我们用真机用例钉住"连续两次会话都能打开"—— 若哪天这台设备或新固件开始需要复位,
+                // 那条用例会红,届时再考虑把这行去掉。
+                rawDevice.DeviceEntry.DeviceFlags &= ~MtpInterop.DeviceFlagForceResetOnClose;
+
                 var device = MtpInterop.LIBMTP_Open_Raw_Device_Uncached(ref rawDevice);
                 if (device == IntPtr.Zero) {
                     // 打不开通常是被别的 MTP 客户端占着,或设备处于锁屏/忙碌态 —— 试下一个
@@ -245,7 +266,7 @@ internal sealed class MtpDeviceSession : IDisposable {
         _disposed = true;
 
         if (_device != IntPtr.Zero) {
-            // 释放后设备通常会重新枚举一次(macOS 的 USB reset),这不是错误 —— 见类型注释。
+            // 已清掉 FORCE_RESET_ON_CLOSE,所以释放不再复位 USB 口、设备也不会离开总线。
             MtpInterop.LIBMTP_Release_Device(_device);
             _device = IntPtr.Zero;
         }

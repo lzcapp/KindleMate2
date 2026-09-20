@@ -236,6 +236,15 @@ internal static class MtpInterop {
     internal const uint FilesAndFoldersRoot = 0xFFFFFFFF;
 
     /// <summary>
+    /// <c>DEVICE_FLAG_FORCE_RESET_ON_CLOSE</c>(device-flags.h:276)= 关闭会话时复位 USB 口。
+    ///
+    /// 本应用**主动清掉这一位**(见 <see cref="MtpDeviceSession"/>):它对我们这台 Kindle 的副作用是灾难性的 ——
+    /// 每次关闭会话都复位 USB 口 → 设备离开总线 → **要物理重插才能再用**,
+    /// 于是"先导入、再写回"这种两段式操作根本做不完。
+    /// </summary>
+    internal const uint DeviceFlagForceResetOnClose = 0x10000000;
+
+    /// <summary>
     /// 顶层对象**回报**的 parent_id。注意与查询参数不是一回事:查询根一层要传
     /// <see cref="FilesAndFoldersRoot"/>,而设备回给我们的顶层条目 parent_id 是 0(真机实测),
     /// 只有子条目才等于父目录的 item_id。判定"这一条是不是顶层"要用这个值。

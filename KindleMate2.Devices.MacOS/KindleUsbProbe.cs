@@ -7,11 +7,11 @@ namespace KindleMate2.Devices.MacOS;
 /// 只读地判断"USB 上有没有接着 Amazon 的设备" —— 用来让状态栏能反映 MTP 机型
 /// (2024 年及以后的 Kindle 在 macOS 上不挂载为磁盘,只认 /Volumes 会一直显示"未连接")。
 ///
-/// **为什么用 libusb 而不是 libmtp 的 <c>LIBMTP_Detect_Raw_Devices</c>**:后者内部也会去开设备,
-/// 而我们实测过——**每开一次 MTP 会话,libmtp 就会在关闭时复位 USB 口**
-/// (设备条目带 `DEVICE_FLAG_FORCE_RESET_ON_CLOSE`,见 libusb1-glue.c 的 close_usb),
-/// 结果是设备重新枚举、macOS 再弹一次「允许配件连接?」。状态栏是每 2 秒探一次的,
-/// 绝不能挂在这种有副作用的调用上。
+/// **为什么用 libusb 而不是 libmtp 的 <c>LIBMTP_Detect_Raw_Devices</c>**:后者会去**打开**设备,
+/// 而开 MTP 会话是有副作用的——历史上 libmtp 关闭会话时会复位 USB 口
+/// (设备标记 `DEVICE_FLAG_FORCE_RESET_ON_CLOSE`),真机实测会让设备离开总线、必须物理重插。
+/// 虽然本应用已经清掉了那个标记(见 <see cref="MtpDeviceSession"/>),但状态栏是**每 2 秒探一次**的,
+/// 绝不能挂到任何会打开设备的调用上:只读枚举永远是最安全的选择。
 ///
 /// 本类只做"init → 取设备列表 → 读描述符 → 释放",**不 open、不 claim 接口**,
 /// 因此不改变设备状态、不需要授权、也不影响正在进行的 MTP 会话。

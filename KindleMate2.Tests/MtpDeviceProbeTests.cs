@@ -21,8 +21,9 @@ namespace KindleMate2.Tests;
 /// 实测注意事项:
 /// <list type="bullet">
 ///   <item>没插 / 没点「允许」/ 被别的 MTP 客户端占用 → 探测不到设备,这是预期结果;</item>
-///   <item>每次访问会话结束时设备会重新枚举一次(macOS 的 USB reset),系统可能再问一次授权 ——
-///         不是故障,但意味着"少开几次会话"对体验很重要。</item>
+///   <item>首次插入必须在系统弹窗点「允许」;</item>
+///   <item>曾经"关一次会话设备就掉线、必须重插"的老问题已解决(清掉了 libmtp 的
+///         FORCE_RESET_ON_CLOSE 标记),见 <c>Probe_TwoConsecutiveSessions_SecondStillOpens</c>。</item>
 /// </list>
 /// </summary>
 public sealed class MtpDeviceProbeTests {
@@ -113,7 +114,7 @@ public sealed class MtpDeviceProbeTests {
     /// **真机**验证写回路径(删除 + 上传)能往返:把设备上的 My Clippings.txt 原样写回,再读回来比 SHA-256。
     ///
     /// 刻意在**一次会话**里做完(开 → 下载原始 → 删 → 上传同内容 → 重新定位 → 再下载 → 比哈希):
-    /// 每开关一次会话设备就会重新枚举一次(macOS 的 USB reset),一次授权只能验证一轮。
+    /// 一次会话跑完更快,也少占设备(连续会话本身已经可行,见另一条探针)。
     /// 内容保持字节一致,因此这个用例**不会改动用户的数据**。
     /// 产品入口 <c>DeviceManager.SyncFileToDevice</c> 就是这些原语加一层回滚(见其注释)。
     /// </summary>
@@ -191,6 +192,50 @@ public sealed class MtpDeviceProbeTests {
     private static string Sha256(string path) {
         using var stream = File.OpenRead(path);
         return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+    }
+
+    /// <summary>
+    /// **真机**判定「连续两次会话」是否都打得开 —— 这决定应用里"先导入、再写回"的两段式流程能不能用。
+    ///
+    /// 这条同时是**回归防线**:libmtp 给这台设备打了 FORCE_RESET_ON_CLOSE,关闭会话时会复位 USB 口,
+    /// 真机实测后果是"关一次会话设备就离开总线、必须物理重插"——那时本用例第 2 轮必然失败,
+    /// 而"先导入、再写回"的两段式流程(ExportManager.SyncToKindle)也因此做不完。
+    /// 现在我们在传进去的结构体里清掉了那个标记(见 MtpDeviceSession.TryOpenFirst)。
+    /// 若哪天新固件开始需要复位才能连第二次,这里会红 —— 那时再改回去,不要盲目放宽断言。
+    /// </summary>
+    [Fact]
+    public void Probe_TwoConsecutiveSessions_SecondStillOpens() {
+        if (!MtpInterop.IsAvailable()) {
+            _output.WriteLine("未安装 libmtp —— 跳过。");
+            return;
+        }
+
+        string? firstModel = null;
+        using (var first = MtpDeviceSession.TryOpenFirst()) {
+            if (first is null) {
+                _output.WriteLine("第一次会话就没打开(未插 / 未授权 / 被占用)—— 跳过。");
+                return;
+            }
+
+            firstModel = first.Model;
+            _output.WriteLine($"第 1 次会话:已打开 '{first.Model}'");
+        }
+
+        // 第 2、3 次:关键断言。清掉 FORCE_RESET_ON_CLOSE 之前,第 2 次就必然失败
+        // (设备已被复位、离开总线,要物理重插)。
+        for (var round = 2; round <= 3; round++) {
+            using var again = MtpDeviceSession.TryOpenFirst();
+            _output.WriteLine(again is null
+                ? $"第 {round} 次会话:打不开"
+                : $"第 {round} 次会话:也能打开 '{again.Model}'");
+            Assert.NotNull(again);
+            Assert.Equal(firstModel, again!.Model);
+        }
+
+        // 会话结束后设备应当仍在总线上(只读枚举判定,不碰设备)
+        var stillOnBus = KindleUsbProbe.TryFindKindle(out var productId);
+        _output.WriteLine($"三次会话之后只读枚举:{(stillOnBus ? $"仍在(VID=0x1949 PID=0x{productId:x4})" : "设备已消失")}");
+        Assert.True(stillOnBus, "会话结束后设备不应从总线上消失(那是 FORCE_RESET_ON_CLOSE 的副作用)");
     }
 
     /// <summary>
