@@ -369,6 +369,15 @@ public class DeviceManager : IDeviceManager {
             throw new Exception(Strings.Device_Mtp_Connect_Failed);
         }
 
+        ReplaceFileOnDevice(session, exportedFilePath, targetFileName);
+    }
+
+    /// <summary>
+    /// 安全替换的本体,拆出来是为了**能被测试在既有会话上直接调用**:MTP 每开关一次会话设备就会
+    /// 重新枚举一次(macOS 的 USB reset),把编排与"开会话"绑死的话,验证回滚兜底就得多插拔好几次设备。
+    /// 生产路径见 <see cref="SyncFileToDeviceViaMtp"/>。
+    /// </summary>
+    internal static void ReplaceFileOnDevice(MtpDeviceSession session, string exportedFilePath, string targetFileName) {
         // 只覆盖设备上已有的文件:往设备新增任意文件不是本方法承诺的能力。
         var existing = session.FindByPath(AppConstants.DocumentsPathName, targetFileName);
         if (existing is not { } target) {

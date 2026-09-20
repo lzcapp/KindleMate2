@@ -158,6 +158,30 @@ public sealed class MtpDeviceProbeTests {
             _output.WriteLine($"往返后: {new FileInfo(after).Length} 字节, sha256={roundTripHash[..16]}…");
 
             Assert.Equal(originalHash, roundTripHash);
+
+            // ─——— 第二阶段:故意让上传失败,验证回滚兜底真的会把原文件放回去 ————
+            // 源文件不存在 → 删除之后上传必然失败 → 必须触发 RestoreRollback。
+            // 这段是整个写回里最安全关键的代码:它要是坏的,一次失败的同步就会把用户设备上的
+            // My Clippings.txt 弄没,而应用的重试流程(第一步是从设备导入)又救不回来。
+            var missingSource = Path.Combine(work, "这个文件不存在.txt");
+            var threw = false;
+            try {
+                DeviceManager.ReplaceFileOnDevice(session, missingSource, AppConstants.ClippingsFileName);
+            } catch (Exception ex) {
+                threw = true;
+                _output.WriteLine($"上传失败时按预期抛出:{ex.Message}");
+            }
+
+            Assert.True(threw, "上传失败时应当抛出异常");
+
+            var afterRollback = session.FindByPath(AppConstants.DocumentsPathName, AppConstants.ClippingsFileName);
+            Assert.NotNull(afterRollback);
+            Assert.True(session.Download(afterRollback!.Value.ItemId, after), "回滚后重新下载失败");
+            var rollbackHash = Sha256(after);
+            _output.WriteLine($"回滚后: {new FileInfo(after).Length} 字节, sha256={rollbackHash[..16]}…");
+
+            // 设备上的文件必须还在,且内容与最初逐字节一致
+            Assert.Equal(originalHash, rollbackHash);
         } finally {
             try { Directory.Delete(work, true); } catch { /* best effort */ }
         }
