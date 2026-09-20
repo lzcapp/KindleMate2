@@ -151,7 +151,9 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         public static BriefType ParseEntryType(string pageMetadata) {
-            var pageMetaDate = pageMetadata.ToLower();
+            // ToLowerInvariant:这里做的是"协议文本"匹配(标注/笔记/书签等词条),与用户区域设置无关。
+            // 走文化相关的 ToLower 会在土耳其语等区域出问题('I' 会转成无点的 'ı',token 就匹配不上了)。
+            var pageMetaDate = pageMetadata.ToLowerInvariant();
             if (BriefTypeTranslations.Note.Any(token => pageMetaDate.Contains(token))) {
                 return BriefType.Note;
             } else if (BriefTypeTranslations.Highlight.Any(token => pageMetaDate.Contains(token))) {

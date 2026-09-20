@@ -45,7 +45,9 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return 0;
             }
 
-            roman = roman.ToUpper();
+            // ToUpperInvariant:罗马数字是固定的 ASCII 记号,与区域设置无关;
+            // 走文化相关的 ToUpper 在土耳其语等区域会把 'i' 转成带点的 'İ',随后按字符查表就失败了。
+            roman = roman.ToUpperInvariant();
             
             // Validate that all characters are valid Roman numerals
             if (roman.Any(c => !RomanMap.ContainsKey(c))) {

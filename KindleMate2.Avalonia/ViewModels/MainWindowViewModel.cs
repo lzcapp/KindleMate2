@@ -718,7 +718,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         return RunOperationAsync(() => {
             Directory.CreateDirectory(session.BackupDirectory);
-            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
+            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
+            // 非公历日历下年份会变成 2569/1405/1448 之类,清空前的这份保底备份就读不出日期了。
+            var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
         }, true, Strings.Successful, Strings.Clear_Failed);

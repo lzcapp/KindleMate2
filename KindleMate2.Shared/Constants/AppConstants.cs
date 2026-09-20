@@ -54,7 +54,10 @@
         
         public const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
-        public const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
+        // 原先这里还放着 ConnectionString("Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;"):
+        // 那是条**相对路径**连接串,实际指向哪个库取决于进程当前目录,只在"cwd 恰好等于库目录"
+        // 时才成立。壳已改为按「当前打开的库」构造连接串(DatabaseHelper.GetConnectionString),
+        // 该常量早已无人引用,故删除 —— 留着只会诱使新代码拿它去连一个说不清是哪个的库。
 
         public const string BookTitleFormat = " ——《{0}》";
 

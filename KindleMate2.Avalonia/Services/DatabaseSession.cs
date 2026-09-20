@@ -14,9 +14,9 @@ namespace KindleMate2.Avalonia.Services;
 /// <summary>
 /// 按「当前打开的库路径」组装 Application 层服务。
 ///
-/// 背景:<c>Application/DependencyInjection.cs</c> 把所有仓储硬编码到
-/// <c>AppConstants.ConnectionString</c>(相对路径 <c>KM2.dat</c>,随进程工作目录变化),
-/// 既不适合多库,也不适合跨平台。Avalonia 侧因此自行组装一套按路径参数化的服务,
+/// 背景:早期那套集中注册(<c>Application/DependencyInjection.cs</c>,现已删除)把所有仓储硬编码到
+/// 一条相对路径 <c>KM2.dat</c> 的连接串上 —— 实际连到哪个库取决于进程当前目录,既不适合多库,
+/// 也不适合跨平台。Avalonia 侧因此自行组装一套按路径参数化的服务,
 /// 所有导入 / 导出 / 维护 / 设备操作都作用于"当前打开的库",与 UI 语义一致。
 /// </summary>
 public sealed class DatabaseSession : IDisposable {
