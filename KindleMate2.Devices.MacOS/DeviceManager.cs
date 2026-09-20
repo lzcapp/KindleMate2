@@ -17,8 +17,8 @@ namespace KindleMate2.Devices.MacOS;
 /// ② 判定:两端都以「卷内存在 documents/My Clippings.txt」为唯一依据。macOS 上尤其不能再用
 ///    卷名或 <c>DriveInfo.DriveType</c> 猜:同一个 /Volumes 下还混着系统卷、恢复卷与磁盘映像
 ///    挂载卷(Macintosh HD、Recovery、*.dmg),而 .NET 在 Unix 上对 DriveType 的取值并不稳定。
-/// ③ 监听:Windows 靠 WMI 事件;macOS 改为定时轮询 /Volumes 快照(<see cref="PollInterval"/>),
-///    发现变化后再走一段防抖 <see cref="DebounceInterval"/>,与 Windows 实现的防抖时长一致 ——
+/// ③ 监听:Windows 靠 WMI 事件;macOS 改为定时轮询 /Volumes 快照(<see cref="DefaultPollInterval"/>),
+///    发现变化后再走一段防抖 <see cref="DefaultDebounceInterval"/>,与 Windows 实现的防抖时长一致 ——
 ///    挂载刚出现时文件系统可能尚未就绪,立刻上报会得到「时连时断」的抖动。
 /// ④ MTP:macOS 没有 WPD 的对应物(<c>MediaDevices</c> 是 Windows 专有),故本实现只支持 USB 模式。
 ///    设备若停留在 MTP 模式,本实现如实报告「未连接」,不伪造连接状态。
@@ -27,16 +27,19 @@ public class DeviceManager : IDeviceManager {
     /// <summary>从设备取回的文件数(My Clippings.txt + vocab.db),用于按「第几个文件」上报进度。</summary>
     private const int DeviceFileCount = 2;
 
-    /// <summary>macOS 上外接卷的挂载根目录。</summary>
-    private const string VolumesRoot = "/Volumes";
+    /// <summary>macOS 上外接卷的挂载根目录(可被构造函数覆盖,便于测试)。</summary>
+    public const string DefaultVolumesRoot = "/Volumes";
 
     /// <summary>轮询间隔。挂载/卸载是低频事件,遍历几个卷目录的开销可忽略。</summary>
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(2);
 
     /// <summary>状态变化后的防抖时长,与 Windows 实现取同一值。</summary>
-    private static readonly TimeSpan DebounceInterval = TimeSpan.FromMilliseconds(2500);
+    public static readonly TimeSpan DefaultDebounceInterval = TimeSpan.FromMilliseconds(2500);
 
     private readonly string _versionFilePath;
+    private readonly string _volumesRoot;
+    private readonly TimeSpan _pollInterval;
+    private readonly TimeSpan _debounceInterval;
 
     /// <summary>守连接状态(<see cref="_driveLetter"/> / <see cref="_deviceType"/>),与 Windows 实现同名同职责。</summary>
     private readonly object _lockObj = new object();
@@ -73,8 +76,25 @@ public class DeviceManager : IDeviceManager {
 
     public event Action<bool>? ConnectionChanged;
 
-    public DeviceManager(string versionFilePath) {
+    /// <summary>
+    /// 构造设备管理器。
+    ///
+    /// <paramref name="volumesRoot"/> 与两个间隔都可注入,默认值即生产配置 —— 注入点是**为测试留的**:
+    /// 没有它,"扫哪些卷、变化后多久上报"这段逻辑只能靠改源码常量去验(此前正是用 sed 改副本跑的),
+    /// 于是它无法进入 <c>KindleMate2.Tests</c>,也就无从回归。
+    /// </summary>
+    /// <param name="versionFilePath">设备侧 version.txt 的相对路径(相对卷根)。</param>
+    /// <param name="volumesRoot">卷的挂载根目录,默认 <see cref="DefaultVolumesRoot"/>。</param>
+    /// <param name="pollInterval">轮询间隔,默认 <see cref="DefaultPollInterval"/>。</param>
+    /// <param name="debounceInterval">防抖时长,默认 <see cref="DefaultDebounceInterval"/>。</param>
+    public DeviceManager(string versionFilePath,
+        string volumesRoot = DefaultVolumesRoot,
+        TimeSpan? pollInterval = null,
+        TimeSpan? debounceInterval = null) {
         _versionFilePath = versionFilePath;
+        _volumesRoot = volumesRoot;
+        _pollInterval = pollInterval ?? DefaultPollInterval;
+        _debounceInterval = debounceInterval ?? DefaultDebounceInterval;
     }
 
     public void StartWatching() {
@@ -91,7 +111,7 @@ public class DeviceManager : IDeviceManager {
 
     private async Task PollLoopAsync(CancellationToken token) {
         try {
-            using var timer = new PeriodicTimer(PollInterval);
+            using var timer = new PeriodicTimer(_pollInterval);
             while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false)) {
                 var connected = IsKindleConnected();
                 lock (_reportedLockObj) {
@@ -113,11 +133,11 @@ public class DeviceManager : IDeviceManager {
 
     private void ScheduleDebounceCheck() {
         if (_debounceTimer == null) {
-            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, DebounceInterval,
+            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, _debounceInterval,
                 System.Threading.Timeout.InfiniteTimeSpan);
         } else {
             // 防抖窗口内又发生变化则重新计时,只认最后稳定下来的那个状态。
-            _debounceTimer.Change(DebounceInterval, System.Threading.Timeout.InfiniteTimeSpan);
+            _debounceTimer.Change(_debounceInterval, System.Threading.Timeout.InfiniteTimeSpan);
         }
     }
 
@@ -205,9 +225,9 @@ public class DeviceManager : IDeviceManager {
     /// 枚举候选卷。这里刻意不做任何猜测性过滤(按卷名、按卷数量、按 DriveType 都不可靠),
     /// 是否 Kindle 一律交给 <see cref="IsKindleVolume"/> 按内容判定。
     /// </summary>
-    private static string[] EnumerateVolumes() {
+    private string[] EnumerateVolumes() {
         try {
-            return Directory.Exists(VolumesRoot) ? Directory.GetDirectories(VolumesRoot) : [];
+            return Directory.Exists(_volumesRoot) ? Directory.GetDirectories(_volumesRoot) : [];
         } catch (Exception ex) {
             // 枚举 /Volumes 本身失败(权限等)只能当作「没找到设备」,不能因此让整个探测抛出去。
             AppLog.Write($"[EnumerateVolumes] {ex}");

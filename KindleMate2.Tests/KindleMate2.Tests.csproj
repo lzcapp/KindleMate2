@@ -18,5 +18,9 @@
     <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
     <ProjectReference Include="..\KindleMate2.Infrastructure\KindleMate2.Infrastructure.csproj" />
     <ProjectReference Include="..\KindleMate2.Domain\KindleMate2.Domain.csproj" />
+    <!-- macOS 设备实现是纯 BCL 的中性 net10.0 程序集(与 Devices.Windows 不同,它没有平台专有依赖),
+         因此可以在任何平台上编译+测试;用例通过构造函数把"卷根目录"指到临时目录,
+         于是"扫卷判定 + 轮询防抖"这段逻辑得以跨平台回归。 -->
+    <ProjectReference Include="..\KindleMate2.Devices.MacOS\KindleMate2.Devices.MacOS.csproj" />
   </ItemGroup>
 </Project>
