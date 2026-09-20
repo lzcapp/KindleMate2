@@ -20,7 +20,7 @@
 - **macOS**：`macOS 11`（Apple Silicon）/ `macOS 10.15`（Intel）或更高 —— `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**：`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **架构**: `x86` 或 `x64` 或 `ARM64`
-- 三个平台**除 Kindle 设备同步（仅 Windows 可用）外功能完整**
+- 三个平台在「Kindle 设备同步」上能力不同：**Windows 支持 USB 与 MTP 两种模式；macOS 支持 USB 大容量存储模式（Kindle 上需关闭 MTP 模式）；Linux 暂无设备支持**，其余功能三平台完整
 
 依赖运行时（runtime）的版本需要安装对应平台的 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
 
@@ -59,8 +59,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### 项目
 
-解决方案含 7 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
+解决方案含 8 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.MacOS` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
 壳自身的构建、运行与无头自检见 [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md)。
 
 > 早期基于 Windows Forms / WPF 的两个壳已退役。需要对照旧版行为时，可用只读 tag **`winforms-final`**
@@ -90,7 +90,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 夜间模式（深色模式）
 - [x] 语言切换（简体中文 / 繁体中文 / English）
 - [x] 搜索功能（书名 / 作者 / 内容 / 笔记）
-- [x] **跨平台**（Windows / Linux / macOS 均有发布包；非 Windows 除 Kindle 设备同步外功能完整）
+- [x] **跨平台**（Windows / Linux / macOS 均有发布包；设备同步 Windows 支持 USB + MTP、macOS 支持 USB，Linux 暂不支持，其余功能三平台完整）
 
 ## 截图
 

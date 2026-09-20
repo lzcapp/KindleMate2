@@ -116,5 +116,12 @@ jobs:
           dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.Avalonia.dll \
             --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
-          grep -q "NullDeviceManager" "$work/smoke.txt"
-          echo "cross-platform boot check passed on ${{ matrix.os }}"
+          # 断言当前平台选到了预期实现:macOS 走 Devices.MacOS(/Volumes + 轮询),
+          # Linux 仍无设备实现、应为 NullDeviceManager 降级。
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            expect="Devices.MacOS.DeviceManager"
+          else
+            expect="NullDeviceManager"
+          fi
+          grep -q "$expect" "$work/smoke.txt"
+          echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"

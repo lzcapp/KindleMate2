@@ -20,7 +20,7 @@
 - **macOS**: `macOS 11` (Apple Silicon) / `macOS 10.15` (Intel) or later — `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**: `KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **Architecture**: `x86` or `x64` or `ARM64`
-- **Feature complete on all three platforms** except Kindle device sync (Windows only)
+- **Feature complete on all three platforms** except Kindle device sync, which differs per platform: Windows supports USB + MTP, macOS supports USB mass storage, Linux has none yet
 
 The runtime-dependent builds require the platform's [.NET 10 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
 
@@ -61,8 +61,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### Projects
 
-The solution contains 7 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
+The solution contains 8 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.MacOS` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
 layering, and [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md) for building, running
 and the headless self-checks.
 
@@ -89,7 +89,7 @@ and the headless self-checks.
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch (简体中文 / 繁體中文 / English)
 - [x] Search Function (book / author / content / note)
-- [x] **Cross-platform** (official packages for Windows / Linux / macOS; everything but device sync outside Windows)
+- [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync is USB + MTP on Windows and USB on macOS, not available on Linux yet — everything else works on all three)
 
 ## Screenshots
 

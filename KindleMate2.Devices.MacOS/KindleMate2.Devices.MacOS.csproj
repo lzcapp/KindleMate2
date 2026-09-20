@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KindleMate2.Devices.MacOS</RootNamespace>
+    <AssemblyName>KindleMate2.Devices.MacOS</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    macOS 专有的 Kindle 设备实现(枚举 /Volumes + 内容特征判定 + 定时轮询)。
+    之所以独立成项目:与 Devices.Windows 对称,平台专有逻辑不污染 Application 层;
+    Application 只保留 IDeviceManager 接口,由各平台程序集提供实现。
+
+    TFM 刻意用中性的 net10.0 而非 net10.0-macos:本实现只用 BCL(目录枚举 / 文件复制 /
+    定时器),没有任何 macOS 专有 P/Invoke,因此可以在 Linux 上一起编译 —— 这正合
+    build.yml「在 ubuntu 上构建整个解决方案」的既有做法,不必为它开特例。
+    实际装配由 Avalonia.csproj 里的 IsOSPlatform('OSX') 条件引用控制。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

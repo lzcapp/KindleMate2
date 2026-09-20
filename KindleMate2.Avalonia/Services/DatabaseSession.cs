@@ -124,11 +124,17 @@ public sealed class DatabaseSession : IDisposable {
     /// <summary>
     /// 按平台创建设备管理器。独立成静态工厂的用意有二:
     /// ① 构造函数复用;② 无头自检 / CI 无需先打开数据库,就能断言当前平台选到了哪个实现。
+    ///
+    /// 三个分支与三份引用一一对应(WINDOWS / MACOS 常量由 Avalonia.csproj 按平台与 TFM 定义):
+    /// Windows → Devices.Windows(USB 盘符 + MTP);macOS → Devices.MacOS(/Volumes + 轮询);
+    /// 其余(Linux 等)→ NullDeviceManager 兜底。
     /// </summary>
     public static IDeviceManager CreateDeviceManager(string workDirectory) {
+        var versionFilePath = Path.Combine(workDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName);
 #if WINDOWS
-        return new KindleMate2.Devices.Windows.DeviceManager(
-            Path.Combine(workDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
+        return new KindleMate2.Devices.Windows.DeviceManager(versionFilePath);
+#elif MACOS
+        return new KindleMate2.Devices.MacOS.DeviceManager(versionFilePath);
 #else
         return new NullDeviceManager();
 #endif
