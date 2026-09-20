@@ -441,6 +441,9 @@
   <data name="Device_Clippings_Read_Failed" xml:space="preserve">
   	<value>Failed to read {0} from the device (the transfer was interrupted; reconnect the device and try again).</value>
   </data>
+  <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
+  	<value>Failed to write back to the device. If My Clippings.txt was removed from the device, restore it from the local backup folder.</value>
+  </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>_File</value>
   </data>

@@ -164,6 +164,69 @@ internal sealed class MtpDeviceSession : IDisposable {
         return true;
     }
 
+    /// <summary>删除设备上的一个对象。</summary>
+    internal bool Delete(uint objectId) {
+        if (_disposed || _device == IntPtr.Zero) {
+            return false;
+        }
+
+        var code = MtpInterop.LIBMTP_Delete_Object(_device, objectId);
+        if (code != 0) {
+            AppLog.Write($"[MtpDeviceSession] 删除失败 objectId={objectId} code={code}");
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 往设备的一个目录里上传文件。
+    ///
+    /// 注意:libmtp 的 <c>Send_File_From_File</c> **只会新建对象**,同名文件不会被替换
+    /// (读了 libmtp.c 的实现确认:它只是填 SendObjectInfo 再传数据,没有任何同名检查),
+    /// 所以"覆盖"必须靠调用方先 <see cref="Delete"/> 再上传。
+    /// </summary>
+    /// <param name="localPath">本地源文件。</param>
+    /// <param name="fileName">设备上显示的文件名。</param>
+    /// <param name="parentId">目标目录的 item_id(如 documents 的 id)。</param>
+    /// <param name="storageId">真实存储区 id。</param>
+    /// <param name="fileType">MTP 文件类型(如 <see cref="MtpInterop.FileType.Text"/>,27)。</param>
+    internal bool Upload(string localPath, string fileName, uint parentId, uint storageId, int fileType) {
+        if (_disposed || _device == IntPtr.Zero) {
+            return false;
+        }
+
+        if (!File.Exists(localPath)) {
+            AppLog.Write($"[MtpDeviceSession] 上传源文件不存在:{localPath}");
+            return false;
+        }
+
+        // filename 是 char*,得自己分配 UTF-8 内存并在调用后释放 —— 不能直接把托管字符串塞进去。
+        var fileNamePtr = Marshal.StringToCoTaskMemUTF8(fileName);
+        try {
+            var fileData = new MtpInterop.MtpFile {
+                ItemId = 0,                  // 0 = 由设备分配
+                ParentId = parentId,
+                StorageId = storageId,
+                Filename = fileNamePtr,
+                FileSize = (ulong)new FileInfo(localPath).Length,
+                ModificationDate = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                FileType = fileType,
+                Next = IntPtr.Zero,
+            };
+
+            var code = MtpInterop.LIBMTP_Send_File_From_File(_device, localPath, ref fileData, null, IntPtr.Zero);
+            if (code != 0) {
+                AppLog.Write($"[MtpDeviceSession] 上传失败 '{fileName}' code={code}");
+                return false;
+            }
+
+            return true;
+        } finally {
+            Marshal.FreeCoTaskMem(fileNamePtr);
+        }
+    }
+
     /// <summary>取一层目录。失败返回空列表并记日志(不抛:设备上的目录偶尔取不到不该炸掉调用方)。</summary>
     private static List<MtpEntry> ListLevel(IntPtr device, uint storageId, uint parentId) {
         var head = MtpInterop.LIBMTP_Get_Files_And_Folders(device, storageId, parentId);

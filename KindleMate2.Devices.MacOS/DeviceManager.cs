@@ -340,14 +340,87 @@ public class DeviceManager : IDeviceManager {
 
     /// <summary>
     /// Syncs exported clippings file back to the connected Kindle device.
+    /// USB 卷上就是一次覆盖写;MTP 上走 <see cref="SyncFileToDeviceViaMtp"/>(见其注释里的安全替换说明)。
     /// </summary>
     public void SyncFileToDevice(string exportedFilePath, string targetFileName) {
-        if (!IsConnected) {
-            throw new Exception(Strings.Kindle_Connect_Failed);
+        if (_deviceType == Device.Type.USB && IsConnected) {
+            var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
+            File.Copy(exportedFilePath, Path.Combine(documentPath, targetFileName), true);
+            return;
         }
 
-        var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
-        File.Copy(exportedFilePath, Path.Combine(documentPath, targetFileName), true);
+        SyncFileToDeviceViaMtp(exportedFilePath, targetFileName);
+    }
+
+    /// <summary>
+    /// 经 MTP 把文件写回设备(只支持覆盖 <c>documents/</c> 下已存在的同名文件)。
+    ///
+    /// 为什么不能简单地"删掉再传":MTP 没有原子替换,而 libmtp 的 Send_File_From_File
+    /// **只新建、不替换**同名文件(读了 libmtp.c 的实现确认)。于是"删旧 → 上传新"中间有个窗口:
+    /// 删成功、传失败 → 设备上就没有 My Clippings.txt 了。**而这个后果比看起来严重**:
+    /// 应用的重试流程第一步是「从设备导入」,设备上没有该文件就直接失败,用户无法自行重试。
+    ///
+    /// 所以这里先把它**下载到本地临时文件当回滚点**,再删、再传;上传失败就把它传回去恢复原状。
+    /// 多一次同尺寸的传输,换取"任何一步失败都不会让设备处于无法自愈的状态"。
+    /// </summary>
+    private static void SyncFileToDeviceViaMtp(string exportedFilePath, string targetFileName) {
+        using var session = MtpDeviceSession.TryOpenFirst();
+        if (session is null) {
+            throw new Exception(Strings.Device_Mtp_Connect_Failed);
+        }
+
+        // 只覆盖设备上已有的文件:往设备新增任意文件不是本方法承诺的能力。
+        var existing = session.FindByPath(AppConstants.DocumentsPathName, targetFileName);
+        if (existing is not { } target) {
+            throw new Exception(Strings.Device_Clippings_Not_Found);
+        }
+
+        var rollbackPath = exportedFilePath + ".device-rollback";
+        var hasRollback = session.Download(target.ItemId, rollbackPath);
+        if (!hasRollback) {
+            // 连回滚点都拿不到就先别删 —— 宁可这次同步不成功,也不让设备处于无法恢复的中间态。
+            AppLog.Write("[DeviceManager] MTP: 无法为设备上现有文件创建回滚点,放弃本次写回");
+            throw new Exception(Strings.Device_Mtp_Sync_Failed);
+        }
+
+        // 只有当"恢复也失败、设备上确实少了这个文件"时才保留回滚副本 ——
+        // 那种情况下它是用户唯一的原始内容来源,绝不能在 finally 里被删掉。
+        var keepRollback = false;
+        try {
+            if (!session.Delete(target.ItemId)) {
+                throw new Exception(Strings.Device_Mtp_Sync_Failed);
+            }
+
+            // 沿用原文件的类型与父目录,避免在设备上换一个"陌生人"。
+            if (!session.Upload(exportedFilePath, targetFileName, target.ParentId, session.StorageId, target.FileType)) {
+                keepRollback = !RestoreRollback(session, rollbackPath, targetFileName, target);
+                throw new Exception(Strings.Device_Mtp_Sync_Failed);
+            }
+        } finally {
+            if (!keepRollback) {
+                try {
+                    File.Delete(rollbackPath);
+                } catch {
+                    // 临时文件删不掉不影响结果
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 上传失败时把回滚点传回设备。
+    /// 返回 true 表示**已恢复**(调用方可以删掉本地回滚副本);false 表示恢复也失败了,
+    /// 此时本地那份原始内容必须保留。
+    /// </summary>
+    private static bool RestoreRollback(MtpDeviceSession session, string rollbackPath, string targetFileName, MtpEntry target) {
+        if (session.Upload(rollbackPath, targetFileName, target.ParentId, session.StorageId, target.FileType)) {
+            AppLog.Write("[DeviceManager] MTP: 上传失败,已把设备上的原文件恢复回去");
+            return true;
+        }
+
+        AppLog.Write($"[DeviceManager] MTP: 上传失败后**恢复也失败**,设备上已无 '{targetFileName}'。" +
+                     $"原始内容的本地副本保留在:{rollbackPath}");
+        return false;
     }
 
     public void Dispose() {

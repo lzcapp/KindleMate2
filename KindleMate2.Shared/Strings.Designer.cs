@@ -659,6 +659,16 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
+        ///   查找类似 写回设备失败… 的本地化字符串。
+        /// </summary>
+        public static string Device_Mtp_Sync_Failed {
+            get {
+                return ResourceManager.GetString("Device_Mtp_Sync_Failed", resourceCulture);
+            }
+        }
+        
+        
+        /// <summary>
         ///   查找类似 Kindle设备已连接 的本地化字符串。
         /// </summary>
         public static string Kindle_Device_Connected {

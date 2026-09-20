@@ -441,6 +441,9 @@
   <data name="Device_Clippings_Read_Failed" xml:space="preserve">
   	<value>从设备读取 {0} 失败(传输中断,请重新插拔设备后重试)。</value>
   </data>
+  <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
+  	<value>写回设备失败。若设备上的 My Clippings.txt 已被删除,可用本机备份目录中的文件恢复。</value>
+  </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>文件(_F)</value>
   </data>

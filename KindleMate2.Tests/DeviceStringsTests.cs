@@ -16,6 +16,7 @@ public sealed class DeviceStringsTests {
         "Device_Mtp_Connect_Failed",
         "Device_Clippings_Not_Found",
         "Device_Clippings_Read_Failed",
+        "Device_Mtp_Sync_Failed",
     ];
 
     [Theory]

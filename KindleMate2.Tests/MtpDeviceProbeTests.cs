@@ -109,6 +109,66 @@ public sealed class MtpDeviceProbeTests {
     }
 
     /// <summary>
+    /// **真机**验证写回路径(删除 + 上传)能往返:把设备上的 My Clippings.txt 原样写回,再读回来比 SHA-256。
+    ///
+    /// 刻意在**一次会话**里做完(开 → 下载原始 → 删 → 上传同内容 → 重新定位 → 再下载 → 比哈希):
+    /// 每开关一次会话设备就会重新枚举一次(macOS 的 USB reset),一次授权只能验证一轮。
+    /// 内容保持字节一致,因此这个用例**不会改动用户的数据**。
+    /// 产品入口 <c>DeviceManager.SyncFileToDevice</c> 就是这些原语加一层回滚(见其注释)。
+    /// </summary>
+    [Fact]
+    public void Probe_MtpWriteBack_RoundTripsByteForByte() {
+        if (!MtpInterop.IsAvailable()) {
+            _output.WriteLine("未安装 libmtp —— 跳过。");
+            return;
+        }
+
+        var work = Path.Combine(Path.GetTempPath(), "km2-mtp-writeback-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(work);
+        var before = Path.Combine(work, "before.txt");
+        var after = Path.Combine(work, "after.txt");
+
+        try {
+            using var session = MtpDeviceSession.TryOpenFirst();
+            if (session is null) {
+                _output.WriteLine("没有可打开的 MTP 设备 —— 跳过(未插 / 未授权 / 被别的 MTP 程序占用)。");
+                return;
+            }
+
+            var clippings = session.FindByPath(AppConstants.DocumentsPathName, AppConstants.ClippingsFileName);
+            if (clippings is not { } target) {
+                _output.WriteLine("设备上没有 My Clippings.txt —— 跳过。");
+                return;
+            }
+
+            Assert.True(session.Download(target.ItemId, before), "下载原始文件失败");
+            var originalHash = Sha256(before);
+            _output.WriteLine($"原始:{new FileInfo(before).Length} 字节, sha256={originalHash[..16]}…");
+
+            Assert.True(session.Delete(target.ItemId), "删除失败");
+            Assert.True(session.Upload(before, AppConstants.ClippingsFileName,
+                target.ParentId, session.StorageId, target.FileType), "上传失败");
+
+            var replaced = session.FindByPath(AppConstants.DocumentsPathName, AppConstants.ClippingsFileName);
+            Assert.NotNull(replaced);
+            _output.WriteLine($"写回后: id={replaced!.Value.ItemId} size={replaced.Value.Size}(原 id={target.ItemId} size={target.Size})");
+
+            Assert.True(session.Download(replaced.Value.ItemId, after), "重新下载失败");
+            var roundTripHash = Sha256(after);
+            _output.WriteLine($"往返后: {new FileInfo(after).Length} 字节, sha256={roundTripHash[..16]}…");
+
+            Assert.Equal(originalHash, roundTripHash);
+        } finally {
+            try { Directory.Delete(work, true); } catch { /* best effort */ }
+        }
+    }
+
+    private static string Sha256(string path) {
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+    }
+
+    /// <summary>
     /// 同步收集进度 —— 不用 <c>Progress&lt;T&gt;</c>:它把回调投递到线程池,断言时不一定收到全部条目,
     /// 会变成偶发失败(设备用例里踩过一次)。
     /// </summary>
