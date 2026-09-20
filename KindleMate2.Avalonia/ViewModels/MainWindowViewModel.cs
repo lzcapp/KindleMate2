@@ -319,7 +319,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <c>Error</c> 为消息(失败时)。
     /// </returns>
     public async Task<(bool Fatal, bool Ok, string Error)> PrepareDatabaseAsync() {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
 
         if (!File.Exists(databasePath)) {
             if (!DatabaseHelper.CreateDatabase(databasePath, out var exception)) {
@@ -344,10 +344,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>schema 迁移失败的告警文案(空表示无告警);由视图层弹一次提示。</summary>
     public string MigrationWarning { get; private set; } = string.Empty;
-
-    /// <summary>兼容旧调用点:进程级备份注册所需的库路径(与原版一致的固定路径)。</summary>
-    public static string DefaultDatabasePath =>
-        Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
 
     /// <summary>持久化主题选择。</summary>
     public void PersistTheme(bool dark) {
@@ -639,7 +635,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
         return Task.Run(() => {
-            var backupPath = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+            // 提示"打开文件夹"要指向**备份真正落地的那个目录**(session 的),而不是当前目录下的
+            // Backups —— 用户从文件对话框打开了别处的库时,两者不是同一个地方。
+            var backupPath = session.BackupDirectory;
             session.ExportManager.BackupDatabase();
 
             if (_allClippings.Count == 0) {
@@ -995,11 +993,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 返回 (是否需要询问, 备份文件路径)。
     /// </summary>
     public (bool Ask, string BackupFile) CheckStartupBackup() {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
         if (!File.Exists(databasePath)) return (false, string.Empty);
         if (_allClippings.Count > 0) return (false, string.Empty);
 
-        var backupDir = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+        var backupDir = AppPaths.BackupsDirectory;
         if (!Directory.Exists(backupDir)) return (false, string.Empty);
 
         var backupFile = Path.Combine(backupDir, AppConstants.DatabaseFileName);
@@ -1011,7 +1009,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>从备份恢复库文件(原版为 <c>File.Copy(backup, db, true)</c>;实际生效在下次启动)。</summary>
     public void RestoreFromBackup(string backupFile) {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
         File.Copy(backupFile, databasePath, true);
     }
 

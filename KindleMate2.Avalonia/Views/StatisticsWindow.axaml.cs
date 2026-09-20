@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using KindleMate2.Avalonia.Charts;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
@@ -95,7 +96,7 @@ public partial class StatisticsWindow : Window {
             bitmap.Render(this);
 
             var directory = Path.Combine(
-                Path.GetDirectoryName(_vm.Source) ?? Environment.CurrentDirectory,
+                Path.GetDirectoryName(_vm.Source) ?? AppPaths.DataDirectory,
                 AppConstants.StatisticsPathName);
             Directory.CreateDirectory(directory);
             var file = Path.Combine(directory,

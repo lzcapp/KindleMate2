@@ -61,7 +61,7 @@ public sealed class DatabaseSession : IDisposable {
 
     public DatabaseSession(string databasePath) {
         DatabasePath = Path.GetFullPath(databasePath);
-        WorkDirectory = Path.GetDirectoryName(DatabasePath) ?? Environment.CurrentDirectory;
+        WorkDirectory = Path.GetDirectoryName(DatabasePath) ?? AppPaths.DataDirectory;
         ConnectionString = DatabaseHelper.GetConnectionString(DatabasePath);
 
         ImportDirectory = Path.Combine(WorkDirectory, AppConstants.ImportsPathName);
