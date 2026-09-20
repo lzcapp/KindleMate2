@@ -17,21 +17,45 @@ namespace KindleMate2.Devices.MacOS;
 internal static class MtpInterop {
     private const string LibraryName = "libmtp";
 
+    /// <summary>
+    /// libusb 的逻辑库名。<see cref="KindleUsbProbe"/> 只做**只读枚举**也用它 ——
+    /// 注意 <c>NativeLibrary.SetDllImportResolver</c> **每个程序集只能设置一次**,
+    /// 所以两个库的解析必须都由本类的解析器负责,不能另开一个。
+    /// </summary>
+    internal const string LibusbLibraryName = "libusb-1.0";
+
     /// <summary>libmtp 在 macOS 上等待写事务/设备响应的默认超时(毫秒),与 CLI 工具一致。</summary>
     internal const int DefaultTimeoutMs = 5000;
 
     static MtpInterop() {
         // 不能只靠 [DllImport("libmtp")] 的默认搜索路径:Homebrew 装在 /opt/homebrew/lib,
         // 而 .app 里我们把它放进 Contents/Frameworks —— 两处都不在 dyld 的默认搜索范围内。
-        NativeLibrary.SetDllImportResolver(typeof(MtpInterop).Assembly, Resolve);
+        EnsureLibraryResolver();
+    }
+
+    private static int _resolverRegistered;
+
+    /// <summary>
+    /// 注册本程序集的 DllImport 解析器(**幂等**)。
+    ///
+    /// 之所以要单独暴露:<c>SetDllImportResolver</c> 每个程序集只能设一次,而解析器只挂在
+    /// <see cref="MtpInterop"/> 的静态构造上 —— 其他类(如 <see cref="KindleUsbProbe"/>)自己发起
+    /// DllImport 时,如果此前没碰过本类,静态构造不会跑、解析器就没注册,于是明明装着的库也「找不到」。
+    /// 实测踩过:探测 libusb 时直接报不可用。所以每个用原生库的类都要先调这个方法。
+    /// </summary>
+    internal static void EnsureLibraryResolver() {
+        if (Interlocked.Exchange(ref _resolverRegistered, 1) == 0) {
+            NativeLibrary.SetDllImportResolver(typeof(MtpInterop).Assembly, Resolve);
+        }
     }
 
     private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPaths) {
-        if (!string.Equals(libraryName, LibraryName, StringComparison.Ordinal)) {
-            return IntPtr.Zero;
+        var candidates = CandidatePathsFor(libraryName);
+        if (candidates.Count == 0) {
+            return IntPtr.Zero;   // 不认识的库名,交给默认规则
         }
 
-        foreach (var candidate in CandidateLibraryPaths()) {
+        foreach (var candidate in candidates) {
             if (NativeLibrary.TryLoad(candidate, out var handle)) {
                 LoadedPath = candidate;
                 return handle;
@@ -45,18 +69,39 @@ internal static class MtpInterop {
     internal static string? LoadedPath { get; private set; }
 
     /// <summary>
-    /// 候选动态库路径。顺序:**先找随包分发的**(发布版在 <c>Contents/Frameworks</c>),
-    /// 再找 Homebrew 的安装位置(开发机 / 用户自行 <c>brew install libmtp</c> 的情形)。
+    /// 候选目录,按优先级:**随包分发的**(发布版在 <c>Contents/Frameworks</c>)优先,
+    /// 再退到 Homebrew 的安装位置(开发机 / 用户自行 brew install 的情形)。
     /// </summary>
-    internal static IEnumerable<string> CandidateLibraryPaths() {
-        var baseDirectory = AppContext.BaseDirectory;
-
-        // .app 里可执行文件在 Contents/MacOS/,动态库在 Contents/Frameworks/
-        yield return Path.Combine(baseDirectory, "libmtp.9.dylib");
-        yield return Path.Combine(baseDirectory, "..", "Frameworks", "libmtp.9.dylib");
-        yield return "/opt/homebrew/lib/libmtp.9.dylib";   // Apple Silicon Homebrew
-        yield return "/usr/local/lib/libmtp.9.dylib";      // Intel Homebrew / 手工安装
+    internal static IEnumerable<string> CandidateDirectories() {
+        yield return AppContext.BaseDirectory;                                    // 开发布局:与程序同目录
+        yield return Path.Combine(AppContext.BaseDirectory, "..", "Frameworks");   // .app 内
+        yield return "/opt/homebrew/lib";                                         // Apple Silicon Homebrew
+        yield return "/usr/local/lib";                                            // Intel Homebrew / 手工安装
     }
+
+    /// <summary>逻辑库名 → 实际文件名(macOS 上带版本号后缀)。不认识的库名返回空。</summary>
+    private static string[] FileNamesFor(string libraryName) => libraryName switch {
+        LibraryName => ["libmtp.9.dylib", "libmtp.dylib"],
+        LibusbLibraryName => ["libusb-1.0.0.dylib", "libusb-1.0.dylib"],
+        _ => [],
+    };
+
+    /// <summary>
+    /// 某个库的候选完整路径。顺序刻意是「首选文件名 × 各目录」再看备选文件名 ——
+    /// 这样 <c>.app</c> 里的首选名一定排在最前(测试钉住了这一顺序)。
+    /// </summary>
+    private static IReadOnlyList<string> CandidatePathsFor(string libraryName) {
+        var paths = new List<string>();
+        foreach (var fileName in FileNamesFor(libraryName)) {
+            foreach (var directory in CandidateDirectories()) {
+                paths.Add(Path.Combine(directory, fileName));
+            }
+        }
+        return paths;
+    }
+
+    /// <summary>libmtp 的候选路径(供测试断言顺序)。</summary>
+    internal static IEnumerable<string> CandidateLibraryPaths() => CandidatePathsFor(LibraryName);
 
     /// <summary>libmtp 是否可用(未捕获异常地探一次)。</summary>
     internal static bool IsAvailable() {

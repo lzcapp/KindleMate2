@@ -3,6 +3,7 @@ using Xunit.Abstractions;
 using KindleMate2.Application.Models;
 using KindleMate2.Devices.MacOS;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Tests;
 
@@ -190,6 +191,45 @@ public sealed class MtpDeviceProbeTests {
     private static string Sha256(string path) {
         using var stream = File.OpenRead(path);
         return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+    }
+
+    /// <summary>
+    /// **真机**验证状态栏那条探测链:USB 上有 Amazon 设备 → <c>IsKindleConnected()</c> 为真 →
+    /// 类型为 MTP、卷为空(界面因此显示通用的"设备已连接")。
+    ///
+    /// 这条链走到的是**只读枚举**,不会开 MTP 会话 —— 也就是说它跑完**不会**把设备弄掉线
+    /// (这正是它能被 2 秒轮询调用的前提)。跑完可以顺手再跑一次,应当仍然检测得到。
+    /// </summary>
+    [Fact]
+    public void Probe_DetectsMtpKindleOnUsb_WithoutSessionOrReset() {
+        if (!KindleUsbProbe.IsAvailable()) {
+            _output.WriteLine("libusb 不可用(未随包也未安装)—— 跳过。");
+            return;
+        }
+
+        var found = KindleUsbProbe.TryFindKindle(out var productId);
+        _output.WriteLine(found
+            ? $"只读枚举:检测到 Amazon USB 设备 VID=0x{KindleUsbProbe.AmazonVendorId:x4} PID=0x{productId:x4}"
+            : "只读枚举:未检测到 Amazon USB 设备");
+
+        using var manager = new DeviceManager(
+            Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName));
+        var connected = manager.IsKindleConnected();
+        _output.WriteLine($"IsKindleConnected()={connected} Type={manager.DeviceType} Drive='{manager.DriveLetter}'");
+
+        if (!found) {
+            _output.WriteLine("(没有设备时 IsKindleConnected 应为 false,这里不做断言以免依赖环境)");
+            return;
+        }
+
+        Assert.True(connected, "USB 上检测到 Amazon 设备时,IsKindleConnected 应当为真");
+        Assert.Equal(Device.Type.MTP, manager.DeviceType);
+        Assert.Equal(string.Empty, manager.DriveLetter);   // MTP 没有卷路径 → 界面显示通用文案
+
+        // 再探一次:只读枚举不该有副作用(不是"探一次就掉线")
+        var stillThere = KindleUsbProbe.TryFindKindle(out _);
+        _output.WriteLine($"紧接着再探一次:{stillThere}(应当仍为 True —— 只读枚举不改设备状态)");
+        Assert.True(stillThere, "只读枚举不应把设备弄掉线");
     }
 
     /// <summary>

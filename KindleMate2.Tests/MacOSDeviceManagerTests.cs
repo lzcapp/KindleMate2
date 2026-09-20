@@ -214,12 +214,17 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
     /// <summary>
     /// 轮询/防抖默认都调快,让上面几条"等事件"的用例在毫秒级完成 —— 生产值(2s / 2.5s)照旧,
     /// 注入点只为测试而存在。
+    ///
+    /// <c>detectMtpDevices: false</c> 也是为测试:本文件验的是**卷判定**逻辑,
+    /// 而"没有卷时再去 USB 上找 MTP 设备"会用真实设备总线 —— 开发机插着 Kindle 时
+    /// "无卷即未连接"这类断言就会失败,CI 上却通过。同一个用例在不同环境给出不同结果是最糟的。
     /// </summary>
     private DeviceManager CreateManager(TimeSpan? poll = null, TimeSpan? debounce = null) =>
         new(Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName),
             _volumesRoot,
             poll ?? TimeSpan.FromMilliseconds(20),
-            debounce ?? TimeSpan.FromMilliseconds(100));
+            debounce ?? TimeSpan.FromMilliseconds(100),
+            detectMtpDevices: false);
 
     private void MountKindleVolume() {
         Directory.CreateDirectory(Path.Combine(KindleVolume, AppConstants.DocumentsPathName));

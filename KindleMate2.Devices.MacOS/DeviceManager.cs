@@ -40,6 +40,7 @@ public class DeviceManager : IDeviceManager {
     private readonly string _volumesRoot;
     private readonly TimeSpan _pollInterval;
     private readonly TimeSpan _debounceInterval;
+    private readonly bool _detectMtpDevices;
 
     /// <summary>守连接状态(<see cref="_driveLetter"/> / <see cref="_deviceType"/>),与 Windows 实现同名同职责。</summary>
     private readonly object _lockObj = new object();
@@ -87,14 +88,22 @@ public class DeviceManager : IDeviceManager {
     /// <param name="volumesRoot">卷的挂载根目录,默认 <see cref="DefaultVolumesRoot"/>。</param>
     /// <param name="pollInterval">轮询间隔,默认 <see cref="DefaultPollInterval"/>。</param>
     /// <param name="debounceInterval">防抖时长,默认 <see cref="DefaultDebounceInterval"/>。</param>
+    /// <param name="detectMtpDevices">
+    /// 是否启用 MTP 机型支持(**检测 + 导入/写回**),默认开。
+    /// 关掉它是**为了测试可确定性**:真机插着 Kindle 时,那些"没连接就该失败"的断言会被真实设备
+    /// 影响(实测踩过:插着设备时 ImportFilesFromDevice 真的走进了 MTP 分支并成功),
+    /// 而 CI 上没有设备 —— 同一个用例在两种环境给出不同结果是最糟的。
+    /// </param>
     public DeviceManager(string versionFilePath,
         string volumesRoot = DefaultVolumesRoot,
         TimeSpan? pollInterval = null,
-        TimeSpan? debounceInterval = null) {
+        TimeSpan? debounceInterval = null,
+        bool detectMtpDevices = true) {
         _versionFilePath = versionFilePath;
         _volumesRoot = volumesRoot;
         _pollInterval = pollInterval ?? DefaultPollInterval;
         _debounceInterval = debounceInterval ?? DefaultDebounceInterval;
+        _detectMtpDevices = detectMtpDevices;
     }
 
     public void StartWatching() {
@@ -162,11 +171,24 @@ public class DeviceManager : IDeviceManager {
     public bool IsKindleConnected() {
         lock (_lockObj) {
             try {
-                var isConnected = HandleUsbDevice();
-                if (!isConnected) {
-                    _driveLetter = string.Empty;
+                // ① 先找 USB 大容量存储卷(2024 年以前的机型,挂在 /Volumes 下)
+                if (HandleUsbDevice()) {
+                    return true;
                 }
-                return isConnected;
+
+                // ② 再看 USB 上有没有 Amazon 的设备 —— 那是 MTP 机型(2024 年及以后)的正常状态。
+                //    这里只做**只读枚举**(见 KindleUsbProbe):绝不能开 MTP 会话,
+                //    因为 libmtp 关闭会话时会复位 USB 口,设备会重新枚举并再弹一次授权框,
+                //    而本方法是被 2 秒轮询调用的。
+                _driveLetter = string.Empty;
+                if (_detectMtpDevices && KindleUsbProbe.TryFindKindle(out var productId)) {
+                    _deviceType = Device.Type.MTP;
+                    AppLog.Write($"[IsKindleConnected] 检测到 Amazon USB 设备(PID=0x{productId:x4}),按 MTP 机型处理");
+                    return true;
+                }
+
+                _deviceType = Device.Type.Unknown;
+                return false;
             } catch (Exception ex) {
                 AppLog.Write($"[IsKindleConnected] {ex}");
                 return false;
@@ -280,6 +302,12 @@ public class DeviceManager : IDeviceManager {
                 return true;
             }
 
+            if (!_detectMtpDevices) {
+                // MTP 支持被关掉(测试/无 libusb 的环境):没有 USB 卷就是"没连接",
+                // 不要再去碰真实设备总线,否则同一个用例在插着设备的机器与 CI 上结论不同。
+                throw new Exception(Strings.Kindle_Connect_Failed);
+            }
+
             return ImportFilesViaMtp(backupClippingsPath, backupWordsPath, out exception, progress);
         } catch (Exception e) {
             exception = e;
@@ -347,6 +375,10 @@ public class DeviceManager : IDeviceManager {
             var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
             File.Copy(exportedFilePath, Path.Combine(documentPath, targetFileName), true);
             return;
+        }
+
+        if (!_detectMtpDevices) {
+            throw new Exception(Strings.Kindle_Connect_Failed);
         }
 
         SyncFileToDeviceViaMtp(exportedFilePath, targetFileName);
