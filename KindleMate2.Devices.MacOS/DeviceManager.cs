@@ -256,28 +256,86 @@ public class DeviceManager : IDeviceManager {
     /// Copies files from the connected Kindle device to local backup paths.
     /// <paramref name="progress"/> 按「第几个文件」上报(共 <see cref="DeviceFileCount"/> 个):
     /// 两个文件都是整文件传输,几千条标注 / 几千词的大库上这一步本身就有可感知耗时。
+    ///
+    /// 两条路径按机型自动选:
+    /// <list type="number">
+    ///   <item><b>USB 大容量存储</b> —— 2024 年以前发布的机型,卷挂在 /Volumes 下,直接拷贝;</item>
+    ///   <item><b>MTP</b> —— 2024 年及以后(Paperwhite 12 代 / Colorsoft / Scribe 等)只支持 MTP,
+    ///         走 <see cref="MtpDeviceSession"/>(libmtp)。</item>
+    /// </list>
     /// </summary>
     public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception,
         IProgress<OperationProgress>? progress = null) {
         exception = null;
         try {
-            if (_deviceType != Device.Type.USB || !IsConnected) {
-                throw new Exception(Strings.Kindle_Connect_Failed);
+            if (_deviceType == Device.Type.USB && IsConnected) {
+                var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
+                var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
+
+                progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
+                File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
+                progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
+                File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
+                progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
+                return true;
             }
 
-            var documentPath = Path.Combine(_driveLetter, AppConstants.DocumentsPathName);
-            var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
-
-            progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
-            File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
-            progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
-            File.Copy(Path.Combine(vocabularyPath, AppConstants.VocabFileName), backupWordsPath);
-            progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
-            return true;
+            return ImportFilesViaMtp(backupClippingsPath, backupWordsPath, out exception, progress);
         } catch (Exception e) {
             exception = e;
             return false;
         }
+    }
+
+    /// <summary>
+    /// 经 MTP 取回两个文件。**整个流程只开一次会话**(开→列目录→下载两次→释放):
+    /// 真机实测每次会话结束时设备都会重新枚举一次(macOS 上 libusb 释放接口触发 USB reset),
+    /// 系统可能再问一次「允许配件连接?」—— 会话开得越少,用户被打断越少。
+    ///
+    /// 语义上有意与 USB 路径有一处不同:**My Clippings.txt 必需,vocab.db 尽力而为**。
+    /// 生词本缺失(没查过词、老固件没这个库)不该让整个导入失败。
+    /// </summary>
+    private static bool ImportFilesViaMtp(string backupClippingsPath, string backupWordsPath,
+        out Exception? exception, IProgress<OperationProgress>? progress) {
+        exception = null;
+
+        using var session = MtpDeviceSession.TryOpenFirst();
+        if (session is null) {
+            // libmtp 无法区分「没插」「没授权」「被别的 MTP 客户端占用」——三者都表现为探测不到设备,
+            // 所以这里给一条把三种可能都列出来的人话提示(而不是笼统的"连接失败")。
+            exception = new Exception(Strings.Device_Mtp_Connect_Failed);
+            return false;
+        }
+
+        progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
+
+        var clippings = session.FindByPath(AppConstants.DocumentsPathName, AppConstants.ClippingsFileName);
+        if (clippings is not { } clippingsEntry) {
+            exception = new Exception(Strings.Device_Clippings_Not_Found);
+            return false;
+        }
+
+        if (!session.Download(clippingsEntry.ItemId, backupClippingsPath)) {
+            exception = new Exception(string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                Strings.Device_Clippings_Read_Failed, AppConstants.ClippingsFileName));
+            return false;
+        }
+
+        progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
+
+        var vocabulary = session.FindByPath(
+            AppConstants.SystemPathName, AppConstants.VocabularyPathName, AppConstants.VocabFileName);
+        if (vocabulary is { } vocabEntry) {
+            if (!session.Download(vocabEntry.ItemId, backupWordsPath)) {
+                AppLog.Write("[DeviceManager] MTP: 生词本下载失败,继续(标注已取回)");
+            }
+        } else {
+            AppLog.Write("[DeviceManager] MTP: 设备上没有 vocab.db,跳过生词本");
+        }
+
+        progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
+        return true;
     }
 
     /// <summary>

@@ -432,6 +432,15 @@
   <data name="Kindle_Connect_Failed" xml:space="preserve">
 	  <value>Kindle裝置連線失敗</value>
   </data>
+  <data name="Device_Mtp_Connect_Failed" xml:space="preserve">
+  	<value>未能讀取 Kindle。請確認:① 已用 USB 傳輸線連接;② 系統彈出「允許配件連接?」時按了「允許」;③ 沒有其他 MTP 程式(Amazon USB File Manager、OpenMTP、Calibre)正在佔用裝置。</value>
+  </data>
+  <data name="Device_Clippings_Not_Found" xml:space="preserve">
+  	<value>已連上裝置,但找不到 My Clippings.txt(應在 documents/My Clippings.txt)。</value>
+  </data>
+  <data name="Device_Clippings_Read_Failed" xml:space="preserve">
+  	<value>從裝置讀取 {0} 失敗(傳輸中斷,請重新插拔裝置後重試)。</value>
+  </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>檔案(_F)</value>
   </data>

@@ -629,6 +629,36 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
+        ///   查找类似 未能读取 Kindle。请确认… 的本地化字符串。
+        /// </summary>
+        public static string Device_Mtp_Connect_Failed {
+            get {
+                return ResourceManager.GetString("Device_Mtp_Connect_Failed", resourceCulture);
+            }
+        }
+        
+        
+        /// <summary>
+        ///   查找类似 已连上设备,但没找到 My Clippings.txt… 的本地化字符串。
+        /// </summary>
+        public static string Device_Clippings_Not_Found {
+            get {
+                return ResourceManager.GetString("Device_Clippings_Not_Found", resourceCulture);
+            }
+        }
+        
+        
+        /// <summary>
+        ///   查找类似 从设备读取 {0} 失败… 的本地化字符串。
+        /// </summary>
+        public static string Device_Clippings_Read_Failed {
+            get {
+                return ResourceManager.GetString("Device_Clippings_Read_Failed", resourceCulture);
+            }
+        }
+        
+        
+        /// <summary>
         ///   查找类似 Kindle设备已连接 的本地化字符串。
         /// </summary>
         public static string Kindle_Device_Connected {
