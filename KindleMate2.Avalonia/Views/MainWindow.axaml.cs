@@ -335,12 +335,16 @@ public partial class MainWindow : Window {
         await AppDialog.AlertAsync(this, result.Title, result.Message);
     }
 
-    /// <summary>打开指定目录(对应原版 Process.Start(AppConstants.ExplorerFileName, path))。</summary>
+    /// <summary>
+    /// 打开指定目录(对应原版 <c>Process.Start("explorer.exe", path)</c>)。
+    /// 目录由本方法负责创建(导出 / 备份产物可能尚不存在);平台命令交由 <see cref="ShellHelper"/>,
+    /// 原先直接 <c>Process.Start(路径)</c> 的写法只对目录成立,不能用来「选中文件」。
+    /// </summary>
     private void OpenInExplorer(string path) {
         try {
             if (string.IsNullOrWhiteSpace(path)) return;
             Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            ShellHelper.OpenDirectory(path);
         } catch (Exception ex) {
             KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
         }

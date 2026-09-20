@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -45,13 +46,14 @@ public partial class AboutWindow : Window {
     }
 
     /// <summary>
-    /// 点击「程序路径」→ 用资源管理器打开该目录,对应原版 FrmAboutBox 的 lblPath 链接
+    /// 点击「程序路径」→ 用文件管理器打开该目录,对应原版 FrmAboutBox 的 lblPath 链接
     /// (原版即 <c>Process.Start("explorer.exe", lblPath.Text)</c>,无确认、无提示)。
+    /// 这里刻意不创建目录:路径只是展示用的"程序所在处",不存在就静默忽略。
     /// </summary>
     private void OnOpenProgramPath(object? sender, RoutedEventArgs e) {
         if (DataContext is not AboutViewModel vm || vm.ProgramPath.Length == 0) return;
         try {
-            Process.Start(new ProcessStartInfo { FileName = vm.ProgramPath, UseShellExecute = true });
+            ShellHelper.OpenDirectory(vm.ProgramPath);
         } catch {
             // 目录不存在或无权限时静默忽略
         }

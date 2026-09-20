@@ -7,8 +7,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using KindleMate2.Avalonia.Charts;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Avalonia.Views;
 
@@ -110,11 +112,14 @@ public partial class StatisticsWindow : Window {
             var open = await AppDialog.ConfirmAsync(this, Strings.Successful,
                 Strings.Statistics_Screenshot_Successful, Strings.Ui_Action_Ok);
             if (open) {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
-                    FileName = AppConstants.ExplorerFileName,
-                    Arguments = AppConstants.ExplorerSelect + "\"" + file + "\"",
-                    UseShellExecute = true
-                });
+                // 平台差异(explorer.exe / open -R / xdg-open)由 ShellHelper 承担,
+                // 截图已落盘且路径就在 SummaryText 上,打开失败只记日志,
+                // 不再让外层 catch 把它误报成「截图保存失败」。
+                try {
+                    ShellHelper.RevealFile(file);
+                } catch (Exception ex) {
+                    AppLog.Write(ex);
+                }
             }
         } catch (Exception ex) {
             await AppDialog.AlertAsync(this, Strings.Failed, Strings.Statistics_Screenshot_Failed);

@@ -43,12 +43,14 @@
         public const string ClippingsFileName = "My Clippings.txt";
         public const string VocabFileName = "vocab.db";
         public const string VersionFileName = "version.txt";
-        public const string ExplorerFileName = "explorer.exe";
         public const string CSSFileName = "styles.css";
 
         public const string SpaceForNewLine = " 　　";
 
-        public const string ExplorerSelect = "/select,";
+        // 原先这里放着 ExplorerFileName("explorer.exe") 与 ExplorerSelect("/select,"):
+        // 那是 Windows 专有的 shell 命令名,却在跨平台的 Shared 层对外暴露,调用方直接拿去
+        // Process.Start,于是 macOS / Linux 上必然抛异常(统计页「打开截图所在位置」即受害者)。
+        // 现已收进 KindleMate2.Infrastructure.Helpers.ShellHelper,按平台构造命令,勿再于本层新增此类常量。
         
         public const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
