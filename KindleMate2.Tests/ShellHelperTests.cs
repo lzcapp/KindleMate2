@@ -51,9 +51,34 @@ public sealed class ShellHelperTests {
     public void BuildRevealStartInfo_Linux_FallsBackToContainingDirectory() {
         var psi = ShellHelper.BuildRevealStartInfo(LinuxPath, isWindows: false, isMacOs: false);
 
-        Assert.Equal("/home/laurence/.local/share/KindleMate2/Statistics", psi.FileName);
+        // 分隔符必须先归一化再比:退化为"所在目录"这件事与分隔符无关,但 Path.GetDirectoryName
+        // 用的是**宿主平台**语义 —— 在 Windows 上它把 '/' 也当分隔符,并输出 '\'
+        // (实际 CI 里得到的是 \home\laurence\.local\share\KindleMate2\Statistics)。
+        // 直接写死 POSIX 字面量会让这条用例在 Windows 作业上假失败,而它并不代表产品有问题。
+        Assert.Equal("/home/laurence/.local/share/KindleMate2/Statistics", ToPosixSeparators(psi.FileName));
         Assert.True(psi.UseShellExecute);
     }
+
+    /// <summary>
+    /// 断言用的分隔符归一化。之所以单列一个用例并把 Windows 侧的实际输出形式也钉进来:
+    /// 本机(macOS)跑不出 Windows 的分隔符形态,只能靠这条把"两个平台的产出都能归一到同一期望值"
+    /// 变成可执行的事实,而不是仅凭推理。
+    /// </summary>
+    [Theory]
+    [InlineData("/home/laurence/.local/share/KindleMate2/Statistics")]      // Unix 宿主的产出
+    [InlineData(@"\home\laurence\.local\share\KindleMate2\Statistics")]     // Windows 宿主的产出(CI 实测)
+    [InlineData(@"C:\Users\rainy\AppData\Roaming\KindleMate2\Statistics")]  // 纯 Windows 形态
+    public void ToPosixSeparators_NormalizesBothHostStyles(string hostProduced) {
+        var normalized = ToPosixSeparators(hostProduced);
+
+        if (hostProduced.StartsWith('C')) {
+            Assert.Equal("C:/Users/rainy/AppData/Roaming/KindleMate2/Statistics", normalized);
+        } else {
+            Assert.Equal("/home/laurence/.local/share/KindleMate2/Statistics", normalized);
+        }
+    }
+
+    private static string ToPosixSeparators(string path) => path.Replace('\\', '/');
 
     [Fact]
     public void BuildRevealStartInfo_Linux_BareFileNameFallsBackToCurrentDirectory() {
