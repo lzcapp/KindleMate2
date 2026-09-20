@@ -100,6 +100,22 @@ public sealed class MarkdownExportTests : IDisposable {
     }
 
     [Fact]
+    public void ClippingsToMarkdown_BookNameWithIllegalChars_FileNameIsPortable() {
+        // 上一条只要求"能产出文件" —— 在 macOS 上含 ':' '?' '*' 的名字也写得出来,所以它放过了这个缺陷。
+        // 这条进一步要求产出的文件名**不含任何 Windows 非法字符**:导出目录常被拷到 Windows / SMB 共享,
+        // 而净化用的字符集此前取自 Path.GetInvalidFileNameChars(),在 macOS 上只有 '\0' 与 '/'。
+        const string book = "非法:书名*?<>|\"\\ 与 / 分隔符";
+        SeedClipping("k1", "内容一", book: book);
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, book));
+
+        var name = Path.GetFileNameWithoutExtension(Directory.GetFiles(outDir, "*.md").Single());
+        Assert.DoesNotContain(name, c => "<>:\"/\\|?*".Contains(c) || char.IsControl(c));
+        Assert.False(name.EndsWith('.'));
+    }
+
+    [Fact]
     public void ClippingsToMarkdown_OnEmptyDatabase_StillWritesFiles() {
         var outDir = Path.Combine(_dir, "out");
 
