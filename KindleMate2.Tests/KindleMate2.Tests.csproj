@@ -22,5 +22,9 @@
          因此可以在任何平台上编译+测试;用例通过构造函数把"卷根目录"指到临时目录,
          于是"扫卷判定 + 轮询防抖"这段逻辑得以跨平台回归。 -->
     <ProjectReference Include="..\KindleMate2.Devices.MacOS\KindleMate2.Devices.MacOS.csproj" />
+    <!-- macOS / Linux 共用的设备实现:libmtp 绑定、只读 USB 探测、卷扫描都在这 -->
+    <ProjectReference Include="..\KindleMate2.Devices.Posix\KindleMate2.Devices.Posix.csproj" />
+    <!-- Linux 薄壳(候选挂载根不同),用于验证多根遍历;与 Devices.MacOS 一样是中性 net10.0 -->
+    <ProjectReference Include="..\KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj" />
   </ItemGroup>
 </Project>

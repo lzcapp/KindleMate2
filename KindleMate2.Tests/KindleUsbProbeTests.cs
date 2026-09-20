@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Xunit;
 using KindleMate2.Devices.MacOS;
+using KindleMate2.Devices.Posix;
 
 namespace KindleMate2.Tests;
 

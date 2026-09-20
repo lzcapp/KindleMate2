@@ -20,7 +20,7 @@
 - **macOS**：`macOS 11`（Apple Silicon）/ `macOS 10.15`（Intel）或更高 —— `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**：`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **架构**: `x86` 或 `x64` 或 `ARM64`
-- 三个平台在「Kindle 设备同步」上能力不同：**Windows 支持 USB 与 MTP 两种模式；macOS 支持 USB 大容量存储与 MTP**（2024 年及以后发布的 Kindle 只支持 MTP；macOS 包里内嵌 libmtp，见下方「第三方组件」）；**Linux 暂无设备支持**，其余功能三平台完整
+- **三个平台的 Kindle 设备同步均已支持**（USB 大容量存储 + MTP）：Windows 原生支持 MTP；macOS 包里内嵌 libmtp（见下方「第三方组件」）；Linux 走系统自带的 libmtp（见下）
 
 依赖运行时（runtime）的版本需要安装对应平台的 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
 
@@ -90,7 +90,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 夜间模式（深色模式）
 - [x] 语言切换（简体中文 / 繁体中文 / English）
 - [x] 搜索功能（书名 / 作者 / 内容 / 笔记）
-- [x] **跨平台**（Windows / Linux / macOS 均有发布包；设备同步 Windows 支持 USB + MTP、macOS 支持 USB + MTP，Linux 暂不支持，其余功能三平台完整）
+- [x] **跨平台**（Windows / Linux / macOS 均有发布包，设备同步三平台均支持 USB 大容量存储 + MTP）
 
 ## 截图
 
@@ -127,3 +127,14 @@ macOS 发布包内嵌以下两个库（**均未经修改**，以动态链接方�
 
 构建与内嵌由 [`scripts/bundle-libmtp.sh`](scripts/bundle-libmtp.sh) 完成（从上面两个上游源码包
 构建通用二进制，一次覆盖 osx-arm64 与 osx-x64），可在本机脱离 CI 单独运行。
+
+**Linux 不内嵌这两个库**：libmtp / libusb 在绝大多数发行版里都是现成的软件包，随包再带一份
+既臃肿又要重复履行 LGPL 义务。请按发行版安装，例如：
+
+```bash
+sudo apt install libmtp9 libusb-1.0-0        # Debian / Ubuntu
+sudo dnf install libmtp libusb1              # Fedora / RHEL
+sudo pacman -S libmtp libusb                 # Arch
+```
+
+缺少时 USB 大容量存储（2024 年以前机型）照常工作，只有 MTP 机型会读不到设备，日志里会说明原因。

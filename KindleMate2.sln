@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Avalonia", "Kin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Devices.MacOS", "KindleMate2.Devices.MacOS\KindleMate2.Devices.MacOS.csproj", "{748A873E-85BE-47AF-881E-7F32D7F10B67}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Devices.Posix", "KindleMate2.Devices.Posix\KindleMate2.Devices.Posix.csproj", "{ADC30E27-87A0-49CC-A913-8BD666442118}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleMate2.Devices.Linux", "KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj", "{E1B3F463-037A-4A77-B837-7392EDC71EB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +129,30 @@ Global
 		{748A873E-85BE-47AF-881E-7F32D7F10B67}.Release|x64.Build.0 = Release|Any CPU
 		{748A873E-85BE-47AF-881E-7F32D7F10B67}.Release|x86.ActiveCfg = Release|Any CPU
 		{748A873E-85BE-47AF-881E-7F32D7F10B67}.Release|x86.Build.0 = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|x64.Build.0 = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Debug|x86.Build.0 = Debug|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|x64.ActiveCfg = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|x64.Build.0 = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|x86.ActiveCfg = Release|Any CPU
+		{ADC30E27-87A0-49CC-A913-8BD666442118}.Release|x86.Build.0 = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|x64.Build.0 = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Debug|x86.Build.0 = Debug|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|x64.ActiveCfg = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|x64.Build.0 = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|x86.ActiveCfg = Release|Any CPU
+		{E1B3F463-037A-4A77-B837-7392EDC71EB6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

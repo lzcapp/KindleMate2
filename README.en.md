@@ -20,7 +20,7 @@
 - **macOS**: `macOS 11` (Apple Silicon) / `macOS 10.15` (Intel) or later — `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**: `KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **Architecture**: `x86` or `x64` or `ARM64`
-- **Feature complete on all three platforms** except Kindle device sync, which differs per platform: Windows supports USB + MTP, macOS supports USB mass storage + MTP (Kindles released in 2024 and later are MTP-only; libmtp is bundled in the macOS package — see "Third-party components"), Linux has none yet
+- **Kindle device sync is supported on all three platforms** (USB mass storage + MTP): Windows natively, macOS with a bundled libmtp (see "Third-party components"), Linux with the system's libmtp (see below)
 
 The runtime-dependent builds require the platform's [.NET 10 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
 
@@ -89,7 +89,7 @@ and the headless self-checks.
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch (简体中文 / 繁體中文 / English)
 - [x] Search Function (book / author / content / note)
-- [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync is USB + MTP on Windows and macOS, not available on Linux yet — everything else works on all three)
+- [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync supports USB mass storage + MTP on all three)
 
 ## Screenshots
 
@@ -129,3 +129,16 @@ signature: `codesign --force --deep --sign - "/Applications/Kindle Mate 2.app"`)
 Building and bundling is done by [`scripts/bundle-libmtp.sh`](scripts/bundle-libmtp.sh) (builds universal
 binaries from the upstream sources above, covering both osx-arm64 and osx-x64) and can be run locally
 outside CI.
+
+**Linux does not bundle these libraries**: libmtp / libusb are available as distribution packages, and
+shipping another copy would both bloat the package and duplicate the LGPL obligations. Install them from
+your distribution instead:
+
+```bash
+sudo apt install libmtp9 libusb-1.0-0        # Debian / Ubuntu
+sudo dnf install libmtp libusb1              # Fedora / RHEL
+sudo pacman -S libmtp libusb                 # Arch
+```
+
+Without them, USB mass storage (pre-2024 Kindles) still works; only MTP devices will be unavailable, and
+the reason is written to the log.

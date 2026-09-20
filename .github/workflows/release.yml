@@ -140,7 +140,7 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
-  # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在 Linux 上由 NullDeviceManager
+  # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在 Linux 上由 Devices.Linux
   # 兜底,Windows / macOS 专有实现各自按「平台 + TFM」条件引用,不参与本产物的编译。
   publish-linux:
     needs: version
@@ -195,7 +195,7 @@ jobs:
           if [ -f "$d/createdump" ]; then chmod +x "$d/createdump"; fi
           tar -czf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$d" .
 
-      # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期降级为 NullDeviceManager。
+      # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期选中(空实现仅作为兜底分支保留)。
       # 走 kindlemate2 启动器(而不是直接调 apphost),这样「先切到数据目录」的逻辑也一并验到;
       # 因此传参必须用绝对路径(切目录后相对路径的含义就变了)。
       - name: Boot self-check (linux-x64_runtime)
@@ -209,7 +209,8 @@ jobs:
           touch "$work/empty.dat"
           "$work/kindlemate2" --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
-          grep -q "NullDeviceManager" "$work/smoke.txt"
+          # Linux 现在也有真实设备实现(/media 等候选挂载根 + 经 libmtp 的 MTP),不再降级为 NullDeviceManager
+          grep -q "Devices.Linux.DeviceManager" "$work/smoke.txt"
           # 启动器建了 XDG 数据目录,说明它确实跑到并切过去了(而不只是 apphost 能跑)
           test -d "${XDG_DATA_HOME:-$HOME/.local/share}/KindleMate2"
           echo "unix 产物 + 启动器自检通过:${{ matrix.suffix }}"
@@ -445,7 +446,8 @@ jobs:
             '- macOS:`~/Library/Application Support/KindleMate2/`。',
             '',
             '- macOS 未做公证(无 Apple 开发者账号),首次启动请先清除隔离标记:`xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"`,或右键应用选「打开」。',
-            '- Kindle 设备同步:Windows 支持 USB 与 MTP;**macOS 自本版起支持 MTP**(2024 年及以后发布的 Kindle —— 12 代 Paperwhite、Colorsoft、Scribe —— 只支持 MTP),原有的 USB 大容量存储方式继续可用;Linux 暂无设备支持(设备层降级为 NullDeviceManager)。',
+            '- Kindle 设备同步:**三个平台均支持**。Windows:USB + MTP;macOS:USB 大容量存储 + MTP(包里内嵌 libmtp);**Linux:USB 大容量存储 + MTP(自本版起新增,原先完全没有设备支持)**。2024 年及以后发布的 Kindle(12 代 Paperwhite、Colorsoft、Scribe)只支持 MTP,此前机型走 USB 大容量存储。',
+            '- **Linux 用 MTP 的前提**:系统需装 libmtp 与 libusb(多数发行版的软件包里都有,如 `sudo apt install libmtp9 libusb-1.0-0`)。缺失时 USB 大容量存储方式仍照常工作,应用会在日志里说明。',
             '- **macOS 上用 MTP 读设备的三条注意事项**:① 首次插入时系统会弹「允许配件连接?」,**必须点「允许」**,否则应用看不到设备;② 每次读取结束后设备会重新枚举一次(可能再弹一次窗),属正常现象;③ 同一时刻只能有一个程序使用该设备,Amazon USB File Manager / OpenMTP / Calibre 任一开着都会导致读取失败,请先退出它们。',
             '',
             '**内嵌的开源库(LGPL)**',

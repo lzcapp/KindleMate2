@@ -2,6 +2,7 @@ using Xunit;
 using Xunit.Abstractions;
 using KindleMate2.Application.Models;
 using KindleMate2.Devices.MacOS;
+using KindleMate2.Devices.Posix;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 

@@ -125,16 +125,27 @@ public sealed class DatabaseSession : IDisposable {
     /// 按平台创建设备管理器。独立成静态工厂的用意有二:
     /// ① 构造函数复用;② 无头自检 / CI 无需先打开数据库,就能断言当前平台选到了哪个实现。
     ///
-    /// 三个分支与三份引用一一对应(WINDOWS / MACOS 常量由 Avalonia.csproj 按平台与 TFM 定义):
-    /// Windows → Devices.Windows(USB 盘符 + MTP);macOS → Devices.MacOS(/Volumes + 轮询);
-    /// 其余(Linux 等)→ NullDeviceManager 兜底。
+    /// 四个分支与四份引用一一对应(WINDOWS / MACOS / LINUX 常量由 Avalonia.csproj 按平台与 TFM 定义):
+    /// Windows → Devices.Windows(USB 盘符 + MTP);macOS → Devices.MacOS(/Volumes);
+    /// Linux → Devices.Linux(/media 等);其余 → NullDeviceManager 兜底。
+    /// macOS 与 Linux 共用 Devices.Posix 里的实现,两者只是挂载点根不同。
     /// </summary>
+    /// <param name="workDirectory">数据目录 —— 参数保留是因为它此前用于拼版本文件路径,见下。</param>
     public static IDeviceManager CreateDeviceManager(string workDirectory) {
-        var versionFilePath = Path.Combine(workDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName);
+        _ = workDirectory;
+
+        // 注意必须是**相对卷根**的路径:各平台实现都按「卷根 + 该路径」去读 version.txt
+        // (见 PosixDeviceManager.GetKindleVersionText 与 Windows 侧同名字段)。
+        // 这里曾经传的是 workDirectory 拼出来的**绝对路径**,而 Path.Combine 遇到绝对的第二段会
+        // 直接丢弃第一段 —— 于是"卷根 + 绝对路径"= 绝对路径,File.Exists 必然为假,
+        // 结果固件版本在本机永远读不到(且因为当时没有消费者而长期没被发现)。
+        var versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
 #if WINDOWS
         return new KindleMate2.Devices.Windows.DeviceManager(versionFilePath);
 #elif MACOS
         return new KindleMate2.Devices.MacOS.DeviceManager(versionFilePath);
+#elif LINUX
+        return new KindleMate2.Devices.Linux.DeviceManager(versionFilePath);
 #else
         return new NullDeviceManager();
 #endif

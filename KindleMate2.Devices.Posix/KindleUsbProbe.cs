@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using KindleMate2.Shared.Diagnostics;
 
-namespace KindleMate2.Devices.MacOS;
+namespace KindleMate2.Devices.Posix;
 
 /// <summary>
 /// 只读地判断"USB 上有没有接着 Amazon 的设备" —— 用来让状态栏能反映 MTP 机型

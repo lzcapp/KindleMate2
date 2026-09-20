@@ -62,6 +62,7 @@
        两处引用共用一个属性,避免条件写两遍后改一处漏一处。 -->
   <PropertyGroup>
     <IsMacOsDesktop Condition="'$(TargetFramework)' == 'net10.0' AND $([MSBuild]::IsOSPlatform('OSX'))">true</IsMacOsDesktop>
+    <IsLinuxDesktop Condition="'$(TargetFramework)' == 'net10.0' AND $([MSBuild]::IsOSPlatform('Linux'))">true</IsLinuxDesktop>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsMacOsDesktop)' == 'true'">
@@ -71,8 +72,17 @@
     <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
   </PropertyGroup>
 
+  <!-- 同理:LINUX 也不是本工程 TFM 预定义的常量(net10.0 不是平台专有 TFM) -->
+  <PropertyGroup Condition="'$(IsLinuxDesktop)' == 'true'">
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(IsMacOsDesktop)' == 'true'">
     <ProjectReference Include="..\KindleMate2.Devices.MacOS\KindleMate2.Devices.MacOS.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLinuxDesktop)' == 'true'">
+    <ProjectReference Include="..\KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj" />
   </ItemGroup>
 
 </Project>

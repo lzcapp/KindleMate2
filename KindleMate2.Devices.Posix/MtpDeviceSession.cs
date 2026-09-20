@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using KindleMate2.Shared.Diagnostics;
 
-namespace KindleMate2.Devices.MacOS;
+namespace KindleMate2.Devices.Posix;
 
 /// <summary>
 /// 一个打开的 MTP 设备会话 —— 把 libmtp 的原始指针包装成可用的对象模型。

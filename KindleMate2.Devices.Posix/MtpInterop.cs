@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace KindleMate2.Devices.MacOS;
+namespace KindleMate2.Devices.Posix;
 
 /// <summary>
 /// libmtp 的最小 P/Invoke 绑定 —— 只覆盖本应用真正用到的那几个函数。
@@ -69,22 +69,46 @@ internal static class MtpInterop {
     internal static string? LoadedPath { get; private set; }
 
     /// <summary>
-    /// 候选目录,按优先级:**随包分发的**(发布版在 <c>Contents/Frameworks</c>)优先,
-    /// 再退到 Homebrew 的安装位置(开发机 / 用户自行 brew install 的情形)。
+    /// 候选目录,按优先级:**随包分发的**优先(发布版放在程序旁边的 Frameworks/ 或 lib/),
+    /// 再退到系统与包管理器的安装位置。
+    ///
+    /// 注意这是"POSIX 通用"的列表,两端各有各的常见位置:macOS 的开发机多半在 Homebrew 下,
+    /// Linux 上 libmtp/libusb 通常是发行版自带的系统库(在 /usr/lib 一带)。
     /// </summary>
     internal static IEnumerable<string> CandidateDirectories() {
-        yield return AppContext.BaseDirectory;                                    // 开发布局:与程序同目录
-        yield return Path.Combine(AppContext.BaseDirectory, "..", "Frameworks");   // .app 内
-        yield return "/opt/homebrew/lib";                                         // Apple Silicon Homebrew
-        yield return "/usr/local/lib";                                            // Intel Homebrew / 手工安装
+        var baseDirectory = AppContext.BaseDirectory;
+
+        yield return baseDirectory;                                              // 开发布局:与程序同目录
+        yield return Path.Combine(baseDirectory, "lib");                         // 随包:lib/
+        yield return Path.Combine(baseDirectory, "..", "Frameworks");            // 随包:macOS .app 的 Contents/Frameworks
+
+        if (OperatingSystem.IsMacOS()) {
+            yield return "/opt/homebrew/lib";                                    // Apple Silicon Homebrew
+            yield return "/usr/local/lib";                                       // Intel Homebrew / 手工安装
+        } else {
+            // Linux:发行版架构目录不同(多架构发行版用 /usr/lib/<三元组>),都列上
+            yield return "/usr/lib/x86_64-linux-gnu";
+            yield return "/usr/lib/aarch64-linux-gnu";
+            yield return "/usr/lib64";
+            yield return "/usr/lib";
+            yield return "/usr/local/lib";                                       // 手工安装 / 自编译
+        }
     }
 
-    /// <summary>逻辑库名 → 实际文件名(macOS 上带版本号后缀)。不认识的库名返回空。</summary>
-    private static string[] FileNamesFor(string libraryName) => libraryName switch {
-        LibraryName => ["libmtp.9.dylib", "libmtp.dylib"],
-        LibusbLibraryName => ["libusb-1.0.0.dylib", "libusb-1.0.dylib"],
-        _ => [],
-    };
+    /// <summary>逻辑库名 → 各平台的实际文件名(macOS 与 Linux 的命名习惯不同)。</summary>
+    private static string[] FileNamesFor(string libraryName) {
+        var isMac = OperatingSystem.IsMacOS();
+
+        return libraryName switch {
+            LibraryName => isMac
+                ? ["libmtp.9.dylib", "libmtp.dylib"]
+                : ["libmtp.so.9", "libmtp.so"],
+            LibusbLibraryName => isMac
+                ? ["libusb-1.0.0.dylib", "libusb-1.0.dylib"]
+                : ["libusb-1.0.so.0", "libusb-1.0.so"],
+            _ => [],
+        };
+    }
 
     /// <summary>
     /// 某个库的候选完整路径。顺序刻意是「首选文件名 × 各目录」再看备选文件名 ——
