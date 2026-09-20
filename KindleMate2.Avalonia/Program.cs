@@ -100,6 +100,11 @@ internal static class Program {
             var platformDevice = DatabaseSession.CreateDeviceManager(Path.GetDirectoryName(dbPath) ?? ".").GetType().FullName;
             report.AppendLine($"device(platform): {platformDevice}");
             report.AppendLine($"device(session): {vm.Session?.DeviceManager.GetType().FullName ?? "<无会话>"} status={vm.ProbeDeviceStatus()}");
+            // 更新功能:自检**不联网**(CI 不该依赖外网),只报初始状态与当前平台的安装包形态。
+            // 真正的联网探测在 KindleMate2.Tests 的 UpdateProbeTests 里手动触发(它验证过线上响应与解析器契约一致)。
+            report.AppendLine($"update: version={MainWindowViewModel.CurrentVersion}" +
+                              $" available={vm.IsUpdateAvailable}" +
+                              $" target={KindleMate2.Application.Services.UpdateInstaller.TargetForCurrentPlatform()}");
             report.AppendLine($"framework: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 
             // 应用级设置往返(主题 / 语言)

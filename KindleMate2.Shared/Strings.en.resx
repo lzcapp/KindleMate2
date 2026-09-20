@@ -444,6 +444,30 @@
   <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
   	<value>Failed to write back to the device. If My Clippings.txt was removed from the device, restore it from the local backup folder.</value>
   </data>
+  <data name="Ui_Update_Check" xml:space="preserve">
+  	<value>Check for Updates</value>
+  </data>
+  <data name="Ui_Update_Available" xml:space="preserve">
+  	<value>Version {0} is available</value>
+  </data>
+  <data name="Ui_Update_UpToDate" xml:space="preserve">
+  	<value>You are up to date</value>
+  </data>
+  <data name="Ui_Update_CheckFailed" xml:space="preserve">
+  	<value>Update check failed, please try again later</value>
+  </data>
+  <data name="Ui_Update_Downloading" xml:space="preserve">
+  	<value>Downloading update: {0}%</value>
+  </data>
+  <data name="Ui_Update_Apply" xml:space="preserve">
+  	<value>Update</value>
+  </data>
+  <data name="Ui_Update_ApplyFailed" xml:space="preserve">
+  	<value>Update failed: {0}</value>
+  </data>
+  <data name="Ui_Update_Restarting" xml:space="preserve">
+  	<value>Update ready - restarting to finish</value>
+  </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>_File</value>
   </data>

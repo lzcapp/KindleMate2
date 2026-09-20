@@ -597,6 +597,31 @@ public partial class MainWindow : Window {
         }
     }
 
+    /// <summary>
+    /// 「帮助 → 检查更新」。有更新时同时点亮主界面状态栏的「更新」按钮;
+    /// 无更新或检查失败都只弹一句"已是最新" —— 检查更新的失败不该打断使用。
+    /// </summary>
+    private async void OnMenuCheckUpdates(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var message = await vm.CheckForUpdatesAsync();
+        await AppDialog.AlertAsync(this, Strings.Successful, message);
+    }
+
+    /// <summary>
+    /// 状态栏「更新」按钮:下载 → 交给替换脚本 → **退出本进程**。
+    /// 退出是必须的:脚本正 `kill -0` 等我们死掉,之后它才会替换文件并重新启动应用。
+    /// </summary>
+    private async void OnUpdateClick(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+
+        var (restart, message) = await vm.DownloadAndApplyUpdateAsync();
+        if (restart) {
+            Environment.Exit(0);
+        }
+
+        await AppDialog.AlertAsync(this, Strings.Failed, message);
+    }
+
     private async void OnMenuAbout(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var about = await Task.Run(() => AboutViewModel.Load(vm.Session));

@@ -669,6 +669,79 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
+        ///   查找类似 检查更新 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Check {
+            get {
+                return ResourceManager.GetString("Ui_Update_Check", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 有新版本 {0} 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Available {
+            get {
+                return ResourceManager.GetString("Ui_Update_Available", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已是最新版本 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_UpToDate {
+            get {
+                return ResourceManager.GetString("Ui_Update_UpToDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检查更新失败… 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_CheckFailed {
+            get {
+                return ResourceManager.GetString("Ui_Update_CheckFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在下载更新:{0}% 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Downloading {
+            get {
+                return ResourceManager.GetString("Ui_Update_Downloading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Apply {
+            get {
+                return ResourceManager.GetString("Ui_Update_Apply", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新失败:{0} 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_ApplyFailed {
+            get {
+                return ResourceManager.GetString("Ui_Update_ApplyFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新已就绪… 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Restarting {
+            get {
+                return ResourceManager.GetString("Ui_Update_Restarting", resourceCulture);
+            }
+        }
+
+        
+        /// <summary>
         ///   查找类似 Kindle设备已连接 的本地化字符串。
         /// </summary>
         public static string Kindle_Device_Connected {

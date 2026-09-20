@@ -444,6 +444,30 @@
   <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
   	<value>写回设备失败。若设备上的 My Clippings.txt 已被删除,可用本机备份目录中的文件恢复。</value>
   </data>
+  <data name="Ui_Update_Check" xml:space="preserve">
+  	<value>检查更新</value>
+  </data>
+  <data name="Ui_Update_Available" xml:space="preserve">
+  	<value>有新版本 {0}</value>
+  </data>
+  <data name="Ui_Update_UpToDate" xml:space="preserve">
+  	<value>已是最新版本</value>
+  </data>
+  <data name="Ui_Update_CheckFailed" xml:space="preserve">
+  	<value>检查更新失败,请稍后再试</value>
+  </data>
+  <data name="Ui_Update_Downloading" xml:space="preserve">
+  	<value>正在下载更新:{0}%</value>
+  </data>
+  <data name="Ui_Update_Apply" xml:space="preserve">
+  	<value>更新</value>
+  </data>
+  <data name="Ui_Update_ApplyFailed" xml:space="preserve">
+  	<value>更新失败:{0}</value>
+  </data>
+  <data name="Ui_Update_Restarting" xml:space="preserve">
+  	<value>更新已就绪,即将重启以完成安装</value>
+  </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>文件(_F)</value>
   </data>

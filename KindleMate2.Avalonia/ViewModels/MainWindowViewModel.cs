@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using KindleMate2.Avalonia.Models;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Application.Models;
+using KindleMate2.Application.Services;
 using KindleMate2.Avalonia.Collections;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -961,6 +962,79 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>仅取状态文案(自检用;内部复用 <see cref="ProbeDevice"/>)。</summary>
     public string ProbeDeviceStatus() => ProbeDevice().Text;
+
+    // ————————————————————————— 检查更新 —————————————————————————
+
+    /// <summary>最近一次检查发现的可用更新;null 表示没有更新(或尚未检查过)。</summary>
+    private UpdateInfo? _availableUpdate;
+
+    /// <summary>是否有可用更新 —— 主界面那个「更新」按钮的显隐依据。</summary>
+    public bool IsUpdateAvailable => _availableUpdate is not null;
+
+    /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
+    public string UpdateButtonText => _availableUpdate is null
+        ? string.Empty
+        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Available, _availableUpdate.Version);
+
+    /// <summary>当前应用版本(取自程序集,形如 <c>2026.9.17.0</c>),用于与发布页的 tag 比较。</summary>
+    public static string CurrentVersion =>
+        typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+
+    /// <summary>
+    /// 检查更新。**本方法不弹窗** —— 只把结论文本返回给调用方(菜单与按钮各自决定怎么呈现),
+    /// 有更新时顺手点亮主界面的「更新」按钮。检查失败与"已是最新"对用户是同一种结果,
+    /// 细节只进日志(见 <see cref="UpdateChecker"/>):不该因为连不上 GitHub 就弹个错误框。
+    /// </summary>
+    public async Task<string> CheckForUpdatesAsync() {
+        var info = await UpdateChecker.CheckAsync(CurrentVersion).ConfigureAwait(true);
+
+        _availableUpdate = info;
+        OnPropertyChanged(nameof(IsUpdateAvailable));
+        OnPropertyChanged(nameof(UpdateButtonText));
+
+        if (info is null) {
+            return Strings.Ui_Update_UpToDate;
+        }
+
+        // 发布页没有对本平台资产时(例如某次只发了部分平台),仍要告知有新版本,只是没有一键下载的入口
+        return info.Asset is null
+            ? $"{UpdateButtonText} —— {info.ReleaseUrl}"
+            : UpdateButtonText;
+    }
+
+    /// <summary>
+    /// 下载并启动替换脚本。返回 <c>Restart = true</c> 表示**调用方应当立即退出进程**:
+    /// 脚本正在等我们退出,退出之后它才会替换文件并重新启动。
+    ///
+    /// 之所以把"退出"留给调用方(视图)而不是在这里 <c>Environment.Exit</c>:
+    /// 进程级动作放在壳里,VM 只管业务结论 —— 与既有的「重启」菜单项一致。
+    /// </summary>
+    public async Task<(bool Restart, string Message)> DownloadAndApplyUpdateAsync() {
+        if (_availableUpdate is not { } update || update.Asset is not { } asset) {
+            return (false, Strings.Ui_Update_UpToDate);
+        }
+
+        try {
+            var progress = new Progress<double>(fraction =>
+                StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Downloading,
+                    (int)Math.Round(fraction * 100)));
+
+            var target = UpdateInstaller.TargetForCurrentPlatform();
+            var prepared = await UpdateInstaller.PrepareAsync(asset, target, progress).ConfigureAwait(true);
+
+            // 以 .app 包启动时才可能自动替换(开发期直接跑 dll 不具备这个前提)
+            var executable = Environment.ProcessPath ?? string.Empty;
+            UpdateInstaller.ApplyAndRestart(prepared, executable, Environment.ProcessId);
+
+            StatusText = Strings.Ui_Update_Restarting;
+            return (true, Strings.Ui_Update_Restarting);
+        } catch (Exception ex) {
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);   // 与本文件其它位置一致的全限定写法
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_ApplyFailed, ex.Message);
+            StatusText = message;
+            return (false, message);
+        }
+    }
 
     private bool _isDeviceConnected;
 
