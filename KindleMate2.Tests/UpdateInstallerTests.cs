@@ -160,10 +160,22 @@ public sealed class UpdateInstallerTests : IDisposable {
 
     [Fact]
     public void ResolveAppBundlePath_FindsTheNearestAppBundle() {
-        var executable = Path.Combine("/Applications", "Kindle Mate 2.app", "Contents", "MacOS", "KindleMate2.Avalonia");
+        // 用**宿主自己的临时目录**当根,而不是写死 "/Applications/...":
+        // Windows 上 DirectoryInfo.FullName 会给"无盘符的绝对路径"补上当前盘符,
+        // 于是 /Applications/... 会变成 D:\Applications\... —— 断言里的期望值写死就会假失败
+        // (CI 实测:Expected "/Applications\Kindle Mate 2.app" vs Actual "D:\Applications\Kindle Mate 2.app")。
+        // 这类"断言写成了宿主相关"的坑本项目踩过多次,写路径断言时务必用宿主拼出来的路径做期望值。
+        var appPath = Path.Combine(Path.GetTempPath(), "Kindle Mate 2.app");
+        var executable = Path.Combine(appPath, "Contents", "MacOS", "KindleMate2.Avalonia");
 
-        Assert.Equal(Path.Combine("/Applications", "Kindle Mate 2.app"),
-            UpdateInstaller.ResolveAppBundlePath(executable));
+        var found = UpdateInstaller.ResolveAppBundlePath(executable);
+
+        // 真正要验的性质(与宿主无关):找到的是那个 .app 祖先本身,而不是它的某层子目录
+        Assert.Equal("Kindle Mate 2.app", Path.GetFileName(found));
+        Assert.EndsWith(".app", found, StringComparison.OrdinalIgnoreCase);
+
+        // 并且就是输入路径里那个 .app 目录
+        Assert.Equal(appPath, found);
     }
 
     [Fact]
