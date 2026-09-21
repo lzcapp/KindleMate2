@@ -69,8 +69,16 @@ public partial class App : global::Avalonia.Application {
     /// 备份落点都取自 <c>Environment.CurrentDirectory</c>),一旦用户打开的是别处的库:
     /// 要么备份错对象(退出时"备份成功"了却与用户编辑的数据无关),要么因为别处没有 KM2.dat 而
     /// 抛 <see cref="FileNotFoundException"/> 被静默吞掉。现在与手动备份口径一致,都按会话走。
+    ///
+    /// 落点是 <c>&lt;Backups&gt;/OnExit/</c>(而非 Backups 根),且只保留最新
+    /// <see cref="AppConstants.ExitBackupKeepCount"/> 份 —— 退出备份是**每次关闭都产生一份**的自动产物,
+    /// 与用户手动触发的备份性质不同,不该混在同一层里互相淹没。详见 <see cref="AppConstants.ExitBackupsPathName"/>。
     /// </summary>
-    private static void BackupOnExit(MainWindowViewModel? viewModel) {
+    /// <remarks>
+    /// 访问级别是 <c>internal</c> 而非 <c>private</c>:<c>--ops</c> 写操作自检需要真实走一遍这条路径
+    /// (否则"退出备份落在子目录且只留 3 份"在 CI 里没有任何一处会验到)。
+    /// </remarks>
+    internal static void BackupOnExit(MainWindowViewModel? viewModel) {
         try {
             var session = viewModel?.Session;
             var databasePath = session?.DatabasePath ?? AppPaths.DatabasePath;
@@ -81,7 +89,20 @@ public partial class App : global::Avalonia.Application {
             var workDirectory = session?.WorkDirectory ?? AppPaths.DataDirectory;
             var backupDirectory = session?.BackupDirectory
                                   ?? Path.Combine(workDirectory, AppConstants.BackupsPathName);
-            DatabaseHelper.BackupDatabase(workDirectory, backupDirectory, Path.GetFileName(databasePath));
+
+            // 退出备份单独放 Backups/OnExit 子目录,并只保留最新 N 份。
+            // 理由:它每次关闭都产生一份,而手动备份 / 清洗前保护性备份都落在 Backups 根下 ——
+            // 混在一起时根目录很快被一串时间戳文件淹没,用户真正主动要的那几份反而找不着。
+            var exitBackupDirectory = Path.Combine(backupDirectory, AppConstants.ExitBackupsPathName);
+            var databaseFileName = Path.GetFileName(databasePath);
+
+            try {
+                DatabaseHelper.BackupDatabase(workDirectory, exitBackupDirectory, databaseFileName);
+            } finally {
+                // 放在 finally 里:即便这一份没写成(例如同一秒内第二次退出导致文件名撞车),
+                // 也该顺手把历史积压收敛掉 —— 清理本身不抛异常,不会盖住上面的失败。
+                DatabaseHelper.PruneBackups(exitBackupDirectory, AppConstants.ExitBackupKeepCount, databaseFileName);
+            }
         } catch (Exception ex) {
             // WinExe 没有控制台,Console.WriteLine 的消息无处可去 —— 写进文件日志。
             // 这里不弹窗:进程正在退出,弹窗没有意义。

@@ -376,7 +376,21 @@ internal static class Program {
             var logOk = File.Exists(logPath) && File.ReadAllText(logPath).Contains("日志出口探针", StringComparison.Ordinal);
             report.AppendLine($"log sink: {FileLogSink.FileName} 已写入={logOk}");
 
-            report.AppendLine($"backups={Directory.GetFiles(Path.Combine(work, "Backups")).Length}");
+            // 退出备份的落点:必须落在 Backups/OnExit 子目录,而不是与手动备份混在 Backups 根下
+            // (它每次关闭都产生一份,混放会让根目录迅速被时间戳文件淹没)。
+            // 「只留最新 3 份」的选删规则由单测 BackupRetentionTests 钉住,这里只验接线是否还在。
+            // 注:根目录那批 *_backup_*.dat 是上面手动备份留下的 —— 本行刻意不递归,
+            // 就是为了让"退出备份没混进根目录"这件事在报告里直接可读。
+            App.BackupOnExit(vm);
+            var backupRoot = Path.Combine(work, AppConstants.BackupsPathName);
+            var exitBackupDir = Path.Combine(backupRoot, AppConstants.ExitBackupsPathName);
+            var exitBackupCount = Directory.Exists(exitBackupDir)
+                ? Directory.GetFiles(exitBackupDir, "*.dat").Length
+                : -1;
+            report.AppendLine($"backups={Directory.GetFiles(backupRoot).Length}");
+            report.AppendLine($"exit backup: {AppConstants.BackupsPathName}/{AppConstants.ExitBackupsPathName} " +
+                              $"份数={exitBackupCount}(期望 1) " +
+                              $"根目录的备份文件={Directory.GetFiles(backupRoot, "*_backup_*.dat").Length}(只应是手动备份)");
 
             // 回归:完整走一遍「导入旧版 Kindle Mate 数据库」。
             // 该路径收尾会调 CleanDatabase(string.Empty),此前必然抛 "The path is empty"

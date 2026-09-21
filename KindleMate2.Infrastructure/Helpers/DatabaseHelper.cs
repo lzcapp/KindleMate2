@@ -18,6 +18,14 @@ namespace KindleMate2.Infrastructure.Helpers {
         private const string SnapshotTempSuffix = ".snapshot-tmp";
 
         /// <summary>
+        /// 备份文件名里的固定中缀,成品形如 <c>KM2_backup_20260921_221834.dat</c>。
+        /// 提成常量是因为它有两个消费者:<see cref="BackupDatabase"/> 负责**生成**,<see cref="PruneBackups"/>
+        /// 负责按同一形状**找回**。写死两处的话,改一处就会让清理逻辑静默地匹配不到任何文件
+        /// (表现是"保留 3 份"悄无声息地失效,而不是报错)。
+        /// </summary>
+        private const string BackupFileNameInfix = "_backup_";
+
+        /// <summary>
         /// <c>[clippings]</c> 的查询索引。建库脚本与老库迁移共用这一条,避免两处 SQL 漂移。
         /// 详见 <see cref="EnsureIndexesIfNeeded"/>。
         /// </summary>
@@ -168,7 +176,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             // 备份文件名就再也读不出真实日期、也无法按名称排序。
             var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat, CultureInfo.InvariantCulture);
             var backupFileName = Path.GetFileNameWithoutExtension(databaseFileName) + 
-                                $"_backup_{timestamp}" + 
+                                BackupFileNameInfix + timestamp + 
                                 Path.GetExtension(databaseFileName);
             var backupFilePath = Path.Combine(backupPath, backupFileName);
 
@@ -176,6 +184,59 @@ namespace KindleMate2.Infrastructure.Helpers {
             // 不传 overwrite,语义与原先的 File.Copy(overwrite: false) 一致 —— 同一时间戳
             // 撞车时同样抛错,而不是静默覆盖掉上一份备份。
             CreateConsistentSnapshot(databaseFilePath, backupFilePath);
+        }
+
+        /// <summary>
+        /// 只保留最新的 <paramref name="keepCount"/> 份备份,把更旧的删掉。用于退出备份这类
+        /// **每次关闭都产生一份**的自动产物 —— 攒几十份没有意义,只留最近几次即可回滚。
+        /// </summary>
+        /// <remarks>
+        /// ① 排序按**文件名**而不是修改时间:名字里的时间戳是 <c>yyyyMMdd_HHmmss</c> 定长零填充,
+        /// 字典序即时间序,且不会因为复制 / 云同步 / 解压重写 mtime 而错判先后
+        /// (那条 InvariantCulture 修复正是这个前提的一部分,见 BackupFilenameCultureTests)。
+        /// 比较器显式用 <see cref="StringComparer.Ordinal"/> —— 默认的 <c>Comparer&lt;string&gt;.Default</c>
+        /// 走 CurrentCulture,这里没必要把"保留哪几份"交给区域设置决定。
+        ///
+        /// ② 只匹配**同一个库**的备份(<c>KM2_backup_*.dat</c>)。目录里可能同时躺着其它库、
+        /// 手写笔记、<c>.snapshot-tmp</c> 残留等,一律不动。
+        ///
+        /// ③ **刻意不抛异常**:它在退出路径上被调用,进程正在退出,抛出去只会变成日志里一条
+        /// 没人能处理的噪音。单份删不掉就跳过(Windows 上文件被占用是常态),下次退出还会再试。
+        /// </remarks>
+        /// <param name="backupDirectory">备份目录;不存在则直接返回 0。</param>
+        /// <param name="keepCount">保留份数;<c>&lt;= 0</c> 按 1 处理 —— 避免调用方传 0 时把备份全删光。</param>
+        /// <param name="databaseFileName">库文件名(如 <c>KM2.dat</c>),用于界定"本库的备份"。</param>
+        /// <returns>实际删除的份数。</returns>
+        public static int PruneBackups(string backupDirectory, int keepCount, string databaseFileName) {
+            if (string.IsNullOrWhiteSpace(backupDirectory) || string.IsNullOrWhiteSpace(databaseFileName)) {
+                return 0;
+            }
+            if (!Directory.Exists(backupDirectory)) {
+                return 0;
+            }
+
+            var keep = Math.Max(1, keepCount);
+            var pattern = Path.GetFileNameWithoutExtension(databaseFileName) +
+                          BackupFileNameInfix + "*" +
+                          Path.GetExtension(databaseFileName);
+
+            string[] files;
+            try {
+                files = Directory.GetFiles(backupDirectory, pattern);
+            } catch {
+                return 0;   // 目录不可读(权限等):当作没有可清理的,不影响主流程
+            }
+
+            Array.Sort(files, StringComparer.Ordinal);
+            var deleted = 0;
+            // 升序排列 → 末尾 keep 份是最新的,从头删到倒数第 keep 份为止
+            for (var i = 0; i < files.Length - keep; i++) {
+                try {
+                    File.Delete(files[i]);
+                    deleted++;
+                } catch { /* 单份删不掉就跳过,其余继续 */ }
+            }
+            return deleted;
         }
 
         /// <summary>

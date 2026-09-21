@@ -36,6 +36,23 @@
         public const string ImportsPathName = "Imports";
         public const string TempPathName = "Temp";
         public const string BackupsPathName = "Backups";
+
+        /// <summary>
+        /// 退出自动备份的专用子目录名,位于 <see cref="BackupsPathName"/> 之下。
+        ///
+        /// 退出备份**每次关闭都会产生一份**,而手动备份与「清洗前保护性备份」都落在 Backups 根下 ——
+        /// 混在一起时根目录很快被一串时间戳文件淹没,用户真正主动要的那几份反而找不着。
+        /// 分到子目录后:根目录只留用户自己要的,自动产物集中在一处、由保留策略统一收敛。
+        /// </summary>
+        public const string ExitBackupsPathName = "OnExit";
+
+        /// <summary>
+        /// 退出备份保留份数。超出部分按文件名时间戳从旧到新删除
+        /// (见 <c>DatabaseHelper.PruneBackups</c>)。
+        /// 退出备份的价值只在"最近几次",攒几十份既无用又占地方。
+        /// </summary>
+        public const int ExitBackupKeepCount = 3;
+
         public const string ExportsPathName = "Exports";
         public const string StatisticsPathName = "Statistics";
         
