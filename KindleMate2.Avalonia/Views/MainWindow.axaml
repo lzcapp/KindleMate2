@@ -73,7 +73,12 @@
               <!-- 原版此项(menuSyncFromKindle)就是 Visible=false,真正对用户可见的入口
                    是菜单栏那个「Kindle设备已连接」按钮 —— 故这里保持隐藏,不要"顺手打开"。 -->
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ImportFromDevice}" Click="OnMenuImportFromDevice" IsVisible="False" />
-              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_SyncToDevice}" Click="OnMenuSyncToDevice" />
+              <!-- 设备未连接时置灰。灰掉的项点不动,所以原因靠悬停提示给
+                   (ToolTip.ShowOnDisabled 必须显式打开,默认不给禁用控件弹提示)。 -->
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_SyncToDevice}" Click="OnMenuSyncToDevice"
+                        IsEnabled="{Binding IsDeviceConnected}"
+                        ToolTip.Tip="{Binding SyncToDeviceHint}"
+                        ToolTip.ShowOnDisabled="True" />
               <Separator />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportMarkdown}" Click="OnMenuExportMarkdown" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_CleanDatabase}" Click="OnMenuCleanDb" />

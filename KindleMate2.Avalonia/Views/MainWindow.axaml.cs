@@ -396,8 +396,11 @@ public partial class MainWindow : Window {
 
     private async void OnMenuSyncToDevice(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        if (vm.DeviceStatus.Contains(Strings.Ui_Status_DeviceOffline, StringComparison.Ordinal) ||
-            vm.DeviceStatus.Length == 0) {
+        // 菜单项在设备未连接时已置灰(IsEnabled 绑 IsDeviceConnected),这里只是兜底:
+        // 设备轮询有 8 秒间隔,禁用状态最多滞后一轮,期间仍可能被点到。
+        // 判断用布尔标志,不再拿本地化文案里是否含「设备未连接」反推状态 ——
+        // 那种写法换个语言、或改一次文案就静默失效。
+        if (!vm.IsDeviceConnected) {
             vm.StatusText = Strings.Ui_Status_NoDevice;
             return;
         }

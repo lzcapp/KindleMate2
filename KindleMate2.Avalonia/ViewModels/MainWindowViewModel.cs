@@ -103,7 +103,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     public string DeviceStatus {
         get => _deviceStatus;
-        set { if (_deviceStatus == value) return; _deviceStatus = value; OnPropertyChanged(); }
+        set {
+            if (_deviceStatus == value) return;
+            _deviceStatus = value;
+            OnPropertyChanged();
+            // 设备已连接时提示里带盘符,所以文案变化也要带上提示一起刷新
+            OnPropertyChanged(nameof(SyncToDeviceHint));
+        }
     }
 
     public bool IsBusy {
@@ -375,8 +381,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public void ReleaseSession() {
         _session?.Dispose();
         _session = null;
+        NotifySessionStateChanged();
+    }
+
+    /// <summary>
+    /// 会话建立 / 释放时统一发通知。
+    /// <c>SyncToDeviceHint</c> 同样依赖"会话是否存在",合在一处发就**不会漏** ——
+    /// 每个调用点各写两行 <c>OnPropertyChanged</c> 的写法,再加一个依赖项时必然漏掉某处。
+    /// </summary>
+    private void NotifySessionStateChanged() {
         OnPropertyChanged(nameof(HasSession));
         OnPropertyChanged(nameof(Session));
+        OnPropertyChanged(nameof(SyncToDeviceHint));
     }
 
     public async Task OpenDatabaseAsync(string path) {
@@ -393,8 +409,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         try {
             _session?.Dispose();
             _session = new DatabaseSession(path);
-            OnPropertyChanged(nameof(HasSession));
-            OnPropertyChanged(nameof(Session));
+            NotifySessionStateChanged();
 
             var elapsedMs = await Task.Run(ReloadFromSession);
             RebuildNav();
@@ -405,8 +420,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             _session?.Dispose();
             _session = null;
             ResetCollections();
-            OnPropertyChanged(nameof(HasSession));
-            OnPropertyChanged(nameof(Session));
+            NotifySessionStateChanged();
             StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
             // 这里刻意吞掉异常(不向上抛),因此必须自己留痕:否则该错误只会短暂出现在状态栏,
             // 用户切走就再无从查起。WinExe 下 Console.WriteLine 无处可去,走文件日志。
@@ -1045,11 +1059,31 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private bool _isDeviceConnected;
 
-    /// <summary>设备是否已连接 —— 菜单栏「Kindle设备已连接」按钮的显隐依据(对齐原版 menuKindle)。</summary>
+    /// <summary>
+    /// 设备是否已连接 —— 菜单栏「Kindle设备已连接」按钮的显隐依据(对齐原版 menuKindle),
+    /// 同时也是「同步到 Kindle 设备」菜单项的**启用条件**(未连接时置灰)。
+    /// </summary>
     public bool IsDeviceConnected {
         get => _isDeviceConnected;
-        set { if (_isDeviceConnected == value) return; _isDeviceConnected = value; OnPropertyChanged(); }
+        set {
+            if (_isDeviceConnected == value) return;
+            _isDeviceConnected = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SyncToDeviceHint));
+        }
     }
+
+    /// <summary>
+    /// 「同步到 Kindle 设备」菜单项的悬停提示。菜单项不可用时它是**唯一的解释来源**
+    /// —— 灰掉的项点不动,原先"点了才在状态栏说明原因"的路子就断了:
+    /// 没有会话 → 先说开库;有会话但没连设备 → 说去连设备。
+    /// 设备已连接时给的是设备状态(含盘符),顺带说明这次同步会落到哪个盘。
+    /// </summary>
+    public string SyncToDeviceHint => !HasSession
+        ? Strings.Ui_Status_OpenDatabaseFirst
+        : IsDeviceConnected
+            ? DeviceStatus
+            : Strings.Ui_Menu_SyncToDevice_NeedsDevice;
 
     /// <summary>在 UI 线程刷新设备状态(文案 + 按钮显隐)。</summary>
     public void RefreshDeviceStatus() {
