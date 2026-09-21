@@ -9,18 +9,28 @@ namespace KindleMate2.Tests;
 /// (真·联网那一条在 <c>UpdateProbeTests</c> 里,由人手动触发,免得 CI 依赖外网。)
 /// </summary>
 public sealed class UpdateCheckerTests {
-    /// <summary>一份贴近真实的 latest release 响应(字段名与 GitHub 一致)。</summary>
+    /// <summary>
+    /// 一份贴近真实的 latest release 响应(字段名与 GitHub 一致)。
+    /// **资产清单刻意与实际发布页一一对应**(12 个,见 release.yml 文件头的命名规则):
+    /// 少列一个变体,下面那些"优先取自包含"的用例就会变成空断言。
+    /// </summary>
     private const string SampleRelease = """
         {
           "tag_name": "2026.09.17",
           "html_url": "https://github.com/lzcapp/KindleMate2/releases/tag/2026.09.17",
           "assets": [
-            { "name": "KindleMate2_macos-arm64.dmg", "browser_download_url": "https://example.test/macos-arm64.dmg", "size": 123456 },
-            { "name": "KindleMate2_macos-x64.dmg",   "browser_download_url": "https://example.test/macos-x64.dmg",   "size": 123456 },
-            { "name": "KindleMate2_linux-x64.tar.gz","browser_download_url": "https://example.test/linux-x64.tar.gz","size": 654321 },
-            { "name": "KindleMate2_linux-arm64.tar.gz","browser_download_url": "https://example.test/linux-arm64.tar.gz","size": 654321 },
-            { "name": "KindleMate2_x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip","size": 999 },
-            { "name": "KindleMate2_x64.zip",         "browser_download_url": "https://example.test/x64.zip",         "size": 888 }
+            { "name": "KindleMate2_macos-arm64.dmg",             "browser_download_url": "https://example.test/macos-arm64.dmg",         "size": 53617032 },
+            { "name": "KindleMate2_macos-x64.dmg",               "browser_download_url": "https://example.test/macos-x64.dmg",           "size": 53617032 },
+            { "name": "KindleMate2_linux-x64.tar.gz",            "browser_download_url": "https://example.test/linux-x64.tar.gz",        "size": 12000000 },
+            { "name": "KindleMate2_linux-x64_runtime.tar.gz",    "browser_download_url": "https://example.test/linux-x64_runtime.tar.gz","size": 78000000 },
+            { "name": "KindleMate2_linux-arm64.tar.gz",          "browser_download_url": "https://example.test/linux-arm64.tar.gz",      "size": 12000000 },
+            { "name": "KindleMate2_linux-arm64_runtime.tar.gz",  "browser_download_url": "https://example.test/linux-arm64_runtime.tar.gz","size": 78000000 },
+            { "name": "KindleMate2_x64.zip",                     "browser_download_url": "https://example.test/x64.zip",                 "size": 888 },
+            { "name": "KindleMate2_x64_runtime.zip",             "browser_download_url": "https://example.test/x64_runtime.zip",         "size": 999 },
+            { "name": "KindleMate2_arm64.zip",                   "browser_download_url": "https://example.test/arm64.zip",               "size": 888 },
+            { "name": "KindleMate2_arm64_runtime.zip",           "browser_download_url": "https://example.test/arm64_runtime.zip",       "size": 999 },
+            { "name": "KindleMate2_x86.zip",                     "browser_download_url": "https://example.test/x86.zip",                 "size": 888 },
+            { "name": "KindleMate2_x86_runtime.zip",             "browser_download_url": "https://example.test/x86_runtime.zip",         "size": 999 }
           ]
         }
         """;
@@ -82,20 +92,62 @@ public sealed class UpdateCheckerTests {
     [Theory]
     [InlineData("osx-arm64", "KindleMate2_macos-arm64.dmg")]
     [InlineData("osx-x64", "KindleMate2_macos-x64.dmg")]
-    [InlineData("linux-x64", "KindleMate2_linux-x64.tar.gz")]
-    [InlineData("linux-arm64", "KindleMate2_linux-arm64.tar.gz")]
-    public void ParseRelease_FindsAssetOnEveryPlatform(string rid, string expectedName) {
+    [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz")]
+    [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz")]
+    [InlineData("win-x64", "KindleMate2_x64_runtime.zip")]
+    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip")]
+    [InlineData("win-x86", "KindleMate2_x86_runtime.zip")]
+    public void ParseRelease_SelectsTheRightAssetForEveryPlatform(string rid, string expectedName) {
         var info = UpdateChecker.ParseRelease(SampleRelease, "2026.9.16", rid);
 
         Assert.Equal(expectedName, info!.Asset!.Name);
     }
 
-    [Fact]
-    public void ParseRelease_PrefersSelfContainedPackageOnWindows() {
-        var info = UpdateChecker.ParseRelease(SampleRelease, "2026.9.16", "win-x64");
+    /// <summary>
+    /// 发布页同时提供自包含(<c>_runtime</c>)与框架依赖两种变体时,必须选**自包含**那个。
+    ///
+    /// 两种选错的代价不对称:自包含包在任何机器上都能跑,而框架依赖包在没装对应 .NET 运行时的
+    /// 机器上**更新完就打不开** —— "更新把能用的软件换成打不开的"是这个功能最不能犯的错。
+    /// macOS 只发自包含 dmg,故不在本用例内(没有可比的两种变体)。
+    ///
+    /// 2026-09-21 补:Linux 分支原先只列了无后缀名,而线上确实发
+    /// <c>KindleMate2_linux-x64_runtime.tar.gz</c> / <c>linux-arm64_runtime.tar.gz</c>,
+    /// 于是从自包含包装上去的 Linux 用户会被换成框架依赖包。这条用例就是它的回归防线。
+    /// </summary>
+    [Theory]
+    [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz")]
+    [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz")]
+    [InlineData("win-x64", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip")]
+    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip")]
+    [InlineData("win-x86", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip")]
+    public void ParseRelease_PrefersSelfContainedOverFrameworkDependent(string rid, string selfContained, string frameworkDependent) {
+        var info = UpdateChecker.ParseRelease(SampleRelease, "2026.9.16", rid);
 
-        // 两个都在时优先自包含包:与本项目随包分发的方式一致,换包后不必再装 .NET 运行时
-        Assert.Equal("KindleMate2_x64_runtime.zip", info!.Asset!.Name);
+        Assert.Equal(selfContained, info!.Asset!.Name);
+        Assert.NotEqual(frameworkDependent, info.Asset.Name);
+    }
+
+    /// <summary>
+    /// 候选表必须**同时**列出自包含与框架依赖两个变体:前者是首选,后者是"某次只发了框架依赖包"
+    /// 时的回退。只断言"最后选出来的那个对"抓不住候选表漏项,这条从表本身再钉一次。
+    /// </summary>
+    [Theory]
+    [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz")]
+    [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz")]
+    [InlineData("win-x64", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip")]
+    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip")]
+    [InlineData("win-x86", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip")]
+    public void AssetNameCandidates_ListBothVariantsWithSelfContainedFirst(string rid, string selfContained, string frameworkDependent) {
+        var candidates = UpdateChecker.AssetNameCandidates(rid);
+
+        Assert.Equal(selfContained, candidates[0]);
+        Assert.Contains(frameworkDependent, candidates);
+    }
+
+    [Fact]
+    public void AssetNameCandidates_UnknownRuntimeIdentifierHasNoCandidates() {
+        // 不认识的运行时不给候选 —— 调用方据此只提示"有新版本"、不提供自动下载
+        Assert.Empty(UpdateChecker.AssetNameCandidates("freebsd-x64"));
     }
 
     [Fact]

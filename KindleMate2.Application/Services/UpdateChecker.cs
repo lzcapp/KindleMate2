@@ -120,16 +120,23 @@ public static class UpdateChecker {
     /// <summary>
     /// 运行时标识 → 可能的资产名,按优先级排列。
     ///
-    /// 产物命名见 release.yml:<c>KindleMate2_macos-arm64.dmg</c>、<c>KindleMate2_linux-x64.tar.gz</c>、
-    /// <c>KindleMate2_x64[_runtime].zip</c>(Windows)。Windows 优先取自包含 <c>_runtime</c> 的自包含包 ——
-    /// 与本项目随包分发的方式一致,换包后不必再装 .NET 运行时。
+    /// 产物命名见 release.yml:<c>KindleMate2_macos-arm64.dmg</c>、<c>KindleMate2_linux-x64[_runtime].tar.gz</c>、
+    /// <c>KindleMate2_x64[_runtime].zip</c>(Windows)。macOS 只发自包含包。
+    ///
+    /// **凡是同时存在 <c>_runtime</c>(自包含)与无后缀(框架依赖)两种变体的平台,一律优先自包含。**
+    /// 理由是两种选错的代价完全不对称:自包含包在任何机器上都能跑,而框架依赖包在没装对应 .NET
+    /// 运行时的机器上**装完就打不开** —— "更新把能用的软件换成打不开的"是这个功能最不能犯的错。
+    /// 反过来说,把框架依赖的用户换成自包含只多下载几十 MB,不影响可用性。
+    ///
+    /// (2026-09-21 修:Linux 分支原先只列了无后缀名,而线上确实发 <c>KindleMate2_linux-x64_runtime.tar.gz</c>
+    /// / <c>linux-arm64_runtime.tar.gz</c> —— 于是从自包含包安装的 Linux 用户会被换成框架依赖包。)
     /// </summary>
     internal static IReadOnlyList<string> AssetNameCandidates(string runtimeIdentifier) =>
         NormalizeRuntimeIdentifier(runtimeIdentifier) switch {
             "osx-arm64" => ["KindleMate2_macos-arm64.dmg"],
             "osx-x64" => ["KindleMate2_macos-x64.dmg"],
-            "linux-x64" => ["KindleMate2_linux-x64.tar.gz"],
-            "linux-arm64" => ["KindleMate2_linux-arm64.tar.gz"],
+            "linux-x64" => ["KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz"],
+            "linux-arm64" => ["KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz"],
             "win-x64" => ["KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip"],
             "win-arm64" => ["KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip"],
             "win-x86" => ["KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip"],
