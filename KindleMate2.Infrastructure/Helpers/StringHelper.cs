@@ -105,7 +105,9 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// "当前平台"的规则(macOS / Linux 只有 '\0' 与 '/',Windows 有 41 个),于是同一本书在
         /// Windows 与 macOS 上会导出成**不同文件名**:macOS 侧会留下 ':',而 Finder 把 ':' 显示成
         /// 路径分隔符;把导出目录拷到 Windows / SMB 共享时这些名字更是直接非法。
-        /// 这里取三平台非法字符的并集,使净化结果与运行平台无关(Windows 上的结果与改动前完全一致)。
+        /// 这里取三平台非法字符的并集,使净化结果与运行平台无关 —— Windows 上**非法字符的替换结果**
+        /// 与改动前一致,但另有两处是刻意收紧的(去掉末尾的点、保留名判定移到修剪之后),
+        /// 所以少数名字会比改动前更安全,不再与旧行为逐字相同。
         /// </para>
         /// </summary>
         /// <param name="filename">The filename to sanitize</param>
@@ -124,12 +126,6 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
             var sanitized = builder.ToString();
 
-            // Windows 保留设备名在任意目录下都不能当文件名,且与扩展名无关 —— 故按"去掉扩展名后"判断。
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
-            if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
-                sanitized = "_" + sanitized;
-            }
-
             sanitized = sanitized.Trim();
 
             // 末尾的点在 Windows 上非法(结尾空格已由上一行的 Trim 处理)。
@@ -137,6 +133,16 @@ namespace KindleMate2.Infrastructure.Helpers {
             var withoutTrailingDots = sanitized.TrimEnd('.');
             if (withoutTrailingDots.Length > 0) {
                 sanitized = withoutTrailingDots;
+            }
+
+            // Windows 保留设备名在任意目录下都不能当文件名,且与扩展名无关 —— 故按"去掉扩展名后"判断。
+            //
+            // 必须放在 Trim / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为"非保留名",
+            // 修剪之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上一直如此,
+            // 2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
+            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
+            if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
+                sanitized = "_" + sanitized;
             }
 
             return sanitized;

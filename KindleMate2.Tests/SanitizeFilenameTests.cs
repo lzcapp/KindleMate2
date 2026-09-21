@@ -12,6 +12,10 @@ namespace KindleMate2.Tests;
 ///
 /// 本文件的期望值**全部硬编码**,因而在 Windows / macOS / Linux 上断言的是同一个结果 ——
 /// 这正是"平台无关"的检验方式:换平台跑同一份用例,结果必须一致。
+///
+/// 另一类回归目标(2026-09-21 补):Windows 保留设备名的判定顺序。原实现先判保留名、再修剪,
+/// 于是 <c>" CON"</c>、<c>"CON."</c> 这类输入修剪后恰好落回 <c>"CON"</c>;它同时也破坏了幂等性
+/// (净化一次得 <c>"CON"</c>,再净化一次得 <c>"_CON"</c>)。
 /// </summary>
 public sealed class SanitizeFilenameTests {
     /// <summary>三平台非法字符的并集(测试侧独立列出,不引用被测类型内部的判断)。</summary>
@@ -57,6 +61,13 @@ public sealed class SanitizeFilenameTests {
     [InlineData("CON.txt", "_CON.txt")]
     [InlineData("Console", "Console")]      // 仅前缀相同,不算保留名
     [InlineData("MY CON", "MY CON")]
+    // 下面四条是回归目标:保留名判定原本发生在 Trim / 去尾点**之前**,于是修剪后才落回保留名,
+    // 恰好生成那个非法名。判定对象必须是最终要落盘的那个字符串。
+    [InlineData(" CON", "_CON")]            // 前导空白
+    [InlineData("CON ", "_CON")]            // 尾随空白
+    [InlineData("aux ", "_aux")]            // 小写保留名 + 尾随空白(比较须大小写无关)
+    [InlineData("NUL.", "_NUL")]            // 尾点被去掉后才落回保留名
+    [InlineData("NUL\t", "NUL_")]           // 反例:制表符是控制字符,先被替换成 '_' → 不再是保留名
     public void SanitizeFilename_PrefixesWindowsReservedNames(string input, string expected) {
         Assert.Equal(expected, StringHelper.SanitizeFilename(input));
     }
@@ -80,7 +91,8 @@ public sealed class SanitizeFilenameTests {
     [Fact]
     public void SanitizeFilename_IsIdempotent() {
         // 净化结果再净化一次不应再变 —— 否则"重名加后缀"之类的后续处理会不稳定
-        foreach (var input in new[] { "非法:书名*?", @"a\b/c", "CON", "Ends with dot.", "普通书名" }) {
+        // " CON" / "CON." 是回归目标:原实现在这两条上会一次变两次(先修剪出 "CON",再被判为保留名)
+        foreach (var input in new[] { "非法:书名*?", @"a\b/c", "CON", " CON", "CON.", "Ends with dot.", "普通书名" }) {
             var once = StringHelper.SanitizeFilename(input);
             Assert.Equal(once, StringHelper.SanitizeFilename(once));
         }
