@@ -95,7 +95,8 @@ internal static class Program {
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
 
-            // 平台实现核对:Windows 应为 Devices.Windows.DeviceManager,其他平台为 NullDeviceManager。
+            // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
+            // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
             var platformDevice = DatabaseSession.CreateDeviceManager(Path.GetDirectoryName(dbPath) ?? ".").GetType().FullName;
             report.AppendLine($"device(platform): {platformDevice}");

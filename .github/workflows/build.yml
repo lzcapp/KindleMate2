@@ -56,7 +56,8 @@ jobs:
 
       # 实跑发布产物:验证 apphost、SQLite 原生库、卫星资源与平台设备实现都随发布产物一起
       # 落地 —— 也就是 release 真正交付的那个形态(上面各步验的是 obj/bin 里的中间产物)。
-      # Windows 上设备实现应为 Devices.Windows.DeviceManager(非 Windows 才是 NullDeviceManager)。
+      # Windows 上设备实现应为 Devices.Windows.DeviceManager(macOS/Linux 各有自己的实现,只有
+      # 三者之外的平台才落到 NullDeviceManager)。
       # shell 必须用 bash:pwsh 调用 GUI 子系统(WinExe)不会等待进程退出,断言会读到空文件。
       - name: Boot self-check (published)
         shell: bash
