@@ -5,7 +5,7 @@
         xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
         xmlns:shared="using:KindleMate2.Shared"
         x:Class="KindleMate2.Avalonia.Views.AboutWindow"
-        mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="380"
+        mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="404"
         x:DataType="vm:AboutViewModel"
         Title="{x:Static shared:Strings.Ui_About_Title}"
         Icon="/Assets/bookmark.ico"
@@ -26,26 +26,35 @@
 
     <Rectangle Height="1" Fill="{DynamicResource KmBorderBrush}" />
 
-    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
+    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
       <TextBlock Grid.Row="0" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Copyright}" VerticalAlignment="Center" />
       <TextBlock Grid.Row="0" Grid.Column="1" FontSize="12" Text="{Binding Copyright}"
                  TextWrapping="Wrap" VerticalAlignment="Center" />
 
+      <!-- 两行路径逐属性同构,差别只在绑定的值和处理函数。
+           刻意用纯字符串 Content 而不是在按钮里套 TextBlock:全局 Style Selector="TextBlock"
+           会把 Foreground 定死成 KmTextBrush(样式 setter 压过继承),套进按钮后文字会比「仓库」
+           行更亮、悬停也不跟着变色 —— 那就不是一致样式了。
+           路径可能很长,窗口宽固定 460 且不可缩放,所以靠 ToolTip 兜底完整值。 -->
       <TextBlock Grid.Row="1" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Program_Path}" VerticalAlignment="Center" />
       <Button Grid.Row="1" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
-              Content="{Binding ProgramPath}" Click="OnOpenProgramPath" />
+              Content="{Binding ProgramPath}" ToolTip.Tip="{Binding ProgramPath}" Click="OnOpenProgramPath" />
 
-      <TextBlock Grid.Row="2" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Database}" VerticalAlignment="Center" />
-      <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+      <TextBlock Grid.Row="2" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_DataPath}" VerticalAlignment="Center" />
+      <Button Grid.Row="2" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+              Content="{Binding DataPath}" ToolTip.Tip="{Binding DataPath}" Click="OnOpenDataPath" />
+
+      <TextBlock Grid.Row="3" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Database}" VerticalAlignment="Center" />
+      <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="8">
         <TextBlock FontSize="12" Text="{Binding DatabaseName}" TextTrimming="CharacterEllipsis" />
         <TextBlock Classes="tt" Text="{Binding DatabaseSizeLabel}" VerticalAlignment="Center" />
       </StackPanel>
 
-      <TextBlock Grid.Row="3" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_Runtime}" VerticalAlignment="Center" />
-      <TextBlock Grid.Row="3" Grid.Column="1" FontSize="12" Text="{Binding Runtime}" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="4" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_Runtime}" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="4" Grid.Column="1" FontSize="12" Text="{Binding Runtime}" VerticalAlignment="Center" />
 
-      <TextBlock Grid.Row="4" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_Repo}" VerticalAlignment="Center" />
-      <Button Grid.Row="4" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+      <TextBlock Grid.Row="5" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_Repo}" VerticalAlignment="Center" />
+      <Button Grid.Row="5" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
               Content="{Binding RepoUrl}" Click="OnOpenRepo" />
     </Grid>
 

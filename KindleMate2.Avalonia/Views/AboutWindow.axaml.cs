@@ -46,14 +46,27 @@ public partial class AboutWindow : Window {
     }
 
     /// <summary>
-    /// 点击「程序路径」→ 用文件管理器打开该目录,对应原版 FrmAboutBox 的 lblPath 链接
-    /// (原版即 <c>Process.Start("explorer.exe", lblPath.Text)</c>,无确认、无提示)。
-    /// 这里刻意不创建目录:路径只是展示用的"程序所在处",不存在就静默忽略。
+    /// 点击「程序路径」→ 用文件管理器打开程序所在目录。
     /// </summary>
-    private void OnOpenProgramPath(object? sender, RoutedEventArgs e) {
-        if (DataContext is not AboutViewModel vm || vm.ProgramPath.Length == 0) return;
+    private void OnOpenProgramPath(object? sender, RoutedEventArgs e) =>
+        TryOpenDirectory(DataContext is AboutViewModel vm ? vm.ProgramPath : null);
+
+    /// <summary>
+    /// 点击「数据路径」→ 用文件管理器打开数据目录(KM2.dat、备份、导入导出都落在这里)。
+    /// 与「程序路径」共用同一套处理,样式与行为都对齐。
+    /// </summary>
+    private void OnOpenDataPath(object? sender, RoutedEventArgs e) =>
+        TryOpenDirectory(DataContext is AboutViewModel vm ? vm.DataPath : null);
+
+    /// <summary>
+    /// 用文件管理器打开目录,对应原版 FrmAboutBox 的 lblPath 链接
+    /// (原版即 <c>Process.Start("explorer.exe", lblPath.Text)</c>,无确认、无提示)。
+    /// 这里刻意不创建目录:路径只是展示用的位置,不存在或无权限就静默忽略。
+    /// </summary>
+    private static void TryOpenDirectory(string? path) {
+        if (string.IsNullOrEmpty(path)) return;
         try {
-            ShellHelper.OpenDirectory(vm.ProgramPath);
+            ShellHelper.OpenDirectory(path);
         } catch {
             // 目录不存在或无权限时静默忽略
         }

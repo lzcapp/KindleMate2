@@ -795,6 +795,9 @@
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
     <value>{0} · .NET {1}</value>
   </data>
+  <data name="Ui_About_DataPath" xml:space="preserve">
+    <value>資料路徑</value>
+  </data>
   <data name="Ui_Progress_Starting" xml:space="preserve">
     <value>正在處理…</value>
   </data>

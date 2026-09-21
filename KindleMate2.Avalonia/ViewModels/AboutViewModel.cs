@@ -14,6 +14,13 @@ public sealed class AboutViewModel {
     public string Version { get; private init; } = string.Empty;
     public string Copyright { get; private init; } = string.Empty;
     public string ProgramPath { get; private init; } = string.Empty;
+
+    /// <summary>
+    /// 数据目录 —— 当前库所在目录(无库时为 <see cref="AppPaths.DataDirectory"/>,
+    /// 与原版"程序目录即数据目录"的约定一致),KM2.dat、备份、导入导出都落在这里。
+    /// 与 ProgramPath 一样保证非空,这样即便还没打开库,「数据路径」这一行也仍可点击跳转。
+    /// </summary>
+    public string DataPath { get; private init; } = string.Empty;
     public string DatabaseName { get; private init; } = string.Empty;
     public string DatabaseSize { get; private init; } = string.Empty;
     public string DatabasePath { get; private init; } = string.Empty;
@@ -39,11 +46,19 @@ public sealed class AboutViewModel {
             dbSize = FormatSize(new FileInfo(dbPath).Length);
         }
 
+        // 「数据路径」= 当前库所在目录;还没打开库时退回约定的数据目录,
+        // 这样这一行不会变成空白、依然可点击跳转。
+        var dataPath = session?.WorkDirectory is { Length: > 0 } workDirectory
+            ? workDirectory
+            : AppPaths.DataDirectory;
+
         return new AboutViewModel {
             Product = product,
             Version = version,
             Copyright = copyright,
-            ProgramPath = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar),
+            // 目录路径去掉结尾分隔符只为显示好看;TrimEndingDirectorySeparator 会保留根目录("/")不把它清空。
+            ProgramPath = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory),
+            DataPath = Path.TrimEndingDirectorySeparator(dataPath),
             DatabaseName = dbName,
             DatabaseSize = dbSize,
             DatabasePath = dbPath,

@@ -1285,5 +1285,6 @@ namespace KindleMate2.Shared {
         public static string Ui_About_Repo => ResourceManager.GetString("Ui_About_Repo", resourceCulture);
         public static string Ui_About_NoDatabase => ResourceManager.GetString("Ui_About_NoDatabase", resourceCulture);
         public static string Ui_About_RuntimeFormat => ResourceManager.GetString("Ui_About_RuntimeFormat", resourceCulture);
+        public static string Ui_About_DataPath => ResourceManager.GetString("Ui_About_DataPath", resourceCulture);
     }
 }
