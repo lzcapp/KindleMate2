@@ -5,7 +5,7 @@
         xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
         xmlns:shared="using:KindleMate2.Shared"
         x:Class="KindleMate2.Avalonia.Views.AboutWindow"
-        mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="404"
+        mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="384"
         x:DataType="vm:AboutViewModel"
         Title="{x:Static shared:Strings.Ui_About_Title}"
         Icon="/Assets/bookmark.ico"
@@ -58,9 +58,10 @@
               Content="{Binding RepoUrl}" Click="OnOpenRepo" />
     </Grid>
 
+    <!-- 底部原来还挂着一行「完整库文件路径」(MaxWidth=260、不可点、tt 色),内容和上面「数据路径」只差一个 /KM2.dat
+         —— 已删:路径信息统一由「程序路径 / 数据路径」两行可点链接承担。
+         列定义仍保留 "*,Auto",让确定按钮继续右对齐。 -->
     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-      <TextBlock Grid.Column="0" Classes="tt" Text="{Binding DatabasePath}" VerticalAlignment="Center"
-                 TextTrimming="CharacterEllipsis" MaxWidth="260" />
       <Button Grid.Column="1" Classes="primary" Content="{x:Static shared:Strings.Ui_Action_Ok}" Click="OnClose" />
     </Grid>
 

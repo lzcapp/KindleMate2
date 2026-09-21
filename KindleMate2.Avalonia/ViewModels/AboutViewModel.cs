@@ -23,7 +23,6 @@ public sealed class AboutViewModel {
     public string DataPath { get; private init; } = string.Empty;
     public string DatabaseName { get; private init; } = string.Empty;
     public string DatabaseSize { get; private init; } = string.Empty;
-    public string DatabasePath { get; private init; } = string.Empty;
     public string RepoUrl { get; private init; } = AppConstants.RepoUrl;
     public string Runtime { get; private init; } = string.Empty;
 
@@ -61,7 +60,6 @@ public sealed class AboutViewModel {
             DataPath = Path.TrimEndingDirectorySeparator(dataPath),
             DatabaseName = dbName,
             DatabaseSize = dbSize,
-            DatabasePath = dbPath,
             Runtime = string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_RuntimeFormat,
                 Environment.OSVersion.Platform, Environment.Version)
         };
