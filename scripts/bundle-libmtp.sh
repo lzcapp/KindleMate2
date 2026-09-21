@@ -19,6 +19,21 @@
 #
 set -euo pipefail
 
+# 把相对路径锚定成绝对路径(不要求目标已存在)。
+#
+# 为什么非锚不可:本脚本中途会 `cd "$BUILD_DIR"` 进构建目录,而 cd 之后再出现同一个
+# 相对路径字符串,shell 会拿它**相对新 cwd 再解析一次** —— 等于被套用了两遍。
+# release.yml 传进来的恰好是相对路径(`build/KindleMate2.app`、`build/libmtp`),
+# 于是 `cd "$BUILD_DIR/$LIBUSB_SRC"` 会去找 <repo>/build/libmtp/build/libmtp/libusb-…,
+# 必然 `No such file or directory`;同理 `cp … "$FRAMEWORKS/…"` 也会炸。
+# 这类缺陷在本机人工演练时看不出来(手打命令惯用绝对路径),只在 CI 上才现形。
+abspath() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *)  printf '%s/%s' "$PWD" "${1#./}" ;;
+  esac
+}
+
 LIBMTP_VERSION="1.1.23"
 LIBUSB_VERSION="1.0.30"
 LIBMTP_TARBALL="libmtp-${LIBMTP_VERSION}.tar.gz"
@@ -56,9 +71,33 @@ case "$ARCH" in
   *)         echo "不支持的架构:$ARCH(可选 arm64 / x86_64 / universal)" >&2; exit 2 ;;
 esac
 
+APP="$(abspath "$APP")"
 if [ ! -d "$APP/Contents" ]; then
   echo "$APP 看起来不是 .app 包(找不到 Contents/)" >&2
   exit 1
+fi
+
+# ————————————— 路径锚定(必须在任何 cd 之前) —————————————
+[ -n "$BUILD_DIR" ] || BUILD_DIR="$(mktemp -d)"
+BUILD_DIR="$(abspath "$BUILD_DIR")"
+
+# 自检模式:不下载、不编译,只断言「进入 cd 之前所有路径都已锚定为绝对路径」。
+# 存在的理由:本脚本那个"相对路径被 cd 二次套用"的缺陷,只在调用方传相对路径时
+# 才现形(CI 正是如此),本地人工演练惯用绝对路径、永远发现不了 —— 需要一条能在
+# CI 上以近零成本复现的检查,否则同类问题还会再犯一次。
+# 刻意放在 pkg-config 检查之**前**:自检只关心路径,不该被"CI 镜像里有没有
+# pkgconf"这类无关因素掩盖成另一种失败。
+if [ "${BUNDLE_LIBMTP_CHECK_PATHS:-0}" = "1" ]; then
+  for p in "$APP" "$BUILD_DIR"; do
+    case "$p" in
+      /*) ;;
+      *)  echo "路径未被绝对化:$p" >&2; exit 1 ;;
+    esac
+  done
+  echo "路径自检通过:APP=$APP BUILD_DIR=$BUILD_DIR"
+  echo "  cd 之后 libusb 源码目录将解析为:$BUILD_DIR/libusb-${LIBUSB_VERSION}"
+  echo "  cd 之后 .app 库目录将解析为:$APP/Contents/Frameworks"
+  exit 0
 fi
 
 # libmtp 的 configure 用 pkg-config 的 PKG_CHECK_MODULES 定位 libusb,缺了会直接
@@ -76,7 +115,6 @@ if ! command -v pkg-config >/dev/null 2>&1; then
 fi
 echo "pkg-config:$(command -v pkg-config)(版本 $(pkg-config --version))"
 
-[ -n "$BUILD_DIR" ] || BUILD_DIR="$(mktemp -d)"
 mkdir -p "$BUILD_DIR"
 echo "构建目录:$BUILD_DIR(架构:$ARCH)"
 

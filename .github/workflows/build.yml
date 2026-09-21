@@ -125,3 +125,19 @@ jobs:
           fi
           grep -q "$expect" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
+
+      # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是
+      # 相对路径 —— 脚本中途 `cd` 进构建目录后,相对路径会被**相对新 cwd 再解析一次**,
+      # 于是 `cd "$BUILD_DIR/$LIBUSB_SRC"` 变成 build/libmtp/build/libmtp/libusb-…,
+      # 必然 "No such file or directory"。这个缺陷在本机人工演练时看不出来(手打命令
+      # 惯用绝对路径),只在发版作业上才现形 —— 所以需要在这里提前拦住。
+      # 成本近零:自检不解包、不下载、不编译,只断言路径已在 cd 之前锚定为绝对路径。
+      - name: Bundle script path check
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 仅为满足脚本的 .app 形态检查;自检模式不会往里写任何东西。
+          mkdir -p build/KindleMate2.app/Contents
+          BUNDLE_LIBMTP_CHECK_PATHS=1 \
+            bash scripts/bundle-libmtp.sh build/KindleMate2.app --arch universal --build-dir build/libmtp
