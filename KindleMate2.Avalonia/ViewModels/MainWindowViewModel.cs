@@ -18,6 +18,7 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Shared;
+using KindleMate2.Shared.Books;
 using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Avalonia.ViewModels;
@@ -917,9 +918,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         _allClippings.FirstOrDefault(c => string.Equals(c.BookName, bookName, StringComparison.Ordinal))?.AuthorName
         ?? string.Empty;
 
-    /// <summary>该书名是否已被其它书籍占用(原版据此弹「同名合并」确认)。</summary>
-    public bool IsBookNameTaken(string bookName) =>
-        _allClippings.Any(c => string.Equals(c.BookName, bookName, StringComparison.Ordinal));
+    /// <summary>
+    /// 该书名是否已被**别的**书占用(原版据此弹「同名合并」确认)。
+    ///
+    /// <paramref name="exceptBookName"/> 必须传「当前正操作的那本书原来的名字」:
+    /// 书单里必然含这本书自己的行,不排除时「只改作者、书名不动」会拿自己撞自己,
+    /// 凭空弹「同名书籍已存在」。判定本身在 <see cref="BookRenameRules"/> 里(可测)。
+    /// </summary>
+    public bool IsBookNameTaken(string bookName, string? exceptBookName = null) =>
+        BookRenameRules.IsNameTakenByOther(_allClippings.Select(c => c.BookName), bookName, exceptBookName);
 
     /// <summary>
     /// 重命名书籍 —— 成功标题 Successful、正文 <c>Books_Renamed</c>;失败 <c>Book_Renamed_Failed</c>。
