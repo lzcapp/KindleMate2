@@ -17,4 +17,10 @@
     <PackageReference Include="Leisn.MarkdigToc" Version="0.1.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 平台相关脚本的生成、运行时标识归一化等属于实现细节,只对测试工程开放:
+         它们需要被完整验证(尤其是替换脚本),但不该成为公共 API 让人误用。 -->
+    <InternalsVisibleTo Include="KindleMate2.Tests" />
+  </ItemGroup>
+
 </Project>

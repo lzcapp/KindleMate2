@@ -85,6 +85,7 @@
                         IsVisible="{Binding IsRecycleBinView}" />
             </MenuItem>
             <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Help}">
+              <MenuItem Header="{x:Static shared:Strings.Ui_Update_Check}" Click="OnMenuCheckUpdates" />
               <MenuItem Header="{x:Static shared:Strings.About}" Click="OnMenuAbout" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Github}" Click="OnMenuGithub" />
             </MenuItem>
@@ -181,6 +182,12 @@
         </StackPanel>
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="14,0,0,0">
+          <!--
+            有可用更新时才出现(检查更新由「帮助 → 检查更新」触发)。
+            点击后下载、交给替换脚本并自动重启 —— 见 MainWindowViewModel.DownloadAndApplyUpdateAsync。
+          -->
+          <Button Classes="ghost" Content="{Binding UpdateButtonText}" Click="OnUpdateClick"
+                  IsVisible="{Binding IsUpdateAvailable}" Cursor="Hand" Margin="0,0,8,0" />
           <Ellipse Width="6" Height="6" Fill="{DynamicResource KmTextTertiaryBrush}" />
           <TextBlock Classes="tt" Text="{Binding DeviceStatus}" />
         </StackPanel>

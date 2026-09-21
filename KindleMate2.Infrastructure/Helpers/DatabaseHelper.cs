@@ -1,5 +1,6 @@
 ﻿using KindleMate2.Shared.Constants;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 
 namespace KindleMate2.Infrastructure.Helpers {
     public static class DatabaseHelper {
@@ -162,7 +163,10 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             // Create timestamped backup filename to avoid overwrites
-            var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat);
+            // 必须显式传 InvariantCulture:不带 culture 的 ToString 走 CurrentCulture,而
+            // 非公历日历会把这个"时间戳"变成别的年份(th-TH → 2569、fa-IR → 1405、ar-SA → 1448),
+            // 备份文件名就再也读不出真实日期、也无法按名称排序。
+            var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat, CultureInfo.InvariantCulture);
             var backupFileName = Path.GetFileNameWithoutExtension(databaseFileName) + 
                                 $"_backup_{timestamp}" + 
                                 Path.GetExtension(databaseFileName);

@@ -140,8 +140,8 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.zip
           retention-days: 1
 
-  # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在非 Windows 上由 NullDeviceManager
-  # 兜底,Windows 专有实现只在 net10.0-windows 下参与编译($(TargetFramework) 条件引用)。
+  # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在 Linux 上由 Devices.Linux
+  # 兜底,Windows / macOS 专有实现各自按「平台 + TFM」条件引用,不参与本产物的编译。
   publish-linux:
     needs: version
     runs-on: ubuntu-latest
@@ -195,7 +195,7 @@ jobs:
           if [ -f "$d/createdump" ]; then chmod +x "$d/createdump"; fi
           tar -czf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$d" .
 
-      # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期降级为 NullDeviceManager。
+      # 真实启动自检:解压产物后跑 --smoke,断言平台设备实现按预期选中(空实现仅作为兜底分支保留)。
       # 走 kindlemate2 启动器(而不是直接调 apphost),这样「先切到数据目录」的逻辑也一并验到;
       # 因此传参必须用绝对路径(切目录后相对路径的含义就变了)。
       - name: Boot self-check (linux-x64_runtime)
@@ -209,7 +209,8 @@ jobs:
           touch "$work/empty.dat"
           "$work/kindlemate2" --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
-          grep -q "NullDeviceManager" "$work/smoke.txt"
+          # Linux 现在也有真实设备实现(/media 等候选挂载根 + 经 libmtp 的 MTP),不再降级为 NullDeviceManager
+          grep -q "Devices.Linux.DeviceManager" "$work/smoke.txt"
           # 启动器建了 XDG 数据目录,说明它确实跑到并切过去了(而不只是 apphost 能跑)
           test -d "${XDG_DATA_HOME:-$HOME/.local/share}/KindleMate2"
           echo "unix 产物 + 启动器自检通过:${{ matrix.suffix }}"
@@ -301,6 +302,12 @@ jobs:
           </dict></plist>
           PLIST
 
+          # 内嵌 libmtp + libusb(2024 年及以后的 Kindle 只支持 MTP,而 macOS 无原生 MTP)。
+          # 从源码构建**通用二进制**(一次覆盖 osx-arm64 与 osx-x64)、改好 install name 与
+          # @loader_path rpath,并放进 LGPL 许可证全文 —— 必须在签名之前完成。
+          # 脚本本身可在本机单独跑,便于脱离 CI 验证。
+          bash scripts/bundle-libmtp.sh "$APP" --arch universal --build-dir build/libmtp
+
           # ad-hoc 签名:没有 Apple 开发者账号做不了公证,但 arm64 上「有有效签名」是硬要求。
           codesign --force --deep --sign - "$APP"
           codesign --verify --verbose=2 "$APP"
@@ -330,6 +337,33 @@ jobs:
           ls -la "$mnt"
           codesign --verify --verbose=2 "$mnt/KindleMate2.app"
 
+          # 内嵌的 MTP 库必须真的在包里:少了 libmtp/libusb,2024 年及以后的 Kindle 会**静默**读不到
+          # (代码里会优雅降级成"连接失败"),在发布前拦下来比发出去后靠用户反馈强。
+          APP_BUNDLE="$mnt/KindleMate2.app"
+          for lib in libmtp.9.dylib libusb-1.0.0.dylib; do
+            if [ ! -f "$APP_BUNDLE/Contents/Frameworks/$lib" ]; then
+              echo "错误:缺少内嵌库 $lib" >&2
+              exit 1
+            fi
+          done
+          for license in libmtp-LGPL-2.1.txt libusb-LGPL-2.1.txt; do
+            if [ ! -f "$APP_BUNDLE/Contents/Resources/licenses/$license" ]; then
+              echo "错误:LGPL 要求随包附许可证,缺少 $license" >&2
+              exit 1
+            fi
+          done
+
+          case "${{ matrix.rid }}" in
+            osx-arm64) want_arch=arm64 ;;
+            *)         want_arch=x86_64 ;;
+          esac
+          libmtp_archs="$(lipo -archs "$APP_BUNDLE/Contents/Frameworks/libmtp.9.dylib")"
+          echo "libmtp 架构:$libmtp_archs(本包需要 $want_arch)"
+          case " $libmtp_archs " in
+            *" $want_arch "*) ;;
+            *) echo "错误:libmtp 不含 $want_arch 架构" >&2; exit 1 ;;
+          esac
+
           case "$(uname -m)" in
             arm64) host_rid=osx-arm64 ;;
             *)     host_rid=osx-x64 ;;
@@ -348,7 +382,8 @@ jobs:
           # 因此这里必须用绝对路径传参。
           "$work/KindleMate2.app/Contents/MacOS/launch" --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
-          grep -q "NullDeviceManager" "$work/smoke.txt"
+          # macOS 已有专有设备实现(/Volumes + 轮询),不再降级为 NullDeviceManager。
+          grep -q "Devices.MacOS.DeviceManager" "$work/smoke.txt"
           echo "macOS 产物启动自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
@@ -373,6 +408,21 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # LGPL-2.1 第 6 条:随包分发库的可执行文件时,必须同时提供其源码。
+      # macOS 包里内嵌了 libmtp/libusb(bundle-libmtp.sh 从这两个压缩包构建),
+      # 所以把**同一份**源码附到发布页上 —— 版本因此与二进制严格对应。
+      - name: Fetch embedded library sources (LGPL compliance)
+        shell: pwsh
+        run: |
+          $sources = [ordered]@{
+            'libmtp-1.1.23.tar.gz'  = 'https://downloads.sourceforge.net/project/libmtp/libmtp/1.1.23/libmtp-1.1.23.tar.gz'
+            'libusb-1.0.30.tar.bz2' = 'https://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-1.0.30/libusb-1.0.30.tar.bz2'
+          }
+          foreach ($name in $sources.Keys) {
+            Invoke-WebRequest -Uri $sources[$name] -OutFile "dist/$name" -MaximumRedirection 10
+          }
+          Get-ChildItem dist | Select-Object Name, Length | Format-Table
+
       - name: Build release notes (previous tag .. HEAD)
         shell: pwsh
         run: |
@@ -396,7 +446,14 @@ jobs:
             '- macOS:`~/Library/Application Support/KindleMate2/`。',
             '',
             '- macOS 未做公证(无 Apple 开发者账号),首次启动请先清除隔离标记:`xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"`,或右键应用选「打开」。',
-            '- 非 Windows 无 Kindle 设备同步(设备层降级为 NullDeviceManager),其余功能完整。',
+            '- Kindle 设备同步:**三个平台均支持**。Windows:USB + MTP;macOS:USB 大容量存储 + MTP(包里内嵌 libmtp);**Linux:USB 大容量存储 + MTP(自本版起新增,原先完全没有设备支持)**。2024 年及以后发布的 Kindle(12 代 Paperwhite、Colorsoft、Scribe)只支持 MTP,此前机型走 USB 大容量存储。',
+            '- **Linux 用 MTP 的前提**:系统需装 libmtp 与 libusb(多数发行版的软件包里都有,如 `sudo apt install libmtp9 libusb-1.0-0`)。缺失时 USB 大容量存储方式仍照常工作,应用会在日志里说明。',
+            '- **macOS 上用 MTP 读设备的三条注意事项**:① 首次插入时系统会弹「允许配件连接?」,**必须点「允许」**,否则应用看不到设备;② 每次读取结束后设备会重新枚举一次(可能再弹一次窗),属正常现象;③ 同一时刻只能有一个程序使用该设备,Amazon USB File Manager / OpenMTP / Calibre 任一开着都会导致读取失败,请先退出它们。',
+            '',
+            '**内嵌的开源库(LGPL)**',
+            '- macOS 包内嵌了 **libmtp 1.1.23** 与 **libusb 1.0.30**(均为 LGPL-2.1-or-later,均未经修改),用于访问 MTP 模式的 Kindle。',
+            '- 按许可证要求,对应源码随本发布一并提供:`libmtp-1.1.23.tar.gz`、`libusb-1.0.30.tar.bz2`;许可证全文在 `KindleMate2.app/Contents/Resources/licenses/`。',
+            '- 依 LGPL-2.1 第 6b 条,你可以用自行编译的兼容版本替换 `Contents/Frameworks` 下的同名动态库(替换后需重新签名,ad-hoc 即可)。',
             '',
             'Auto-built by GitHub Actions (release workflow).'
           )

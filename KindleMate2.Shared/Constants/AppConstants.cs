@@ -43,16 +43,21 @@
         public const string ClippingsFileName = "My Clippings.txt";
         public const string VocabFileName = "vocab.db";
         public const string VersionFileName = "version.txt";
-        public const string ExplorerFileName = "explorer.exe";
         public const string CSSFileName = "styles.css";
 
         public const string SpaceForNewLine = " 　　";
 
-        public const string ExplorerSelect = "/select,";
+        // 原先这里放着 ExplorerFileName("explorer.exe") 与 ExplorerSelect("/select,"):
+        // 那是 Windows 专有的 shell 命令名,却在跨平台的 Shared 层对外暴露,调用方直接拿去
+        // Process.Start,于是 macOS / Linux 上必然抛异常(统计页「打开截图所在位置」即受害者)。
+        // 现已收进 KindleMate2.Infrastructure.Helpers.ShellHelper,按平台构造命令,勿再于本层新增此类常量。
         
         public const string RepoUrl = "https://github.com/lzcapp/KindleMate2";
 
-        public const string ConnectionString = "Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;";
+        // 原先这里还放着 ConnectionString("Data Source=KM2.dat;Cache=Shared;Mode=ReadWrite;"):
+        // 那是条**相对路径**连接串,实际指向哪个库取决于进程当前目录,只在"cwd 恰好等于库目录"
+        // 时才成立。壳已改为按「当前打开的库」构造连接串(DatabaseHelper.GetConnectionString),
+        // 该常量早已无人引用,故删除 —— 留着只会诱使新代码拿它去连一个说不清是哪个的库。
 
         public const string BookTitleFormat = " ——《{0}》";
 

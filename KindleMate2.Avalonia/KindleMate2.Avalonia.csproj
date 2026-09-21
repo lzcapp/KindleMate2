@@ -55,4 +55,34 @@
     <ProjectReference Include="..\KindleMate2.Devices.Windows\KindleMate2.Devices.Windows.csproj" />
   </ItemGroup>
 
+  <!-- macOS 专有的 Kindle 设备实现。这里必须**同时**判 TFM 与宿主 OS,缺一不可:
+       · 只判 TFM 不行 —— net10.0 这个 TFM 由 Linux 与 macOS 共用,那样 Linux 也会引用到
+         macOS 实现,与下面 MACOS 常量的定义不匹配,还会往 Linux 产物里塞一份用不上的 dll;
+       · 只判 OS 不行 —— 在 macOS 上构建 net10.0-windows 变体时会被误引入。
+       两处引用共用一个属性,避免条件写两遍后改一处漏一处。 -->
+  <PropertyGroup>
+    <IsMacOsDesktop Condition="'$(TargetFramework)' == 'net10.0' AND $([MSBuild]::IsOSPlatform('OSX'))">true</IsMacOsDesktop>
+    <IsLinuxDesktop Condition="'$(TargetFramework)' == 'net10.0' AND $([MSBuild]::IsOSPlatform('Linux'))">true</IsLinuxDesktop>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsMacOsDesktop)' == 'true'">
+    <!-- MACOS 不是 SDK 预定义常量:它是平台专有 TFM(net10.0-macos)才有的符号,
+         而本壳在 macOS 上走的是中性的 net10.0。故由条件引用方显式定义,
+         供 DatabaseSession.CreateDeviceManager 与 WINDOWS 对称地做编译期选择。 -->
+    <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+  </PropertyGroup>
+
+  <!-- 同理:LINUX 也不是本工程 TFM 预定义的常量(net10.0 不是平台专有 TFM) -->
+  <PropertyGroup Condition="'$(IsLinuxDesktop)' == 'true'">
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsMacOsDesktop)' == 'true'">
+    <ProjectReference Include="..\KindleMate2.Devices.MacOS\KindleMate2.Devices.MacOS.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLinuxDesktop)' == 'true'">
+    <ProjectReference Include="..\KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj" />
+  </ItemGroup>
+
 </Project>

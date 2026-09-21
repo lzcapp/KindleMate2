@@ -45,7 +45,9 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return 0;
             }
 
-            roman = roman.ToUpper();
+            // ToUpperInvariant:罗马数字是固定的 ASCII 记号,与区域设置无关;
+            // 走文化相关的 ToUpper 在土耳其语等区域会把 'i' 转成带点的 'İ',随后按字符查表就失败了。
+            roman = roman.ToUpperInvariant();
             
             // Validate that all characters are valid Roman numerals
             if (roman.Any(c => !RomanMap.ContainsKey(c))) {
@@ -97,6 +99,16 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         /// <summary>
         /// Sanitizes a filename by replacing invalid characters with underscores.
+        ///
+        /// <para>
+        /// 非法字符集是**固定**的,不取 <see cref="Path.GetInvalidFileNameChars"/> —— 后者给的是
+        /// "当前平台"的规则(macOS / Linux 只有 '\0' 与 '/',Windows 有 41 个),于是同一本书在
+        /// Windows 与 macOS 上会导出成**不同文件名**:macOS 侧会留下 ':',而 Finder 把 ':' 显示成
+        /// 路径分隔符;把导出目录拷到 Windows / SMB 共享时这些名字更是直接非法。
+        /// 这里取三平台非法字符的并集,使净化结果与运行平台无关 —— Windows 上**非法字符的替换结果**
+        /// 与改动前一致,但另有两处是刻意收紧的(去掉末尾的点、保留名判定移到修剪之后),
+        /// 所以少数名字会比改动前更安全,不再与旧行为逐字相同。
+        /// </para>
         /// </summary>
         /// <param name="filename">The filename to sanitize</param>
         /// <returns>A sanitized filename safe for file system use</returns>
@@ -108,19 +120,47 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return string.Empty;
             }
 
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = invalidChars.Aggregate(filename, (current, c) => current.Replace(c, '_'));
-            
-            // Also sanitize reserved names on Windows
-            var reservedNames = new[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
+            var builder = new StringBuilder(filename.Length);
+            foreach (var c in filename) {
+                builder.Append(IsPortablyInvalidFileNameChar(c) ? '_' : c);
+            }
+            var sanitized = builder.ToString();
+
+            sanitized = sanitized.Trim();
+
+            // 末尾的点在 Windows 上非法(结尾空格已由上一行的 Trim 处理)。
+            // 整串都是点则保持原样:修成空名只会让调用方产出一个隐藏文件。
+            var withoutTrailingDots = sanitized.TrimEnd('.');
+            if (withoutTrailingDots.Length > 0) {
+                sanitized = withoutTrailingDots;
+            }
+
+            // Windows 保留设备名在任意目录下都不能当文件名,且与扩展名无关 —— 故按"去掉扩展名后"判断。
+            //
+            // 必须放在 Trim / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为"非保留名",
+            // 修剪之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上一直如此,
+            // 2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
             var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
-            
-            if (reservedNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
+            if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
                 sanitized = "_" + sanitized;
             }
-            
-            return sanitized.Trim();
+
+            return sanitized;
         }
+
+        /// <summary>
+        /// 三平台非法字符的并集:控制字符(含 '\0')+ Windows 的 9 个保留字符 + POSIX 的 '/'。
+        /// 刻意写成显式判断而非查表,一眼能看出它不受运行平台影响。
+        /// </summary>
+        private static bool IsPortablyInvalidFileNameChar(char c) =>
+            c < 0x20 || c is '<' or '>' or ':' or '"' or '/' or '\\' or '|' or '?' or '*';
+
+        /// <summary>Windows 保留设备名(比较用 Ordinal,调用方先转 UpperInvariant)。</summary>
+        private static readonly HashSet<string> ReservedFileNames = new(StringComparer.Ordinal) {
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        };
 
         /// <summary>
         /// Formats a file size in bytes to a human-readable string with appropriate unit.

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KindleMate2.Devices.Posix</RootNamespace>
+    <AssemblyName>KindleMate2.Devices.Posix</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    macOS 与 Linux **共用**的设备层实现:
+      · USB 大容量存储:扫候选挂载点 + 「卷内有 documents/My Clippings.txt」内容判定
+      · MTP:经 libmtp 的 P/Invoke(2024 年及以后发布的 Kindle 只支持 MTP)
+      · 定时轮询 + 防抖监听插拔
+    卷挂在哪由各平台薄壳传入(macOS 只有 /Volumes;Linux 有 /media/<用户> 等几种)。
+
+    TFM 用中性的 net10.0:只用 BCL + 运行时动态加载 libmtp/libusb(缺失即降级),
+    因此在 Windows 的 CI 作业上也能编译 —— 与 Devices.Windows / Devices.MacOS 的既有做法一致。
+
+    这个项目刻意不做平台判定:它只是"POSIX 上怎么写",选谁由引用方决定。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 绑定是 internal,只对两个平台薄壳与测试工程开放,不暴露成公共 API -->
+    <InternalsVisibleTo Include="KindleMate2.Devices.MacOS" />
+    <InternalsVisibleTo Include="KindleMate2.Devices.Linux" />
+    <InternalsVisibleTo Include="KindleMate2.Tests" />
+  </ItemGroup>
+
+</Project>

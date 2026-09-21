@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using KindleMate2.Avalonia.Models;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Application.Models;
+using KindleMate2.Application.Services;
 using KindleMate2.Avalonia.Collections;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -319,7 +320,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <c>Error</c> 为消息(失败时)。
     /// </returns>
     public async Task<(bool Fatal, bool Ok, string Error)> PrepareDatabaseAsync() {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
 
         if (!File.Exists(databasePath)) {
             if (!DatabaseHelper.CreateDatabase(databasePath, out var exception)) {
@@ -344,10 +345,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>schema 迁移失败的告警文案(空表示无告警);由视图层弹一次提示。</summary>
     public string MigrationWarning { get; private set; } = string.Empty;
-
-    /// <summary>兼容旧调用点:进程级备份注册所需的库路径(与原版一致的固定路径)。</summary>
-    public static string DefaultDatabasePath =>
-        Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
 
     /// <summary>持久化主题选择。</summary>
     public void PersistTheme(bool dark) {
@@ -639,7 +636,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
         return Task.Run(() => {
-            var backupPath = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+            // 提示"打开文件夹"要指向**备份真正落地的那个目录**(session 的),而不是当前目录下的
+            // Backups —— 用户从文件对话框打开了别处的库时,两者不是同一个地方。
+            var backupPath = session.BackupDirectory;
             session.ExportManager.BackupDatabase();
 
             if (_allClippings.Count == 0) {
@@ -720,7 +719,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         return RunOperationAsync(() => {
             Directory.CreateDirectory(session.BackupDirectory);
-            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{DateTime.Now:yyyyMMdd_HHmmss}{Path.GetExtension(session.DatabasePath)}";
+            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
+            // 非公历日历下年份会变成 2569/1405/1448 之类,清空前的这份保底备份就读不出日期了。
+            var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
         }, true, Strings.Successful, Strings.Clear_Failed);
@@ -961,6 +963,79 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>仅取状态文案(自检用;内部复用 <see cref="ProbeDevice"/>)。</summary>
     public string ProbeDeviceStatus() => ProbeDevice().Text;
 
+    // ————————————————————————— 检查更新 —————————————————————————
+
+    /// <summary>最近一次检查发现的可用更新;null 表示没有更新(或尚未检查过)。</summary>
+    private UpdateInfo? _availableUpdate;
+
+    /// <summary>是否有可用更新 —— 主界面那个「更新」按钮的显隐依据。</summary>
+    public bool IsUpdateAvailable => _availableUpdate is not null;
+
+    /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
+    public string UpdateButtonText => _availableUpdate is null
+        ? string.Empty
+        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Available, _availableUpdate.Version);
+
+    /// <summary>当前应用版本(取自程序集,形如 <c>2026.9.17.0</c>),用于与发布页的 tag 比较。</summary>
+    public static string CurrentVersion =>
+        typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+
+    /// <summary>
+    /// 检查更新。**本方法不弹窗** —— 只把结论文本返回给调用方(菜单与按钮各自决定怎么呈现),
+    /// 有更新时顺手点亮主界面的「更新」按钮。检查失败与"已是最新"对用户是同一种结果,
+    /// 细节只进日志(见 <see cref="UpdateChecker"/>):不该因为连不上 GitHub 就弹个错误框。
+    /// </summary>
+    public async Task<string> CheckForUpdatesAsync() {
+        var info = await UpdateChecker.CheckAsync(CurrentVersion).ConfigureAwait(true);
+
+        _availableUpdate = info;
+        OnPropertyChanged(nameof(IsUpdateAvailable));
+        OnPropertyChanged(nameof(UpdateButtonText));
+
+        if (info is null) {
+            return Strings.Ui_Update_UpToDate;
+        }
+
+        // 发布页没有对本平台资产时(例如某次只发了部分平台),仍要告知有新版本,只是没有一键下载的入口
+        return info.Asset is null
+            ? $"{UpdateButtonText} —— {info.ReleaseUrl}"
+            : UpdateButtonText;
+    }
+
+    /// <summary>
+    /// 下载并启动替换脚本。返回 <c>Restart = true</c> 表示**调用方应当立即退出进程**:
+    /// 脚本正在等我们退出,退出之后它才会替换文件并重新启动。
+    ///
+    /// 之所以把"退出"留给调用方(视图)而不是在这里 <c>Environment.Exit</c>:
+    /// 进程级动作放在壳里,VM 只管业务结论 —— 与既有的「重启」菜单项一致。
+    /// </summary>
+    public async Task<(bool Restart, string Message)> DownloadAndApplyUpdateAsync() {
+        if (_availableUpdate is not { } update || update.Asset is not { } asset) {
+            return (false, Strings.Ui_Update_UpToDate);
+        }
+
+        try {
+            var progress = new Progress<double>(fraction =>
+                StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Downloading,
+                    (int)Math.Round(fraction * 100)));
+
+            var target = UpdateInstaller.TargetForCurrentPlatform();
+            var prepared = await UpdateInstaller.PrepareAsync(asset, target, progress).ConfigureAwait(true);
+
+            // 以 .app 包启动时才可能自动替换(开发期直接跑 dll 不具备这个前提)
+            var executable = Environment.ProcessPath ?? string.Empty;
+            UpdateInstaller.ApplyAndRestart(prepared, executable, Environment.ProcessId);
+
+            StatusText = Strings.Ui_Update_Restarting;
+            return (true, Strings.Ui_Update_Restarting);
+        } catch (Exception ex) {
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);   // 与本文件其它位置一致的全限定写法
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_ApplyFailed, ex.Message);
+            StatusText = message;
+            return (false, message);
+        }
+    }
+
     private bool _isDeviceConnected;
 
     /// <summary>设备是否已连接 —— 菜单栏「Kindle设备已连接」按钮的显隐依据(对齐原版 menuKindle)。</summary>
@@ -995,11 +1070,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 返回 (是否需要询问, 备份文件路径)。
     /// </summary>
     public (bool Ask, string BackupFile) CheckStartupBackup() {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
         if (!File.Exists(databasePath)) return (false, string.Empty);
         if (_allClippings.Count > 0) return (false, string.Empty);
 
-        var backupDir = Path.Combine(Environment.CurrentDirectory, AppConstants.BackupsPathName);
+        var backupDir = AppPaths.BackupsDirectory;
         if (!Directory.Exists(backupDir)) return (false, string.Empty);
 
         var backupFile = Path.Combine(backupDir, AppConstants.DatabaseFileName);
@@ -1011,7 +1086,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>从备份恢复库文件(原版为 <c>File.Copy(backup, db, true)</c>;实际生效在下次启动)。</summary>
     public void RestoreFromBackup(string backupFile) {
-        var databasePath = Path.Combine(Environment.CurrentDirectory, AppConstants.DatabaseFileName);
+        var databasePath = AppPaths.DatabasePath;
         File.Copy(backupFile, databasePath, true);
     }
 

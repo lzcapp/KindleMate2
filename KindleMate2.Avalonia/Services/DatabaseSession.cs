@@ -14,9 +14,9 @@ namespace KindleMate2.Avalonia.Services;
 /// <summary>
 /// 按「当前打开的库路径」组装 Application 层服务。
 ///
-/// 背景:<c>Application/DependencyInjection.cs</c> 把所有仓储硬编码到
-/// <c>AppConstants.ConnectionString</c>(相对路径 <c>KM2.dat</c>,随进程工作目录变化),
-/// 既不适合多库,也不适合跨平台。Avalonia 侧因此自行组装一套按路径参数化的服务,
+/// 背景:早期那套集中注册(<c>Application/DependencyInjection.cs</c>,现已删除)把所有仓储硬编码到
+/// 一条相对路径 <c>KM2.dat</c> 的连接串上 —— 实际连到哪个库取决于进程当前目录,既不适合多库,
+/// 也不适合跨平台。Avalonia 侧因此自行组装一套按路径参数化的服务,
 /// 所有导入 / 导出 / 维护 / 设备操作都作用于"当前打开的库",与 UI 语义一致。
 /// </summary>
 public sealed class DatabaseSession : IDisposable {
@@ -61,7 +61,7 @@ public sealed class DatabaseSession : IDisposable {
 
     public DatabaseSession(string databasePath) {
         DatabasePath = Path.GetFullPath(databasePath);
-        WorkDirectory = Path.GetDirectoryName(DatabasePath) ?? Environment.CurrentDirectory;
+        WorkDirectory = Path.GetDirectoryName(DatabasePath) ?? AppPaths.DataDirectory;
         ConnectionString = DatabaseHelper.GetConnectionString(DatabasePath);
 
         ImportDirectory = Path.Combine(WorkDirectory, AppConstants.ImportsPathName);
@@ -124,11 +124,28 @@ public sealed class DatabaseSession : IDisposable {
     /// <summary>
     /// 按平台创建设备管理器。独立成静态工厂的用意有二:
     /// ① 构造函数复用;② 无头自检 / CI 无需先打开数据库,就能断言当前平台选到了哪个实现。
+    ///
+    /// 四个分支与四份引用一一对应(WINDOWS / MACOS / LINUX 常量由 Avalonia.csproj 按平台与 TFM 定义):
+    /// Windows → Devices.Windows(USB 盘符 + MTP);macOS → Devices.MacOS(/Volumes);
+    /// Linux → Devices.Linux(/media 等);其余 → NullDeviceManager 兜底。
+    /// macOS 与 Linux 共用 Devices.Posix 里的实现,两者只是挂载点根不同。
     /// </summary>
+    /// <param name="workDirectory">数据目录 —— 参数保留是因为它此前用于拼版本文件路径,见下。</param>
     public static IDeviceManager CreateDeviceManager(string workDirectory) {
+        _ = workDirectory;
+
+        // 注意必须是**相对卷根**的路径:各平台实现都按「卷根 + 该路径」去读 version.txt
+        // (见 PosixDeviceManager.GetKindleVersionText 与 Windows 侧同名字段)。
+        // 这里曾经传的是 workDirectory 拼出来的**绝对路径**,而 Path.Combine 遇到绝对的第二段会
+        // 直接丢弃第一段 —— 于是"卷根 + 绝对路径"= 绝对路径,File.Exists 必然为假,
+        // 结果固件版本在本机永远读不到(且因为当时没有消费者而长期没被发现)。
+        var versionFilePath = Path.Combine(AppConstants.SystemPathName, AppConstants.VersionFileName);
 #if WINDOWS
-        return new KindleMate2.Devices.Windows.DeviceManager(
-            Path.Combine(workDirectory, AppConstants.SystemPathName, AppConstants.VersionFileName));
+        return new KindleMate2.Devices.Windows.DeviceManager(versionFilePath);
+#elif MACOS
+        return new KindleMate2.Devices.MacOS.DeviceManager(versionFilePath);
+#elif LINUX
+        return new KindleMate2.Devices.Linux.DeviceManager(versionFilePath);
 #else
         return new NullDeviceManager();
 #endif

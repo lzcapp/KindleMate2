@@ -25,9 +25,9 @@ public class KmateDatabaseServiceFactory : IKmateDatabaseServiceFactory {
     }
 
     /// <summary>
-    /// 目标库连接串由壳按「当前打开的库」传入,不再取 <c>AppConstants.ConnectionString</c>
-    /// ——那个常量写死了相对路径 <c>KM2.dat</c>,只在"cwd 恰好等于库目录"时才正确;
-    /// 一旦支持多库或库选择器,<c>KmateAtomicWriter</c> 就会往错误的库写入。
+    /// 目标库连接串由壳按「当前打开的库」传入,不再取那种写死相对路径 <c>KM2.dat</c> 的常量
+    /// ——它只在"cwd 恰好等于库目录"时才正确;一旦支持多库或库选择器,
+    /// <c>KmateAtomicWriter</c> 就会往错误的库写入。
     /// 同族的 <see cref="KmDatabaseServiceFactory"/> 一直是按路径构造的,这里补齐一致性。
     /// </summary>
     public KmateDatabaseService Create(string km3DbPath) {

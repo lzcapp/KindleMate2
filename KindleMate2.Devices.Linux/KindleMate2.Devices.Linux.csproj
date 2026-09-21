@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KindleMate2.Devices.Linux</RootNamespace>
+    <AssemblyName>KindleMate2.Devices.Linux</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    Linux 的 Kindle 设备实现。与 Devices.MacOS 对称:都只是 Devices.Posix 的薄壳,
+    差别仅在于"卷挂在哪里"(Linux 有 /media/<用户>、/run/media/<用户>、/mnt 几种)。
+
+    此前 Linux 走的是 NullDeviceManager(设备层完全不支持);现在 Linux 与 macOS 一样
+    支持 USB 大容量存储与 MTP(MTP 走 libmtp,Linux 上通常是系统自带库)。
+
+    连带必须同步的地方(漏一处 CI 变红或文档失真,详见项目 MEMORY.md 的清单):
+      · KindleMate2.Avalonia.csproj 的条件引用(IsLinuxDesktop)
+      · DatabaseSession.CreateDeviceManager() 的 #elif LINUX 分支
+      · KindleMate2.sln
+      · build.yml / release.yml 里原先断言 NullDeviceManager 的 Linux 作业
+      · README.md / README.en.md 的平台能力表述与 release.yml 的发版说明
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\KindleMate2.Application\KindleMate2.Application.csproj" />
+    <ProjectReference Include="..\KindleMate2.Devices.Posix\KindleMate2.Devices.Posix.csproj" />
+    <ProjectReference Include="..\KindleMate2.Shared\KindleMate2.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

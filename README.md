@@ -20,7 +20,7 @@
 - **macOS**：`macOS 11`（Apple Silicon）/ `macOS 10.15`（Intel）或更高 —— `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**：`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **架构**: `x86` 或 `x64` 或 `ARM64`
-- 三个平台**除 Kindle 设备同步（仅 Windows 可用）外功能完整**
+- **三个平台的 Kindle 设备同步均已支持**（USB 大容量存储 + MTP）：Windows 原生支持 MTP；macOS 包里内嵌 libmtp（见下方「第三方组件」）；Linux 走系统自带的 libmtp（见下）
 
 依赖运行时（runtime）的版本需要安装对应平台的 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)（Windows 需 Desktop Runtime）；文件名带 `_runtime` 的是**自包含**包，无需安装。macOS 只提供自包含包。
 
@@ -59,8 +59,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### 项目
 
-解决方案含 7 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
+解决方案含 8 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.MacOS` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
 壳自身的构建、运行与无头自检见 [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md)。
 
 > 早期基于 Windows Forms / WPF 的两个壳已退役。需要对照旧版行为时，可用只读 tag **`winforms-final`**
@@ -90,7 +90,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 夜间模式（深色模式）
 - [x] 语言切换（简体中文 / 繁体中文 / English）
 - [x] 搜索功能（书名 / 作者 / 内容 / 笔记）
-- [x] **跨平台**（Windows / Linux / macOS 均有发布包；非 Windows 除 Kindle 设备同步外功能完整）
+- [x] **跨平台**（Windows / Linux / macOS 均有发布包，设备同步三平台均支持 USB 大容量存储 + MTP）
 
 ## 截图
 
@@ -109,3 +109,32 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date" />
  </picture>
 </a>
+
+## 第三方组件
+
+macOS 发布包内嵌以下两个库（**均未经修改**，以动态链接方式使用），用于访问 MTP 模式的 Kindle
+（2024 年及以后发布的 Kindle —— 12 代 Paperwhite、Colorsoft、Scribe —— 在 macOS 上不会挂载为磁盘）：
+
+| 库 | 版本 | 许可证 | 用途 |
+| --- | --- | --- | --- |
+| [libmtp](https://libmtp.sourceforge.io/) | 1.1.23 | LGPL-2.1-or-later | MTP 协议实现 |
+| [libusb](https://libusb.info/) | 1.0.30 | LGPL-2.1-or-later | libmtp 的 USB 传输后端 |
+
+按 LGPL-2.1 的要求：许可证全文随包放在 `KindleMate2.app/Contents/Resources/licenses/`；
+两个库的**对应源码随同一发布页提供**（`libmtp-1.1.23.tar.gz`、`libusb-1.0.30.tar.bz2`）。
+依 LGPL-2.1 第 6b 条，你可以用自行编译的兼容版本替换 `Contents/Frameworks` 下的同名动态库
+（替换后需重新签名，ad-hoc 即可：`codesign --force --deep --sign - "/Applications/Kindle Mate 2.app"`）。
+
+构建与内嵌由 [`scripts/bundle-libmtp.sh`](scripts/bundle-libmtp.sh) 完成（从上面两个上游源码包
+构建通用二进制，一次覆盖 osx-arm64 与 osx-x64），可在本机脱离 CI 单独运行。
+
+**Linux 不内嵌这两个库**：libmtp / libusb 在绝大多数发行版里都是现成的软件包，随包再带一份
+既臃肿又要重复履行 LGPL 义务。请按发行版安装，例如：
+
+```bash
+sudo apt install libmtp9 libusb-1.0-0        # Debian / Ubuntu
+sudo dnf install libmtp libusb1              # Fedora / RHEL
+sudo pacman -S libmtp libusb                 # Arch
+```
+
+缺少时 USB 大容量存储（2024 年以前机型）照常工作，只有 MTP 机型会读不到设备，日志里会说明原因。

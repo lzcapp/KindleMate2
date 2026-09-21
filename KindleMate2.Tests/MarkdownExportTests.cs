@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Data.Sqlite;
 using Xunit;
 using KindleMate2.Application.Services.KM2DB;
@@ -100,6 +101,60 @@ public sealed class MarkdownExportTests : IDisposable {
     }
 
     [Fact]
+    public void ClippingsToMarkdown_BookNameWithIllegalChars_FileNameIsPortable() {
+        // 上一条只要求"能产出文件" —— 在 macOS 上含 ':' '?' '*' 的名字也写得出来,所以它放过了这个缺陷。
+        // 这条进一步要求产出的文件名**不含任何 Windows 非法字符**:导出目录常被拷到 Windows / SMB 共享,
+        // 而净化用的字符集此前取自 Path.GetInvalidFileNameChars(),在 macOS 上只有 '\0' 与 '/'。
+        const string book = "非法:书名*?<>|\"\\ 与 / 分隔符";
+        SeedClipping("k1", "内容一", book: book);
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, book));
+
+        var name = Path.GetFileNameWithoutExtension(Directory.GetFiles(outDir, "*.md").Single());
+        Assert.DoesNotContain(name, c => "<>:\"/\\|?*".Contains(c) || char.IsControl(c));
+        Assert.False(name.EndsWith('.'));
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_AllBooks_TableOfContentsLinksToRealHeadingIds() {
+        // 这条用例守的是**第三方 TOC 扩展**那条路径,此前整个套件没有一条用例碰它
+        // (全项目搜 "toc" 在测试目录下零命中),而它恰恰是 Markdig 升级时最容易坏的地方:
+        //
+        //   ① HTML 目录由 Leisn.MarkdigToc 生成(UseTableOfContent,见 ClippingService/LookupService);
+        //   ② 该包 0.1.3 是 2021 年发布的,针对 Markdig **0.26.0** 编译;
+        //   ③ 它自己的 nuspec 只写 `Markdig version="0.26.0"` —— NuGet 语义下这是"≥0.26.0、
+        //      无上限",所以 Markdig 一路升到 1.4.0 会被**静默接受**,还原阶段连警告都没有;
+        //   ④ 它的扩展方法偏偏挂在 `Markdig` 命名空间下(`Markdig.TocExtensions.UseTableOfContent`),
+        //      源码上 `using Markdig;` 就能调 —— 完全看不出跨了包边界,也不会编译失败。
+        //
+        // 于是"升级后 260 例全绿"对这条路径不构成证据:坏掉的表现是**运行时不产出目录**
+        // (或目录锚点对不上标题),而不是编译报错。这条用例把那层证据补上。
+        //
+        // 只断言"目录存在、且锚点能对上真实标题 id"这一结构性事实,不钉具体排版:
+        // 将来换成手写目录、或插件改了引号风格,都不该让这条红。
+        SeedClipping("k1", "内容一", book: "深度工作");
+        SeedClipping("k2", "内容二", book: "人类简史");
+        var outDir = Path.Combine(_dir, "out");
+
+        // [TOC] 标记只在"全部书籍"分支写入(单本导出没有),所以这里刻意不传 bookName。
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir));
+
+        var html = File.ReadAllText(Directory.GetFiles(outDir, "*.html").Single());
+
+        // ① 目录容器在(插件被换掉/失效时最直接的信号)
+        Assert.Contains("<nav", html, StringComparison.Ordinal);
+
+        // ② 标题 id 与目录锚点都要有,且两者有交集 —— 即"目录真的链到了标题",而不是各写各的。
+        //    引号两种风格都收:插件当前输出单引号(`href='#books'`),手写实现多半是双引号。
+        var headingIds = ExtractCaptures(html, "<h[1-6] id=[\"']([^\"']+)[\"']");
+        var tocTargets = ExtractCaptures(html, "<a href=[\"']#([^\"']+)[\"']");
+        Assert.NotEmpty(headingIds);
+        Assert.NotEmpty(tocTargets);
+        Assert.NotEmpty(headingIds.Intersect(tocTargets));
+    }
+
+    [Fact]
     public void ClippingsToMarkdown_OnEmptyDatabase_StillWritesFiles() {
         var outDir = Path.Combine(_dir, "out");
 
@@ -156,4 +211,8 @@ public sealed class MarkdownExportTests : IDisposable {
             Timestamp = "1",
         });
     }
+
+    /// <summary>取出正则第一个捕获组的所有匹配值。</summary>
+    private static HashSet<string> ExtractCaptures(string input, string pattern) =>
+        Regex.Matches(input, pattern).Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
 }

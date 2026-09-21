@@ -20,7 +20,7 @@
 - **macOS**: `macOS 11` (Apple Silicon) / `macOS 10.15` (Intel) or later — `KindleMate2_macos-{arm64,x64}.dmg`
 - **Linux**: `KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz`
 - **Architecture**: `x86` or `x64` or `ARM64`
-- **Feature complete on all three platforms** except Kindle device sync (Windows only)
+- **Kindle device sync is supported on all three platforms** (USB mass storage + MTP): Windows natively, macOS with a bundled libmtp (see "Third-party components"), Linux with the system's libmtp (see below)
 
 The runtime-dependent builds require the platform's [.NET 10 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Desktop Runtime on Windows); builds with the `_runtime` suffix are **self-contained** and need no runtime installation. macOS ships self-contained only.
 
@@ -61,8 +61,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### Projects
 
-The solution contains 7 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
+The solution contains 8 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.MacOS` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
 layering, and [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md) for building, running
 and the headless self-checks.
 
@@ -89,7 +89,7 @@ and the headless self-checks.
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch (简体中文 / 繁體中文 / English)
 - [x] Search Function (book / author / content / note)
-- [x] **Cross-platform** (official packages for Windows / Linux / macOS; everything but device sync outside Windows)
+- [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync supports USB mass storage + MTP on all three)
 
 ## Screenshots
 
@@ -108,3 +108,37 @@ and the headless self-checks.
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lzcapp/KindleMate2&type=Date" />
  </picture>
 </a>
+
+## Third-party components
+
+The macOS package bundles the following libraries (**unmodified**, dynamically linked) to talk to Kindles
+in MTP mode (Kindles released in 2024 and later — 12th-gen Paperwhite, Colorsoft, Scribe — do not mount as
+a disk on macOS):
+
+| Library | Version | License | Purpose |
+| --- | --- | --- | --- |
+| [libmtp](https://libmtp.sourceforge.io/) | 1.1.23 | LGPL-2.1-or-later | MTP implementation |
+| [libusb](https://libusb.info/) | 1.0.30 | LGPL-2.1-or-later | USB transport used by libmtp |
+
+As required by LGPL-2.1: the full license texts ship inside the bundle at
+`KindleMate2.app/Contents/Resources/licenses/`, and the **corresponding sources are published on the same
+release page** (`libmtp-1.1.23.tar.gz`, `libusb-1.0.30.tar.bz2`). Under LGPL-2.1 clause 6b you may replace
+the dylibs in `Contents/Frameworks` with your own compatible builds (re-sign afterwards with an ad-hoc
+signature: `codesign --force --deep --sign - "/Applications/Kindle Mate 2.app"`).
+
+Building and bundling is done by [`scripts/bundle-libmtp.sh`](scripts/bundle-libmtp.sh) (builds universal
+binaries from the upstream sources above, covering both osx-arm64 and osx-x64) and can be run locally
+outside CI.
+
+**Linux does not bundle these libraries**: libmtp / libusb are available as distribution packages, and
+shipping another copy would both bloat the package and duplicate the LGPL obligations. Install them from
+your distribution instead:
+
+```bash
+sudo apt install libmtp9 libusb-1.0-0        # Debian / Ubuntu
+sudo dnf install libmtp libusb1              # Fedora / RHEL
+sudo pacman -S libmtp libusb                 # Arch
+```
+
+Without them, USB mass storage (pre-2024 Kindles) still works; only MTP devices will be unavailable, and
+the reason is written to the log.

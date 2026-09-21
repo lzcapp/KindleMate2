@@ -56,7 +56,8 @@ jobs:
 
       # 实跑发布产物:验证 apphost、SQLite 原生库、卫星资源与平台设备实现都随发布产物一起
       # 落地 —— 也就是 release 真正交付的那个形态(上面各步验的是 obj/bin 里的中间产物)。
-      # Windows 上设备实现应为 Devices.Windows.DeviceManager(非 Windows 才是 NullDeviceManager)。
+      # Windows 上设备实现应为 Devices.Windows.DeviceManager(macOS/Linux 各有自己的实现,只有
+      # 三者之外的平台才落到 NullDeviceManager)。
       # shell 必须用 bash:pwsh 调用 GUI 子系统(WinExe)不会等待进程退出,断言会读到空文件。
       - name: Boot self-check (published)
         shell: bash
@@ -106,7 +107,7 @@ jobs:
         run: dotnet test KindleMate2.Tests/KindleMate2.Tests.csproj -c Release --no-build --no-restore
 
       # 实跑一次自检:验证应用能启动、SQLite 原生库可用、系统文案资源可解析,
-      # 且平台设备实现按预期降级为 NullDeviceManager。
+      # 且平台设备实现按预期选中(Windows 之外为 Devices.MacOS / Devices.Linux)。
       - name: Boot self-check
         shell: bash
         run: |
@@ -116,5 +117,28 @@ jobs:
           dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.Avalonia.dll \
             --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
-          grep -q "NullDeviceManager" "$work/smoke.txt"
-          echo "cross-platform boot check passed on ${{ matrix.os }}"
+          # 断言当前平台选到了预期实现:macOS 走 Devices.MacOS(/Volumes),Linux 走 Devices.Linux
+          # (/media 等候选挂载根)。两者共用 Devices.Posix 里的实现,只是薄壳不同。
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            expect="Devices.MacOS.DeviceManager"
+          else
+            expect="Devices.Linux.DeviceManager"
+          fi
+          grep -q "$expect" "$work/smoke.txt"
+          echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
+
+      # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是
+      # 相对路径 —— 脚本中途 `cd` 进构建目录后,相对路径会被**相对新 cwd 再解析一次**,
+      # 于是 `cd "$BUILD_DIR/$LIBUSB_SRC"` 变成 build/libmtp/build/libmtp/libusb-…,
+      # 必然 "No such file or directory"。这个缺陷在本机人工演练时看不出来(手打命令
+      # 惯用绝对路径),只在发版作业上才现形 —— 所以需要在这里提前拦住。
+      # 成本近零:自检不解包、不下载、不编译,只断言路径已在 cd 之前锚定为绝对路径。
+      - name: Bundle script path check
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 仅为满足脚本的 .app 形态检查;自检模式不会往里写任何东西。
+          mkdir -p build/KindleMate2.app/Contents
+          BUNDLE_LIBMTP_CHECK_PATHS=1 \
+            bash scripts/bundle-libmtp.sh build/KindleMate2.app --arch universal --build-dir build/libmtp
