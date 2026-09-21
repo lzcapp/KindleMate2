@@ -114,7 +114,16 @@
       <Border Grid.Row="2" Background="{DynamicResource KmSurfaceBrush}" BorderBrush="{DynamicResource KmBorderBrush}"
               BorderThickness="0.5" CornerRadius="10" Padding="14,12">
         <Grid RowDefinitions="Auto,*" RowSpacing="8">
-          <TextBlock Grid.Row="0" Text="{x:Static shared:Strings.Ui_Stats_Calendar}" FontSize="12" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{x:Static shared:Strings.Ui_Stats_Calendar}" FontSize="12"
+                       Foreground="{DynamicResource KmTextSecondaryBrush}" VerticalAlignment="Center" />
+            <!-- 年份选择器:条目来自当前数据域里真正出现过的年份(见 StatisticsWindow.RefreshCalendar),
+                 只有一年数据时整条隐藏 —— 单项下拉框没有意义,还会白占标题行的位置。
+                 高度压到 26 是为了不把下方的热力图挤扁(全局 ComboBox 样式是 MinHeight 30)。 -->
+            <ComboBox Grid.Column="1" x:Name="CalendarYearBox" MinWidth="76" MinHeight="26" Height="26"
+                      Padding="8,2" FontSize="12" VerticalAlignment="Center" IsVisible="False"
+                      SelectionChanged="OnCalendarYearChanged" />
+          </Grid>
           <charts:ChartControl Grid.Row="1" x:Name="CalendarChart" Kind="Heatmap"
                                Accent="{DynamicResource KmAccentBrush}"
                                Axis="{DynamicResource KmBorderBrush}"

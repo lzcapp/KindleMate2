@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using KindleMate2.Shared.Charts;
 
 namespace KindleMate2.Avalonia.Charts;
 
@@ -26,7 +27,9 @@ public enum ChartKind {
 
     /// <summary>
     /// 年历热力图 —— 给「日期 × 密度」用。<see cref="Points"/> 的 Label 必须是 <c>yyyy-MM-dd</c>;
-    /// 以数据最大日期为终点、向前 52 周绘制滚动一年,格子颜色按数值分五档取强调色透明度。
+    /// 列 = 周、行 = 星期(周一起),格子颜色按数值分五档取强调色透明度。
+    /// 区间由 <see cref="ChartControl.HeatmapYear"/> 决定:指定年份画整个自然年(1/1 – 12/31),
+    /// 不给年份则退回「以数据最大日期为终点向前 52 周」的滚动窗口。
     /// </summary>
     Heatmap
 }
@@ -55,8 +58,14 @@ public sealed class ChartControl : Control {
     public static readonly StyledProperty<IBrush?> LabelProperty =
         AvaloniaProperty.Register<ChartControl, IBrush?>(nameof(Label));
 
+    /// <summary>
+    /// 年历热力图要画的年份。非 null 时画整个自然年;null(默认)时保持「最近 52 周」的滚动窗口。
+    /// </summary>
+    public static readonly StyledProperty<int?> HeatmapYearProperty =
+        AvaloniaProperty.Register<ChartControl, int?>(nameof(HeatmapYear));
+
     static ChartControl() {
-        AffectsRender<ChartControl>(PointsProperty, KindProperty, AccentProperty, AxisProperty, LabelProperty);
+        AffectsRender<ChartControl>(PointsProperty, KindProperty, AccentProperty, AxisProperty, LabelProperty, HeatmapYearProperty);
     }
 
     public IReadOnlyList<ChartPoint>? Points {
@@ -82,6 +91,19 @@ public sealed class ChartControl : Control {
     public IBrush? Label {
         get => GetValue(LabelProperty);
         set => SetValue(LabelProperty, value);
+    }
+
+    /// <inheritdoc cref="HeatmapYearProperty"/>
+    public int? HeatmapYear {
+        get => GetValue(HeatmapYearProperty);
+        set => SetValue(HeatmapYearProperty, value);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
+        base.OnPropertyChanged(change);
+        // 换了年份,上一帧记录的悬停下标就失效了 —— 它指向的那天可能已不在当前年份里,
+        // 浮层会挂着一个图上根本没画出来的日期。清掉,等指针再动时重新命中。
+        if (change.Property == HeatmapYearProperty) _hoverIndex = -1;
     }
 
     public override void Render(DrawingContext context) {
@@ -132,7 +154,7 @@ public sealed class ChartControl : Control {
 
         // 年历热力图同样不走直角坐标系:格子按「周 × 星期」排布
         if (Kind == ChartKind.Heatmap) {
-            DrawHeatmap(context, points, padLeft, padTop, plotWidth, plotHeight, accent, labelBrush);
+            DrawHeatmap(context, points, HeatmapYear, padLeft, padTop, plotWidth, plotHeight, accent, labelBrush);
             return;
         }
 
@@ -191,9 +213,6 @@ public sealed class ChartControl : Control {
 
     /// <summary>环形 / 热力图共用的透明度阶梯 —— 只用一个强调色,靠 alpha 分档,不引入第二色系。</summary>
     private static readonly double[] RampAlpha = [1.0, 0.72, 0.48, 0.30, 0.18];
-
-    /// <summary>热力图滚动窗口:最近 52 周。</summary>
-    private const int HeatWeeks = 52;
 
     /// <summary>
     /// 环形图。扇区按 <see cref="RampAlpha"/> 取强调色透明度区分,右侧图例给出色块 / 标签 / 百分比,
@@ -288,10 +307,11 @@ public sealed class ChartControl : Control {
     }
 
     /// <summary>
-    /// 年历热力图:以数据最大日期为终点向前 52 周的滚动窗口,列 = 周、行 = 星期(周一起)。
-    /// 强调色分五档表示密度,顶部标月份、左侧隔行标星期。
+    /// 年历热力图。列 = 周、行 = 星期(周一起),强调色分五档表示密度,顶部标月份、左侧隔行标星期。
+    /// 区间取 <paramref name="year"/> 指定的自然年;为 null 时退回「以数据最大日期为终点向前 52 周」的滚动窗口。
+    /// 几何一律由 <see cref="CalendarHeatmap.BuildGrid"/> 给出 —— 与命中测试同源,不在这里另算一套。
     /// </summary>
-    private static void DrawHeatmap(DrawingContext context, IReadOnlyList<ChartPoint> points,
+    private static void DrawHeatmap(DrawingContext context, IReadOnlyList<ChartPoint> points, int? year,
         double padLeft, double padTop, double plotWidth, double plotHeight, IBrush accent, IBrush labelBrush) {
         var dated = ParseDated(points, out var maxDate);
         if (dated.Count == 0) {
@@ -299,16 +319,9 @@ public sealed class ChartControl : Control {
             return;
         }
 
-        var end = maxDate.Date;
-        var start = end.AddDays(-(HeatWeeks * 7 - 1));
-        start = start.AddDays(-(((int)start.DayOfWeek + 6) % 7));
-        var weeks = (int)((end - start).TotalDays / 7) + 1;
-
-        const double monthLabelHeight = 12;
-        const double weekdayLabelWidth = 16;
-        var cell = Math.Min((plotWidth - weekdayLabelWidth) / weeks, (plotHeight - monthLabelHeight) / 7);
-        if (cell < 2) return;
-        var gap = Math.Max(1, cell * 0.14);
+        var grid = CalendarHeatmap.BuildGrid(maxDate, year, padLeft, padTop, plotWidth, plotHeight);
+        if (!grid.IsDrawable) return;
+        var gap = Math.Max(1, grid.Cell * 0.14);
 
         var max = 0d;
         foreach (var item in dated) {
@@ -316,49 +329,46 @@ public sealed class ChartControl : Control {
         }
         if (max <= 0) max = 1;
 
-        var originX = padLeft + weekdayLabelWidth;
-        var originY = padTop + monthLabelHeight;
-
         // 左侧星期标签:隔行标一次,避免糊成一片
         var dayNames = CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedDayNames;
         for (var row = 0; row < 7; row += 2) {
-            DrawText(context, dayNames[(row + 1) % 7], padLeft, originY + row * cell + cell / 2 - 6, labelBrush);
+            DrawText(context, dayNames[(row + 1) % 7], padLeft,
+                grid.OriginY + row * grid.Cell + grid.Cell / 2 - 6, labelBrush);
         }
 
-        // 顶部月份标签:该周含有 1 号就标一次
+        // 顶部月份标签:该周含有本月 1 号就标一次。
+        // 越界的日子不参与 —— 自然年模式下首列可能落在上一年 12 月,末列可能落到下一年 1 月,
+        // 不加这道判断就会在年初之前、年末之后各多标出一个月份。
         var monthNames = CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedMonthNames;
         var lastMonth = -1;
-        for (var col = 0; col < weeks; col++) {
-            var weekStart = start.AddDays(col * 7);
+        for (var col = 0; col < grid.Weeks; col++) {
+            var weekStart = grid.GridStart.AddDays(col * 7);
             for (var day = 0; day < 7; day++) {
                 var date = weekStart.AddDays(day);
-                if (date.Day != 1 || date.Month == lastMonth) continue;
+                if (!grid.Contains(date) || date.Day != 1 || date.Month == lastMonth) continue;
                 lastMonth = date.Month;
-                DrawText(context, monthNames[date.Month - 1], originX + col * cell, padTop, labelBrush);
+                DrawText(context, monthNames[date.Month - 1], grid.OriginX + col * grid.Cell, padTop, labelBrush);
                 break;
             }
         }
 
         foreach (var (date, value) in dated) {
-            if (date < start || date > end) continue;
-            var col = (int)((date - start).TotalDays / 7);
-            var row = ((int)date.DayOfWeek + 6) % 7;
+            if (!grid.Contains(date)) continue;
             var rect = new Rect(
-                originX + col * cell + gap / 2,
-                originY + row * cell + gap / 2,
-                Math.Max(1, cell - gap),
-                Math.Max(1, cell - gap));
+                grid.OriginX + grid.ColumnOf(date) * grid.Cell + gap / 2,
+                grid.OriginY + CalendarHeatmapGrid.RowOf(date) * grid.Cell + gap / 2,
+                Math.Max(1, grid.Cell - gap),
+                Math.Max(1, grid.Cell - gap));
             context.DrawRectangle(new SolidColorBrush(AlphaOf(accent, DensityLevel(value, max))), null, rect, 1.5, 1.5);
         }
     }
 
-    /// <summary>把 <c>yyyy-MM-dd</c> 标签解析成日期;同时给出最大日期作为热力图右端。</summary>
+    /// <summary>把 <c>yyyy-MM-dd</c> 标签解析成日期;同时给出最大日期,供滚动窗口定位右端。</summary>
     private static List<(DateTime Date, double Value)> ParseDated(IReadOnlyList<ChartPoint> points, out DateTime maxDate) {
         var dated = new List<(DateTime, double)>(points.Count);
         maxDate = DateTime.MinValue;
         foreach (var point in points) {
-            if (!DateTime.TryParseExact(point.Label, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                    DateTimeStyles.None, out var date)) {
+            if (!CalendarHeatmap.TryParseDay(point.Label, out var date)) {
                 continue;
             }
             dated.Add((date.Date, point.Value));
@@ -545,22 +555,21 @@ public sealed class ChartControl : Control {
                 var dated = ParseDated(points, out var maxDate);
                 if (dated.Count == 0) return -1;
 
-                var end = maxDate.Date;
-                var start = end.AddDays(-(HeatWeeks * 7 - 1));
-                start = start.AddDays(-(((int)start.DayOfWeek + 6) % 7));
-                var weeks = (int)((end - start).TotalDays / 7) + 1;
-                var cell = Math.Min((plotWidth - 16) / weeks, (plotHeight - 12) / 7);
-                if (cell < 2) return -1;
+                var grid = CalendarHeatmap.BuildGrid(maxDate, HeatmapYear, padLeft, padTop, plotWidth, plotHeight);
+                if (!grid.IsDrawable) return -1;
 
-                var col = (int)((position.X - (padLeft + 16)) / cell);
-                var row = (int)((position.Y - (padTop + 12)) / cell);
-                if (col < 0 || col >= weeks || row < 0 || row >= 7) return -1;
+                // 用 Floor 而不是截断:指针落在绘图区左侧时,截断会把 -0.4 变成第 0 列,凭空命中
+                var col = (int)Math.Floor((position.X - grid.OriginX) / grid.Cell);
+                var row = (int)Math.Floor((position.Y - grid.OriginY) / grid.Cell);
+                if (col < 0 || col >= grid.Weeks || row < 0 || row >= 7) return -1;
 
-                var date = start.AddDays(col * 7 + row);
+                // 首/末列里属于邻年的日子不参与绘制,自然也不该响应悬停
+                var date = grid.DateAt(col, row);
+                if (!grid.Contains(date)) return -1;
+
+                var dayLabel = CalendarHeatmap.FormatDay(date);
                 for (var i = 0; i < points.Count; i++) {
-                    if (string.Equals(points[i].Label, date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), StringComparison.Ordinal)) {
-                        return i;
-                    }
+                    if (string.Equals(points[i].Label, dayLabel, StringComparison.Ordinal)) return i;
                 }
                 return -1;
             }

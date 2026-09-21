@@ -24,6 +24,16 @@ public partial class StatisticsWindow : Window {
     private StatisticsViewModel _vm = new();
     private bool _showClippings = true;
 
+    /// <summary>年历热力图选中的年份。两个数据域的年份区间不同,各记一份 —— 来回切域不会把挑好的年份弄丢。</summary>
+    private int? _clippingsYear;
+    private int? _vocabsYear;
+
+    /// <summary>
+    /// 程序化改写 <c>CalendarYearBox.SelectedItem</c> 时也会走 <c>SelectionChanged</c>,
+    /// 用它挡住那次回环,免得把"因为数据换了域而重设"误当成用户选择。
+    /// </summary>
+    private bool _syncingYear;
+
     public StatisticsWindow() {
         InitializeComponent();
     }
@@ -49,7 +59,7 @@ public partial class StatisticsWindow : Window {
             CompositionTitle.Text = Strings.Ui_Stats_ByType;
             TopChart.Points = vm.TopBooks;
             TopTitle.Text = Strings.Ui_Stats_TopBooks;
-            CalendarChart.Points = vm.ClippingsCalendar;
+            RefreshCalendar(vm.ClippingsCalendar, clippings: true);
             SummaryText.Text = vm.ClippingSummary;
         } else {
             DateChart.Points = vm.VocabsByDate;
@@ -59,7 +69,7 @@ public partial class StatisticsWindow : Window {
             CompositionTitle.Text = Strings.Ui_Stats_ByFrequency;
             TopChart.Points = vm.TopWords;
             TopTitle.Text = Strings.Ui_Stats_TopWords;
-            CalendarChart.Points = vm.VocabsCalendar;
+            RefreshCalendar(vm.VocabsCalendar, clippings: false);
             SummaryText.Text = vm.VocabSummary;
         }
 
@@ -69,6 +79,42 @@ public partial class StatisticsWindow : Window {
 
         SetActive(TabClippings, _showClippings);
         SetActive(TabVocabs, !_showClippings);
+    }
+
+    /// <summary>
+    /// 刷新年历热力图与它的年份选择器。
+    ///
+    /// 可选年份来自当前数据域里**真正出现过**的年份(降序),所以标注域与生词域各是各的 ——
+    /// 换域时若沿用上一域的年份,就会指向一个本域根本没有的年份,热力图会整片空白。
+    /// 只有一年数据时不显示选择器:单项下拉框没有意义,还会白占标题行的位置。
+    /// </summary>
+    private void RefreshCalendar(IReadOnlyList<ChartPoint> calendar, bool clippings) {
+        var years = StatisticsViewModel.CalendarYears(calendar);
+
+        var selected = clippings ? _clippingsYear : _vocabsYear;
+        if (selected == null || !years.Contains(selected.Value)) {
+            selected = years.Count > 0 ? years[0] : null;
+        }
+        if (clippings) _clippingsYear = selected; else _vocabsYear = selected;
+
+        // 先换条目再定选中值,否则 SelectedItem 会短暂落在一个已不存在的条目上而被清成 null
+        _syncingYear = true;
+        CalendarYearBox.ItemsSource = years;
+        CalendarYearBox.SelectedItem = selected;
+        CalendarYearBox.IsVisible = years.Count > 1;
+        _syncingYear = false;
+
+        CalendarChart.Points = calendar;
+        CalendarChart.HeatmapYear = selected;
+    }
+
+    /// <summary>用户换了年份 —— 数据不动,只让热力图改画那一年(几何由 ChartControl 自己算)。</summary>
+    private void OnCalendarYearChanged(object? sender, SelectionChangedEventArgs e) {
+        if (_syncingYear) return;
+
+        var year = CalendarYearBox.SelectedItem as int?;
+        if (_showClippings) _clippingsYear = year; else _vocabsYear = year;
+        CalendarChart.HeatmapYear = year;
     }
 
     private static void SetActive(Button button, bool active) {

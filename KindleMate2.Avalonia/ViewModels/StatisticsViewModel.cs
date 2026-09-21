@@ -6,6 +6,7 @@ using KindleMate2.Avalonia.Charts;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
+using KindleMate2.Shared.Charts;
 
 namespace KindleMate2.Avalonia.ViewModels;
 
@@ -42,8 +43,9 @@ public sealed class StatisticsViewModel {
     public IReadOnlyList<ChartPoint> VocabFrequencyBuckets { get; private init; } = Array.Empty<ChartPoint>();
 
     /// <summary>
-    /// 年历热力图数据。Label **固定**用不变文化的 <c>yyyy-MM-dd</c> ——
+    /// 年历热力图数据。Label **固定**用不变文化的 <c>yyyy-MM-dd</c>(<see cref="CalendarHeatmap.DayLabelFormat"/>)——
     /// <c>ChartControl</c> 的 Heatmap 分支按这个格式解析日期,改格式会让热力图画不出来。
+    /// 这里是**全区间**数据(含往年),具体画哪一年由统计页的年份选择器交给 <c>ChartControl.HeatmapYear</c> 决定。
     /// </summary>
     public IReadOnlyList<ChartPoint> ClippingsCalendar { get; private init; } = Array.Empty<ChartPoint>();
 
@@ -185,14 +187,24 @@ public sealed class StatisticsViewModel {
     }
 
     /// <summary>
-    /// 年历热力图数据:按日聚合。标签**必须**是不变文化的 <c>yyyy-MM-dd</c> ——
+    /// 年历热力图数据:按日聚合。标签**必须**是不变文化的 <c>yyyy-MM-dd</c>(<see cref="CalendarHeatmap.DayLabelFormat"/>)——
     /// 热力图那一侧按这个格式反解日期,换成 CurrentCulture 的写法(某些区域会用别的分隔符)就会画不出来。
     /// </summary>
     private static IReadOnlyList<ChartPoint> ByCalendarDay(IEnumerable<DateTime> dates) =>
         dates.GroupBy(d => new DateTime(d.Year, d.Month, d.Day))
             .OrderBy(g => g.Key)
-            .Select(g => new ChartPoint(g.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), g.Count()))
+            .Select(g => new ChartPoint(CalendarHeatmap.FormatDay(g.Key), g.Count()))
             .ToList();
+
+    /// <summary>
+    /// 年历热力图可选的年份(降序,最新的在最前)。
+    ///
+    /// 年份直接**从图上的日标签里读出来**,而不是另算一份 —— 否则一旦两边算法有出入,
+    /// 就会出现「下拉里有 2024、图上却按 2026 的区间画」这种自相矛盾的空图。
+    /// 同一个方法对标注域与生词域都适用(两者的日期区间本来就不一样)。
+    /// </summary>
+    public static IReadOnlyList<int> CalendarYears(IReadOnlyList<ChartPoint> calendar) =>
+        CalendarHeatmap.YearsOf(calendar.Select(point => point.Label));
 
     private static DateTime? ParseDate(string? field) {
         if (string.IsNullOrWhiteSpace(field)) return null;
