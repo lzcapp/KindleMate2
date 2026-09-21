@@ -60,7 +60,14 @@ public sealed class KindleUsbProbeTests {
         //(Linux / macOS 上系统自带)会把它的路径写进去,让 MtpInterop.IsAvailable()
         //(判断的是 libmtp)误判为可用,调用方随后在 LIBMTP_Init 上撞 DllNotFoundException。
         // CI 上 ubuntu 与 macOS 两个作业正是这么红的(Windows 没有 POSIX 库反而没事)。
-        _ = KindleUsbProbe.TryFindKindle(out _);   // 先让 libusb 走一遍解析
+        //
+        // ⚠ 本用例**不能**断言"两个记录都非空":Windows 上既没有 libmtp 也没有 libusb,
+        // 它们本来就都是 null —— 初版写成了 `Assert.NotEqual(libmtpPath, libusbPath)`,
+        // 于是同一个提交 ubuntu/macOS 全绿、只有 Windows 假红(两个 null 被判为相等)。
+        // 与平台无关的判据只有一条:**libusb 的加载不得出现在 libmtp 的记录里**。
+        // 注意各测试类是并行跑的,别的类可能已合法加载 libmtp,所以只做"不等"比较,
+        // 不假定 libmtp 此刻一定未被加载。
+        _ = KindleUsbProbe.TryFindKindle(out _);   // 只走 libusb,不会碰 libmtp
 
         var libmtpPath = MtpInterop.LoadedPath;
         var libusbPath = MtpInterop.LibusbLoadedPath;
@@ -74,8 +81,12 @@ public sealed class KindleUsbProbeTests {
             Assert.Contains("libusb", Path.GetFileName(libusbPath), StringComparison.OrdinalIgnoreCase);
         }
 
-        // 更直接:两者绝不可能解析到同一个文件
-        Assert.NotEqual(libmtpPath, libusbPath);
+        // 关键断言:刚枚举过 libusb,libmtp 的记录绝不该变成 libusb 的路径。
+        // 共用字段时这里必然相等 —— 也正因如此,这条只在 libusb 真的加载成功时有意义
+        //(Windows 上 libusbPath 为 null,跳过:那条路径根本不存在污染源)。
+        if (libusbPath is not null) {
+            Assert.NotEqual(libusbPath, libmtpPath);
+        }
     }
 
     [Fact]
