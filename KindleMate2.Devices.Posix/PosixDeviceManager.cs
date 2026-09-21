@@ -147,7 +147,7 @@ public class PosixDeviceManager : IDeviceManager {
         } catch (OperationCanceledException) {
             // Dispose 取消轮询,属正常退出路径
         } catch (Exception ex) {
-            AppLog.Write($"[MacOSDeviceManager.PollLoop] {ex}");
+            AppLog.Write($"[PosixDeviceManager.PollLoop] {ex}");
         }
     }
 
@@ -175,14 +175,15 @@ public class PosixDeviceManager : IDeviceManager {
             // 事件在锁外触发:订阅方可能回到 UI 线程,持锁调用有死锁风险。
             ConnectionChanged?.Invoke(connected);
         } catch (Exception ex) {
-            AppLog.Write($"[MacOSDeviceManager.OnDebounceTimerElapsed] {ex}");
+            AppLog.Write($"[PosixDeviceManager.OnDebounceTimerElapsed] {ex}");
         }
     }
 
     public bool IsKindleConnected() {
         lock (_lockObj) {
             try {
-                // ① 先找 USB 大容量存储卷(2024 年以前的机型,挂在 /Volumes 下)
+                // ① 先找 USB 大容量存储卷(2024 年以前的机型,卷挂在候选挂载点根下 —— macOS 是
+                //    /Volumes,Linux 见各薄壳的 DefaultVolumeRoots)
                 if (HandleUsbDevice()) {
                     return true;
                 }
