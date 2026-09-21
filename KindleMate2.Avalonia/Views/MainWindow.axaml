@@ -77,6 +77,8 @@
               <Separator />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportMarkdown}" Click="OnMenuExportMarkdown" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_CleanDatabase}" Click="OnMenuCleanDb" />
+              <!-- 与上面那条是两件事:清理数据库动行数,清洗标注文本只改首尾标点(2026-09-21 新增) -->
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_CleanClippingText}" Click="OnMenuCleanClipping" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_RebuildDatabase}" Click="OnMenuRebuildDb" />
               <MenuItem Header="{x:Static shared:Strings.Backup}" Click="OnMenuBackup" />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ClearData}" Click="OnMenuDeleteAll" />

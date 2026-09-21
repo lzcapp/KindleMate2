@@ -6,6 +6,7 @@ using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Application.Models;
 using KindleMate2.Shared;
+using KindleMate2.Shared.Clippings;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Diagnostics;
 
@@ -71,7 +72,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                     { AppConstants.InsertedCount, insertedCount.ToString() },
                     { AppConstants.SkippedDateCount, skipCounts.DateFailed.ToString() },
                     { AppConstants.SkippedPageCount, skipCounts.PageFailed.ToString() },
-                    { AppConstants.SkippedLimitCount, skipCounts.LimitReached.ToString() }
+                    { AppConstants.SkippedLimitCount, skipCounts.LimitReached.ToString() },
+                    // 复用先前定义却一直没人用的 TrimmedCount:语义就是"首尾被修剪掉的条数"。
+                    { AppConstants.TrimmedCount, skipCounts.CleanedNoise.ToString() }
                 };
                 return true;
             } catch (Exception e) {
@@ -124,10 +127,119 @@ namespace KindleMate2.Application.Services.KM2DB {
             }
         }
 
+        /// <summary>
+        /// **只读**扫描一遍,算出"清洗会改掉哪些条目" —— 不写任何东西。
+        /// 确认框要先把改了多少条、都改成什么样摆给用户看,所以写入前必须有这一步。
+        /// 与 <see cref="CleanClippingTexts"/> 共用同一段判定(<see cref="ComputeCleanChanges"/>),
+        /// 于是"看到的"与"实际改的"不可能对不上。
+        /// </summary>
+        public bool ScanClippingClean(out ClippingCleanReport report,
+            IProgress<OperationProgress>? progress = null) {
+            try {
+                var pairs = ComputeCleanChanges(progress, out var scanned, out var allPunctuation);
+                report = new ClippingCleanReport {
+                    Scanned = scanned,
+                    ChangedCount = pairs.Count,
+                    AllPunctuationCount = allPunctuation,
+                    Changes = pairs
+                        .Select(p => new ClippingCleanChange(p.Clipping.Key, p.Clipping.BookName ?? string.Empty, p.Before, p.After))
+                        .ToList()
+                };
+                return true;
+            } catch (Exception e) {
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(ScanClippingClean), e));
+                report = new ClippingCleanReport();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 批量清洗已入库标注的首尾标点。
+        ///
+        /// 只改 <c>clippings.content</c>,**不回写** <c>original_clipping_lines.line4</c>。
+        ///
+        /// 之所以可以不回写:「重建数据库」会拿 line4 当 content 再走一遍 <see cref="HandleClippings"/>,
+        /// 而那一遍里同样带清洗 —— 即便 line4 里还留着**老版本导入时**的噪音,重建出来的 content 仍旧是
+        /// 清洗后的结果,所以这里不回写也不会被重建回退。
+        /// (注意重建**只读** line4、不回写它,所以 line4 里的存量噪音会一直留着 —— 无害,但别指望它被修掉。
+        /// 这一点有专门的用例钉住,见 ClipCleanTests。)
+        ///
+        /// 返回 false 只代表整体失败(读库/写库抛异常);"没有需要清洗的"是正常结果,
+        /// 由 <see cref="ClippingCleanReport.ChangedCount"/> == 0 表达。
+        /// </summary>
+        public bool CleanClippingTexts(out ClippingCleanReport report,
+            IProgress<OperationProgress>? progress = null) {
+            try {
+                var pairs = ComputeCleanChanges(progress, out var scanned, out var allPunctuation);
+                var changes = new List<ClippingCleanChange>(pairs.Count);
+
+                foreach (var (clipping, before, after) in pairs) {
+                    clipping.Content = after;
+                    // 只有真的写进库才计入清单 —— 否则清单会列出实际没生效的"改动",
+                    // 而这份清单正是用户事后核对/回滚的凭据。
+                    if (clippingRepository.Update(clipping)) {
+                        changes.Add(new ClippingCleanChange(clipping.Key, clipping.BookName ?? string.Empty, before, after));
+                    }
+                }
+
+                report = new ClippingCleanReport {
+                    Scanned = scanned,
+                    ChangedCount = changes.Count,
+                    AllPunctuationCount = allPunctuation,
+                    Changes = changes
+                };
+                return true;
+            } catch (Exception e) {
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanClippingTexts), e));
+                report = new ClippingCleanReport();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 清洗判定的唯一实现:扫全表,返回「要改的条目 + 改前 + 改后」。
+        /// **不落库** —— 谁写谁负责,这样只读预览与真正写入走的是同一条判定。
+        /// </summary>
+        private List<(Clipping Clipping, string Before, string After)> ComputeCleanChanges(
+            IProgress<OperationProgress>? progress, out int scanned, out int allPunctuation) {
+            progress?.Report(OperationProgress.At(OperationStage.Preparing));
+            var clippings = clippingRepository.GetAll();
+            scanned = clippings.Count;
+            allPunctuation = 0;
+            var pairs = new List<(Clipping, string, string)>();
+            var processed = 0;
+
+            foreach (Clipping clipping in clippings) {
+                processed++;
+                if (processed % 100 == 0) {
+                    progress?.Report(new OperationProgress(OperationStage.Preparing, processed, clippings.Count));
+                }
+
+                var before = clipping.Content ?? string.Empty;
+                var result = ClippingCleanRules.Clean(before);
+                if (result.Outcome == ClippingCleanOutcome.AllPunctuation) {
+                    allPunctuation++;
+                    continue;
+                }
+                if (!result.Changed) {
+                    continue;
+                }
+                pairs.Add((clipping, before, result.Text));
+            }
+
+            return pairs;
+        }
+
         private sealed class SkipCounts {
             public int LimitReached;
             public int PageFailed;
             public int DateFailed;
+
+            /// <summary>被清掉首尾标点的条数(不是"跳过",是"改了")。</summary>
+            public int CleanedNoise;
+
+            /// <summary>整条都是标点、因而跳过未改的条数。</summary>
+            public int AllPunctuation;
         }
 
         private int HandleClippings(List<MyClipping> clippings, out SkipCounts skipCounts, bool isRebuild = false,
@@ -169,6 +281,30 @@ namespace KindleMate2.Application.Services.KM2DB {
                     if (MyClippingsHelper.IsClippingLimitReached(content)) {
                         skipCounts.LimitReached++;
                         continue;
+                    }
+
+                    // ★ 首尾标点清洗(2026-09-21 新增)。挂在这里而不是挂在导入入口,是因为
+                    //   本方法**同时是导入与「重建数据库」的解析路径** —— 挂这一处,两条路都生效,
+                    //   而且"重建"必然复现同样的结果,不会把清洗过的文本又还原回带噪音的样子。
+                    //
+                    //   content 变量之后的**三处用途拿到的都是清洗后的值** ——
+                    //   `clipping.Content = content`、批内判重集合 contentByKey、以及
+                    //   `Line4 = content`(original_clipping_lines)。
+                    //   ⚠ 所以**本库不保留清洗前的原文** —— 想回头看原来什么样,只有清洗前那份数据库备份,
+                    //   加上清洗时落盘的改动清单(BackupDirectory/ClippingClean_<stamp>.txt)。
+                    //
+                    //   幂等性不受影响:「重建数据库」也是走本方法,拿现有 line4 当 content 再清一遍,
+                    //   而清洗本身幂等(清过的再清不变),所以**手工清洗的结果不会被重建回退**。
+                    //   老版本导入的存量数据,line4 里还留着当时的噪音 —— 重建时会在解析那一遍被清掉,
+                    //   出来的 content 是干净的;但 line4 本身**不回写**(重建只读它),仍留原样。
+                    //   (见 ClipCleanTests 里的 rebuild / legacy 两条用例。)
+                    var cleanedContent = ClippingCleanRules.Clean(content);
+                    if (cleanedContent.Outcome == ClippingCleanOutcome.AllPunctuation) {
+                        // 整条都是标点(例如只划到一个「。」):清下去会变成空条目,留着原文并计数。
+                        skipCounts.AllPunctuation++;
+                    } else if (cleanedContent.Changed) {
+                        content = cleanedContent.Text;
+                        skipCounts.CleanedNoise++;
                     }
 
                     Header headerResult = MyClippingsHelper.ParseTitleAndAuthor(header);

@@ -507,6 +507,9 @@
   <data name="Ui_Menu_CleanDatabase" xml:space="preserve">
     <value>清理資料庫</value>
   </data>
+  <data name="Ui_Menu_CleanClippingText" xml:space="preserve">
+    <value>清洗標註文字</value>
+  </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>重建資料庫</value>
   </data>
@@ -728,6 +731,30 @@
   </data>
   <data name="Ui_Dlg_CleanOk" xml:space="preserve">
     <value>清理</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Message_Format" xml:space="preserve">
+    <value>將清洗 {0} 條標註的首尾標點(共掃描 {1} 條),不會刪除任何記錄;清洗前會自動備份資料庫。</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Samples" xml:space="preserve">
+    <value>改動預覽</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Sample_Format" xml:space="preserve">
+    <value>改前:{0} → 改後:{1}</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Ok" xml:space="preserve">
+    <value>清洗</value>
+  </data>
+  <data name="Ui_ClippingClean_None" xml:space="preserve">
+    <value>沒有需要清洗的標註</value>
+  </data>
+  <data name="Ui_ClippingClean_Result_Format" xml:space="preserve">
+    <value>已清洗 {0} 條(共掃描 {1} 條)。備份與改動清單:{2}</value>
+  </data>
+  <data name="Ui_ClippingClean_Skipped_Format" xml:space="preserve">
+    <value>另有 {0} 條整條皆為標點,已略過。</value>
+  </data>
+  <data name="Ui_ClippingClean_Failed" xml:space="preserve">
+    <value>清洗失敗</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>按日期</value>

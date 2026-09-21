@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -13,6 +14,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using KindleMate2.Application.Models;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
@@ -377,6 +379,64 @@ public partial class MainWindow : Window {
             if (!ok) return;
         }
         await ShowResultAsync(await vm.CleanDatabaseAsync());
+    }
+
+    /// <summary>
+    /// 清洗标注文本(2026-09-21 新增;原版无此功能)。
+    /// 与「清理数据库」是两件事:那个判重、删空条目、VACUUM,动的是**行数**;
+    /// 这个只改每条的首尾标点,**一条都不删**。
+    /// 流程刻意做成"先看后做":只读预扫 → 确认框给出条数与若干条「改前 → 改后」样例 → 确认后才落库。
+    /// 清洗在应用内没有撤销路径,所以落库前 VM 会无条件先备份数据库、并留一份改动清单。
+    /// </summary>
+    private async void OnMenuCleanClipping(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+
+        var preview = await vm.PreviewClippingCleanAsync();
+        if (preview is null) {
+            // 无会话 / 正忙 / 读库失败对用户是同一件事:这次洗不了,不必细分。
+            await ShowResultAsync(new MainWindowViewModel.OperationResult(false,
+                Strings.Ui_ClippingClean_Failed, Strings.Ui_Status_OpenDatabaseFirst));
+            return;
+        }
+        if (preview.ChangedCount == 0) {
+            // 无需清洗不是错误,但也不该静默 —— 否则用户会以为点了没反应。
+            await ShowResultAsync(new MainWindowViewModel.OperationResult(false,
+                Strings.Ui_Menu_CleanClippingText, Strings.Ui_ClippingClean_None));
+            return;
+        }
+
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanClippingText,
+            BuildCleanPreview(preview), Strings.Ui_Dlg_ClippingClean_Ok);
+        if (!ok) return;
+        await ShowResultAsync(await vm.CleanClippingTextsAsync());
+    }
+
+    /// <summary>确认框里最多列几条样例 —— 再多用户也不会读,框还会长到看不完。</summary>
+    private const int CleanSampleRows = 5;
+
+    /// <summary>样例里单侧文本的显示上限。确认框只为让人核对"清洗口径对不对",不必看全文。</summary>
+    private const int CleanSampleChars = 60;
+
+    private static string BuildCleanPreview(ClippingCleanReport report) {
+        var lines = new List<string> {
+            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Message_Format,
+                report.ChangedCount, report.Scanned),
+            string.Empty,
+            Strings.Ui_Dlg_ClippingClean_Samples + ":"
+        };
+        lines.AddRange(report.Changes.Take(CleanSampleRows).Select(change =>
+            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Sample_Format,
+                FlattenForDialog(change.Before), FlattenForDialog(change.After))));
+        if (report.ChangedCount > CleanSampleRows) {
+            lines.Add("…");
+        }
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    /// <summary>把标注正文压成一行并截断 —— 换行会把确认框撑散,长文也读不过来。</summary>
+    private static string FlattenForDialog(string? text) {
+        var flat = (text ?? string.Empty).Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+        return flat.Length <= CleanSampleChars ? flat : flat[..CleanSampleChars] + "…";
     }
 
     private async void OnMenuRebuildDb(object? sender, RoutedEventArgs e) {
