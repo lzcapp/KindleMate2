@@ -121,7 +121,7 @@ internal static class Program {
             var original = Strings.Culture;
             foreach (var code in new[] { "zh-Hans", "zh-Hant", "en" }) {
                 Strings.Culture = new System.Globalization.CultureInfo(code);
-                report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings}");
+                report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings} | syncHint={Strings.Ui_Menu_SyncToDevice_NeedsDevice}");
             }
             Strings.Culture = original;
 
@@ -134,10 +134,35 @@ internal static class Program {
             try {
                 Environment.CurrentDirectory = freshDir;
                 var startupVm = new MainWindowViewModel();
+
+                // —— 「同步到 Kindle 设备」菜单项:设备未连接时置灰,并说清是"没连设备"还是"没开库" ——
+                // 借这一节的理由:这里能凑齐三种**确定性**状态,且 CI 只跑 --smoke(见 build.yml 的
+                // Boot self-check)。绑定本身由编译期校验(x:DataType 编译期绑定),自检钉的是
+                // **绑定源**的取值(菜单项 IsEnabled 绑 IsDeviceConnected,悬停提示绑 SyncToDeviceHint)。
+                // 关键:设备是否已连接这一项**不能照真实探测结果断言** —— 开发机上可能真插着 Kindle
+                // (实测本机就插着一台 PW6 → 探测为 True),CI runner 上必然为 False。照真实探测写,
+                // 这条自检就随现场硬件变色,红了绿了都说明不了代码对不对。
+                // 真实探测结果只作诊断信息,单独一行,不参与断言。
+                // 状态① 库还没开:探测必然「未连接」,提示得先说「打开数据库」,不能先喊「连接设备」
+                startupVm.RefreshDeviceStatus();
+                report.AppendLine($"  sync menu(no session): enabled={startupVm.IsDeviceConnected}" +
+                                  $" hintOpensDb={startupVm.SyncToDeviceHint == Strings.Ui_Status_OpenDatabaseFirst}");
+
                 var (startupFatal, startupOk, startupError) = startupVm.PrepareDatabaseAsync().GetAwaiter().GetResult();
                 var newDbPath = Path.Combine(freshDir, AppConstants.DatabaseFileName);
                 report.AppendLine($"startup: fatal={startupFatal} ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
                 report.AppendLine($"  newDbSize={new FileInfo(newDbPath).Length}B  migrationWarning='{startupVm.MigrationWarning}'");
+                // 本机真实探测一次,仅作诊断(插着设备时 enabled=True 是正确行为,不是缺陷)
+                startupVm.RefreshDeviceStatus();
+                report.AppendLine($"  sync menu(real probe): enabled={startupVm.IsDeviceConnected} status='{startupVm.DeviceStatus}'");
+                // 状态② 有库 + 设备未连接 → 置灰,提示「先连设备」
+                startupVm.IsDeviceConnected = false;
+                report.AppendLine($"  sync menu(offline): enabled={startupVm.IsDeviceConnected}" +
+                                  $" hintNeedsDevice={startupVm.SyncToDeviceHint == Strings.Ui_Menu_SyncToDevice_NeedsDevice}");
+                // 状态③ 有库 + 设备已连接 → 可点,提示不再停在「先连设备」
+                startupVm.IsDeviceConnected = true;
+                report.AppendLine($"  sync menu(online): enabled={startupVm.IsDeviceConnected}" +
+                                  $" hintNeedsDevice={startupVm.SyncToDeviceHint == Strings.Ui_Menu_SyncToDevice_NeedsDevice}");
             } finally {
                 Environment.CurrentDirectory = originalCwd;
                 try { Directory.Delete(freshDir, true); } catch { /* 清理失败不影响结论 */ }
@@ -312,6 +337,10 @@ internal static class Program {
             // 设备状态:无设备时文案与「菜单栏按钮显隐」标志应同时为未连接(二者出自同一次探测)
             vm.RefreshDeviceStatus();
             report.AppendLine($"device status: text='{vm.DeviceStatus}' connected={vm.IsDeviceConnected}");
+            // 「同步到 Kindle 设备」菜单项的可用性:视图层把 IsEnabled 绑在 IsDeviceConnected 上
+            // (绑定本身由编译期校验),这里报的是那个绑定源的取值 + 悬停提示。
+            // 本机/CI 通常都没接 Kindle → 期望 enabled=False、提示为「先连设备」。
+            report.AppendLine($"sync menu: enabled={vm.IsDeviceConnected} hint='{vm.SyncToDeviceHint}'");
 
             // 清理的进度上报核对(同步 sink 捕获阶段序列)
             var cleanStages = new List<KindleMate2.Application.Models.OperationProgress>();
