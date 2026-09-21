@@ -55,6 +55,30 @@ public sealed class KindleUsbProbeTests {
     }
 
     [Fact]
+    public void LibraryAvailability_IsTrackedPerLibrary() {
+        // 回归:曾把"实际加载到的库路径"记在**一个共用字段**里,于是"探测 libusb"
+        //(Linux / macOS 上系统自带)会把它的路径写进去,让 MtpInterop.IsAvailable()
+        //(判断的是 libmtp)误判为可用,调用方随后在 LIBMTP_Init 上撞 DllNotFoundException。
+        // CI 上 ubuntu 与 macOS 两个作业正是这么红的(Windows 没有 POSIX 库反而没事)。
+        _ = KindleUsbProbe.TryFindKindle(out _);   // 先让 libusb 走一遍解析
+
+        var libmtpPath = MtpInterop.LoadedPath;
+        var libusbPath = MtpInterop.LibusbLoadedPath;
+
+        // 各自记录的必须是**自己**那个库
+        if (libmtpPath is not null) {
+            Assert.Contains("libmtp", Path.GetFileName(libmtpPath), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (libusbPath is not null) {
+            Assert.Contains("libusb", Path.GetFileName(libusbPath), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // 更直接:两者绝不可能解析到同一个文件
+        Assert.NotEqual(libmtpPath, libusbPath);
+    }
+
+    [Fact]
     public void IsAvailable_And_TryFindKindle_DoNotThrow_RegardlessOfEnvironment() {
         // 开发机有 libusb、CI 上没有 —— 两种情形都只能安静地返回布尔值
         var available = KindleUsbProbe.IsAvailable();

@@ -57,7 +57,7 @@ internal static class MtpInterop {
 
         foreach (var candidate in candidates) {
             if (NativeLibrary.TryLoad(candidate, out var handle)) {
-                LoadedPath = candidate;
+                LoadedPaths[libraryName] = candidate;
                 return handle;
             }
         }
@@ -65,8 +65,21 @@ internal static class MtpInterop {
         return IntPtr.Zero;   // 交给默认规则再试(例如用户自己设了 DYLD_LIBRARY_PATH)
     }
 
-    /// <summary>实际加载到的动态库路径;未加载成功时为 null。</summary>
-    internal static string? LoadedPath { get; private set; }
+    /// <summary>
+    /// 各逻辑库名 → 实际加载到的路径。**必须按库分开记** ——
+    /// 曾经共用一个字段,于是"探测 libusb"(Linux/macOS 上系统自带)会把它的路径写进去,
+    /// 让 <see cref="IsAvailable"/>(判断的是 **libmtp**)误判为可用,接着调 LIBMTP_Init 直接
+    /// DllNotFoundException。CI 上 ubuntu/macOS 两个作业就是这么红的(Windows 没 POSIX 库反而没事)。
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> LoadedPaths = new(StringComparer.Ordinal);
+
+    /// <summary>libmtp 实际加载到的路径;未加载成功时为 null。诊断用。</summary>
+    internal static string? LoadedPath =>
+        LoadedPaths.TryGetValue(LibraryName, out var path) ? path : null;
+
+    /// <summary>libusb 实际加载到的路径;未加载成功时为 null。诊断用。</summary>
+    internal static string? LibusbLoadedPath =>
+        LoadedPaths.TryGetValue(LibusbLibraryName, out var path) ? path : null;
 
     /// <summary>
     /// 候选目录,按优先级:**随包分发的**优先(发布版放在程序旁边的 Frameworks/ 或 lib/),
@@ -127,15 +140,19 @@ internal static class MtpInterop {
     /// <summary>libmtp 的候选路径(供测试断言顺序)。</summary>
     internal static IEnumerable<string> CandidateLibraryPaths() => CandidatePathsFor(LibraryName);
 
-    /// <summary>libmtp 是否可用(未捕获异常地探一次)。</summary>
+    /// <summary>
+    /// **libmtp** 是否可用(不加载、不抛异常地探一次)。
+    /// 判据只取 libmtp 自己的记录:一旦混入别的库(如系统自带的 libusb),就会误判成可用,
+    /// 调用方随后会在 LIBMTP_Init 上撞 DllNotFoundException —— CI 上真实发生过。
+    /// </summary>
     internal static bool IsAvailable() {
-        if (LoadedPath != null) {
+        if (LoadedPaths.ContainsKey(LibraryName)) {
             return true;
         }
 
         foreach (var candidate in CandidateLibraryPaths()) {
             if (File.Exists(candidate)) {
-                LoadedPath = candidate;
+                LoadedPaths[LibraryName] = candidate;
                 return true;
             }
         }

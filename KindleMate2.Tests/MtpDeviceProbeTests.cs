@@ -39,7 +39,8 @@ public sealed class MtpDeviceProbeTests {
             return;
         }
 
-        _output.WriteLine($"libmtp = {MtpInterop.LoadedPath}");
+        _output.WriteLine($"libmtp = {MtpInterop.LoadedPath ?? "<未找到>"}");
+        _output.WriteLine($"libusb = {MtpInterop.LibusbLoadedPath ?? "<未找到>"}");
 
         using var session = MtpDeviceSession.TryOpenKindle();
         if (session == null) {

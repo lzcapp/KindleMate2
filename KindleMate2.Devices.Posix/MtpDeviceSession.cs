@@ -56,9 +56,20 @@ internal sealed class MtpDeviceSession : IDisposable {
             return null;
         }
 
-        MtpInterop.LIBMTP_Init();
-
-        var code = MtpInterop.LIBMTP_Detect_Raw_Devices(out var rawDevices, out var count);
+        int code;
+        IntPtr rawDevices;
+        int count;
+        try {
+            MtpInterop.LIBMTP_Init();
+            code = MtpInterop.LIBMTP_Detect_Raw_Devices(out rawDevices, out count);
+        } catch (DllNotFoundException ex) {
+            // 兜底:即便"可用性判断"出错(例如库存在但缺依赖),这里也只是"没连上设备",不能抛给界面
+            AppLog.Write($"[MtpDeviceSession] libmtp 不可用:{ex.Message}");
+            return null;
+        } catch (EntryPointNotFoundException ex) {
+            AppLog.Write($"[MtpDeviceSession] libmtp 版本不匹配:{ex.Message}");
+            return null;
+        }
         if (code != MtpInterop.MtpError.None || count <= 0 || rawDevices == IntPtr.Zero) {
             if (rawDevices != IntPtr.Zero) {
                 MtpInterop.LIBMTP_FreeMemory(rawDevices);
