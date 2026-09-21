@@ -213,7 +213,7 @@ public sealed class CalendarHeatmapTests {
         Assert.True(lastYear.Contains(new DateTime(2025, 12, 31)));
     }
 
-    // —— 4. 几何:格子要是正方形,并完整落在绘图区内 ——
+    // —— 4. 几何:格子铺满绘图区、不溢出,且横向纵向各自独立 ——
 
     [Theory]
     [InlineData(2026)]
@@ -222,21 +222,93 @@ public sealed class CalendarHeatmapTests {
         var grid = Build(new DateTime(2026, 9, 21), year);
 
         Assert.True(grid.IsDrawable);
-        Assert.True(grid.OriginX + grid.Weeks * grid.Cell <= PadLeft + PlotWidth + 0.5,
-            $"横向溢出:右边界 {grid.OriginX + grid.Weeks * grid.Cell} > {PadLeft + PlotWidth}");
-        Assert.True(grid.OriginY + 7 * grid.Cell <= PadTop + PlotHeight + 0.5,
-            $"纵向溢出:下边界 {grid.OriginY + 7 * grid.Cell} > {PadTop + PlotHeight}");
+        Assert.True(grid.OriginX + grid.Weeks * grid.CellWidth <= PadLeft + PlotWidth + 0.5,
+            $"横向溢出:右边界 {grid.OriginX + grid.Weeks * grid.CellWidth} > {PadLeft + PlotWidth}");
+        Assert.True(grid.OriginY + 7 * grid.CellHeight <= PadTop + PlotHeight + 0.5,
+            $"纵向溢出:下边界 {grid.OriginY + 7 * grid.CellHeight} > {PadTop + PlotHeight}");
         Assert.Equal(PadLeft + 16, grid.OriginX);   // 左侧让给星期标签
         Assert.Equal(PadTop + 12, grid.OriginY);    // 顶部让给月份标签
     }
 
+    /// <summary>
+    /// 横向必须铺满:重构前横向纵向共用一个 <c>Cell = Min(宽, 高)</c>,
+    /// 高度是瓶颈时 52 周只占左边三分之一,右边一大片空白。
+    /// </summary>
+    [Theory]
+    [InlineData(2026)]
+    [InlineData(null)]
+    public void BuildGrid_FillsPlotAreaHorizontally(int? year) {
+        var grid = Build(new DateTime(2026, 9, 21), year);
+
+        Assert.Equal(PadLeft + PlotWidth, grid.OriginX + grid.Weeks * grid.CellWidth, 1);
+    }
+
+    /// <summary>纵向同理必须铺满:否则格子挤在顶上、底部留白。</summary>
+    [Theory]
+    [InlineData(2026)]
+    [InlineData(null)]
+    public void BuildGrid_FillsPlotAreaVertically(int? year) {
+        var grid = Build(new DateTime(2026, 9, 21), year);
+
+        Assert.Equal(PadTop + PlotHeight, grid.OriginY + 7 * grid.CellHeight, 1);
+    }
+
+    /// <summary>
+    /// 窗口拉高:格子该跟着变高,横向尺度不受影响 —— 这就是「拉伸适配窗口」本身。
+    /// 若哪天又退回单值 Cell,这条会红。
+    /// </summary>
+    [Fact]
+    public void BuildGrid_TallerCard_KeepsWidthAndGrowsHeight() {
+        var maxDate = new DateTime(2026, 12, 31);
+        var fixedHeight = CalendarHeatmap.BuildGrid(maxDate, 2026, PadLeft, PadTop, PlotWidth, PlotHeight);
+        var tallerHeight = CalendarHeatmap.BuildGrid(maxDate, 2026, PadLeft, PadTop, PlotWidth, PlotHeight + 60);
+
+        Assert.Equal(fixedHeight.CellWidth, tallerHeight.CellWidth);
+        Assert.True(tallerHeight.CellHeight > fixedHeight.CellHeight,
+            $"纵向没跟着拉伸:{tallerHeight.CellHeight} 应大于 {fixedHeight.CellHeight}");
+    }
+
+    /// <summary>窗口拉宽:反向成立 —— 高一格不变,横向变宽。</summary>
+    [Fact]
+    public void BuildGrid_WiderCard_KeepsHeightAndGrowsWidth() {
+        var maxDate = new DateTime(2026, 12, 31);
+        var normal = CalendarHeatmap.BuildGrid(maxDate, 2026, PadLeft, PadTop, PlotWidth, PlotHeight);
+        var wider = CalendarHeatmap.BuildGrid(maxDate, 2026, PadLeft, PadTop, PlotWidth + 200, PlotHeight);
+
+        Assert.Equal(normal.CellHeight, wider.CellHeight);
+        Assert.True(wider.CellWidth > normal.CellWidth,
+            $"横向没跟着拉伸:{wider.CellWidth} 应大于 {normal.CellWidth}");
+    }
+
+    /// <summary>
+    /// 两轴尺度本就不同,格子不再正方形。这条把「不再取小值」这个决定钉在用例里:
+    /// 一旦有人为了"看起来整齐"又把两轴绑回同一个值,断言立刻失败。
+    /// </summary>
+    [Fact]
+    public void BuildGrid_AxesAreIndependent_NotForcedSquare() {
+        var grid = Build(new DateTime(2026, 12, 31), 2026);
+
+        Assert.NotEqual(grid.CellWidth, grid.CellHeight, 3);
+    }
+
     [Fact]
     public void BuildGrid_PlotTooSmallToRead_IsNotDrawable() {
-        // 高度只剩 20px:一格不到 2px,画出来只是一条糊线
+        // 高度只剩 20px:扣掉月份标签后一格不到 2px,画出来只是一条糊线
         var grid = CalendarHeatmap.BuildGrid(new DateTime(2026, 12, 31), 2026,
             PadLeft, PadTop, PlotWidth, 20);
 
-        Assert.True(grid.Cell < CalendarHeatmapGrid.MinCell);
+        Assert.True(grid.CellHeight < CalendarHeatmapGrid.MinCell);
+        Assert.False(grid.IsDrawable);
+    }
+
+    /// <summary>宽度不够时同样不可绘制 —— 两方向各判一次,不能只看纵向。</summary>
+    [Fact]
+    public void BuildGrid_PlotTooNarrow_IsNotDrawable() {
+        // 宽度只剩 6px,全给星期标签,横向一格都摊不出来
+        var grid = CalendarHeatmap.BuildGrid(new DateTime(2026, 12, 31), 2026,
+            PadLeft, PadTop, 6, PlotHeight);
+
+        Assert.True(grid.CellWidth < CalendarHeatmapGrid.MinCell);
         Assert.False(grid.IsDrawable);
     }
 
@@ -256,7 +328,9 @@ public sealed class CalendarHeatmapTests {
         var grid = Build(new DateTime(2026, 12, 31), 2026);
 
         Assert.True(grid.IsDrawable);
-        Assert.InRange(grid.Cell, 8, 20);
+        // 53 列铺满 852px ≈ 16px/格;7 行铺满 83px ≈ 11.9px/格
+        Assert.InRange(grid.CellWidth, 12, 20);
+        Assert.InRange(grid.CellHeight, 8, 20);
     }
 
     private static IEnumerable<string> AllDaysOf(int year) {

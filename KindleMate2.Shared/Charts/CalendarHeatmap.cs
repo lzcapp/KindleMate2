@@ -24,17 +24,23 @@ public readonly struct CalendarHeatmapGrid {
     /// <summary>列数(一周一列)。自然年最多 53 列。</summary>
     public int Weeks { get; init; }
 
-    /// <summary>格子边长(px)。列向与行向取同一个值,保证格子是正方形。</summary>
-    public double Cell { get; init; }
+    /// <summary>格子宽度(px)。按可用宽度 ÷ 列数得出 —— 横向铺满,不留空档。</summary>
+    public double CellWidth { get; init; }
+
+    /// <summary>格子高度(px)。按可用高度 ÷ 7 行得出 —— 纵向铺满,不留空档。</summary>
+    public double CellHeight { get; init; }
 
     public double OriginX { get; init; }
 
     public double OriginY { get; init; }
 
-    /// <summary>格子的最小可见边长;再小就糊成一片,不如不画。</summary>
+    /// <summary>格子任一方向的最小可见边长;有一边小于它,整幅就不值得画。</summary>
     public const double MinCell = 2;
 
-    public bool IsDrawable => Weeks > 0 && Cell >= MinCell;
+    /// <summary>
+    /// 宽高都够看才画。两边分别判 —— 格子宽高是各自算的,一边够、另一边不够时画出来是压扁的糊条。
+    /// </summary>
+    public bool IsDrawable => Weeks > 0 && CellWidth >= MinCell && CellHeight >= MinCell;
 
     /// <summary>
     /// <paramref name="date"/> 是否落在可着色区间内。
@@ -56,7 +62,7 @@ public readonly struct CalendarHeatmapGrid {
 }
 
 /// <summary>
-/// 年历热力图共用的纯计算:日标签格式、可用年份、栅格区间。
+/// 年历热力图共用的纯计算:日标签格式、可用年份、栅格区间与几何。
 ///
 /// 放在 Shared 而不是 Avalonia 层,是为了让回归用例不必引用 UI 程序集就能覆盖这段算术 ——
 /// 「哪一天落在哪一格、哪一天该被判为越界」正是热力图最容易算错、又最难靠肉眼看出错的部分。
@@ -72,9 +78,17 @@ public static class CalendarHeatmap {
     /// <summary>滚动模式的窗口宽度:最近 52 周。热力图未指定年份时的原有行为。</summary>
     public const int RollingWeeks = 52;
 
-    // 与 ChartControl 的绘图内边距配套:左侧留星期标签、顶部留月份标签。
-    private const double WeekdayLabelWidth = 16;
-    private const double MonthLabelHeight = 12;
+    /// <summary>顶部给月份标签留的高度。与 <c>ChartControl</c> 的 padTop 配套。</summary>
+    public const double MonthLabelHeight = 12;
+
+    /// <summary>左侧给星期标签留的宽度。</summary>
+    public const double WeekdayLabelWidth = 16;
+
+    /// <summary>
+    /// 底部留白。热力图没有直角坐标轴,不需要折线图那条基线所预留的空间,
+    /// 只留一点边距让格子不贴死控件下沿。
+    /// </summary>
+    public const double BottomGap = 4;
 
     public static string FormatDay(DateTime date) => date.ToString(DayLabelFormat, CultureInfo.InvariantCulture);
 
@@ -94,9 +108,23 @@ public static class CalendarHeatmap {
     }
 
     /// <summary>
+    /// 热力图可用的纵向像素。控件高度扣掉顶部标签与底部留白。
+    ///
+    /// 抽出来是为了让绘制与命中测试走**同一个表达式** —— 这两处分别在
+    /// <c>ChartControl.DrawCore</c> 与 <c>ChartControl.HitTest</c>,各写一遍迟早会有一处漏改,
+    /// 症状就是「画在第 N 格、悬停却高亮隔壁」。
+    /// </summary>
+    public static double AvailableHeight(double controlHeight, double padTop) =>
+        controlHeight - padTop - BottomGap;
+
+    /// <summary>
     /// 算栅格几何。<paramref name="year"/> 为 null(或超出 <see cref="DateTime"/> 可表示范围)时,
     /// 退回「以 <paramref name="maxDate"/> 为终点向前 <see cref="RollingWeeks"/> 周」的滚动窗口 ——
     /// 这是热力图原有行为,保留给不关心年份的调用方。
+    ///
+    /// 格子宽高**各自**按可用宽 / 可用高铺满:热力图占整幅卡片宽度,而卡片高度只有百来像素,
+    /// 若强行取两者较小值来保持正方形,横向会有六成宽度空着(52 周只占约三分之一宽)。
+    /// 代价是格子由正方形变为矩形,宽高比随窗口变化 —— 这正是「随窗口拉伸」的应有之义。
     /// </summary>
     public static CalendarHeatmapGrid BuildGrid(DateTime maxDate, int? year,
         double padLeft, double padTop, double plotWidth, double plotHeight) {
@@ -117,12 +145,17 @@ public static class CalendarHeatmap {
         var gridStart = rangeStart.AddDays(-CalendarHeatmapGrid.RowOf(rangeStart));
         var weeks = (int)((rangeEnd - gridStart).TotalDays / 7) + 1;
 
+        // 可用区为负时两个尺寸都会是负数,IsDrawable 自然为 false,不必单独判
+        var usableWidth = plotWidth - WeekdayLabelWidth;
+        var usableHeight = plotHeight - MonthLabelHeight;
+
         return new CalendarHeatmapGrid {
             GridStart = gridStart,
             RangeStart = rangeStart,
             RangeEnd = rangeEnd,
             Weeks = weeks,
-            Cell = Math.Min((plotWidth - WeekdayLabelWidth) / weeks, (plotHeight - MonthLabelHeight) / 7),
+            CellWidth = usableWidth / weeks,
+            CellHeight = usableHeight / 7,
             OriginX = padLeft + WeekdayLabelWidth,
             OriginY = padTop + MonthLabelHeight
         };

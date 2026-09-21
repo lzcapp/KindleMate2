@@ -152,9 +152,12 @@ public sealed class ChartControl : Control {
             return;
         }
 
-        // 年历热力图同样不走直角坐标系:格子按「周 × 星期」排布
+        // 年历热力图同样不走直角坐标系:格子按「周 × 星期」排布。
+        // 用的是它自己的可用高度而非折线图的 plotHeight —— 热力图没有坐标轴,
+        // 不必为那条基线预留 20px,格子能更高、窗口压到最小也不至于整幅画不出来。
         if (Kind == ChartKind.Heatmap) {
-            DrawHeatmap(context, points, HeatmapYear, padLeft, padTop, plotWidth, plotHeight, accent, labelBrush);
+            DrawHeatmap(context, points, HeatmapYear, padLeft, padTop, plotWidth,
+                CalendarHeatmap.AvailableHeight(height, padTop), accent, labelBrush);
             return;
         }
 
@@ -321,7 +324,9 @@ public sealed class ChartControl : Control {
 
         var grid = CalendarHeatmap.BuildGrid(maxDate, year, padLeft, padTop, plotWidth, plotHeight);
         if (!grid.IsDrawable) return;
-        var gap = Math.Max(1, grid.Cell * 0.14);
+        // 横向、纵向各留自己的缝:格子不再是正方形,同一比例算出来的缝在两轴上宽度不同。
+        var gapX = Math.Max(1, grid.CellWidth * 0.14);
+        var gapY = Math.Max(1, grid.CellHeight * 0.14);
 
         var max = 0d;
         foreach (var item in dated) {
@@ -333,7 +338,7 @@ public sealed class ChartControl : Control {
         var dayNames = CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedDayNames;
         for (var row = 0; row < 7; row += 2) {
             DrawText(context, dayNames[(row + 1) % 7], padLeft,
-                grid.OriginY + row * grid.Cell + grid.Cell / 2 - 6, labelBrush);
+                grid.OriginY + row * grid.CellHeight + grid.CellHeight / 2 - 6, labelBrush);
         }
 
         // 顶部月份标签:该周含有本月 1 号就标一次。
@@ -347,7 +352,7 @@ public sealed class ChartControl : Control {
                 var date = weekStart.AddDays(day);
                 if (!grid.Contains(date) || date.Day != 1 || date.Month == lastMonth) continue;
                 lastMonth = date.Month;
-                DrawText(context, monthNames[date.Month - 1], grid.OriginX + col * grid.Cell, padTop, labelBrush);
+                DrawText(context, monthNames[date.Month - 1], grid.OriginX + col * grid.CellWidth, padTop, labelBrush);
                 break;
             }
         }
@@ -355,10 +360,10 @@ public sealed class ChartControl : Control {
         foreach (var (date, value) in dated) {
             if (!grid.Contains(date)) continue;
             var rect = new Rect(
-                grid.OriginX + grid.ColumnOf(date) * grid.Cell + gap / 2,
-                grid.OriginY + CalendarHeatmapGrid.RowOf(date) * grid.Cell + gap / 2,
-                Math.Max(1, grid.Cell - gap),
-                Math.Max(1, grid.Cell - gap));
+                grid.OriginX + grid.ColumnOf(date) * grid.CellWidth + gapX / 2,
+                grid.OriginY + CalendarHeatmapGrid.RowOf(date) * grid.CellHeight + gapY / 2,
+                Math.Max(1, grid.CellWidth - gapX),
+                Math.Max(1, grid.CellHeight - gapY));
             context.DrawRectangle(new SolidColorBrush(AlphaOf(accent, DensityLevel(value, max))), null, rect, 1.5, 1.5);
         }
     }
@@ -555,12 +560,15 @@ public sealed class ChartControl : Control {
                 var dated = ParseDated(points, out var maxDate);
                 if (dated.Count == 0) return -1;
 
-                var grid = CalendarHeatmap.BuildGrid(maxDate, HeatmapYear, padLeft, padTop, plotWidth, plotHeight);
+                // 与绘制同源:热力图用的可用高度不是折线图的 plotHeight(少了底部 20px 基线区),
+                // 这里若沿用它,格子被纵向拉高、命中就整体偏上。
+                var grid = CalendarHeatmap.BuildGrid(maxDate, HeatmapYear, padLeft, padTop, plotWidth,
+                    CalendarHeatmap.AvailableHeight(height, padTop));
                 if (!grid.IsDrawable) return -1;
 
                 // 用 Floor 而不是截断:指针落在绘图区左侧时,截断会把 -0.4 变成第 0 列,凭空命中
-                var col = (int)Math.Floor((position.X - grid.OriginX) / grid.Cell);
-                var row = (int)Math.Floor((position.Y - grid.OriginY) / grid.Cell);
+                var col = (int)Math.Floor((position.X - grid.OriginX) / grid.CellWidth);
+                var row = (int)Math.Floor((position.Y - grid.OriginY) / grid.CellHeight);
                 if (col < 0 || col >= grid.Weeks || row < 0 || row >= 7) return -1;
 
                 // 首/末列里属于邻年的日子不参与绘制,自然也不该响应悬停
