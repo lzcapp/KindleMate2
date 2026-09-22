@@ -678,6 +678,18 @@
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>Rename book</value>
   </data>
+  <data name="Ui_Op_ShareImage" xml:space="preserve">
+    <value>Share as Image</value>
+  </data>
+  <data name="Ui_Share_Saved_Format" xml:space="preserve">
+    <value>Share image saved: {0}</value>
+  </data>
+  <data name="Ui_Share_Failed" xml:space="preserve">
+    <value>Share Image Failed</value>
+  </data>
+  <data name="Ui_Share_Footer" xml:space="preserve">
+    <value>Made with Kindle Mate 2</value>
+  </data>
   <data name="Ui_Result_NothingToExport" xml:space="preserve">
     <value>Nothing to export</value>
   </data>
@@ -814,7 +826,7 @@
     <value>No database open</value>
   </data>
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
-    <value>{0} · .NET {1}</value>
+    <value>{0} · {1} · {2}</value>
   </data>
   <data name="Ui_About_DataPath" xml:space="preserve">
     <value>Data Path</value>

@@ -31,6 +31,12 @@ public partial class MainWindow : Window {
         // 表格列的显隐要跟着 VM 走,而列拿不到 DataContext(见 SyncTableColumns),
         // 只能由视图订阅。DataContext 是外部(App / 语言切换重建)赋的,所以挂在这个事件上。
         DataContextChanged += (_, _) => SyncTableColumns();
+
+        // 详情里的正文是 SelectableTextBlock —— 它自己会在双击时选词,手势事件是否还会冒泡到父级
+        // 并不确定(而且这属于"跑起来才知道"的接线)。所以用 handledEventsToo 显式挂上,
+        // 免得出现"双击没反应"这种既不报错、也看不出原因的静默失效。
+        DetailContentScroll.AddHandler(InputElement.DoubleTappedEvent, OnDetailContentDoubleTapped,
+            RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
@@ -146,8 +152,23 @@ public partial class MainWindow : Window {
     /// 编辑选中标注的正文 —— 对齐原版 <c>ShowContentEditDialog</c>(双击内容列触发):
     /// 「取消 / 内容为空 / 与原文相同」一律**静默返回**(原版如此,不弹任何提示);
     /// 成功弹 Successful + Clippings_Revised,失败弹 Clippings_Revised_Failed。
+    ///
+    /// 双击列表与右键菜单两处共用 —— 都作用于**当前选中项**,没有第二套口径。
     /// </summary>
-    private async void OnEditClipping(object? sender, TappedEventArgs e) {
+    private async void OnEditClipping(object? sender, TappedEventArgs e) => await EditSelectedClippingAsync();
+
+    /// <summary>右键菜单入口(列表行 / 详情面板)。</summary>
+    private async void OnEditSelectedClipping(object? sender, RoutedEventArgs e) => await EditSelectedClippingAsync();
+
+    /// <summary>
+    /// 详情面板的正文上双击 —— 与双击列表同一件事:编辑选中的标注。
+    /// 参数类型是 <see cref="TappedEventArgs"/>:Avalonia 的 Tapped / DoubleTapped / RightTapped
+    /// 共用同一个事件参数类型(没有单独的 DoubleTappedEventArgs)。
+    /// </summary>
+    private async void OnDetailContentDoubleTapped(object? sender, TappedEventArgs e) =>
+        await EditSelectedClippingAsync();
+
+    private async Task EditSelectedClippingAsync() {
         if (Vm is not { } vm) return;
         if (!vm.HasSelectedItem) return;
         var key = vm.SelectedClippingKey;
@@ -513,6 +534,47 @@ public partial class MainWindow : Window {
         vm.StatusText = Strings.Ui_Status_Copied;
     }
 
+    // —— 分享为图片(2026-09-22 新增) ——
+
+    /// <summary>
+    /// 把当前选中的标注渲染成一张分享图(PNG)。
+    ///
+    /// 流程:选存哪(系统保存对话框)→ 渲染 → 状态栏给出路径 + 定位到文件。
+    /// 渲染失败只弹一句提示,不留半张图 —— 所以先渲染到目标路径、失败就不管它
+    /// (半成品会被下一次保存覆盖,不额外清理)。
+    /// </summary>
+    private async void OnShareSelectedClipping(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (vm.BuildShareCardModel() is not { } card) {
+            vm.StatusText = Strings.Ui_Status_NoSelection;
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+            Title = Strings.Ui_Op_ShareImage,
+            SuggestedFileName = card.SuggestedFileName(Strings.Ui_Op_ShareImage),
+            DefaultExtension = "png",
+            FileTypeChoices = new[] {
+                new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } }
+            }
+        });
+        var path = file?.TryGetLocalPath();
+        if (string.IsNullOrEmpty(path)) return;
+
+        try {
+            await ShareCardRenderer.RenderToPngAsync(card, path);
+        } catch (Exception ex) {
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
+            await AppDialog.AlertAsync(this, Strings.Failed, Strings.Ui_Share_Failed);
+            return;
+        }
+
+        vm.StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Share_Saved_Format, path);
+        // 定位失败只记日志 —— 图已经存好了,打不开文件夹不该算这次分享失败
+        // (与统计页截图同一处理)。
+        try { ShellHelper.RevealFile(path); } catch (Exception ex) { KindleMate2.Shared.Diagnostics.AppLog.Write(ex); }
+    }
+
     // —— 列表 / 详情动作 ——
 
     /// <summary>点击左栏「回收站」→ 把已删除(可恢复)的条目载入主列表(仅显示,不改数据)。</summary>
@@ -563,16 +625,19 @@ public partial class MainWindow : Window {
     /// ③ 目标书名已被**别的**书占用 → 确认「同名合并」,确认后改用**旧书的作者**(原版行为,保证合并后作者一致);
     ///    「只改作者、书名不动」不算撞名 —— 那还是同一本书,谈不上与谁合并(见 <see cref="BookRenameRules"/>);
     /// ④ 改名同时落到生词本与标注两处(在 VM 内完成)。
+    ///
+    /// 左栏菜单、列表行右键、详情面板右键**三处共用本方法** —— 唯一差别是"要改哪本书":
+    /// 左栏传节点名;行/详情传**那一行自己的书名**(左栏停在「全部标注」或搜索结果里时,
+    /// 两者根本不是一回事,沿用节点名会改错书)。
     /// </summary>
-    private async void OnRenameCurrent(object? sender, RoutedEventArgs e) {
+    private async Task RenameBookAsync(string oldName) {
         if (Vm is not { } vm) return;
-        if (!vm.CanRenameCurrentBook) {
+        if (oldName.Length == 0) {
             vm.StatusText = Strings.Ui_Status_PickBookFirst;
             return;
         }
 
-        var oldName = vm.CurrentBookName;
-        var oldAuthor = vm.CurrentBookAuthor;
+        var oldAuthor = vm.GetBookAuthor(oldName);
 
         var input = await AppDialog.PromptTwoFieldsAsync(this, Strings.Rename,
             Strings.Book_Title, oldName, Strings.Author, oldAuthor);
@@ -601,7 +666,27 @@ public partial class MainWindow : Window {
             newAuthor = vm.GetBookAuthor(oldName);
         }
 
-        await ShowResultAsync(await vm.RenameCurrentBookAsync(newName, newAuthor));
+        await ShowResultAsync(await vm.RenameBookAsync(oldName, newName, newAuthor));
+    }
+
+    /// <summary>左栏菜单:改左栏当前那本书。</summary>
+    private async void OnRenameCurrent(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (!vm.CanRenameCurrentBook) {
+            vm.StatusText = Strings.Ui_Status_PickBookFirst;
+            return;
+        }
+        await RenameBookAsync(vm.CurrentBookName);
+    }
+
+    /// <summary>列表行 / 详情面板右键:改**那一行所属**的书(不一定是左栏节点那本)。</summary>
+    private async void OnRenameSelectedBook(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (!vm.CanRenameSelectedItemBook) {
+            vm.StatusText = Strings.Ui_Status_PickBookFirst;
+            return;
+        }
+        await RenameBookAsync(vm.SelectedItemBookName);
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {

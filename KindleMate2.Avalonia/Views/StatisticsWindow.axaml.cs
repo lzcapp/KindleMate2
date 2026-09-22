@@ -146,7 +146,7 @@ public partial class StatisticsWindow : Window {
                 AppConstants.StatisticsPathName);
             Directory.CreateDirectory(directory);
             var file = Path.Combine(directory,
-                DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".png");
+                DateTime.Now.ToString(AppConstants.FileTimestampFormat, System.Globalization.CultureInfo.InvariantCulture) + ".png");
             // Avalonia 12 将 Bitmap.Save 标注为过时并建议改用 BitmapEncoderOptions,
             // 但该重载在 Skia 后端下的默认参数与旧签名等价,这里保留旧调用以免多引一层依赖。
 #pragma warning disable CS0618
