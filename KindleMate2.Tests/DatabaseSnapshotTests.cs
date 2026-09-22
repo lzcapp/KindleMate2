@@ -31,9 +31,9 @@ public sealed class DatabaseSnapshotTests : IDisposable {
 
     public void Dispose() {
         try {
-            // SQLite 的连接池会让已归还连接的文件句柄继续存活(Dispose 只是归还),
-            // 不清池的话在 Windows 上删不掉这个临时目录。
-            SqliteConnection.ClearAllPools();
+            // 刻意**不**在这里清 SQLite 连接池:那是进程级 API,会和并行跑的其他测试类互撞
+            // (实测 ~1/6 概率报 ObjectDisposedException)。残留目录由 TestTempCleanup 在
+            // 进程退出时统一清扫 —— 那里已无测试在跑,清池不会伤到谁。
             Directory.Delete(_dir, true);
         } catch { /* best effort */ }
     }
