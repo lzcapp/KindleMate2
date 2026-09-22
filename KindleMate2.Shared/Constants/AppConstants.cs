@@ -2,7 +2,6 @@
     public static class AppConstants {
         public const string AppName = "KindleMate2";
         public const string DateFormat = "yyyy-MM-dd";
-        public const string BackupDateFormat = "yyyyMMdd_HHmmss";
         public const int DefaultPageSize = 50;
         
         public const string Exception = "Exception";
@@ -86,7 +85,25 @@
         
         // File operation constants
         public const int DefaultStringBuilderCapacity = 512;
-        public const string BackupTimestampFormat = "yyyyMMdd_HHmmss";
+        /// <summary>
+        /// **生成的**文件名里的时间戳格式:定长、零填充、只到秒。
+        ///
+        /// 两条不变量,别处依赖它们:
+        /// <list type="number">
+        /// <item>**字典序 = 时间序**。<c>PruneBackups</c> 的保留策略按文件名字典序判定新旧
+        ///   (刻意不用 mtime —— 复制 / 云同步 / 解压都会重写 mtime),定长零填充正是这个前提。</item>
+        /// <item>**必须配 <c>InvariantCulture</c>**。非公历日历会把年份换成别的历法
+        ///   (th-TH → 2569、fa-IR → 1405、ar-SA → 1448),文件名就读不出真实日期了。</item>
+        /// </list>
+        ///
+        /// 2026-09-22 收敛:此前是**两个常量 + 三处硬编码字面量**,同一个格式散在五个地方
+        /// (库备份 / 维护清单 / 导入文件 / 清空前保底备份 / 统计截图)。代价已经付过一次 ——
+        /// 那条 InvariantCulture 修复当年是**分头改的**(见 <c>ClearAllDataAsync</c> 与
+        /// <c>WriteMaintenanceManifest</c> 里各自的注释,两处把同一个坑各写了一遍)。
+        /// 现在只留这一个,并由 CI 断言守住:**除本文件外,源码里不许再有地方直接把
+        /// 这个格式串喂给 <c>ToString</c>**。
+        /// </summary>
+        public const string FileTimestampFormat = "yyyyMMdd_HHmmss";
         
         // Character constants
         public const char ByteOrderMark = (char)65279;

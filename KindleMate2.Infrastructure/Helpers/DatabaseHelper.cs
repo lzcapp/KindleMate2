@@ -171,10 +171,9 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             // Create timestamped backup filename to avoid overwrites
-            // 必须显式传 InvariantCulture:不带 culture 的 ToString 走 CurrentCulture,而
-            // 非公历日历会把这个"时间戳"变成别的年份(th-TH → 2569、fa-IR → 1405、ar-SA → 1448),
-            // 备份文件名就再也读不出真实日期、也无法按名称排序。
-            var timestamp = DateTime.Now.ToString(AppConstants.BackupTimestampFormat, CultureInfo.InvariantCulture);
+            // 格式与 culture 的约定集中在 AppConstants.FileTimestampFormat ——
+            // 备份文件名读不出日期,用户就再也按名字找不回旧备份。
+            var timestamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var backupFileName = Path.GetFileNameWithoutExtension(databaseFileName) + 
                                 BackupFileNameInfix + timestamp + 
                                 Path.GetExtension(databaseFileName);
