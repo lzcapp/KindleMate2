@@ -741,11 +741,20 @@
   <data name="Ui_Dlg_ClippingClean_Samples" xml:space="preserve">
     <value>改動預覽</value>
   </data>
-  <data name="Ui_Dlg_ClippingClean_Sample_Format" xml:space="preserve">
-    <value>改前:{0} → 改後:{1}</value>
+  <data name="Ui_Dlg_ClippingClean_Before" xml:space="preserve">
+    <value>改前</value>
   </data>
-  <data name="Ui_Dlg_ClippingClean_Ok" xml:space="preserve">
-    <value>清洗</value>
+  <data name="Ui_Dlg_ClippingClean_After" xml:space="preserve">
+    <value>改後</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Legend" xml:space="preserve">
+    <value>帶刪除線的標點是本次會被清洗掉的字元。</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_More_Format" xml:space="preserve">
+    <value>另有 {0} 條改動未在此列出,清洗後會全部寫入改動清單。</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Ok_Format" xml:space="preserve">
+    <value>清洗 {0} 條</value>
   </data>
   <data name="Ui_ClippingClean_None" xml:space="preserve">
     <value>沒有需要清洗的標註</value>

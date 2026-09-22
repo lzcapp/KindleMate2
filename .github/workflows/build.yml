@@ -72,6 +72,15 @@ jobs:
           ./publish/smoke/KindleMate2.Avalonia.exe --smoke "$db" "$out"
           cat "$out"
           grep -q "Devices.Windows.DeviceManager" "$out"
+          # 清洗预览的视图层拼装在 Avalonia 工程里,单测够不着 ⇒ 在这里钉。
+          # 只断言结构,不断言文案(CI 是 en 环境,拿中文串比必然假红)。
+          grep -q "clean preview:.*result=OK" "$out"
+          # 表格列冗余判定(整列同值时收起)—— 同样是单测够不着的 VM 行为
+          grep -q "table columns:.*result=OK" "$out"
+          # 回收站视图能进能出(IsRecycleBinView 必须复位)
+          grep -q "recycle bin view:.*result=OK" "$out"
+          # 列表项元信息行:书名必须不在 MetaTail 里(它单独占一列、负责省略)
+          grep -q "list meta row:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -138,6 +147,13 @@ jobs:
           # 上面三条钉的是**绑定源**;编译期绑定只保证路径能解析,不保证菜单项还挂着这个属性
           # (菜单重构时删掉 IsEnabled= 不会编译报错,菜单却再也不置灰了)。所以在源码上钉一句。
           grep -Eq 'IsEnabled="\{Binding +IsDeviceConnected\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 清洗预览的视图层拼装(噪音单独暴露 + 尾部不被截断)—— 同 Windows 作业的理由
+          grep -q "clean preview:.*result=OK" "$work/smoke.txt"
+          # 表格列冗余判定 —— 同 Windows 作业的理由
+          grep -q "table columns:.*result=OK" "$work/smoke.txt"
+          # 回收站视图能进能出
+          grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
+          grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

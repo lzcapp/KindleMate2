@@ -287,18 +287,25 @@
                   <Border Grid.Column="0" Classes="kbar" Width="3" CornerRadius="2" />
                   <StackPanel Grid.Column="1" Spacing="5">
                     <TextBlock Text="{Binding Primary}" FontSize="13" TextTrimming="CharacterEllipsis" />
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                        <TextBlock Classes="ts" Text="{Binding MetaText}" IsVisible="{Binding HasMeta}"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        <Border Classes="chip" IsVisible="{Binding HasType}"
-                                Classes.highlight="{Binding IsHighlight}" Classes.note="{Binding IsNote}"
-                                Classes.bookmark="{Binding IsBookmark}" Classes.cut="{Binding IsCut}"
-                                VerticalAlignment="Center">
-                          <TextBlock Text="{Binding TypeText}" />
-                        </Border>
-                      </StackPanel>
-                      <TextBlock Grid.Column="1" Classes="tt" Text="{Binding Time}"
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                      <!-- 书名占 * 列并**由它负责省略**。刻意不套横向 StackPanel:
+                           横向 StackPanel 按**无限宽**测量子元素,TextTrimming 永不触发,
+                           长书名会直接溢出、把类型标签与时间压掉(2026-09-22 修)。
+                           悬停看完整书名 —— 省略掉的信息得有个地方找回来。
+                           列间距用 Margin 而不是 ColumnSpacing:被 IsVisible 收起的列
+                           不该再占一份间距。 -->
+                      <TextBlock Grid.Column="0" Classes="ts" Text="{Binding Book}" IsVisible="{Binding HasBook}"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                 Margin="0,0,7,0" ToolTip.Tip="{Binding Book}" />
+                      <TextBlock Grid.Column="1" Classes="ts" Text="{Binding MetaTail}" IsVisible="{Binding HasMetaTail}"
+                                 VerticalAlignment="Center" Margin="0,0,7,0" />
+                      <Border Grid.Column="2" Classes="chip" IsVisible="{Binding HasType}"
+                              Classes.highlight="{Binding IsHighlight}" Classes.note="{Binding IsNote}"
+                              Classes.bookmark="{Binding IsBookmark}" Classes.cut="{Binding IsCut}"
+                              VerticalAlignment="Center" Margin="0,0,7,0">
+                        <TextBlock Text="{Binding TypeText}" />
+                      </Border>
+                      <TextBlock Grid.Column="3" Classes="tt" Text="{Binding Time}"
                                  IsVisible="{Binding HasTime}" VerticalAlignment="Center" />
                     </Grid>
                   </StackPanel>
@@ -307,7 +314,7 @@
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <dg:DataGrid IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
+          <dg:DataGrid x:Name="ClipTableGrid" IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
                        SelectedItem="{Binding SelectedClipTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True"
                        DoubleTapped="OnEditClipping">
@@ -320,14 +327,18 @@
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Content}" Width="*" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding BookName}" Width="150" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Author}" Binding="{Binding AuthorName}" Width="90" />
+              <!-- 「书籍 / 作者」两列在**整列同值**时收起(左栏选中某本书时就是这样)。
+                   可见性由代码后置同步,不写成 Binding:DataGridColumn 不是控件、不在可视树上,
+                   拿不到 DataContext,列上的绑定不会生效;也不能用 x:Name(生成不出字段)。
+                   故用 Tag 定位(见 MainWindow.axaml.cs 的 ApplyTableColumnVisibility)。 -->
+              <dg:DataGridTextColumn Tag="book" Header="{x:Static shared:Strings.Books}" Binding="{Binding BookName}" Width="150" />
+              <dg:DataGridTextColumn Tag="author" Header="{x:Static shared:Strings.Author}" Binding="{Binding AuthorName}" Width="90" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Page}" Binding="{Binding PageNumber}" Width="60" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Date}" Binding="{Binding ClippingDate}" Width="130" />
             </dg:DataGrid.Columns>
           </dg:DataGrid>
 
-          <dg:DataGrid IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
+          <dg:DataGrid x:Name="WordTableGrid" IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
                        SelectedItem="{Binding SelectedLookupTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True">
             <dg:DataGrid.ContextMenu>
@@ -338,8 +349,10 @@
               </ContextMenu>
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
+              <!-- 选中某个生词时整列同值 ⇒ 收起(同「书籍 / 作者」,理由见上面那张表的注释)。
+                   「词干」与「生词」分开判:跨生词搜索可能命中同一词干的多个词形。 -->
+              <dg:DataGridTextColumn Tag="word" Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
+              <dg:DataGridTextColumn Tag="stem" Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Frequency}" Binding="{Binding Frequency}" Width="60" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Usage}" Width="*" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding Title}" Width="130" />

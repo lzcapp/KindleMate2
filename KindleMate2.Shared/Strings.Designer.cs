@@ -1261,8 +1261,11 @@ namespace KindleMate2.Shared {
         public static string Ui_Dlg_CleanOk => ResourceManager.GetString("Ui_Dlg_CleanOk", resourceCulture);
         public static string Ui_Dlg_ClippingClean_Message_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Message_Format", resourceCulture);
         public static string Ui_Dlg_ClippingClean_Samples => ResourceManager.GetString("Ui_Dlg_ClippingClean_Samples", resourceCulture);
-        public static string Ui_Dlg_ClippingClean_Sample_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Sample_Format", resourceCulture);
-        public static string Ui_Dlg_ClippingClean_Ok => ResourceManager.GetString("Ui_Dlg_ClippingClean_Ok", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Before => ResourceManager.GetString("Ui_Dlg_ClippingClean_Before", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_After => ResourceManager.GetString("Ui_Dlg_ClippingClean_After", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Legend => ResourceManager.GetString("Ui_Dlg_ClippingClean_Legend", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_More_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_More_Format", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Ok_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Ok_Format", resourceCulture);
         public static string Ui_ClippingClean_None => ResourceManager.GetString("Ui_ClippingClean_None", resourceCulture);
         public static string Ui_ClippingClean_Result_Format => ResourceManager.GetString("Ui_ClippingClean_Result_Format", resourceCulture);
         public static string Ui_ClippingClean_Skipped_Format => ResourceManager.GetString("Ui_ClippingClean_Skipped_Format", resourceCulture);

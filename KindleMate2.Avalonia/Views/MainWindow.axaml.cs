@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,7 +12,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using KindleMate2.Application.Models;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
@@ -30,9 +28,57 @@ public partial class MainWindow : Window {
         InitializeComponent();
         // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
         ClampToWorkingArea();
+        // 表格列的显隐要跟着 VM 走,而列拿不到 DataContext(见 SyncTableColumns),
+        // 只能由视图订阅。DataContext 是外部(App / 语言切换重建)赋的,所以挂在这个事件上。
+        DataContextChanged += (_, _) => SyncTableColumns();
     }
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
+
+    /// <summary>当前已订阅属性变更的 VM —— 换 DataContext(切语言会重建窗口/VM)时要退订,免得越挂越多。</summary>
+    private MainWindowViewModel? _columnSource;
+
+    /// <summary>
+    /// 同步表格列的显隐(「书籍 / 作者」/「生词」在整列同值时收起)。
+    ///
+    /// 为什么不用 Binding:<c>DataGridColumn</c> 只是 <c>AvaloniaObject</c>,不是控件、不在可视树上,
+    /// 因此**没有 DataContext** —— 写在列上的 <c>{Binding …}</c> 不会生效(而且是静默失效);
+    /// 它也不能用 <c>x:Name</c>(生成不出字段)。所以只能由视图按 <c>Tag</c> 找到列再显式同步。
+    /// </summary>
+    private void SyncTableColumns() {
+        if (!ReferenceEquals(_columnSource, Vm)) {
+            if (_columnSource != null) _columnSource.PropertyChanged -= OnViewModelPropertyChanged;
+            _columnSource = Vm;
+            if (_columnSource != null) _columnSource.PropertyChanged += OnViewModelPropertyChanged;
+        }
+        ApplyTableColumnVisibility();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName is nameof(MainWindowViewModel.ShowClipBookColumns)
+            or nameof(MainWindowViewModel.ShowWordColumn)
+            or nameof(MainWindowViewModel.ShowStemColumn)) {
+            ApplyTableColumnVisibility();
+        }
+    }
+
+    private void ApplyTableColumnVisibility() {
+        // 还没拿到 VM 时按"显示"处理:宁可多一列,也不要开窗瞬间整列闪一下。
+        var showBookColumns = Vm?.ShowClipBookColumns ?? true;
+        SetColumnVisible(ClipTableGrid, "book", showBookColumns);
+        SetColumnVisible(ClipTableGrid, "author", showBookColumns);
+        SetColumnVisible(WordTableGrid, "word", Vm?.ShowWordColumn ?? true);
+        SetColumnVisible(WordTableGrid, "stem", Vm?.ShowStemColumn ?? true);
+    }
+
+    /// <summary>按 <c>Tag</c> 定位列 —— 比按下标稳(列顺序调整不会悄悄改错对象)。</summary>
+    private static void SetColumnVisible(DataGrid grid, string tag, bool visible) {
+        foreach (var column in grid.Columns) {
+            if (string.Equals(column.Tag as string, tag, StringComparison.Ordinal)) {
+                column.IsVisible = visible;
+            }
+        }
+    }
 
     /// <summary>
     /// 把窗口尺寸夹进当前屏幕的可用区域内。
@@ -45,27 +91,10 @@ public partial class MainWindow : Window {
     /// 这里按 <c>WorkingArea</c>(已扣除任务栏)夹取;MinWidth/MinHeight 也必须一起夹,
     /// 否则可用区域比最小值还小时,最小值自身就会顶穿屏幕。
     /// 可用区域足够大时本方法不改变任何取值 —— 大屏行为与之前完全一致。
+    ///
+    /// 实现已抽到 <see cref="WindowSizing.ClampToWorkingArea"/> 供其他窗口复用。
     /// </remarks>
-    private void ClampToWorkingArea() {
-        if (Screens is not { } screens) {
-            return;
-        }
-
-        var screen = screens.ScreenFromWindow(this) ?? screens.Primary;
-        if (screen is not { } current) {
-            return;
-        }
-
-        // WorkingArea 是物理像素,而窗口的 Width/Height 是逻辑单位,必须按缩放换算。
-        var scaling = current.Scaling > 0 ? current.Scaling : 1d;
-        var maxWidth = current.WorkingArea.Width / scaling;
-        var maxHeight = current.WorkingArea.Height / scaling;
-
-        MinWidth = Math.Min(MinWidth, maxWidth);
-        MinHeight = Math.Min(MinHeight, maxHeight);
-        Width = Math.Min(Width, maxWidth);
-        Height = Math.Min(Height, maxHeight);
-    }
+    private void ClampToWorkingArea() => WindowSizing.ClampToWorkingArea(this);
 
     private async void OnOpened(object? sender, EventArgs e) {
         // 构造期若还拿不到屏幕信息,这里兜底;夹取是取小值,重复调用无副作用。
@@ -405,38 +434,10 @@ public partial class MainWindow : Window {
             return;
         }
 
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanClippingText,
-            BuildCleanPreview(preview), Strings.Ui_Dlg_ClippingClean_Ok);
+        // 逐条列出的预览窗口(独立窗口,可滚动、带差异高亮),不再把样例压成一段文字。
+        var ok = await ClippingCleanPreviewWindow.ConfirmAsync(this, preview);
         if (!ok) return;
         await ShowResultAsync(await vm.CleanClippingTextsAsync());
-    }
-
-    /// <summary>确认框里最多列几条样例 —— 再多用户也不会读,框还会长到看不完。</summary>
-    private const int CleanSampleRows = 5;
-
-    /// <summary>样例里单侧文本的显示上限。确认框只为让人核对"清洗口径对不对",不必看全文。</summary>
-    private const int CleanSampleChars = 60;
-
-    private static string BuildCleanPreview(ClippingCleanReport report) {
-        var lines = new List<string> {
-            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Message_Format,
-                report.ChangedCount, report.Scanned),
-            string.Empty,
-            Strings.Ui_Dlg_ClippingClean_Samples + ":"
-        };
-        lines.AddRange(report.Changes.Take(CleanSampleRows).Select(change =>
-            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Sample_Format,
-                FlattenForDialog(change.Before), FlattenForDialog(change.After))));
-        if (report.ChangedCount > CleanSampleRows) {
-            lines.Add("…");
-        }
-        return string.Join(Environment.NewLine, lines);
-    }
-
-    /// <summary>把标注正文压成一行并截断 —— 换行会把确认框撑散,长文也读不过来。</summary>
-    private static string FlattenForDialog(string? text) {
-        var flat = (text ?? string.Empty).Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
-        return flat.Length <= CleanSampleChars ? flat : flat[..CleanSampleChars] + "…";
     }
 
     private async void OnMenuRebuildDb(object? sender, RoutedEventArgs e) {

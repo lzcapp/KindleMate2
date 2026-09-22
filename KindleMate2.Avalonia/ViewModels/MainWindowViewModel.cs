@@ -68,6 +68,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 必须在 UI 线程构造:Progress<T> 在此捕获同步上下文,
         // 之后后台线程调用 Report 时会自动回到 UI 线程更新属性。
         _progressReporter = new Progress<OperationProgress>(p => Progress = p);
+
+        // 表格里"整列同值"的列是否该收起,由**表内容**决定 ⇒ 表一变就重算(见 RefreshTableColumnRedundancy)。
+        // 挂在集合通知上而不是逐个 Rebuild 方法里去调:换表内容的路径不止一条
+        // (筛选 / 回收站 / 删除后刷新 / 恢复…),漏掉一处就会出现"换了视图列没跟着换"。
+        ClipTable.CollectionChanged += (_, _) => RefreshTableColumnRedundancy();
+        LookupTable.CollectionChanged += (_, _) => RefreshTableColumnRedundancy();
     }
 
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
@@ -233,6 +239,69 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public bool ShowClipTable => IsTableMode && IsClipDomain;
     public bool ShowWordTable => IsTableMode && IsWordDomain;
 
+    // —— 表格里"整列同值"的列 ——
+    //
+    // 左栏选中**某一本书**时,「书籍 / 作者」两列整列都是同一个值:白占 240px 宽度、
+    // 把「内容」挤窄,每一行还在重复同一句话。生词表同理 —— 选中某个生词时
+    // 「生词」与「词干」两列整列同值。
+    //
+    // 判据刻意取**表里的数据**而不是"左栏选了什么":
+    //   · 回收站、以及"选中某本书后再看回收站"这类跨书视图同样会被正确处理,
+    //     不必为每个视图补一条条件(左栏选中项与表内容本来就可能不同步);
+    //   · 空表按"无冗余信息"处理 → 收起;
+    //   · 表内容一变就重算,不会出现"换了视图列没跟着换"。
+    //
+    // 「生词」与「词干」**分开判**:两者通常一起同值,但并不必然 ——
+    // 跨生词搜索时完全可能命中同一个词干的多个词形(beautiful / beautifully),
+    // 那时「词干」列确实是废话,而「生词」列不是。硬绑在一起就会藏错。
+
+    private bool _showClipBookColumns = true;
+    private bool _showWordColumn = true;
+    private bool _showStemColumn = true;
+
+    /// <summary>标注表格是否显示「书籍 / 作者」两列(整列同值时不显示)。</summary>
+    public bool ShowClipBookColumns => _showClipBookColumns;
+
+    /// <summary>生词表格是否显示「生词」列(整列同值时不显示)。</summary>
+    public bool ShowWordColumn => _showWordColumn;
+
+    /// <summary>生词表格是否显示「词干」列(整列同值时不显示)。</summary>
+    public bool ShowStemColumn => _showStemColumn;
+
+    /// <summary>按当前表内容重算上面三个标志,变了才发通知。</summary>
+    private void RefreshTableColumnRedundancy() {
+        var showBookColumns = !AllSame(ClipTable, c => c.BookName);
+        if (showBookColumns != _showClipBookColumns) {
+            _showClipBookColumns = showBookColumns;
+            OnPropertyChanged(nameof(ShowClipBookColumns));
+        }
+
+        var showWordColumn = !AllSame(LookupTable, l => l.Word);
+        if (showWordColumn != _showWordColumn) {
+            _showWordColumn = showWordColumn;
+            OnPropertyChanged(nameof(ShowWordColumn));
+        }
+
+        var showStemColumn = !AllSame(LookupTable, l => l.Stem);
+        if (showStemColumn != _showStemColumn) {
+            _showStemColumn = showStemColumn;
+            OnPropertyChanged(nameof(ShowStemColumn));
+        }
+    }
+
+    /// <summary>
+    /// 表内所有行的键是否**完全相同**(空表 / 单行视为相同)。
+    /// 早退在第一个不同的值上 —— 数千行的表通常比两行就返回。
+    /// </summary>
+    private static bool AllSame<T>(IReadOnlyList<T> rows, Func<T, string?> key) {
+        if (rows.Count <= 1) return true;
+        var first = key(rows[0]) ?? string.Empty;
+        for (var i = 1; i < rows.Count; i++) {
+            if (!string.Equals(first, key(rows[i]) ?? string.Empty, StringComparison.Ordinal)) return false;
+        }
+        return true;
+    }
+
     public NavItem? SelectedNav {
         get => _selectedNav;
         set {
@@ -288,9 +357,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public int NavSectionCount => IsClipDomain ? BookCount : WordCount;
 
     // —— 主区标题 ——
-    public string HeaderTitle => _selectedNav is { IsAll: false } nav
-        ? nav.Name
-        : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
+    //
+    // 回收站优先:它不是"某本书的列表"(内容跨书),左栏那个节点名放这里就是撒谎。
+    // 进入/离开回收站时由 IsRecycleBinView 的 setter 一并通知本属性。
+    public string HeaderTitle => IsRecycleBinView
+        ? Strings.Ui_Nav_RecycleBin
+        : _selectedNav is { IsAll: false } nav
+            ? nav.Name
+            : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
 
     public string HeaderSubtitle => IsClipDomain
         ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, Items.Count)
@@ -906,6 +980,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             if (_isRecycleBinView == value) return;
             _isRecycleBinView = value;
             OnPropertyChanged();
+            // 标题依赖它(回收站视图下显示「回收站」而不是左栏那个节点名)。
+            OnPropertyChanged(nameof(HeaderTitle));
         }
     }
 
@@ -942,6 +1018,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ClipTable.ReplaceAll(table);
             SelectedItem = Items.FirstOrDefault();
             SelectedClipTable = ClipTable.FirstOrDefault();
+
+            // 回收站不是"某本书的列表":左栏那个高亮继续挂在书上会撒谎,
+            // 更要紧的是 —— 留着高亮会让"再点一次这本书"变成**无变化**事件
+            // (SelectedNav 的 setter 对同一实例直接 return,不会重建列表),
+            // 用户就出不来了;清掉之后任何一次节点点击都是一次真正的切换。
+            //
+            // 这里直接改字段而**不走 setter**:setter 会顺带 ApplyFilter(),
+            // 把常规列表整份重建一遍(实测库 5752 行)再被下面的回收站内容整个替换掉 —— 纯浪费。
+            // 代价是得手动补上 setter 里还需要的那条通知(左栏列表靠它清掉选中)。
+            _selectedNav = null;
+            OnPropertyChanged(nameof(SelectedNav));
+
             IsRecycleBinView = true;
             return OperationResult.Silent;
         } finally {
@@ -1345,6 +1433,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 过滤 / 列表重建 ——
 
     public void ApplyFilter() {
+        // 走到这里就意味着**主列表要被重建成常规内容**(筛选 / 排序 / 换节点 / 换域 / 重载)——
+        // 回收站那批合成行马上就被换掉了,所以"正在看回收站"必须跟着复位。
+        //
+        // 此前它只置 true、从无置 false(全仓库仅 LoadRecycleBinAsync 一处赋值),
+        // 于是看过一次回收站之后:「列表右键菜单永久变成『恢复』(『删除』再也不出现)」
+        // 且「管理 → 清空回收站」永久可见。
+        //
+        // 放在这个**唯一漏斗**上,而不是逐个调用方去补:ApplyFilter 的调用方
+        // (SearchText / SearchType / SortDescending / SelectedNav / RebuildNav)正是
+        // "用户要求看常规列表"的全部入口,漏掉任何一个都会留下同一个 bug 的变体。
+        IsRecycleBinView = false;
+
         if (IsClipDomain) RebuildClippings();
         else RebuildLookups();
 

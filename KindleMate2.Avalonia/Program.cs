@@ -95,6 +95,17 @@ internal static class Program {
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
 
+            // 清洗预览的**视图层数据**。VM 在 Avalonia 工程里,单测项目不引用 Avalonia ⇒ 只能在这里钉。
+            // 钉的是上一版真正翻车的那一点:被清洗掉的标点必须**单独**暴露给视图(视图靠它加删除线),
+            // 而且不能被正文的中间省略吃掉 —— 否则「改前 / 改后」在预览里会一模一样,预览等于白做。
+            ProbeCleanPreview(report);
+
+            // 表格里"整列同值"的列是否收起(同样够不着单测)
+            ProbeTableColumns(report);
+
+            // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
+            ProbeListItemMeta(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -152,6 +163,7 @@ internal static class Program {
                 var newDbPath = Path.Combine(freshDir, AppConstants.DatabaseFileName);
                 report.AppendLine($"startup: fatal={startupFatal} ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
                 report.AppendLine($"  newDbSize={new FileInfo(newDbPath).Length}B  migrationWarning='{startupVm.MigrationWarning}'");
+
                 // 本机真实探测一次,仅作诊断(插着设备时 enabled=True 是正确行为,不是缺陷)
                 startupVm.RefreshDeviceStatus();
                 report.AppendLine($"  sync menu(real probe): enabled={startupVm.IsDeviceConnected} status='{startupVm.DeviceStatus}'");
@@ -163,6 +175,49 @@ internal static class Program {
                 startupVm.IsDeviceConnected = true;
                 report.AppendLine($"  sync menu(online): enabled={startupVm.IsDeviceConnected}" +
                                   $" hintNeedsDevice={startupVm.SyncToDeviceHint == Strings.Ui_Menu_SyncToDevice_NeedsDevice}");
+
+                // 回收站视图必须"进得去也出得来"。IsRecycleBinView 此前只置 true、从无置 false,
+                // 于是看过一次回收站之后:列表右键菜单永久停在「恢复」(「删除」再也不出现),
+                // 「管理 → 清空回收站」也永久可见。
+                // 复位点选在 ApplyFilter —— "主列表要被重建成常规内容"的唯一漏斗
+                // (筛选 / 排序 / 换节点 / 换域 / 重载都从它走),漏掉任何一个调用方都会留下变体。
+                //
+                // 同时钉住另外两条:
+                //   · 进入回收站要**清掉左栏选中** —— 否则"再点一次原来那本书"是无变化事件
+                //     (SelectedNav 的 setter 对同一实例直接 return),用户出不来;
+                //   · 标题在回收站视图下要显示「回收站」,而不是左栏那个节点名(内容跨书,那是撒谎)。
+                // 断言一律与 Strings.* 比较(两侧同源),不写死中文 —— CI 是 en 环境。
+                if (startupVm.HasSession) {
+                    // HeaderTitle 是**计算属性** —— 直接读它永远是"对"的,漏发通知也看不出来。
+                    // 所以这里数通知次数:视图只认通知,不发就等于没更新。
+                    var titleNotified = 0;
+                    startupVm.PropertyChanged += (_, e) => {
+                        if (e.PropertyName == nameof(MainWindowViewModel.HeaderTitle)) titleNotified++;
+                    };
+
+                    var navBefore = startupVm.SelectedNav != null;
+                    startupVm.LoadRecycleBinAsync().GetAwaiter().GetResult();
+                    var titleOnEnter = titleNotified;
+                    var enteredBin = startupVm.IsRecycleBinView;
+                    var navCleared = startupVm.SelectedNav == null;
+                    var binTitle = startupVm.HeaderTitle == Strings.Ui_Nav_RecycleBin;
+                    startupVm.ApplyFilter();
+                    var titleOnLeave = titleNotified;
+                    var leftBin = startupVm.IsRecycleBinView;
+                    var normalTitle = startupVm.HeaderTitle == Strings.Ui_Header_AllClippings;
+                    // navBefore 是**前提**而不是结论:左栏本来就空的话,"被清成 null"证明不了任何事。
+                    var binOk = navBefore && enteredBin && navCleared && binTitle
+                                && titleOnEnter >= 1 && titleOnLeave > titleOnEnter
+                                && !leftBin && normalTitle;
+                    report.AppendLine($"recycle bin view: 进入前有选中={navBefore}(期望 True,前提)" +
+                                      $" 进入={enteredBin}(期望 True) 左栏已清空={navCleared}(期望 True)" +
+                                      $" 标题为回收站={binTitle}(期望 True) 回常规列表后={leftBin}(期望 False)" +
+                                      $" 标题为全部标注={normalTitle}(期望 True)" +
+                                      $" 标题通知=[进入后:{titleOnEnter} 离开后:{titleOnLeave}](期望 ≥1 且递增)" +
+                                      $" -> result={(binOk ? "OK" : "失败!回收站视图状态不正确")}");
+                } else {
+                    report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
+                }
             } finally {
                 Environment.CurrentDirectory = originalCwd;
                 try { Directory.Delete(freshDir, true); } catch { /* 清理失败不影响结论 */ }
@@ -222,6 +277,158 @@ internal static class Program {
             }
             return 1;
         }
+    }
+
+    /// <summary>
+    /// 「清洗标注文本」预览窗口的数据探针。
+    ///
+    /// 为什么必须放在这里:预览的 VM 在 Avalonia 工程里,而测试工程**不引用 Avalonia**
+    /// (那是刻意的分层),所以这段拼装逻辑在单测里够不着 —— 只能靠这个无头自检钉住。
+    ///
+    /// 断言的三件事,正是上一版预览真正翻车的地方:
+    /// <list type="number">
+    /// <item>被清洗掉的标点要**单独**给出(视图靠它加删除线),不能混在正文里;</item>
+    /// <item>**尾部**噪音不能被正文的中间省略吃掉(上一版只留前缀,尾部改动永远看不见);</item>
+    /// <item>拼出来的「改前」与「改后」必须不同 —— 一样就等于预览没起作用。</item>
+    /// </list>
+    ///
+    /// 断言里**不得出现本地化文案**:自检在 CI 上跑的是 en 环境,拿中文串去比必然假红。
+    /// </summary>
+    private static void ProbeCleanPreview(System.Text.StringBuilder report) {
+        const string tailNoise = "\u300C";     // 「
+        // 必须长过 ClippingCleanPreviewRow.DefaultCoreChars(80),否则测不到"中间省略"这一环。
+        var longCore = string.Concat(Enumerable.Repeat(
+            "留學派和家人們都相當恐懼不安,因為自己可能會在不知不覺間,被誣陷為間諜團或是體制反對勢力。", 3));
+
+        var cleanReport = new KindleMate2.Application.Models.ClippingCleanReport {
+            Scanned = 3,
+            ChangedCount = 2,
+            AllPunctuationCount = 1,
+            Changes = new[] {
+                // 只在首部有噪音
+                new KindleMate2.Application.Models.ClippingCleanChange(
+                    "2099-01-01 00:00:00|100-120", "自检书甲", "。他走过去。", "他走过去。"),
+                // 只在尾部有噪音,且正文长到会被中间省略 —— 上一版正是被这里截掉
+                new KindleMate2.Application.Models.ClippingCleanChange(
+                    "2099-01-02 00:00:00|130-150", "自检书乙", longCore + tailNoise, longCore)
+            }
+        };
+
+        var preview = new ClippingCleanPreviewViewModel(cleanReport);
+        var head = preview.Rows[0];
+        var tail = preview.Rows[1];
+
+        var beforeLine = tail.LeadingNoise + tail.Head + tail.Tail + tail.TrailingNoise;
+        var afterLine = tail.Head + tail.Tail;
+
+        var ok = preview.Rows.Count == 2
+                 && head.LeadingNoise == "\u3002" && head.TrailingNoise.Length == 0
+                 && tail.LeadingNoise.Length == 0 && tail.TrailingNoise == tailNoise
+                 && tail.Tail.Length > 0                       // 正文被中间省略 ⇒ 尾部仍在
+                 && beforeLine.EndsWith(tailNoise, StringComparison.Ordinal)
+                 && !string.Equals(beforeLine, afterLine, StringComparison.Ordinal);
+
+        report.AppendLine($"clean preview: rows={preview.Rows.Count}" +
+                          $" headNoise='{head.LeadingNoise}' tailNoise='{tail.TrailingNoise}'" +
+                          $" coreElided={tail.Tail.Length > 0}" +
+                          $" changed={(ok ? "yes" : "NO")}" +
+                          $" -> result={(ok ? "OK" : "失败!预览拼装不符合预期")}");
+    }
+
+    /// <summary>
+    /// 表格列冗余判定的探针:整列同值时收起「书籍 / 作者」/「生词」/「词干」列。
+    ///
+    /// 判据是**表里的数据**(而不是"左栏选了什么"),所以这里直接换表内容来验:
+    /// 跨书 → 显示;同一本书 → 收起;再换回跨书 → 重新显示。
+    /// 最后一跳最要紧:只在加载时算一次、之后不跟着表走的话,列会永远停在收起状态。
+    /// 同时记录**通知序列** —— 判定对了但没发通知,视图照样不会更新(这类"接线"缺陷单测抓不到)。
+    ///
+    /// 「词干」与「生词」分开判:样本里特意放一组"同一个词干、不同词形"
+    /// (beautiful / beautifully),那时只该收起词干列 —— 硬绑在一起就会藏错。
+    /// </summary>
+    private static void ProbeTableColumns(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var bookNotified = new List<bool>();
+        var wordNotified = new List<bool>();
+        var stemNotified = new List<bool>();
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowClipBookColumns)) bookNotified.Add(vm.ShowClipBookColumns);
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowWordColumn)) wordNotified.Add(vm.ShowWordColumn);
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowStemColumn)) stemNotified.Add(vm.ShowStemColumn);
+        };
+
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
+        var mixedBooks = vm.ShowClipBookColumns;
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("甲书", "b") });
+        var sameBook = vm.ShowClipBookColumns;
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
+        var mixedBooksAgain = vm.ShowClipBookColumns;
+
+        // ① 选中某个生词:词与词干都整列同值 ⇒ 两列都收起
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:beautiful", "beautiful") });
+        var sameWord = vm.ShowWordColumn;
+        var sameWordStem = vm.ShowStemColumn;
+
+        // ② 同一词干的不同词形:词干列是废话,生词列不是 ⇒ 只收起词干
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:beautifully", "beautiful") });
+        var stemOnly = vm.ShowStemColumn;
+        var wordKept = vm.ShowWordColumn;
+
+        // ③ 不同词干:两列都回来
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:careful", "careful") });
+        var mixedWords = vm.ShowWordColumn;
+        var mixedStems = vm.ShowStemColumn;
+
+        var notified = bookNotified.Count == 2 && !bookNotified[0] && bookNotified[1]
+                       && wordNotified.Count == 2 && !wordNotified[0] && wordNotified[1]
+                       && stemNotified.Count == 2 && !stemNotified[0] && stemNotified[1];
+        var ok = mixedBooks && !sameBook && mixedBooksAgain
+                 && !sameWord && !sameWordStem
+                 && !stemOnly && wordKept
+                 && mixedWords && mixedStems
+                 && notified;
+
+        report.AppendLine($"table columns: 跨书={mixedBooks}(期望 True) 同书={sameBook}(期望 False)" +
+                          $" 再跨书={mixedBooksAgain}(期望 True)" +
+                          $" 同词={sameWord}/同词干={sameWordStem}(期望 False/False)" +
+                          $" 同词干异词形:词={wordKept}(期望 True) 词干={stemOnly}(期望 False)" +
+                          $" 异词异干={mixedWords}/{mixedStems}(期望 True/True)" +
+                          $" 通知=[book:{bookNotified.Count} word:{wordNotified.Count} stem:{stemNotified.Count}](各期望 2,且 False→True)" +
+                          $" -> result={(ok ? "OK" : "失败!列显隐判定不符合预期")}");
+    }
+
+    private static KindleMate2.Domain.Entities.KM2DB.Clipping MakeClipping(string book, string content) =>
+        new() { Key = book + "|" + content, Content = content, BookName = book };
+
+    /// <summary><c>Lookup.Word</c> 是从 <c>WordKey</c>("语言:词")里切出来的,所以只能设 WordKey。</summary>
+    private static KindleMate2.Domain.Entities.KM2DB.Lookup MakeLookup(string wordKey, string? stem = null) =>
+        new() { WordKey = wordKey, Stem = stem, Usage = "u" };
+
+    /// <summary>
+    /// 列表项元信息行的构成(模型层,同样够不着单测)。
+    ///
+    /// 钉住一条不变量:**书名不在 <c>MetaTail</c> 里**。
+    /// 它单独占一列、由那一列负责省略;若有人把书名重新并回 <c>MetaTail</c>,
+    /// 那一行会把书名显示两遍(一列一截),而且长书名又会把「第 N 页」挤没 ——
+    /// 正是这次修掉的毛病(横向 StackPanel 让 TextTrimming 永不触发、整行溢出)。
+    /// </summary>
+    private static void ProbeListItemMeta(System.Text.StringBuilder report) {
+        const string longBook = "第一本复杂性创伤后压力症候群自我疗愈圣经:在童年创伤中求生到茁壮的恢复指南";
+
+        var clipItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k1", Primary = "内容", Book = longBook, Place = "第 798 页" };
+        var wordItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k2", Primary = "用法", Book = "某本书", Extra = "词干 beautiful · 词频 3" };
+        var bareItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k3", Primary = "内容" };
+
+        var ok = clipItem.MetaTail == "第 798 页" && clipItem.HasMetaTail
+                 && !clipItem.MetaTail.Contains(longBook, StringComparison.Ordinal)
+                 && wordItem.MetaTail == "词干 beautiful · 词频 3"
+                 && !wordItem.MetaTail.Contains("某本书", StringComparison.Ordinal)
+                 && !bareItem.HasMetaTail && bareItem.MetaTail.Length == 0;
+
+        report.AppendLine($"list meta row: 标注项 MetaTail='{clipItem.MetaTail}'(期望只有页码)" +
+                          $" 生词项 MetaTail='{wordItem.MetaTail}'(期望只有词干/词频)" +
+                          $" 无元信息项 HasMetaTail={bareItem.HasMetaTail}(期望 False)" +
+                          $" -> result={(ok ? "OK" : "失败!书名不该出现在 MetaTail 里")}");
     }
 
     /// <summary>

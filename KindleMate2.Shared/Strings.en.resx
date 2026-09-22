@@ -741,11 +741,20 @@
   <data name="Ui_Dlg_ClippingClean_Samples" xml:space="preserve">
     <value>Sample changes</value>
   </data>
-  <data name="Ui_Dlg_ClippingClean_Sample_Format" xml:space="preserve">
-    <value>before: {0} → after: {1}</value>
+  <data name="Ui_Dlg_ClippingClean_Before" xml:space="preserve">
+    <value>Before</value>
   </data>
-  <data name="Ui_Dlg_ClippingClean_Ok" xml:space="preserve">
-    <value>Clean Up</value>
+  <data name="Ui_Dlg_ClippingClean_After" xml:space="preserve">
+    <value>After</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Legend" xml:space="preserve">
+    <value>Punctuation shown with a strikethrough will be removed.</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_More_Format" xml:space="preserve">
+    <value>{0} more change(s) are not listed here; all of them are written to the change list after cleanup.</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Ok_Format" xml:space="preserve">
+    <value>Clean {0}</value>
   </data>
   <data name="Ui_ClippingClean_None" xml:space="preserve">
     <value>No clippings need cleanup</value>

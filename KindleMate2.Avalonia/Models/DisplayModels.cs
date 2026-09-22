@@ -47,9 +47,16 @@ public sealed class ListItem {
     public bool HasTime => Time.Length > 0;
     public bool HasType => Kind != TypeKind.None && TypeText.Length > 0;
 
-    /// <summary>元信息行:书名 · 位置 · 附加(空项自动省略)。</summary>
-    public string MetaText => string.Join(" · ", new[] { Book, Place, Extra }.Where(s => s.Length > 0));
-    public bool HasMeta => MetaText.Length > 0;
+    /// <summary>
+    /// 元信息行里**跟在书名后面**的那一截:位置 · 附加(空项自动省略)。
+    ///
+    /// 书名**不在这里** —— 它单独占一列、由那一列负责省略(见 <c>MainWindow.axaml</c> 的列表模板)。
+    /// 早先这里是整串 <c>Book · Place · Extra</c>,书名一长就把后面全挤掉,而"第 798 页"
+    /// 恰恰是比书名更该留住的信息(书名在左栏/详情面板都有)。
+    /// </summary>
+    public string MetaTail => string.Join(" · ", new[] { Place, Extra }.Where(s => s.Length > 0));
+
+    public bool HasMetaTail => MetaTail.Length > 0;
 
     public bool IsHighlight => Kind == TypeKind.Highlight;
     public bool IsNote => Kind == TypeKind.Note;
