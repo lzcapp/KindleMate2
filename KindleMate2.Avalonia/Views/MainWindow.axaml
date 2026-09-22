@@ -233,8 +233,14 @@
             <ListBox.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
-                <MenuItem Header="{x:Static shared:Strings.Ui_Action_Export}" Click="OnExportCurrent" />
-                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameCurrent" />
+                <!-- 「导出」「重命名书籍」都是对**某本书**做的动作 ⇒ 生词域里收起。
+                     不收起的话点下去会拿"那个词"当书名去找同名书 ——
+                     重命名甚至会真的改到数据。可用性同时依赖"哪个域"与"选中哪个节点",
+                     换域时由 VM 发通知(见 ApplyFilter),否则菜单会停在初始状态。 -->
+                <MenuItem Header="{x:Static shared:Strings.Ui_Action_Export}" Click="OnExportCurrent"
+                          IsVisible="{Binding CanExportCurrent}" />
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameCurrent"
+                          IsVisible="{Binding CanRenameCurrentBook}" />
                 <!-- 注意:这里删的是**左栏节点**(某本书 / 全部标注 / 全部生词 / 某个词),
                      对应原版 MenuBooksDelete_Click → DeleteNodes();不要改成删列表行的那套。 -->
                 <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteNavNode" />

@@ -82,6 +82,7 @@ jobs:
           # 列表项元信息行:书名必须不在 MetaTail 里(它单独占一列、负责省略)
           grep -q "list meta row:.*result=OK" "$out"
           grep -q "word sections:.*result=OK" "$out"
+          grep -q "nav menu:.*result=OK" "$out"
           # 源码断言:两段的小标题必须还画在列表模板里。
           # 编译期绑定只保证 SectionTitle/IsSectionHeader 存在,不保证模板里还留着这一行 ——
           # 删掉它不报错,两段就悄悄退化成一条看不出分界的平表。
@@ -160,6 +161,11 @@ jobs:
           grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "word sections:.*result=OK" "$work/smoke.txt"
+          grep -q "nav menu:.*result=OK" "$work/smoke.txt"
+          # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,
+          # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
+          grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

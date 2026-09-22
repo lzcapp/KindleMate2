@@ -109,6 +109,9 @@ internal static class Program {
             // 生词域中栏的两段结构(查询 / 标注)
             ProbeWordSections(report);
 
+            // 左栏右键菜单的域感知
+            ProbeNavMenu(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -566,6 +569,56 @@ internal static class Program {
                           $" 可操作={rowHasSelection}/{headerHasSelection}(期望 True/False)" +
                           $" 副标题不随标注段变={subtitleStable}(期望 True)" +
                           $" -> result={(ok ? "OK" : "失败!两段结构不符合预期")}");
+    }
+
+    /// <summary>
+    /// 左栏右键菜单的**域感知**:生词本里不该出现「重命名书籍」「导出」。
+    ///
+    /// 那两个动作都是对**某本书**做的:生词域里点「重命名书籍」会拿"那个词"当书名去找同名书
+    /// 改名 —— 不只是菜单难看,是**能改到数据**;「导出」则按"书名 == 这个词"导出一本同名书
+    /// (或什么都没有)。2026-09-22 用户发现后修。
+    ///
+    /// 同时钉**通知**:两条可用性都依赖「哪个域 + 选中哪个节点」,换域时不发通知,
+    /// 菜单项就会停在初始状态 —— 这个坑本仓已踩过两次。其中"只切域、不动节点"最要紧:
+    /// 空库时 SelectedNav 不产生变化,压根走不到 ApplyFilter,只能靠 DomainIndex 那边补。
+    /// </summary>
+    private static void ProbeNavMenu(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var notified = 0;
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(MainWindowViewModel.CanRenameCurrentBook)) notified++;
+        };
+
+        // ① 生词域 + 具体生词 ⇒ 两条都该收起
+        vm.DomainIndex = 1;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "小心", Name = "小心" };
+        var wordRename = vm.CanRenameCurrentBook;
+        var wordExport = vm.CanExportCurrent;
+
+        // ② 切回标注域 + 具体书 ⇒ 两条都该出现
+        vm.DomainIndex = 0;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "某本书", Name = "某本书" };
+        var bookRename = vm.CanRenameCurrentBook;
+        var bookExport = vm.CanExportCurrent;
+
+        // ③ 「全部标注」:标注域、但不是具体书 ⇒ 导出可用、重命名不可用
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = string.Empty, Name = "全部", IsAll = true };
+        var allRename = vm.CanRenameCurrentBook;
+        var allExport = vm.CanExportCurrent;
+
+        // ④ 只切域、不动节点 —— 最容易漏通知的一条
+        var before = notified;
+        vm.DomainIndex = 1;
+        var switchNotified = notified > before;
+
+        var ok = !wordRename && !wordExport && bookRename && bookExport
+                 && !allRename && allExport && switchNotified && notified >= 4;
+
+        report.AppendLine($"nav menu: 生词域 重命名={wordRename}/导出={wordExport}(期望 False/False)" +
+                          $" 标注域具体书={bookRename}/{bookExport}(期望 True/True)" +
+                          $" 全部标注={allRename}/{allExport}(期望 False/True)" +
+                          $" 只切域有通知={switchNotified}(期望 True) 通知共={notified}(期望 ≥4)" +
+                          $" -> result={(ok ? "OK" : "失败!左栏菜单没有跟着域走")}");
     }
 
     /// <summary>

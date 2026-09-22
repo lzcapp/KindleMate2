@@ -1137,7 +1137,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>当前选中的是「查询(生词)」而非「标注」—— 决定删除确认用哪条文案。</summary>
     public bool IsLookupSelected => _selectedItem?.Lookup != null;
 
-    public bool CanRenameCurrentBook => _selectedNav is { IsAll: false };
+    /// <summary>
+    /// 左栏右键的「重命名书籍」是否可用。
+    ///
+    /// 必须**同时**满足两条:① 选中的是具体节点(不是「全部…」);② 当前在**标注域**。
+    ///
+    /// 早先只判了 ① ⇒ 生词本里右键一个生词也会出现「重命名书籍」,而且点下去真的会拿
+    /// **那个词**当书名去找同名书改名 —— 不只是菜单难看,是能改到数据。
+    /// 同理「导出」:生词域里点它按「书名 == 这个词」去找,导出的是一本同名书(或什么都没有)。
+    /// 2026-09-22 修。
+    /// </summary>
+    public bool CanRenameCurrentBook => IsClipDomain && _selectedNav is { IsAll: false };
+
+    /// <summary>
+    /// 左栏右键的「导出」是否可用 —— 导出的是**某本书的**标注(「全部标注」时导出全部),
+    /// 生词域里没有对应物。命名与 <c>OnExportCurrent</c> 对齐。
+    /// </summary>
+    public bool CanExportCurrent => IsClipDomain;
 
     public string CurrentBookName => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
 
@@ -1494,6 +1510,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         OnPropertyChanged(nameof(HeaderTitle));
         OnPropertyChanged(nameof(HeaderSubtitle));
+        // 左栏右键菜单的两条可用性依赖「哪个域 + 选中哪个节点」——
+        // 不发通知它们就会停在初始状态(同一个坑本仓已踩过两次)。
+        // 放在这个**唯一漏斗**上:换域、换节点、重建左栏最终都会走到这里。
+        OnPropertyChanged(nameof(CanRenameCurrentBook));
+        OnPropertyChanged(nameof(CanExportCurrent));
         NotifyCountsChanged();
         OnPropertyChanged(nameof(NavSectionTitle));
         OnPropertyChanged(nameof(NavSectionCount));
