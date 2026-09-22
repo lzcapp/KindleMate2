@@ -521,8 +521,11 @@ internal static class Program {
         vm.Items.ReplaceAll(sectioned);
         if (r1 != null) vm.SelectedItem = r1;
         var lookupDetail = vm.Detail.HasSelection;
+        var rowHasSelection = vm.HasSelectedItem;
         if (h0 != null) vm.SelectedItem = h0;
         var headerDetail = vm.Detail.HasSelection;
+        // 标题行也不算"有选中项":否则「删除」会先弹确认框、确认后才报「未选择」
+        var headerHasSelection = vm.HasSelectedItem;
 
         // 副标题只报查询条数 ⇒ 加不加标注段都该是同一句话(否则会变成「3 条查询」)
         vm.Items.ReplaceAll(vm.BuildWordDomainItems(lookups, noClippings, "beautiful", hasSearch: false));
@@ -548,7 +551,8 @@ internal static class Program {
                       && onlyClippings.Count(i => i.Clipping != null) == 2
                       && nothing.Count == 0;
 
-        var ok = structureOk && flatOk && emptyOk && lookupDetail && !headerDetail && subtitleStable;
+        var ok = structureOk && flatOk && emptyOk && lookupDetail && !headerDetail && subtitleStable
+                 && !headerHasSelection && rowHasSelection;
 
         report.AppendLine($"word sections: 切段行数={sectioned.Count}(期望 5)" +
                           $" 标题0={h0?.IsSectionHeader}(期望 True) 查询行={r1?.Lookup != null}(期望 True)" +
@@ -559,6 +563,7 @@ internal static class Program {
                           $" 有搜索词平表={searching.Count}(期望 3)/标题行 {searching.Count(i => i.IsSectionHeader)}(期望 0)" +
                           $" 只有标注={onlyClippings.Count}(期望 3) 全空={nothing.Count}(期望 0)" +
                           $" 查询行详情={lookupDetail}(期望 True) 标题行详情={headerDetail}(期望 False)" +
+                          $" 可操作={rowHasSelection}/{headerHasSelection}(期望 True/False)" +
                           $" 副标题不随标注段变={subtitleStable}(期望 True)" +
                           $" -> result={(ok ? "OK" : "失败!两段结构不符合预期")}");
     }

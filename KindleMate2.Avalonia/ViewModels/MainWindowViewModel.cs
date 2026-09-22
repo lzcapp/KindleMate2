@@ -323,7 +323,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
     }
 
-    public bool HasSelectedItem => _selectedItem != null;
+    /// <summary>
+    /// 是否有**可操作的**选中项。
+    ///
+    /// 分组标题行**不算** —— 它不是记录,没有可删/可编辑/可复制的对象。
+    /// 不排除的话,选中标题行再按「删除」会先弹一次确认框,用户确认后才报「未选择」:
+    /// 一个毫无意义的对话框,而且用的是错误语气(2026-09-22 生词域切段时补上)。
+    /// </summary>
+    public bool HasSelectedItem => _selectedItem is { IsSectionHeader: false };
 
     /// <summary>表格模式 · 标注选中行。</summary>
     public Clipping? SelectedClipTable {
