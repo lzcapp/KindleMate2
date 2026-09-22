@@ -658,7 +658,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         var importDir = Path.Combine(session.BackupDirectory, AppConstants.ImportsPathName);
-        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+        var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
         var clippingsFile = Path.Combine(importDir, "MyClippings_" + stamp + FileExtension.TXT);
         var wordsFile = Path.Combine(importDir, "vocab_" + stamp + FileExtension.DB);
 
@@ -861,10 +861,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         DatabaseMaintenancePlan? plan) {
         try {
             Directory.CreateDirectory(session.BackupDirectory);
-            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
-            // 非公历日历下年份会变成 2569/1405 之类,清单文件名就读不出日期了
-            // (与 ClearAllDataAsync 里那个备份文件名同一个坑)。
-            var stamp = DateTime.Now.ToString(AppConstants.BackupDateFormat, CultureInfo.InvariantCulture);
+            // 格式与 culture 的约定集中在 AppConstants.FileTimestampFormat
+            // ——当年这个坑是分头改的,现在只留一处说明。
+            var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var path = Path.Combine(session.BackupDirectory, $"Maintenance_{stamp}.txt");
 
             var removals = plan?.Cleanup.Removals ?? [];
@@ -932,9 +931,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         return RunOperationAsync(() => {
             Directory.CreateDirectory(session.BackupDirectory);
-            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
-            // 非公历日历下年份会变成 2569/1405/1448 之类,清空前的这份保底备份就读不出日期了。
-            var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            // 格式与 culture 的约定集中在 AppConstants.FileTimestampFormat ——
+            // 清空前的这份保底备份读不出日期,用户就没法按名字找回来。
+            var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;

@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
@@ -60,8 +61,17 @@ public sealed class AboutViewModel {
             DataPath = Path.TrimEndingDirectorySeparator(dataPath),
             DatabaseName = dbName,
             DatabaseSize = dbSize,
+            // 平台那一半原来用 Environment.OSVersion.Platform —— 它在 macOS 与 Linux 上**都**返回
+            // "Unix"(本机实测),于是这一行**分不出**用户装的是哪个平台的包;Windows 上则是原始枚举名
+            // "Win32NT"。而这一行的用途恰恰是排查平台问题(例如"macOS 包里有没有 Devices.MacOS.dll"),
+            // 所以换成 RuntimeInformation:
+            //   OSDescription        → macOS 27.0.0 / Ubuntu 24.04 / Microsoft Windows 10.0.22631
+            //   RuntimeIdentifier    → osx-arm64 / linux-x64 / win-x64(**与发布资产命名同一口径**)
+            //   FrameworkDescription → ".NET 10.0.12"(自带 ".NET ",格式串不必再写死)
             Runtime = string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_RuntimeFormat,
-                Environment.OSVersion.Platform, Environment.Version)
+                RuntimeInformation.OSDescription,
+                RuntimeInformation.RuntimeIdentifier,
+                RuntimeInformation.FrameworkDescription)
         };
     }
 

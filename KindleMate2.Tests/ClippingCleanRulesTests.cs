@@ -106,11 +106,32 @@ public sealed class ClippingCleanRulesTests {
     [InlineData("标注停在半句，")]
     [InlineData("clipping stops mid sentence,")]
     [InlineData("标注停在分号；")]
+    [InlineData("他说：")]      // 冒号同理:它引出后文,但"他说："本身是个完整的用户片段
     public void Clean_KeepsTrailingCommaOfHalfSentence(string input) {
         var result = Clean(input);
 
         Assert.Equal(ClippingCleanOutcome.Unchanged, result.Outcome);
         Assert.Equal(input, result.Text);
+    }
+
+    /// <summary>
+    /// **顿号两端都清** —— 与逗号/分号/冒号只清首部不同。
+    ///
+    /// 依据是结构 + 实测:2026-09-22 查实测库(5783 条),以 <c>、</c> 结尾的只有 **2** 条,
+    /// 两条都是列举被截断的残留(如「…改革过程中采取的发展合作社、」「…生在瓦加杜古、」)。
+    /// <c>、</c> 是并列项之间的分隔符,带上它就等于"下一项不见了",
+    /// 不可能是用户有意选中的结尾 —— 所以首尾一致地清掉。
+    /// </summary>
+    [Theory]
+    [InlineData("改革过程中采取的发展合作社、", "改革过程中采取的发展合作社")]
+    [InlineData("他生在瓦加杜古、", "他生在瓦加杜古")]
+    [InlineData("、苹果", "苹果")]          // 首部照旧清
+    [InlineData("、苹果、", "苹果")]        // 两端一起清
+    public void Clean_RemovesTrailingEnumerationComma(string input, string expected) {
+        var result = Clean(input);
+
+        Assert.Equal(ClippingCleanOutcome.Cleaned, result.Outcome);
+        Assert.Equal(expected, result.Text);
     }
 
     /// <summary>破折号与省略号两端都歧义大于噪声(「——他走过来」也可以是正文起头),一律不碰。</summary>
