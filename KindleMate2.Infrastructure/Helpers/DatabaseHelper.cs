@@ -180,10 +180,30 @@ namespace KindleMate2.Infrastructure.Helpers {
                                 Path.GetExtension(databaseFileName);
             var backupFilePath = Path.Combine(backupPath, backupFileName);
 
-            // 走 VACUUM INTO 而不是 File.Copy。文件名带时间戳,天然满足"目标必须不存在";
-            // 不传 overwrite,语义与原先的 File.Copy(overwrite: false) 一致 —— 同一时间戳
-            // 撞车时同样抛错,而不是静默覆盖掉上一份备份。
-            CreateConsistentSnapshot(databaseFilePath, backupFilePath);
+            // 同一秒内再来一次备份就会撞名(时间戳只到秒)。这里**自动加序号另存**,
+            // 而不是让整次备份失败:
+            //
+            // 撞名时拒绝覆盖是对的(不能毁掉上一份),但"拒绝"的正确代价是**换个名字存下来**,
+            // 不是把用户的备份请求整个打回。此前没有这一层,于是:
+            // 「维护数据库」在改数据前会无条件备份一次,若恰好与刚才的手动备份落在同一秒,
+            // 整条维护就以「维护失败」收场、还不给原因(2026-09-22 实测 6 次里挂 2 次)。
+            // 手动连点两次备份同理。
+            //
+            // 后缀用 `_2`/`_3`… 而不是 `-2`:下划线(0x5F)排在 `.`(0x2E)之后,
+            // 而 PruneBackups 按**文件名字典序**判定新旧 —— 这样同一秒内的多份也保持
+            // "越晚越靠后",不会让清理先删掉较新的那一份。
+            var uniqueBackupPath = backupFilePath;
+            for (var suffix = 2; File.Exists(uniqueBackupPath); suffix++) {
+                uniqueBackupPath = Path.Combine(backupPath,
+                    Path.GetFileNameWithoutExtension(backupFileName) + "_" + suffix +
+                    Path.GetExtension(backupFileName));
+            }
+
+            // 走 VACUUM INTO 而不是 File.Copy。文件名带时间戳(必要时再加序号),目标必然不存在;
+            // 不传 overwrite,语义与原先的 File.Copy(overwrite: false) 一致 ——
+            // **任何情况下都不静默覆盖上一份备份**(拒绝覆盖这条由 CreateConsistentSnapshot 保证,
+            // 且有用例钉住;这里只是保证不会走到那个冲突上去)。
+            CreateConsistentSnapshot(databaseFilePath, uniqueBackupPath);
         }
 
         /// <summary>
