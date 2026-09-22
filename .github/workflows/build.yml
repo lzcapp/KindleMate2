@@ -173,6 +173,13 @@ jobs:
           if git grep -n 'ToString(AppConstants.FileTimestampFormat' -- '*.cs' | grep -v InvariantCulture; then
             echo "时间戳用点漏了 InvariantCulture —— 非公历日历下年份会变成 2569/1405/1448"; exit 1
           fi
+          # 测试里不许再出现**进程级清池**。SqliteConnection.ClearAllPools() 会关掉所有空闲池化连接，
+          # 而 xUnit 默认类间并行 ⇒ 一个测试类 Dispose 时会把别的类正在复用的连接一起销毁
+          # (实测 ~1/6 概率报 ObjectDisposedException: 'SQLitePCL.sqlite3')。
+          # 清池集中在 TestTempCleanup 的进程退出时做一次（那时已无测试在跑）。
+          if git grep -n 'ClearAllPools' -- 'KindleMate2.Tests/*.cs' | grep -v 'TestTempCleanup.cs'; then
+            echo "测试里又出现了进程级清池 —— 请改用 TestTempCleanup 的退出时清扫"; exit 1
+          fi
           # 清洗预览的视图层拼装(噪音单独暴露 + 尾部不被截断)—— 同 Windows 作业的理由
           grep -q "clean preview:.*result=OK" "$work/smoke.txt"
           # 表格列冗余判定 —— 同 Windows 作业的理由
