@@ -100,6 +100,9 @@ internal static class Program {
             // 而且不能被正文的中间省略吃掉 —— 否则「改前 / 改后」在预览里会一模一样,预览等于白做。
             ProbeCleanPreview(report);
 
+            // 表格里"整列同值"的列是否收起(同样够不着单测)
+            ProbeTableColumns(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -259,6 +262,52 @@ internal static class Program {
                           $" changed={(ok ? "yes" : "NO")}" +
                           $" -> result={(ok ? "OK" : "失败!预览拼装不符合预期")}");
     }
+
+    /// <summary>
+    /// 表格列冗余判定的探针:整列同值时收起「书籍 / 作者」/「生词」列。
+    ///
+    /// 判据是**表里的数据**(而不是"左栏选了什么"),所以这里直接换表内容来验:
+    /// 跨书 → 显示;同一本书 → 收起;再换回跨书 → 重新显示。
+    /// 最后一跳最要紧:只在加载时算一次、之后不跟着表走的话,列会永远停在收起状态。
+    /// 同时记录**通知序列** —— 判定对了但没发通知,视图照样不会更新(这类"接线"缺陷单测抓不到)。
+    /// </summary>
+    private static void ProbeTableColumns(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var bookNotified = new List<bool>();
+        var wordNotified = new List<bool>();
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowClipBookColumns)) bookNotified.Add(vm.ShowClipBookColumns);
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowWordColumn)) wordNotified.Add(vm.ShowWordColumn);
+        };
+
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
+        var mixedBooks = vm.ShowClipBookColumns;
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("甲书", "b") });
+        var sameBook = vm.ShowClipBookColumns;
+        vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
+        var mixedBooksAgain = vm.ShowClipBookColumns;
+
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful"), MakeLookup("en:beautiful") });
+        var sameWord = vm.ShowWordColumn;
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful"), MakeLookup("en:careful") });
+        var mixedWords = vm.ShowWordColumn;
+
+        var notified = bookNotified.Count == 2 && !bookNotified[0] && bookNotified[1]
+                       && wordNotified.Count == 2 && !wordNotified[0] && wordNotified[1];
+        var ok = mixedBooks && !sameBook && mixedBooksAgain && !sameWord && mixedWords && notified;
+
+        report.AppendLine($"table columns: 跨书={mixedBooks}(期望 True) 同书={sameBook}(期望 False)" +
+                          $" 再跨书={mixedBooksAgain}(期望 True) 同词={sameWord}(期望 False) 跨词={mixedWords}(期望 True)" +
+                          $" 通知=[book:{bookNotified.Count} word:{wordNotified.Count}](各期望 2,且 False→True)" +
+                          $" -> result={(ok ? "OK" : "失败!列显隐判定不符合预期")}");
+    }
+
+    private static KindleMate2.Domain.Entities.KM2DB.Clipping MakeClipping(string book, string content) =>
+        new() { Key = book + "|" + content, Content = content, BookName = book };
+
+    /// <summary><c>Lookup.Word</c> 是从 <c>WordKey</c>("语言:词")里切出来的,所以只能设 WordKey。</summary>
+    private static KindleMate2.Domain.Entities.KM2DB.Lookup MakeLookup(string wordKey) =>
+        new() { WordKey = wordKey, Usage = "u" };
 
     /// <summary>
     /// 写操作端到端自检:把真实库复制到临时目录后,在该副本上依次执行

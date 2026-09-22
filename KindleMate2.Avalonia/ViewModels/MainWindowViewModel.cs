@@ -68,6 +68,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 必须在 UI 线程构造:Progress<T> 在此捕获同步上下文,
         // 之后后台线程调用 Report 时会自动回到 UI 线程更新属性。
         _progressReporter = new Progress<OperationProgress>(p => Progress = p);
+
+        // 表格里"整列同值"的列是否该收起,由**表内容**决定 ⇒ 表一变就重算(见 RefreshTableColumnRedundancy)。
+        // 挂在集合通知上而不是逐个 Rebuild 方法里去调:换表内容的路径不止一条
+        // (筛选 / 回收站 / 删除后刷新 / 恢复…),漏掉一处就会出现"换了视图列没跟着换"。
+        ClipTable.CollectionChanged += (_, _) => RefreshTableColumnRedundancy();
+        LookupTable.CollectionChanged += (_, _) => RefreshTableColumnRedundancy();
     }
 
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
@@ -226,6 +232,54 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public bool ShowList => IsListMode;
     public bool ShowClipTable => IsTableMode && IsClipDomain;
     public bool ShowWordTable => IsTableMode && IsWordDomain;
+
+    // —— 表格里"整列同值"的列 ——
+    //
+    // 左栏选中**某一本书**时,「书籍 / 作者」两列整列都是同一个值:白占 240px 宽度、
+    // 把「内容」挤窄,每一行还在重复同一句话。生词表同理(选中某个生词时「生词」列整列同值)。
+    //
+    // 判据刻意取**表里的数据**而不是"左栏选了什么":
+    //   · 回收站、以及"选中某本书后再看回收站"这类跨书视图同样会被正确处理,
+    //     不必为每个视图补一条条件(左栏选中项与表内容本来就可能不同步);
+    //   · 空表按"无冗余信息"处理 → 收起;
+    //   · 表内容一变就重算,不会出现"换了视图列没跟着换"。
+
+    private bool _showClipBookColumns = true;
+    private bool _showWordColumn = true;
+
+    /// <summary>标注表格是否显示「书籍 / 作者」两列(整列同值时不显示)。</summary>
+    public bool ShowClipBookColumns => _showClipBookColumns;
+
+    /// <summary>生词表格是否显示「生词」列(整列同值时不显示)。</summary>
+    public bool ShowWordColumn => _showWordColumn;
+
+    /// <summary>按当前表内容重算上面两个标志,变了才发通知。</summary>
+    private void RefreshTableColumnRedundancy() {
+        var showBookColumns = !AllSame(ClipTable, c => c.BookName);
+        if (showBookColumns != _showClipBookColumns) {
+            _showClipBookColumns = showBookColumns;
+            OnPropertyChanged(nameof(ShowClipBookColumns));
+        }
+
+        var showWordColumn = !AllSame(LookupTable, l => l.Word);
+        if (showWordColumn != _showWordColumn) {
+            _showWordColumn = showWordColumn;
+            OnPropertyChanged(nameof(ShowWordColumn));
+        }
+    }
+
+    /// <summary>
+    /// 表内所有行的键是否**完全相同**(空表 / 单行视为相同)。
+    /// 早退在第一个不同的值上 —— 数千行的表通常比两行就返回。
+    /// </summary>
+    private static bool AllSame<T>(IReadOnlyList<T> rows, Func<T, string?> key) {
+        if (rows.Count <= 1) return true;
+        var first = key(rows[0]) ?? string.Empty;
+        for (var i = 1; i < rows.Count; i++) {
+            if (!string.Equals(first, key(rows[i]) ?? string.Empty, StringComparison.Ordinal)) return false;
+        }
+        return true;
+    }
 
     public NavItem? SelectedNav {
         get => _selectedNav;

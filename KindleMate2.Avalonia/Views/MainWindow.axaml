@@ -302,7 +302,7 @@
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <dg:DataGrid IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
+          <dg:DataGrid x:Name="ClipTableGrid" IsVisible="{Binding ShowClipTable}" ItemsSource="{Binding ClipTable}"
                        SelectedItem="{Binding SelectedClipTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True"
                        DoubleTapped="OnEditClipping">
@@ -315,14 +315,18 @@
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Content}" Width="*" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding BookName}" Width="150" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Author}" Binding="{Binding AuthorName}" Width="90" />
+              <!-- 「书籍 / 作者」两列在**整列同值**时收起(左栏选中某本书时就是这样)。
+                   可见性由代码后置同步,不写成 Binding:DataGridColumn 不是控件、不在可视树上,
+                   拿不到 DataContext,列上的绑定不会生效;也不能用 x:Name(生成不出字段)。
+                   故用 Tag 定位(见 MainWindow.axaml.cs 的 ApplyTableColumnVisibility)。 -->
+              <dg:DataGridTextColumn Tag="book" Header="{x:Static shared:Strings.Books}" Binding="{Binding BookName}" Width="150" />
+              <dg:DataGridTextColumn Tag="author" Header="{x:Static shared:Strings.Author}" Binding="{Binding AuthorName}" Width="90" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Page}" Binding="{Binding PageNumber}" Width="60" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Date}" Binding="{Binding ClippingDate}" Width="130" />
             </dg:DataGrid.Columns>
           </dg:DataGrid>
 
-          <dg:DataGrid IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
+          <dg:DataGrid x:Name="WordTableGrid" IsVisible="{Binding ShowWordTable}" ItemsSource="{Binding LookupTable}"
                        SelectedItem="{Binding SelectedLookupTable, Mode=TwoWay}"
                        AutoGenerateColumns="False" IsReadOnly="True">
             <dg:DataGrid.ContextMenu>
@@ -333,7 +337,8 @@
               </ContextMenu>
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
+              <!-- 选中某个生词时整列同值 ⇒ 收起(同「书籍 / 作者」,理由见上面那张表的注释) -->
+              <dg:DataGridTextColumn Tag="word" Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Frequency}" Binding="{Binding Frequency}" Width="60" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Usage}" Width="*" />

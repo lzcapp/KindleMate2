@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -27,9 +28,55 @@ public partial class MainWindow : Window {
         InitializeComponent();
         // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
         ClampToWorkingArea();
+        // 表格列的显隐要跟着 VM 走,而列拿不到 DataContext(见 SyncTableColumns),
+        // 只能由视图订阅。DataContext 是外部(App / 语言切换重建)赋的,所以挂在这个事件上。
+        DataContextChanged += (_, _) => SyncTableColumns();
     }
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
+
+    /// <summary>当前已订阅属性变更的 VM —— 换 DataContext(切语言会重建窗口/VM)时要退订,免得越挂越多。</summary>
+    private MainWindowViewModel? _columnSource;
+
+    /// <summary>
+    /// 同步表格列的显隐(「书籍 / 作者」/「生词」在整列同值时收起)。
+    ///
+    /// 为什么不用 Binding:<c>DataGridColumn</c> 只是 <c>AvaloniaObject</c>,不是控件、不在可视树上,
+    /// 因此**没有 DataContext** —— 写在列上的 <c>{Binding …}</c> 不会生效(而且是静默失效);
+    /// 它也不能用 <c>x:Name</c>(生成不出字段)。所以只能由视图按 <c>Tag</c> 找到列再显式同步。
+    /// </summary>
+    private void SyncTableColumns() {
+        if (!ReferenceEquals(_columnSource, Vm)) {
+            if (_columnSource != null) _columnSource.PropertyChanged -= OnViewModelPropertyChanged;
+            _columnSource = Vm;
+            if (_columnSource != null) _columnSource.PropertyChanged += OnViewModelPropertyChanged;
+        }
+        ApplyTableColumnVisibility();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName is nameof(MainWindowViewModel.ShowClipBookColumns)
+            or nameof(MainWindowViewModel.ShowWordColumn)) {
+            ApplyTableColumnVisibility();
+        }
+    }
+
+    private void ApplyTableColumnVisibility() {
+        // 还没拿到 VM 时按"显示"处理:宁可多一列,也不要开窗瞬间整列闪一下。
+        var showBookColumns = Vm?.ShowClipBookColumns ?? true;
+        SetColumnVisible(ClipTableGrid, "book", showBookColumns);
+        SetColumnVisible(ClipTableGrid, "author", showBookColumns);
+        SetColumnVisible(WordTableGrid, "word", Vm?.ShowWordColumn ?? true);
+    }
+
+    /// <summary>按 <c>Tag</c> 定位列 —— 比按下标稳(列顺序调整不会悄悄改错对象)。</summary>
+    private static void SetColumnVisible(DataGrid grid, string tag, bool visible) {
+        foreach (var column in grid.Columns) {
+            if (string.Equals(column.Tag as string, tag, StringComparison.Ordinal)) {
+                column.IsVisible = visible;
+            }
+        }
+    }
 
     /// <summary>
     /// 把窗口尺寸夹进当前屏幕的可用区域内。
