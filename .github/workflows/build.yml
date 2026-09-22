@@ -81,6 +81,7 @@ jobs:
           grep -q "recycle bin view:.*result=OK" "$out"
           # 列表项元信息行:书名必须不在 MetaTail 里(它单独占一列、负责省略)
           grep -q "list meta row:.*result=OK" "$out"
+          grep -q "context menu:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -154,6 +155,7 @@ jobs:
           # 回收站视图能进能出
           grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
+          grep -q "context menu:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是
