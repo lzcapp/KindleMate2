@@ -122,7 +122,14 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 
 1. 文件不存在 → `DatabaseHelper.CreateDatabase()` 自动建库；失败 → 错误框 + 退出。
 2. `DatabaseHelper.MigrateLookupsSchemaIfNeeded()` 一次性幂等 schema 迁移，失败仅告警。
-3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份。
+3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份到
+   `Backups/OnExit/`，随后 `DatabaseHelper.PruneBackups()` 只保留最新 3 份。
+
+> **退出备份为什么单独一个子目录**：它每次关闭都产生一份，而手动备份与「清洗标注文本」前的
+> 保护性备份都落在 `Backups/` 根下 —— 混在一起时根目录很快被一串时间戳文件淹没，用户主动要的
+> 那几份反而找不着。分开后根目录只留用户自己要的，自动产物集中一处并由保留策略统一收敛。
+> 保留份数是 `AppConstants.ExitBackupKeepCount`；判定新旧用**文件名里的时间戳**而非 mtime
+> （后者会被复制 / 云同步改写），这也是备份名时间戳必须走 `InvariantCulture` 的原因之一。
 
 当前格式的 schema 由 `DatabaseHelper.CreateDatabase()` 定义（`clippings` / `lookups` /
 `original_clipping_lines` / `settings` / `vocab`）。
@@ -164,7 +171,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 | 手段 | 命令 | 覆盖 |
 |---|---|---|
 | 只读自检 | `KindleMate2.Avalonia --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
-| 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
+| 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
 | 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
 | CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
 | CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz（内含 `kindlemate2` 启动器）+ macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
