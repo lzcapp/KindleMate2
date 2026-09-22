@@ -690,7 +690,13 @@ public partial class MainWindow : Window {
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {
-        if (Vm is { } vm) await ShowResultAsync(await vm.ExportCurrentBookMarkdownAsync());
+        if (Vm is not { } vm) return;
+        // 菜单项已按域收起;这里再兜一次 —— 键盘/残留状态不该绕过守卫走到"拿生词当书名"。
+        if (!vm.CanExportCurrent) {
+            vm.StatusText = Strings.Ui_Status_PickBookFirst;
+            return;
+        }
+        await ShowResultAsync(await vm.ExportCurrentBookMarkdownAsync());
     }
 
     private async void OnRefreshCurrent(object? sender, RoutedEventArgs e) {

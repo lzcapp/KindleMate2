@@ -123,6 +123,11 @@ internal static class Program {
             // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
             ProbeListItemMeta(report);
 
+            // 生词域中栏的两段结构(查询 / 标注)
+            ProbeWordSections(report);
+
+            // 左栏右键菜单的域感知
+            ProbeNavMenu(report);
             // 分享卡片的内容组装
             ProbeShareCard(report);
             // 列表行 / 详情面板右键菜单的可用性判定
@@ -503,6 +508,146 @@ internal static class Program {
     }
 
     /// <summary>
+    /// 生词域中栏的两段结构(查询 / 标注)。
+    ///
+    /// 2026-09-22:右栏那段「这个词出现过的标注」挪到中栏,与查询分成两段。
+    /// 这里钉三件事:
+    /// <list type="number">
+    /// <item>切段后行的**顺序与归属**:标题 → 查询行 → 标题 → 标注行,不多不少;</item>
+    /// <item>标题行**不是记录**(不挂 Clipping/Lookup)⇒ 选中它右栏必须是空面板 ——
+    ///   否则会留着上一条的内容,看起来像面板坏了;</item>
+    /// <item><c>HeaderSubtitle</c> **只数查询行**:它要是把标题行/标注行也数进去,
+    ///   抬头就会把「1 条查询」说成「3 条查询」。</item>
+    /// </list>
+    /// 不切段(全部生词视图 / 有搜索词)时必须是一条**平表** —— 一个标题行都不许有;
+    /// 空段也不许留标题行(「0 条标注」只是噪音)。
+    ///
+    /// 断言里**不得出现本地化文案**(CI 跑的是 en 环境):所以只比结构、数量,
+    /// 以及"副标题加不加标注段都该是同一句",不比标题文字。
+    /// </summary>
+    private static void ProbeWordSections(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel { DomainIndex = 1 };   // 1 = 生词域(会重建左栏,必须在塞行之前)
+        var lookups = new List<KindleMate2.Domain.Entities.KM2DB.Lookup> { MakeLookup("en:beautiful", "beautiful") };
+        var clippings = new List<KindleMate2.Domain.Entities.KM2DB.Clipping> {
+            MakeClipping("甲书", "一句含 beautiful 的标注"),
+            MakeClipping("乙书", "另一句含 beautiful 的标注")
+        };
+        var noLookups = new List<KindleMate2.Domain.Entities.KM2DB.Lookup>();
+        var noClippings = new List<KindleMate2.Domain.Entities.KM2DB.Clipping>();
+
+        // 判据的三种输入都要走一遍:选中生词 → 切;全部生词 / 有搜索词 → 不切
+        var sectioned = vm.BuildWordDomainItems(lookups, clippings, "beautiful", hasSearch: false);
+        var allWords = vm.BuildWordDomainItems(lookups, clippings, selectedWord: null, hasSearch: false);
+        var searching = vm.BuildWordDomainItems(lookups, clippings, "beautiful", hasSearch: true);
+        var onlyClippings = vm.BuildWordDomainItems(noLookups, clippings, "beautiful", hasSearch: false);
+        var nothing = vm.BuildWordDomainItems(noLookups, noClippings, "beautiful", hasSearch: false);
+
+        var h0 = sectioned.ElementAtOrDefault(0);
+        var r1 = sectioned.ElementAtOrDefault(1);
+        var h2 = sectioned.ElementAtOrDefault(2);
+        var r3 = sectioned.ElementAtOrDefault(3);
+
+        // 选中标题行 ⇒ 右栏空面板;选中查询行 ⇒ 有详情(两者必须不同,否则"空面板"根本没生效)
+        vm.Items.ReplaceAll(sectioned);
+        if (r1 != null) vm.SelectedItem = r1;
+        var lookupDetail = vm.Detail.HasSelection;
+        var rowHasSelection = vm.HasSelectedItem;
+        if (h0 != null) vm.SelectedItem = h0;
+        var headerDetail = vm.Detail.HasSelection;
+        // 标题行也不算"有选中项":否则「删除」会先弹确认框、确认后才报「未选择」
+        var headerHasSelection = vm.HasSelectedItem;
+
+        // 副标题只报查询条数 ⇒ 加不加标注段都该是同一句话(否则会变成「3 条查询」)
+        vm.Items.ReplaceAll(vm.BuildWordDomainItems(lookups, noClippings, "beautiful", hasSearch: false));
+        var subtitleAlone = vm.HeaderSubtitle;
+        vm.Items.ReplaceAll(sectioned);
+        var subtitleWithClippings = vm.HeaderSubtitle;
+        var subtitleStable = string.Equals(subtitleAlone, subtitleWithClippings, StringComparison.Ordinal);
+
+        var headerDistinct = h0 is not null && h2 is not null
+                             && h0.SectionTitle.Length > 0 && h2.SectionTitle.Length > 0
+                             && !string.Equals(h0.SectionTitle, h2.SectionTitle, StringComparison.Ordinal);
+        var structureOk = sectioned.Count == 5
+                          && h0 is { IsSectionHeader: true, Clipping: null, Lookup: null }
+                          && r1 is { IsSectionHeader: false, Lookup: not null }
+                          && h2 is { IsSectionHeader: true, Clipping: null, Lookup: null }
+                          && r3 is { IsSectionHeader: false, Clipping: not null }
+                          && sectioned.Count(i => i.Clipping != null) == 2
+                          && headerDistinct;
+        // 两条"不切段"的判据都要钉:全部生词视图、以及有搜索词时
+        var flatOk = allWords.Count == 3 && allWords.All(i => !i.IsSectionHeader)
+                     && searching.Count == 3 && searching.All(i => !i.IsSectionHeader);
+        var emptyOk = onlyClippings.Count == 3 && onlyClippings[0].IsSectionHeader
+                      && onlyClippings.Count(i => i.Clipping != null) == 2
+                      && nothing.Count == 0;
+
+        var ok = structureOk && flatOk && emptyOk && lookupDetail && !headerDetail && subtitleStable
+                 && !headerHasSelection && rowHasSelection;
+
+        report.AppendLine($"word sections: 切段行数={sectioned.Count}(期望 5)" +
+                          $" 标题0={h0?.IsSectionHeader}(期望 True) 查询行={r1?.Lookup != null}(期望 True)" +
+                          $" 标题2={h2?.IsSectionHeader}(期望 True)" +
+                          $" 标注行={sectioned.Count(i => i.Clipping != null)}(期望 2)" +
+                          $" 两个标题不同={headerDistinct}(期望 True)" +
+                          $" 全部生词平表={allWords.Count}(期望 3)/标题行 {allWords.Count(i => i.IsSectionHeader)}(期望 0)" +
+                          $" 有搜索词平表={searching.Count}(期望 3)/标题行 {searching.Count(i => i.IsSectionHeader)}(期望 0)" +
+                          $" 只有标注={onlyClippings.Count}(期望 3) 全空={nothing.Count}(期望 0)" +
+                          $" 查询行详情={lookupDetail}(期望 True) 标题行详情={headerDetail}(期望 False)" +
+                          $" 可操作={rowHasSelection}/{headerHasSelection}(期望 True/False)" +
+                          $" 副标题不随标注段变={subtitleStable}(期望 True)" +
+                          $" -> result={(ok ? "OK" : "失败!两段结构不符合预期")}");
+    }
+
+    /// <summary>
+    /// 左栏右键菜单的**域感知**:生词本里不该出现「重命名书籍」「导出」。
+    ///
+    /// 那两个动作都是对**某本书**做的:生词域里点「重命名书籍」会拿"那个词"当书名去找同名书
+    /// 改名 —— 不只是菜单难看,是**能改到数据**;「导出」则按"书名 == 这个词"导出一本同名书
+    /// (或什么都没有)。2026-09-22 用户发现后修。
+    ///
+    /// 同时钉**通知**:两条可用性都依赖「哪个域 + 选中哪个节点」,换域时不发通知,
+    /// 菜单项就会停在初始状态 —— 这个坑本仓已踩过两次。其中"只切域、不动节点"最要紧:
+    /// 空库时 SelectedNav 不产生变化,压根走不到 ApplyFilter,只能靠 DomainIndex 那边补。
+    /// </summary>
+    private static void ProbeNavMenu(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var notified = 0;
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(MainWindowViewModel.CanRenameCurrentBook)) notified++;
+        };
+
+        // ① 生词域 + 具体生词 ⇒ 两条都该收起
+        vm.DomainIndex = 1;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "小心", Name = "小心" };
+        var wordRename = vm.CanRenameCurrentBook;
+        var wordExport = vm.CanExportCurrent;
+
+        // ② 切回标注域 + 具体书 ⇒ 两条都该出现
+        vm.DomainIndex = 0;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "某本书", Name = "某本书" };
+        var bookRename = vm.CanRenameCurrentBook;
+        var bookExport = vm.CanExportCurrent;
+
+        // ③ 「全部标注」:标注域、但不是具体书 ⇒ 导出可用、重命名不可用
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = string.Empty, Name = "全部", IsAll = true };
+        var allRename = vm.CanRenameCurrentBook;
+        var allExport = vm.CanExportCurrent;
+
+        // ④ 只切域、不动节点 —— 最容易漏通知的一条
+        var before = notified;
+        vm.DomainIndex = 1;
+        var switchNotified = notified > before;
+
+        var ok = !wordRename && !wordExport && bookRename && bookExport
+                 && !allRename && allExport && switchNotified && notified >= 4;
+
+        report.AppendLine($"nav menu: 生词域 重命名={wordRename}/导出={wordExport}(期望 False/False)" +
+                          $" 标注域具体书={bookRename}/{bookExport}(期望 True/True)" +
+                          $" 全部标注={allRename}/{allExport}(期望 False/True)" +
+                          $" 只切域有通知={switchNotified}(期望 True) 通知共={notified}(期望 ≥4)" +
+                          $" -> result={(ok ? "OK" : "失败!左栏菜单没有跟着域走")}");
+    }
+
     /// 分享卡片的内容组装。
     ///
     /// 内容口径是**用户定死的**:只留「标注内容 + 书名 + 作者」,页数/日期一律舍去 ——
