@@ -315,15 +315,6 @@
   <data name="Database" xml:space="preserve">
     <value>数据库</value>
   </data>
-  <data name="Clean_Database" xml:space="preserve">
-    <value>清理数据库</value>
-  </data>
-  <data name="Database_Cleaned" xml:space="preserve">
-    <value>数据库已清理</value>
-  </data>
-  <data name="Database_No_Need_Clean" xml:space="preserve">
-    <value>数据库无需清理</value>
-  </data>
   <data name="Backup_Clippings_Failed" xml:space="preserve">
     <value>备份标注失败</value>
   </data>
@@ -506,12 +497,6 @@
   </data>
   <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
     <value>导出为 Markdown</value>
-  </data>
-  <data name="Ui_Menu_CleanDatabase" xml:space="preserve">
-    <value>清理数据库</value>
-  </data>
-  <data name="Ui_Menu_CleanClippingText" xml:space="preserve">
-    <value>清洗标注文本</value>
   </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>重建数据库</value>
@@ -729,17 +714,26 @@
   <data name="Ui_FileType_KmateDatabase" xml:space="preserve">
     <value>KMate 数据库</value>
   </data>
-  <data name="Ui_Dlg_CleanMessage" xml:space="preserve">
-    <value>将删除内容为空的标注记录。建议先备份,是否继续?</value>
-  </data>
-  <data name="Ui_Dlg_CleanOk" xml:space="preserve">
-    <value>清理</value>
-  </data>
-  <data name="Ui_Dlg_ClippingClean_Message_Format" xml:space="preserve">
-    <value>将清洗 {0} 条标注的首尾标点(共扫描 {1} 条),不会删除任何记录;清洗前会自动备份数据库。</value>
-  </data>
   <data name="Ui_Dlg_ClippingClean_Samples" xml:space="preserve">
     <value>改动预览</value>
+  </data>
+  <data name="Ui_Menu_MaintainDatabase" xml:space="preserve">
+    <value>维护数据库</value>
+  </data>
+  <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
+    <value>将清洗 {0} 条标注的首尾标点(共扫描 {1} 条),并删除空条目 {2} 条、重复项 {3} 条;不会改动其他记录,操作前会自动备份数据库。</value>
+  </data>
+  <data name="Ui_Maintenance_Result_Format" xml:space="preserve">
+    <value>已清洗 {0} 条(共扫描 {1} 条);清理删除空条目 {2} 条、重复项 {3} 条,回收 {4}。备份与改动清单:{5}</value>
+  </data>
+  <data name="Ui_Maintenance_Failed" xml:space="preserve">
+    <value>维护失败</value>
+  </data>
+  <data name="Ui_Maintenance_Ok" xml:space="preserve">
+    <value>开始维护</value>
+  </data>
+  <data name="Ui_Maintenance_None" xml:space="preserve">
+    <value>没有需要维护的内容</value>
   </data>
   <data name="Ui_Dlg_ClippingClean_Before" xml:space="preserve">
     <value>改前</value>
@@ -753,20 +747,8 @@
   <data name="Ui_Dlg_ClippingClean_More_Format" xml:space="preserve">
     <value>另有 {0} 条改动未在此列出,清洗后会全部写入改动清单。</value>
   </data>
-  <data name="Ui_Dlg_ClippingClean_Ok_Format" xml:space="preserve">
-    <value>清洗 {0} 条</value>
-  </data>
-  <data name="Ui_ClippingClean_None" xml:space="preserve">
-    <value>没有需要清洗的标注</value>
-  </data>
-  <data name="Ui_ClippingClean_Result_Format" xml:space="preserve">
-    <value>已清洗 {0} 条(共扫描 {1} 条)。备份与改动清单:{2}</value>
-  </data>
   <data name="Ui_ClippingClean_Skipped_Format" xml:space="preserve">
     <value>另有 {0} 条整条皆为标点,已跳过。</value>
-  </data>
-  <data name="Ui_ClippingClean_Failed" xml:space="preserve">
-    <value>清洗失败</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>按日期</value>

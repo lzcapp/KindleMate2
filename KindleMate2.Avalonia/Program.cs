@@ -301,7 +301,7 @@ internal static class Program {
             "留學派和家人們都相當恐懼不安,因為自己可能會在不知不覺間,被誣陷為間諜團或是體制反對勢力。", 3));
 
         var cleanReport = new KindleMate2.Application.Models.ClippingCleanReport {
-            Scanned = 3,
+            Scanned = 9,
             ChangedCount = 2,
             AllPunctuationCount = 1,
             Changes = new[] {
@@ -314,14 +314,50 @@ internal static class Program {
             }
         };
 
-        var preview = new ClippingCleanPreviewViewModel(cleanReport);
+        // 概要里必须同时出现"改多少"与"删多少" —— 删行是这一步唯一不可逆的部分,
+        // 而它可能因为清洗把内容归一化而凭空多出来(见 ScanDatabaseMaintenance)。
+        var plan = new KindleMate2.Application.Models.DatabaseMaintenancePlan {
+            Cleaning = cleanReport,
+            Cleanup = new KindleMate2.Application.Models.DatabaseCleanPlan {
+                Removals = new[] {
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k9", "自检书", "", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Empty),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k7", "自检书", "", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Empty),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k6", "自检书", "", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Empty),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k8", "自检书", "重复的内容", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Duplicated),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k5", "自检书", "重复的内容", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Duplicated),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k4", "自检书", "重复的内容", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Duplicated),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k3", "自检书", "重复的内容", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Duplicated),
+                    new KindleMate2.Application.Models.DatabaseCleanRemoval(
+                        "k2", "自检书", "重复的内容", KindleMate2.Application.Models.DatabaseCleanRemovalReason.Duplicated)
+                }
+            }
+        };
+        var preview = new ClippingCleanPreviewViewModel(plan);
         var head = preview.Rows[0];
         var tail = preview.Rows[1];
 
         var beforeLine = tail.LeadingNoise + tail.Head + tail.Tail + tail.TrailingNoise;
         var afterLine = tail.Head + tail.Tail;
 
-        var ok = preview.Rows.Count == 2
+        // 断言**只比数字与顺序**,不比文案:CI 是 en 环境,拿中文串比必然假红。
+        // 四个数字刻意取得互不相同(改动 2 / 扫描 9 / 空条目 3 / 重复项 5),
+        // 这样"出现顺序递增"就能证明四个参数没串位 —— 串位是这类拼接最常见的错法。
+        var digits = new[] { "2", "9", "3", "5" };
+        var summaryMentionsCleanup = true;
+        var cursor = 0;
+        foreach (var digit in digits) {
+            var at = preview.Summary.IndexOf(digit, cursor, StringComparison.Ordinal);
+            if (at < 0) { summaryMentionsCleanup = false; break; }
+            cursor = at + 1;
+        }
+        var ok = preview.Rows.Count == 2 && summaryMentionsCleanup
                  && head.LeadingNoise == "\u3002" && head.TrailingNoise.Length == 0
                  && tail.LeadingNoise.Length == 0 && tail.TrailingNoise == tailNoise
                  && tail.Tail.Length > 0                       // 正文被中间省略 ⇒ 尾部仍在
@@ -332,6 +368,7 @@ internal static class Program {
                           $" headNoise='{head.LeadingNoise}' tailNoise='{tail.TrailingNoise}'" +
                           $" coreElided={tail.Tail.Length > 0}" +
                           $" changed={(ok ? "yes" : "NO")}" +
+                          $" 概要含四项计数(按序)={summaryMentionsCleanup}" +
                           $" -> result={(ok ? "OK" : "失败!预览拼装不符合预期")}");
     }
 
@@ -532,9 +569,19 @@ internal static class Program {
             var deleteResult = vm.DeleteSelectedAsync().GetAwaiter().GetResult();
             report.AppendLine($"delete: ok={deleteResult.Ok} kind={deleteResult.Kind} (clips {beforeDelete} -> {vm.ClipTable.Count})");
 
-            // 7. 清理 / 重建(契约:成功标题分别为 Clean_Database / Rebuild_Database)
-            var cleanResult = vm.CleanDatabaseAsync().GetAwaiter().GetResult();
-            report.AppendLine($"clean: ok={cleanResult.Ok} title={cleanResult.Title} msg={cleanResult.Message}");
+            // 7. 维护数据库(清洗 + 清理)/ 重建
+            //
+            // 这一段同时补上了此前的一个**覆盖缺口**:`CleanClippingTextsAsync` 的编排
+            // (无条件备份 → 落库 → 写清单)过去在仓库里没有任何一处会验到 —— 单测只覆盖服务层,
+            // 而本自检完全没走清洗路径。现在走的就是合并后的那一个入口,顺带把
+            // 「先备份再改」这条安全底线也纳入了自检。
+            var maintainResult = vm.MaintainDatabaseAsync().GetAwaiter().GetResult();
+            report.AppendLine($"maintain: ok={maintainResult.Ok} title={maintainResult.Title} msg={maintainResult.Message}");
+            // 落盘清单:文件名形如 Maintenance_<stamp>.txt(此前是 ClippingClean_*)
+            var manifests = Directory.Exists(work)
+                ? Directory.GetFiles(work, "Maintenance_*.txt", SearchOption.AllDirectories).Length
+                : 0;
+            report.AppendLine($"  -> 维护清单 Maintenance_*.txt = {manifests} 份(期望 ≥1)");
 
             // 从设备导入:本机无 Kindle,应走「设备未连接」前置守卫 —— 返回失败而不是崩溃/静默。
             // (真实取文件与导入需要接上设备,自检覆盖不到。)

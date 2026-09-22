@@ -397,47 +397,35 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
-    /// 清理数据库。确认框为**用户指定**(2026-09-13;原版 MenuClean_Click 无确认框);
-    /// 执行前的「无数据 → 数据库无需清理」提示由 VM 按原版逻辑返回。
+    /// 维护数据库(2026-09-22:由「清理数据库」+「清洗标注文本」合并而来)。
+    ///
+    /// 两件事本来就是同一条流水线(导入路径已经在跑 清洗 → 清理),手动入口却拆成两个
+    /// 名字只差一个字的菜单项,用户既分不清该点哪个、也不知道先后。
+    ///
+    /// 流程仍是"先看后做":只读预演(清洗改哪些 + 清理删哪些) → 预览窗口逐条摆出来 →
+    /// 确认后才落库。两步在应用内都没有撤销路径,所以 VM 会**无条件**先备份、并留一份清单。
     /// </summary>
-    private async void OnMenuCleanDb(object? sender, RoutedEventArgs e) {
-        if (Vm is not { } vm) return;
-        if (vm.HasClippingData) {
-            var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanDatabase,
-                Strings.Ui_Dlg_CleanMessage, Strings.Ui_Dlg_CleanOk);
-            if (!ok) return;
-        }
-        await ShowResultAsync(await vm.CleanDatabaseAsync());
-    }
-
-    /// <summary>
-    /// 清洗标注文本(2026-09-21 新增;原版无此功能)。
-    /// 与「清理数据库」是两件事:那个判重、删空条目、VACUUM,动的是**行数**;
-    /// 这个只改每条的首尾标点,**一条都不删**。
-    /// 流程刻意做成"先看后做":只读预扫 → 确认框给出条数与若干条「改前 → 改后」样例 → 确认后才落库。
-    /// 清洗在应用内没有撤销路径,所以落库前 VM 会无条件先备份数据库、并留一份改动清单。
-    /// </summary>
-    private async void OnMenuCleanClipping(object? sender, RoutedEventArgs e) {
+    private async void OnMenuMaintainDatabase(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
 
-        var preview = await vm.PreviewClippingCleanAsync();
-        if (preview is null) {
-            // 无会话 / 正忙 / 读库失败对用户是同一件事:这次洗不了,不必细分。
+        var plan = await vm.PreviewMaintenanceAsync();
+        if (plan is null) {
+            // 无会话 / 正忙 / 读库失败对用户是同一件事:这次做不了,不必细分。
             await ShowResultAsync(new MainWindowViewModel.OperationResult(false,
-                Strings.Ui_ClippingClean_Failed, Strings.Ui_Status_OpenDatabaseFirst));
+                Strings.Ui_Maintenance_Failed, Strings.Ui_Status_OpenDatabaseFirst));
             return;
         }
-        if (preview.ChangedCount == 0) {
-            // 无需清洗不是错误,但也不该静默 —— 否则用户会以为点了没反应。
+        if (!plan.HasWork) {
+            // 无事可做不是错误,但也不该静默 —— 否则用户会以为点了没反应。
             await ShowResultAsync(new MainWindowViewModel.OperationResult(false,
-                Strings.Ui_Menu_CleanClippingText, Strings.Ui_ClippingClean_None));
+                Strings.Ui_Menu_MaintainDatabase, Strings.Ui_Maintenance_None));
             return;
         }
 
         // 逐条列出的预览窗口(独立窗口,可滚动、带差异高亮),不再把样例压成一段文字。
-        var ok = await ClippingCleanPreviewWindow.ConfirmAsync(this, preview);
+        var ok = await ClippingCleanPreviewWindow.ConfirmAsync(this, plan);
         if (!ok) return;
-        await ShowResultAsync(await vm.CleanClippingTextsAsync());
+        await ShowResultAsync(await vm.MaintainDatabaseAsync());
     }
 
     private async void OnMenuRebuildDb(object? sender, RoutedEventArgs e) {

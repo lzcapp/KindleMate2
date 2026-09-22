@@ -166,11 +166,6 @@ namespace KindleMate2.Shared {
         /// <summary>
         ///   查找类似 清理数据库 的本地化字符串。
         /// </summary>
-        public static string Clean_Database {
-            get {
-                return ResourceManager.GetString("Clean_Database", resourceCulture);
-            }
-        }
         
         
         /// <summary>
@@ -405,11 +400,6 @@ namespace KindleMate2.Shared {
         /// <summary>
         ///   查找类似 数据库已清理 的本地化字符串。
         /// </summary>
-        public static string Database_Cleaned {
-            get {
-                return ResourceManager.GetString("Database_Cleaned", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 数据库为空 的本地化字符串。
@@ -423,11 +413,6 @@ namespace KindleMate2.Shared {
         /// <summary>
         ///   查找类似 数据库无需清理 的本地化字符串。
         /// </summary>
-        public static string Database_No_Need_Clean {
-            get {
-                return ResourceManager.GetString("Database_No_Need_Clean", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 删除 的本地化字符串。
@@ -1178,8 +1163,6 @@ namespace KindleMate2.Shared {
         public static string Ui_Menu_SyncToDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice", resourceCulture);
         public static string Ui_Menu_SyncToDevice_NeedsDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice_NeedsDevice", resourceCulture);
         public static string Ui_Menu_ExportMarkdown => ResourceManager.GetString("Ui_Menu_ExportMarkdown", resourceCulture);
-        public static string Ui_Menu_CleanDatabase => ResourceManager.GetString("Ui_Menu_CleanDatabase", resourceCulture);
-        public static string Ui_Menu_CleanClippingText => ResourceManager.GetString("Ui_Menu_CleanClippingText", resourceCulture);
         public static string Ui_Menu_RebuildDatabase => ResourceManager.GetString("Ui_Menu_RebuildDatabase", resourceCulture);
         public static string Ui_Menu_ClearData => ResourceManager.GetString("Ui_Menu_ClearData", resourceCulture);
         public static string Ui_Menu_Github => ResourceManager.GetString("Ui_Menu_Github", resourceCulture);
@@ -1257,19 +1240,18 @@ namespace KindleMate2.Shared {
         public static string Ui_FileType_KmDatabase => ResourceManager.GetString("Ui_FileType_KmDatabase", resourceCulture);
         public static string Ui_FileType_Km2Database => ResourceManager.GetString("Ui_FileType_Km2Database", resourceCulture);
         public static string Ui_FileType_KmateDatabase => ResourceManager.GetString("Ui_FileType_KmateDatabase", resourceCulture);
-        public static string Ui_Dlg_CleanMessage => ResourceManager.GetString("Ui_Dlg_CleanMessage", resourceCulture);
-        public static string Ui_Dlg_CleanOk => ResourceManager.GetString("Ui_Dlg_CleanOk", resourceCulture);
-        public static string Ui_Dlg_ClippingClean_Message_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Message_Format", resourceCulture);
         public static string Ui_Dlg_ClippingClean_Samples => ResourceManager.GetString("Ui_Dlg_ClippingClean_Samples", resourceCulture);
+        public static string Ui_Menu_MaintainDatabase => ResourceManager.GetString("Ui_Menu_MaintainDatabase", resourceCulture);
+        public static string Ui_Maintenance_Message_Format => ResourceManager.GetString("Ui_Maintenance_Message_Format", resourceCulture);
+        public static string Ui_Maintenance_Result_Format => ResourceManager.GetString("Ui_Maintenance_Result_Format", resourceCulture);
+        public static string Ui_Maintenance_Failed => ResourceManager.GetString("Ui_Maintenance_Failed", resourceCulture);
+        public static string Ui_Maintenance_Ok => ResourceManager.GetString("Ui_Maintenance_Ok", resourceCulture);
+        public static string Ui_Maintenance_None => ResourceManager.GetString("Ui_Maintenance_None", resourceCulture);
         public static string Ui_Dlg_ClippingClean_Before => ResourceManager.GetString("Ui_Dlg_ClippingClean_Before", resourceCulture);
         public static string Ui_Dlg_ClippingClean_After => ResourceManager.GetString("Ui_Dlg_ClippingClean_After", resourceCulture);
         public static string Ui_Dlg_ClippingClean_Legend => ResourceManager.GetString("Ui_Dlg_ClippingClean_Legend", resourceCulture);
         public static string Ui_Dlg_ClippingClean_More_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_More_Format", resourceCulture);
-        public static string Ui_Dlg_ClippingClean_Ok_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Ok_Format", resourceCulture);
-        public static string Ui_ClippingClean_None => ResourceManager.GetString("Ui_ClippingClean_None", resourceCulture);
-        public static string Ui_ClippingClean_Result_Format => ResourceManager.GetString("Ui_ClippingClean_Result_Format", resourceCulture);
         public static string Ui_ClippingClean_Skipped_Format => ResourceManager.GetString("Ui_ClippingClean_Skipped_Format", resourceCulture);
-        public static string Ui_ClippingClean_Failed => ResourceManager.GetString("Ui_ClippingClean_Failed", resourceCulture);
         public static string Ui_Stats_ByDate => ResourceManager.GetString("Ui_Stats_ByDate", resourceCulture);
         public static string Ui_Stats_ByHour => ResourceManager.GetString("Ui_Stats_ByHour", resourceCulture);
         public static string Ui_Stats_ByWeekday => ResourceManager.GetString("Ui_Stats_ByWeekday", resourceCulture);

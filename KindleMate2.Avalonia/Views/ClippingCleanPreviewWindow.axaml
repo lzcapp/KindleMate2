@@ -7,7 +7,7 @@
         x:Class="KindleMate2.Avalonia.Views.ClippingCleanPreviewWindow"
         mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="640"
         x:DataType="vm:ClippingCleanPreviewViewModel"
-        Title="{x:Static shared:Strings.Ui_Menu_CleanClippingText}"
+        Title="{x:Static shared:Strings.Ui_Menu_MaintainDatabase}"
         Icon="/Assets/bookmark.ico"
         Width="780" Height="640" MinWidth="560" MinHeight="400"
         WindowStartupLocation="CenterOwner">
@@ -25,7 +25,7 @@
             BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1"
             Padding="20,16">
       <StackPanel Spacing="6">
-        <TextBlock Classes="title" Text="{x:Static shared:Strings.Ui_Menu_CleanClippingText}" />
+        <TextBlock Classes="title" Text="{x:Static shared:Strings.Ui_Menu_MaintainDatabase}" />
         <TextBlock Text="{Binding Summary}" TextWrapping="Wrap"
                    Foreground="{DynamicResource KmTextSecondaryBrush}" />
         <TextBlock Classes="ts" Text="{Binding Skipped}" IsVisible="{Binding HasSkipped}" TextWrapping="Wrap" />

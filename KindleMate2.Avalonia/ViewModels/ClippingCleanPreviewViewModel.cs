@@ -27,31 +27,35 @@ public sealed class ClippingCleanPreviewViewModel {
     /// </summary>
     public const int MaxRows = 200;
 
-    public ClippingCleanPreviewViewModel(ClippingCleanReport report) {
-        ArgumentNullException.ThrowIfNull(report);
+    public ClippingCleanPreviewViewModel(DatabaseMaintenancePlan plan) {
+        ArgumentNullException.ThrowIfNull(plan);
+        var cleaning = plan.Cleaning;
+        var cleanup = plan.Cleanup;
 
-        Summary = string.Format(CultureInfo.CurrentCulture,
-            Strings.Ui_Dlg_ClippingClean_Message_Format, report.ChangedCount, report.Scanned);
+        // 概要必须**同时**给出"改多少"与"删多少":删行是这一步里唯一不可逆的部分,
+        // 而它恰恰可能因为清洗把内容归一化而**凭空多出来**(两条只差一个首部标点的标注
+        // 清洗后完全相同 ⇒ 都成了重复项)。见 ScanDatabaseMaintenance 的说明。
+        Summary = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Maintenance_Message_Format,
+            cleaning.ChangedCount, cleaning.Scanned, cleanup.EmptyCount, cleanup.DuplicatedCount);
 
-        OkText = string.Format(CultureInfo.CurrentCulture,
-            Strings.Ui_Dlg_ClippingClean_Ok_Format, report.ChangedCount);
+        OkText = Strings.Ui_Maintenance_Ok;
 
         Skipped = string.Format(CultureInfo.CurrentCulture,
-            Strings.Ui_ClippingClean_Skipped_Format, report.AllPunctuationCount);
-        HasSkipped = report.AllPunctuationCount > 0;
+            Strings.Ui_ClippingClean_Skipped_Format, cleaning.AllPunctuationCount);
+        HasSkipped = cleaning.AllPunctuationCount > 0;
 
         Header = string.Format(CultureInfo.CurrentCulture, "{0} ({1})",
-            Strings.Ui_Dlg_ClippingClean_Samples, report.ChangedCount);
+            Strings.Ui_Dlg_ClippingClean_Samples, cleaning.ChangedCount);
 
-        var shown = report.Changes.Take(MaxRows).ToList();
+        var shown = cleaning.Changes.Take(MaxRows).ToList();
         Rows = shown.Select(change => new ClippingCleanPreviewRow(change)).ToList();
 
-        var hidden = report.Changes.Count - shown.Count;
+        var hidden = cleaning.Changes.Count - shown.Count;
         HasMore = hidden > 0;
         More = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_More_Format, hidden);
     }
 
-    /// <summary>概要:将清洗 N 条、共扫描 M 条、会先备份。</summary>
+    /// <summary>概要:清洗改 N 条、扫描 M 条、清理删空条目 X / 重复项 Y、会先备份。</summary>
     public string Summary { get; }
 
     /// <summary>「整条皆标点已跳过」的提示。</summary>
