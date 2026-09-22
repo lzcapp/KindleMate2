@@ -20,6 +20,7 @@ using KindleMate2.Infrastructure.Repositories.KM2DB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Books;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Avalonia.ViewModels;
 
@@ -698,6 +699,91 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                    countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma +
                    Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
         }, true, Strings.Clean_Database, Strings.Clear_Failed);
+    }
+
+    // —— 清洗标注文本(2026-09-21 新增;原版无此功能) ——
+    //
+    // 要解决的问题:Kindle 划分线段落时把边界落在标点上,于是"上一句话的收尾标点"经常
+    // 一起被划进来(实测样本:「。重点是……」开头那个句号属于前一句,不是这条标注的内容)。
+    //
+    // 与「清理数据库」是**两件事**:那个做判重、删空条目、VACUUM,动的是**行数**;
+    // 这个只改每条的首尾标点,**一条都不删**。规则本体在
+    // Shared/Clippings/ClippingCleanRules.cs(抽出去才有单测,测试工程不引用 Avalonia)。
+    //
+    // 导入时也会自动走一遍 —— 挂在 Km2DatabaseService.HandleClippings 里,与「重建数据库」
+    // 共用同一条解析路径。下面这两个方法是**对存量数据的手工批量清洗**。
+
+    /// <summary>
+    /// 只读预览:算出清洗会改掉哪些条目,不写任何东西。确认框靠它拿到条数与样例。
+    /// 返回 null 表示无会话/正忙/读库失败 —— 调用方统一按失败提示即可
+    /// (这两种失败对用户是同一件事:这次洗不了)。
+    /// </summary>
+    public Task<ClippingCleanReport?> PreviewClippingCleanAsync() {
+        if (_session is not { } session || IsBusy) {
+            return Task.FromResult<ClippingCleanReport?>(null);
+        }
+        return Task.Run(() => session.Km2DatabaseService.ScanClippingClean(out var report) ? report : null);
+    }
+
+    /// <summary>
+    /// 手工批量清洗存量标注。
+    /// **先备份再改**:清洗一旦落库,应用内没有撤销路径 —— 备份 + 落盘清单是唯一的回头路,
+    /// 所以备份这一步不放进"可选"里。
+    /// </summary>
+    public Task<OperationResult> CleanClippingTextsAsync() {
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        if (_allClippings.Count <= 0) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_Empty));
+        }
+        return RunOperationAsync(() => {
+            session.ExportManager.BackupDatabase();
+
+            if (!session.Km2DatabaseService.CleanClippingTexts(out var report, ProgressReporter)) {
+                return string.Empty;
+            }
+
+            var manifestPath = WriteCleanManifest(session, report);
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_ClippingClean_Result_Format,
+                report.ChangedCount, report.Scanned, string.IsNullOrEmpty(manifestPath) ? "-" : manifestPath);
+            if (report.AllPunctuationCount > 0) {
+                message += Environment.NewLine + string.Format(CultureInfo.CurrentCulture,
+                    Strings.Ui_ClippingClean_Skipped_Format, report.AllPunctuationCount);
+            }
+            return message;
+        }, true, Strings.Ui_Menu_CleanClippingText, Strings.Ui_ClippingClean_Failed);
+    }
+
+    /// <summary>
+    /// 把逐条差异落成清单文件,返回文件路径(写失败返回空串)。
+    /// 清单写失败**不该**让整个清洗算失败 —— 数据那时已经改完了,报"清洗失败"反而是谎话;
+    /// 吞掉异常、只留日志,正文里路径位置显示 "-"。
+    /// </summary>
+    private static string WriteCleanManifest(DatabaseSession session, ClippingCleanReport report) {
+        try {
+            Directory.CreateDirectory(session.BackupDirectory);
+            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
+            // 非公历日历下年份会变成 2569/1405 之类,清单文件名就读不出日期了
+            // (与 ClearAllDataAsync 里那个备份文件名同一个坑)。
+            var stamp = DateTime.Now.ToString(AppConstants.BackupDateFormat, CultureInfo.InvariantCulture);
+            var path = Path.Combine(session.BackupDirectory, $"ClippingClean_{stamp}.txt");
+            var lines = new List<string> {
+                $"# 标注清洗清单 {stamp}",
+                $"# 扫描 {report.Scanned} 条,清洗 {report.ChangedCount} 条,整条皆标点而跳过 {report.AllPunctuationCount} 条",
+                "#"
+            };
+            // 多行内容压成一行显示,否则一条标注就能把清单撑散;正文里的换行用 \n 记号代替。
+            lines.AddRange(report.Changes.Select(change =>
+                $"--- {change.BookName} | {change.Key}{Environment.NewLine}" +
+                $"改前: {change.Before.Replace(Environment.NewLine, "\\n")}{Environment.NewLine}" +
+                $"改后: {change.After.Replace(Environment.NewLine, "\\n")}"));
+            File.WriteAllLines(path, lines, new UTF8Encoding(false));
+            return path;
+        } catch (Exception e) {
+            AppLog.Write(StringHelper.GetExceptionMessage(nameof(WriteCleanManifest), e));
+            return string.Empty;
+        }
     }
 
     /// <summary>

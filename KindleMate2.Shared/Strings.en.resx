@@ -510,6 +510,9 @@
   <data name="Ui_Menu_CleanDatabase" xml:space="preserve">
     <value>Clean database</value>
   </data>
+  <data name="Ui_Menu_CleanClippingText" xml:space="preserve">
+    <value>Clean Up Clipping Text</value>
+  </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>Rebuild database</value>
   </data>
@@ -731,6 +734,30 @@
   </data>
   <data name="Ui_Dlg_CleanOk" xml:space="preserve">
     <value>Clean</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Message_Format" xml:space="preserve">
+    <value>This will strip leading and trailing punctuation from {0} of {1} clipping(s). No records are deleted. The database is backed up first.</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Samples" xml:space="preserve">
+    <value>Sample changes</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Sample_Format" xml:space="preserve">
+    <value>before: {0} → after: {1}</value>
+  </data>
+  <data name="Ui_Dlg_ClippingClean_Ok" xml:space="preserve">
+    <value>Clean Up</value>
+  </data>
+  <data name="Ui_ClippingClean_None" xml:space="preserve">
+    <value>No clippings need cleanup</value>
+  </data>
+  <data name="Ui_ClippingClean_Result_Format" xml:space="preserve">
+    <value>Cleaned {0} of {1} clipping(s). Backup and change list: {2}</value>
+  </data>
+  <data name="Ui_ClippingClean_Skipped_Format" xml:space="preserve">
+    <value>{0} clipping(s) are punctuation only and were skipped.</value>
+  </data>
+  <data name="Ui_ClippingClean_Failed" xml:space="preserve">
+    <value>Cleanup Failed</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>By date</value>

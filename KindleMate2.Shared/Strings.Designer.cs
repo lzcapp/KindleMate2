@@ -1179,6 +1179,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Menu_SyncToDevice_NeedsDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice_NeedsDevice", resourceCulture);
         public static string Ui_Menu_ExportMarkdown => ResourceManager.GetString("Ui_Menu_ExportMarkdown", resourceCulture);
         public static string Ui_Menu_CleanDatabase => ResourceManager.GetString("Ui_Menu_CleanDatabase", resourceCulture);
+        public static string Ui_Menu_CleanClippingText => ResourceManager.GetString("Ui_Menu_CleanClippingText", resourceCulture);
         public static string Ui_Menu_RebuildDatabase => ResourceManager.GetString("Ui_Menu_RebuildDatabase", resourceCulture);
         public static string Ui_Menu_ClearData => ResourceManager.GetString("Ui_Menu_ClearData", resourceCulture);
         public static string Ui_Menu_Github => ResourceManager.GetString("Ui_Menu_Github", resourceCulture);
@@ -1258,6 +1259,14 @@ namespace KindleMate2.Shared {
         public static string Ui_FileType_KmateDatabase => ResourceManager.GetString("Ui_FileType_KmateDatabase", resourceCulture);
         public static string Ui_Dlg_CleanMessage => ResourceManager.GetString("Ui_Dlg_CleanMessage", resourceCulture);
         public static string Ui_Dlg_CleanOk => ResourceManager.GetString("Ui_Dlg_CleanOk", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Message_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Message_Format", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Samples => ResourceManager.GetString("Ui_Dlg_ClippingClean_Samples", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Sample_Format => ResourceManager.GetString("Ui_Dlg_ClippingClean_Sample_Format", resourceCulture);
+        public static string Ui_Dlg_ClippingClean_Ok => ResourceManager.GetString("Ui_Dlg_ClippingClean_Ok", resourceCulture);
+        public static string Ui_ClippingClean_None => ResourceManager.GetString("Ui_ClippingClean_None", resourceCulture);
+        public static string Ui_ClippingClean_Result_Format => ResourceManager.GetString("Ui_ClippingClean_Result_Format", resourceCulture);
+        public static string Ui_ClippingClean_Skipped_Format => ResourceManager.GetString("Ui_ClippingClean_Skipped_Format", resourceCulture);
+        public static string Ui_ClippingClean_Failed => ResourceManager.GetString("Ui_ClippingClean_Failed", resourceCulture);
         public static string Ui_Stats_ByDate => ResourceManager.GetString("Ui_Stats_ByDate", resourceCulture);
         public static string Ui_Stats_ByHour => ResourceManager.GetString("Ui_Stats_ByHour", resourceCulture);
         public static string Ui_Stats_ByWeekday => ResourceManager.GetString("Ui_Stats_ByWeekday", resourceCulture);
