@@ -531,7 +531,7 @@ public partial class MainWindow : Window {
 
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
             Title = Strings.Ui_Op_ShareImage,
-            SuggestedFileName = BuildShareCardFileName(card),
+            SuggestedFileName = card.SuggestedFileName(Strings.Ui_Op_ShareImage),
             DefaultExtension = "png",
             FileTypeChoices = new[] {
                 new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } }
@@ -552,16 +552,6 @@ public partial class MainWindow : Window {
         // 定位失败只记日志 —— 图已经存好了,打不开文件夹不该算这次分享失败
         // (与统计页截图同一处理)。
         try { ShellHelper.RevealFile(path); } catch (Exception ex) { KindleMate2.Shared.Diagnostics.AppLog.Write(ex); }
-    }
-
-    /// <summary>分享图文件名:&lt;书名&gt;_&lt;yyyyMMdd&gt;.png;书名经 SanitizeFilename 清洗并截断。</summary>
-    private static string BuildShareCardFileName(ShareCardModel card) {
-        // 时间戳走 InvariantCulture:非公历日历下年份会变成 2569 之类,文件名就读不出日期了。
-        var stamp = DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-        var name = card.BookName.Length > 0 ? card.BookName : Strings.Ui_Op_ShareImage;
-        var safe = StringHelper.SanitizeFilename(name);
-        if (safe.Length > 40) safe = safe[..40];
-        return $"{safe}_{stamp}.png";
     }
 
     // —— 列表 / 详情动作 ——

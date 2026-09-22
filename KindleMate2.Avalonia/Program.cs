@@ -493,7 +493,7 @@ internal static class Program {
         };
 
         var clip = new KindleMate2.Domain.Entities.KM2DB.Clipping {
-            Key = "k1",
+            Key = "2017-06-11 06:57:28|113-113",
             Content = "  一段标注正文  ",
             BookName = "某本书",
             AuthorName = "某作者",
@@ -515,7 +515,18 @@ internal static class Program {
         vm.SelectedItem = null;
         var noneCard = vm.BuildShareCardModel();
 
-        var ok = canShare && card is { } c
+        // 文件名防重复:同一本书、**同一天**、不同位置的两条标注必须给出**不同**的建议名 ——
+        // 旧口径(书名 + 当天日期)在这两例上会撞成同一个名字,用户连存两张就误覆盖。
+        var fileName = card?.SuggestedFileName("分享图") ?? string.Empty;
+        var sameDayOtherClipping = new KindleMate2.Avalonia.ViewModels.ShareCardModel {
+            BookName = "某本书", Location = "200-200", ClippingTime = "2017-06-11-06:57:28"
+        }.SuggestedFileName("分享图");
+        var fileNameOk = fileName.EndsWith(".png", StringComparison.Ordinal)
+                         && fileName.Contains("113-113", StringComparison.Ordinal)
+                         && !fileName.Contains(':', StringComparison.Ordinal)
+                         && !string.Equals(fileName, sameDayOtherClipping, StringComparison.Ordinal);
+
+        var ok = canShare && card is { } c && fileNameOk
                  && c.Quote == "一段标注正文"        // Flatten 会把首尾空白压掉
                  && c.BookName == "某本书"
                  && c.AuthorName == "某作者"
@@ -526,6 +537,7 @@ internal static class Program {
                           $" 正文='{card?.Quote}' 书名='{card?.BookName}' 作者='{card?.AuthorName}'" +
                           $" 类型={card?.TypeText}(期望 划线)" +
                           $" 生词项={lookupCard is null} 无选中={noneCard is null}(期望 True/True)" +
+                          $" 文件名='{fileName}'(须含位置、不含冒号、与同书同日的另一条不同={!string.Equals(fileName, sameDayOtherClipping, StringComparison.Ordinal)})" +
                           $" 通知={notified}(期望 ≥3)" +
                           $" -> result={(ok ? "OK" : "失败!分享卡片内容不符合口径")}");
     }

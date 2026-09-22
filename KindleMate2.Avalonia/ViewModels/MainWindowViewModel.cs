@@ -1377,13 +1377,29 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public ShareCardModel? BuildShareCardModel() {
         if (!CanShareSelectedClipping || _selectedItem?.Clipping is not { } clip) return null;
         var (typeText, kind) = TypeTextMap.Of(clip.BriefType);
+        var (location, clippingTime) = SplitClippingKey(clip.Key);
         return new ShareCardModel {
             Quote = Flatten(clip.Content),
             BookName = clip.BookName ?? string.Empty,
             AuthorName = clip.AuthorName ?? string.Empty,
             TypeText = typeText,
-            Kind = kind
+            Kind = kind,
+            Location = location,
+            ClippingTime = clippingTime
         };
+    }
+
+    /// <summary>
+    /// 从标注主键 <c>标注日期|位置</c> 里拆出「位置」与「时间(能直接进文件名的形式)」。
+    /// 键里没有 <c>|</c> 时两段都返回空串,由 <see cref="ShareCardModel.SuggestedFileName"/> 退回默认值。
+    ///
+    /// 时间**刻意不做 DateTime 解析**:解析要处理文化差异(非公历文化下 <c>2017-06-11</c>
+    /// 可能被解成别的年份),而我们只需要一段稳定、唯一的文本 —— 换个字符就够。
+    /// </summary>
+    private static (string Location, string Time) SplitClippingKey(string key) {
+        var separator = key.IndexOf('|', StringComparison.Ordinal);
+        if (separator < 0) return (string.Empty, string.Empty);
+        return (key[(separator + 1)..], key[..separator].Replace(' ', '-'));
     }
 
     /// <summary>
