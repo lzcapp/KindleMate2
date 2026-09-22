@@ -1402,11 +1402,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 分享图(2026-09-22 新增) ——
 
     /// <summary>
-    /// 选中项能否生成分享图:得是一条标注,且不在回收站视图里
+    /// 选中的是一条**活标注**(在 <c>clippings</c> 里、且不在回收站视图)——
+    /// 「能编辑」与「能分享」的**共同前提**。
+    ///
+    /// 刻意只写一处:这两件事的条件**目前**恰好相同,但它们是两个独立功能 ——
+    /// 将来任何一边加了条件(比如"分享也允许书签")都不该连带改另一边。
+    /// 2026-09-22 合并 #79/#80 时发现两条表达式一字不差;两份拷贝迟早会漂移,
+    /// 所以把前提抽到这里,两个公开属性各自保留名字与语义。
+    /// </summary>
+    private bool HasLiveSelectedClipping =>
+        !IsRecycleBinView && _selectedItem?.Clipping is { } clip && clip.Key.Length > 0;
+
+    /// <summary>
+    /// 选中项能否生成分享图 —— 前提见 <see cref="HasLiveSelectedClipping"/>
     /// (回收站的行是从原始行临时拼的,没有可分享的"活"标注)。
     /// </summary>
-    public bool CanShareSelectedClipping =>
-        !IsRecycleBinView && _selectedItem?.Clipping is { } clip && clip.Key.Length > 0;
+    public bool CanShareSelectedClipping => HasLiveSelectedClipping;
 
     /// <summary>
     /// 组装分享卡片的内容。没选中标注(或正在看回收站)时返回 null。
@@ -1475,9 +1486,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>
     /// 选中的是不是一条**能改的标注** —— 生词项不算(它不是标注),
     /// 回收站项也不算(那一行已不在 <c>clippings</c> 里,写不进去)。
+    /// 前提见 <see cref="HasLiveSelectedClipping"/>。
     /// </summary>
-    public bool CanEditSelectedClipping =>
-        !IsRecycleBinView && _selectedItem?.Clipping is { } clip && clip.Key.Length > 0;
+    public bool CanEditSelectedClipping => HasLiveSelectedClipping;
 
     /// <summary>
     /// 保存编辑后的标注正文。对齐原版:更新 <c>clippings.content</c>,

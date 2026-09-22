@@ -675,15 +675,20 @@ internal static class Program {
         var card = vm.BuildShareCardModel();
         var canShare = vm.CanShareSelectedClipping;
 
-        // 生词项不是标注 ⇒ 做不出分享图
+        // 生词项不是标注 ⇒ 做不出分享图。
+        // **可用性本身也要断言负例**:只验"选中标注时为 true"的话,把可用性判定改成恒真
+        // 探针照样绿 —— 2026-09-22 用变异实测到过这一点(同一次变异里 context menu 探针红了、
+        // 这个探针没红,就是因为那边验了负例、这边没验)。
         vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
             Key = "k2", Primary = "用法",
             Lookup = new KindleMate2.Domain.Entities.KM2DB.Lookup { WordKey = "en:beautiful", Title = "某本书" }
         };
         var lookupCard = vm.BuildShareCardModel();
+        var lookupCanShare = vm.CanShareSelectedClipping;
 
         vm.SelectedItem = null;
         var noneCard = vm.BuildShareCardModel();
+        var noneCanShare = vm.CanShareSelectedClipping;
 
         // 文件名防重复:同一本书、**同一天**、不同位置的两条标注必须给出**不同**的建议名 ——
         // 旧口径(书名 + 当天日期)在这两例上会撞成同一个名字,用户连存两张就误覆盖。
@@ -702,11 +707,12 @@ internal static class Program {
                  && c.AuthorName == "某作者"
                  && c.HasType && c.IsHighlight
                  && lookupCard is null && noneCard is null
+                 && !lookupCanShare && !noneCanShare
                  && notified >= 3;
         report.AppendLine($"share card: 可分享={canShare}(期望 True)" +
                           $" 正文='{card?.Quote}' 书名='{card?.BookName}' 作者='{card?.AuthorName}'" +
                           $" 类型={card?.TypeText}(期望 划线)" +
-                          $" 生词项={lookupCard is null} 无选中={noneCard is null}(期望 True/True)" +
+                          $" 生词项={lookupCard is null}/可分享={lookupCanShare} 无选中={noneCard is null}/可分享={noneCanShare}(期望 True/False/True/False)" +
                           $" 文件名='{fileName}'(须含位置、不含冒号、与同书同日的另一条不同={!string.Equals(fileName, sameDayOtherClipping, StringComparison.Ordinal)})" +
                           $" 通知={notified}(期望 ≥3)" +
                           $" -> result={(ok ? "OK" : "失败!分享卡片内容不符合口径")}");
