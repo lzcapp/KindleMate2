@@ -20,6 +20,14 @@ public interface IKm2DatabaseService {
         IProgress<KindleMate2.Application.Models.OperationProgress>? progress = null);
 
     /// <summary>
+    /// **只读**预演一次「维护数据库」:清洗会改哪些 + 清理会删哪些,不写任何东西。
+    /// 清理部分是在**清洗后的投影**上判出来的 —— 清洗会把内容归一化、制造出新的重复项,
+    /// 分开预演必然少报。执行顺序同样是先清洗后清理(见 <c>MaintainDatabaseAsync</c>)。
+    /// </summary>
+    bool ScanDatabaseMaintenance(out KindleMate2.Application.Models.DatabaseMaintenancePlan plan,
+        IProgress<KindleMate2.Application.Models.OperationProgress>? progress = null);
+
+    /// <summary>
     /// 批量清洗已入库标注的**首尾标点**(Kindle 会把上一句的收尾标点一起划进标注)。
     /// 与 <see cref="CleanDatabase"/> 是两件事:那个动行数,这个一条都不删。
     /// </summary>

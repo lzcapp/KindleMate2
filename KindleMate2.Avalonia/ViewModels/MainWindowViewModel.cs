@@ -746,65 +746,42 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
-    /// <summary>
-    /// 清理数据库 —— 对齐原版 <c>MenuClean_Click</c>:无标注数据时提示
-    /// 「数据库无需清理」(标题 Prompt);否则走统一结果契约
-    /// (成功标题 <c>Clean_Database</c>、失败标题 <c>Clear_Failed</c>)。
-    /// 注:执行前的确认框由视图层弹出(用户 2026-09-13 指定;原版没有该确认)。
-    /// </summary>
-    public Task<OperationResult> CleanDatabaseAsync() {
-        if (_session is not { } session) {
-            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
-        }
-        if (_allClippings.Count <= 0) {
-            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_No_Need_Clean));
-        }
-        return RunOperationAsync(() => {
-            // 清理最耗时的是判重扫描与 VACUUM,接上进度后不再"卡着不动"
-            if (!session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var result, ProgressReporter)) {
-                return string.Empty;
-            }
-            // 严格按原版 CleanDatabase() 的正文拼接格式与键名
-            var countEmpty = result.TryGetValue(AppConstants.EmptyCount, out var e) ? e : "0";
-            var countDuplicated = result.TryGetValue(AppConstants.DuplicatedCount, out var d) ? d : "0";
-            var fileSizeDelta = result.TryGetValue(AppConstants.FileSizeDelta, out var f) ? f : "0";
-            return Strings.Cleaned + Strings.Space + Strings.Empty_Content + Strings.Space + countEmpty +
-                   Strings.Space + Strings.X_Rows + Strings.Symbol_Comma + Strings.Duplicate_Content + Strings.Space +
-                   countDuplicated + Strings.Space + Strings.X_Rows + Strings.Symbol_Comma +
-                   Strings.Database_Cleaned + Strings.Space + fileSizeDelta;
-        }, true, Strings.Clean_Database, Strings.Clear_Failed);
-    }
-
-    // —— 清洗标注文本(2026-09-21 新增;原版无此功能) ——
+    // —— 维护数据库(2026-09-22:由「清理数据库」+「清洗标注文本」合并而来) ——
     //
-    // 要解决的问题:Kindle 划分线段落时把边界落在标点上,于是"上一句话的收尾标点"经常
-    // 一起被划进来(实测样本:「。重点是……」开头那个句号属于前一句,不是这条标注的内容)。
+    // 合并的理由:两件事本来就是**同一条流水线** —— 导入路径已经在跑
+    // HandleClippings(内含清洗) → CleanDatabase(收尾清理),而导入结果文案也早就把
+    // 「本次新增」与「收尾清理删除」分开展示。手动入口却拆成两个菜单项,名字只差一个字
+    // (清理 / 清洗),用户既分不清该点哪个、也不知道先后。
     //
-    // 与「清理数据库」是**两件事**:那个做判重、删空条目、VACUUM,动的是**行数**;
-    // 这个只改每条的首尾标点,**一条都不删**。规则本体在
-    // Shared/Clippings/ClippingCleanRules.cs(抽出去才有单测,测试工程不引用 Avalonia)。
+    // 顺序**固定为 清洗 → 清理**,不可颠倒:清洗把内容归一化(去掉首尾噪音标点)⇒
+    // 两条原本"只差一个首部标点"的标注会变成**完全相同** ⇒ 成为清理眼里的重复项,
+    // 而清理的规则是"内容相同则**两行都删**"。所以"改了什么"与"删了什么"必须一起预演 ——
+    // ScanDatabaseMaintenance 就是先在内存里投影出清洗结果、再在投影上判重。
     //
-    // 导入时也会自动走一遍 —— 挂在 Km2DatabaseService.HandleClippings 里,与「重建数据库」
-    // 共用同一条解析路径。下面这两个方法是**对存量数据的手工批量清洗**。
+    // 合并顺带修掉一个反差:此前「清理」(删空条目 + 判重删行 + VACUUM)只弹一句
+    // "建议先备份",而「清洗」(只改标点、一条不删)反而**无条件**备份。现在统一为无条件备份。
+    //
+    // 清洗规则本体在 Shared/Clippings/ClippingCleanRules.cs(抽出去才有单测,
+    // 测试工程不引用 Avalonia)。导入时也会自动走一遍 —— 挂在 HandleClippings 里。
 
     /// <summary>
-    /// 只读预览:算出清洗会改掉哪些条目,不写任何东西。确认框靠它拿到条数与样例。
-    /// 返回 null 表示无会话/正忙/读库失败 —— 调用方统一按失败提示即可
-    /// (这两种失败对用户是同一件事:这次洗不了)。
+    /// 只读预演:清洗会改哪些、清理会删哪些。不写任何东西。
+    /// 返回 null 表示无会话 / 正忙 / 读库失败 —— 这几种对用户是同一件事:这次做不了。
     /// </summary>
-    public Task<ClippingCleanReport?> PreviewClippingCleanAsync() {
+    public Task<DatabaseMaintenancePlan?> PreviewMaintenanceAsync() {
         if (_session is not { } session || IsBusy) {
-            return Task.FromResult<ClippingCleanReport?>(null);
+            return Task.FromResult<DatabaseMaintenancePlan?>(null);
         }
-        return Task.Run(() => session.Km2DatabaseService.ScanClippingClean(out var report) ? report : null);
+        return Task.Run(() => session.Km2DatabaseService.ScanDatabaseMaintenance(out var plan) ? plan : null);
     }
 
     /// <summary>
-    /// 手工批量清洗存量标注。
-    /// **先备份再改**:清洗一旦落库,应用内没有撤销路径 —— 备份 + 落盘清单是唯一的回头路,
-    /// 所以备份这一步不放进"可选"里。
+    /// 执行「维护数据库」:无条件备份 → 清洗 → 清理 → 落盘清单。
+    ///
+    /// **先备份再动**:清洗改字、清理删行,两者在应用内都没有撤销路径 ——
+    /// 备份 + 落盘清单是唯一的回头路,所以备份不放进"可选"里。
     /// </summary>
-    public Task<OperationResult> CleanClippingTextsAsync() {
+    public Task<OperationResult> MaintainDatabaseAsync() {
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
@@ -814,51 +791,97 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         return RunOperationAsync(() => {
             session.ExportManager.BackupDatabase();
 
-            if (!session.Km2DatabaseService.CleanClippingTexts(out var report, ProgressReporter)) {
+            // 执行前**重新**预演一次,而不是复用确认框那一份:清单要记录的是"这一遍到底动了什么",
+            // 重算一遍才与紧随其后的两步同源。判重是 O(n) 分组 + 少量包含检查,相比后面的 VACUUM 可忽略。
+            session.Km2DatabaseService.ScanDatabaseMaintenance(out var plan);
+
+            // ① 清洗:只改首尾标点,一条都不删
+            if (!session.Km2DatabaseService.CleanClippingTexts(out var cleaning, ProgressReporter)) {
                 return string.Empty;
             }
 
-            var manifestPath = WriteCleanManifest(session, report);
-            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_ClippingClean_Result_Format,
-                report.ChangedCount, report.Scanned, string.IsNullOrEmpty(manifestPath) ? "-" : manifestPath);
-            if (report.AllPunctuationCount > 0) {
+            // ② 清理:删空条目 + 判重 + VACUUM。
+            //    无事可做时 CleanDatabase 以哨兵值收场并返回 false —— 那是**正常结果**,不是失败。
+            //    合并成一个入口后这条尤其要紧:"清洗有改动、清理无事可做"是最常见的情形。
+            var cleaned = session.Km2DatabaseService.CleanDatabase(session.DatabasePath, out var cleanResult, ProgressReporter);
+            if (!cleaned && !IsNoNeedCleaning(cleanResult)) {
+                return string.Empty;
+            }
+            var countEmpty = cleanResult.TryGetValue(AppConstants.EmptyCount, out var e) ? e : "0";
+            var countDuplicated = cleanResult.TryGetValue(AppConstants.DuplicatedCount, out var d) ? d : "0";
+            var fileSizeDelta = cleanResult.TryGetValue(AppConstants.FileSizeDelta, out var f) ? f : "0";
+
+            var manifestPath = WriteMaintenanceManifest(session, cleaning, plan);
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Maintenance_Result_Format,
+                cleaning.ChangedCount, cleaning.Scanned, countEmpty, countDuplicated,
+                fileSizeDelta, string.IsNullOrEmpty(manifestPath) ? "-" : manifestPath);
+            if (cleaning.AllPunctuationCount > 0) {
                 message += Environment.NewLine + string.Format(CultureInfo.CurrentCulture,
-                    Strings.Ui_ClippingClean_Skipped_Format, report.AllPunctuationCount);
+                    Strings.Ui_ClippingClean_Skipped_Format, cleaning.AllPunctuationCount);
             }
             return message;
-        }, true, Strings.Ui_Menu_CleanClippingText, Strings.Ui_ClippingClean_Failed);
+        }, true, Strings.Ui_Menu_MaintainDatabase, Strings.Ui_Maintenance_Failed);
     }
 
     /// <summary>
-    /// 把逐条差异落成清单文件,返回文件路径(写失败返回空串)。
-    /// 清单写失败**不该**让整个清洗算失败 —— 数据那时已经改完了,报"清洗失败"反而是谎话;
+    /// 「清理无事可做」的判据:<c>CleanDatabase</c> 在空条目与重复项都为 0 时会以
+    /// <see cref="AppConstants.DatabaseNoNeedCleaning"/> 这个哨兵值收场并返回 false。
+    /// 那是正常结果,不是失败 —— 别让它把整个维护报成失败。
+    /// </summary>
+    private static bool IsNoNeedCleaning(Dictionary<string, string> result) =>
+        result.TryGetValue(AppConstants.Exception, out var message) &&
+        string.Equals(message, AppConstants.DatabaseNoNeedCleaning, StringComparison.Ordinal);
+
+    /// <summary>
+    /// 把这一遍动过的东西落成清单文件,返回文件路径(写失败返回空串)。
+    ///
+    /// 两段的来源刻意不同:清洗段用**执行结果**(真的写进库的才算数,与
+    /// <c>CleanClippingTexts</c> 内部同源),清理段用**执行前的预演** ——
+    /// <c>CleanDatabase</c> 只回报条数、不回报删了哪几行,键只能从预演里拿。
+    ///
+    /// 清单写失败**不该**让整个维护算失败 —— 数据那时已经改完了,报"维护失败"反而是谎话;
     /// 吞掉异常、只留日志,正文里路径位置显示 "-"。
     /// </summary>
-    private static string WriteCleanManifest(DatabaseSession session, ClippingCleanReport report) {
+    private static string WriteMaintenanceManifest(DatabaseSession session, ClippingCleanReport cleaning,
+        DatabaseMaintenancePlan? plan) {
         try {
             Directory.CreateDirectory(session.BackupDirectory);
             // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
             // 非公历日历下年份会变成 2569/1405 之类,清单文件名就读不出日期了
             // (与 ClearAllDataAsync 里那个备份文件名同一个坑)。
             var stamp = DateTime.Now.ToString(AppConstants.BackupDateFormat, CultureInfo.InvariantCulture);
-            var path = Path.Combine(session.BackupDirectory, $"ClippingClean_{stamp}.txt");
+            var path = Path.Combine(session.BackupDirectory, $"Maintenance_{stamp}.txt");
+
+            var removals = plan?.Cleanup.Removals ?? [];
             var lines = new List<string> {
-                $"# 标注清洗清单 {stamp}",
-                $"# 扫描 {report.Scanned} 条,清洗 {report.ChangedCount} 条,整条皆标点而跳过 {report.AllPunctuationCount} 条",
+                $"# 维护数据库清单 {stamp}",
+                $"# 清洗:扫描 {cleaning.Scanned} 条,改动 {cleaning.ChangedCount} 条,整条皆标点而跳过 {cleaning.AllPunctuationCount} 条",
                 "#"
             };
             // 多行内容压成一行显示,否则一条标注就能把清单撑散;正文里的换行用 \n 记号代替。
-            lines.AddRange(report.Changes.Select(change =>
-                $"--- {change.BookName} | {change.Key}{Environment.NewLine}" +
+            lines.AddRange(cleaning.Changes.Select(change =>
+                $"--- 清洗 {change.BookName} | {change.Key}{Environment.NewLine}" +
                 $"改前: {change.Before.Replace(Environment.NewLine, "\\n")}{Environment.NewLine}" +
                 $"改后: {change.After.Replace(Environment.NewLine, "\\n")}"));
+
+            // 删行比改字更需要留痕 —— 改错了还能看出改成了什么,删错了只剩一个键。
+            lines.Add("#");
+            lines.Add($"# 清理:删除 {removals.Count} 条(空条目 {plan?.Cleanup.EmptyCount ?? 0} / 重复项 {plan?.Cleanup.DuplicatedCount ?? 0})");
+            lines.AddRange(removals.Select(removal =>
+                $"--- 删除[{ReasonLabel(removal.Reason)}] {removal.BookName} | {removal.Key}{Environment.NewLine}" +
+                $"内容: {removal.Content.Replace(Environment.NewLine, "\\n")}"));
+
             File.WriteAllLines(path, lines, new UTF8Encoding(false));
             return path;
         } catch (Exception e) {
-            AppLog.Write(StringHelper.GetExceptionMessage(nameof(WriteCleanManifest), e));
+            AppLog.Write(StringHelper.GetExceptionMessage(nameof(WriteMaintenanceManifest), e));
             return string.Empty;
         }
     }
+
+    /// <summary>清单里的删除原因。清单正文本来就是中文(改前/改后),这里保持一致。</summary>
+    private static string ReasonLabel(DatabaseCleanRemovalReason reason) =>
+        reason == DatabaseCleanRemovalReason.Empty ? "空条目" : "重复项";
 
     /// <summary>
     /// 重建数据库 —— 原版成功正文为「解析 N 条标注,导入 M 条标注」,

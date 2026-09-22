@@ -128,10 +128,109 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         /// <summary>
+        /// 清理判定的**唯一实现**:给定一批标注,算出「空条目」与「重复项」两批要删的行。
+        /// **不落库** —— 谁写谁负责,这样只读预演与真正执行走的是同一条判定。
+        /// </summary>
+        /// <remarks>
+        /// 判重规则(沿用原版语义,别"顺手改友好"):一条标注算重复,当且仅当**多于一条**行的
+        /// 内容**包含**它(它自己必然命中)⇒ 内容相同的两行**两行都算重复、都会被删**,
+        /// 不是"留一条"。这条有专门用例钉住,见 <c>DataLayerFixTests</c> 的
+        /// <c>CleanDatabase_ExactAndNestedDuplicates_MatchesLegacySemantics</c>。
+        ///
+        /// ⚠️ 「空条目」判据里**只有「书名为空」那一半真的会命中**:输入来自
+        /// <c>ClippingRepository.GetAll()</c>,而它会把**内容为空 / 全空白**的行直接跳过
+        /// (那个过滤是给界面列表用的 —— 空白行不该出现在列表里),于是"内容为空"的标注
+        /// 既看不见、也删不掉。这是**既有行为**,不是本次改动引入的;这一半判据保留着,
+        /// 因为语义上它就该在这里,而且 GetAll 一旦不再过滤,它立刻就能生效。
+        /// (旁证:这种行还会被算进状态栏的「已删除 N 条」—— 那个数字是
+        /// 原始行数 − GetAll 的条数,它没被删却算"已删除"。)
+        ///
+        /// 判重扫描原先内联在 <see cref="CleanDatabase"/> 里,注释也留在这里:
+        /// 老实现对每个候选都重扫全表数 Contains,是 O(n²) 次字符串扫描;现在等价地
+        /// 先按内容分组解决精确重复(O(n)),剩下的不同内容才做包含检查(带长度剪枝与提前退出)。
+        /// </remarks>
+        private static (List<Clipping> Empty, List<Clipping> Duplicated) ComputeDatabaseCleanPlan(
+            List<Clipping> clippings, IProgress<OperationProgress>? progress = null) {
+            var empty = clippings
+                .Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName))
+                .ToList();
+            var duplicated = FindDuplicatedClippings(clippings, progress);
+            return (empty, duplicated);
+        }
+
+        /// <summary>
+        /// **只读**预演一次「维护数据库」:清洗会改哪些、清理会删哪些 —— 不写任何东西。
+        ///
+        /// 顺序是**先清洗、再在清洗后的投影上判重**,不能反过来、也不能分开预演:
+        /// 清洗会把内容归一化(去掉首尾噪音标点),于是两条原本"只差一个首部标点"的标注
+        /// 会变成**完全相同**,从而成为清理眼里的重复项 —— 而按清理的规则,
+        /// 内容相同的**两行都会被删**。分开预演的话用户看到"删 0 条"、执行时却少了几条。
+        ///
+        /// (导入链路早就是这个顺序:<c>HandleClippings</c> 内含清洗 → <c>CleanDatabase</c> 收尾。
+        /// 这里只是把手动入口对齐到同一条流水线。)
+        /// </summary>
+        public bool ScanDatabaseMaintenance(out DatabaseMaintenancePlan plan,
+            IProgress<OperationProgress>? progress = null) {
+            try {
+                // ① 清洗:与 CleanClippingTexts 共用判定
+                var pairs = ComputeCleanChanges(progress, out var scanned, out var allPunctuation);
+                var cleaning = new ClippingCleanReport {
+                    Scanned = scanned,
+                    ChangedCount = pairs.Count,
+                    AllPunctuationCount = allPunctuation,
+                    Changes = pairs
+                        .Select(p => new ClippingCleanChange(p.Clipping.Key, p.Clipping.BookName ?? string.Empty, p.Before, p.After))
+                        .ToList()
+                };
+
+                // ② 清理:先把清洗结果**投影**进内存,再在投影上跑判重。
+                //    判重只看 Key / Content / BookName,所以只复制这几列,不必整行深拷贝。
+                var clippings = clippingRepository.GetAll();
+                var cleanedByKey = new Dictionary<string, string>(pairs.Count, StringComparer.Ordinal);
+                foreach (var (clipping, _, after) in pairs) {
+                    cleanedByKey[clipping.Key] = after;
+                }
+
+                var projected = new List<Clipping>(clippings.Count);
+                foreach (Clipping clipping in clippings) {
+                    projected.Add(new Clipping {
+                        Key = clipping.Key,
+                        Content = cleanedByKey.TryGetValue(clipping.Key, out var after) ? after : clipping.Content,
+                        BookName = clipping.BookName
+                    });
+                }
+
+                var (empty, duplicated) = ComputeDatabaseCleanPlan(projected, progress);
+                var removals = new List<DatabaseCleanRemoval>(empty.Count + duplicated.Count);
+                foreach (Clipping c in empty) {
+                    removals.Add(new DatabaseCleanRemoval(c.Key, c.BookName ?? string.Empty,
+                        c.Content ?? string.Empty, DatabaseCleanRemovalReason.Empty));
+                }
+                foreach (Clipping c in duplicated) {
+                    removals.Add(new DatabaseCleanRemoval(c.Key, c.BookName ?? string.Empty,
+                        c.Content ?? string.Empty, DatabaseCleanRemovalReason.Duplicated));
+                }
+
+                plan = new DatabaseMaintenancePlan {
+                    Cleaning = cleaning,
+                    Cleanup = new DatabaseCleanPlan { Removals = removals }
+                };
+                return true;
+            } catch (Exception e) {
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(ScanDatabaseMaintenance), e));
+                plan = new DatabaseMaintenancePlan();
+                return false;
+            }
+        }
+
+        /// <summary>
         /// **只读**扫描一遍,算出"清洗会改掉哪些条目" —— 不写任何东西。
         /// 确认框要先把改了多少条、都改成什么样摆给用户看,所以写入前必须有这一步。
         /// 与 <see cref="CleanClippingTexts"/> 共用同一段判定(<see cref="ComputeCleanChanges"/>),
         /// 于是"看到的"与"实际改的"不可能对不上。
+        ///
+        /// 「维护数据库」走的是 <see cref="ScanDatabaseMaintenance"/> —— 那个还会把清洗后的投影
+        /// 拿去判重,好把"将删多少条"一并摆出来。本方法保留给"只想看清洗"的场景与既有用例。
         /// </summary>
         public bool ScanClippingClean(out ClippingCleanReport report,
             IProgress<OperationProgress>? progress = null) {
@@ -554,19 +653,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 
                 progress?.Report(OperationProgress.At(OperationStage.Writing));
-                var emptyClippings = clippings.Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName)).ToList();
+                var (emptyClippings, duplicatedClippings) = ComputeDatabaseCleanPlan(clippings, progress);
                 var emptyCount = clippingRepository.Delete(emptyClippings);
-                
-                // Duplicate detection: a clipping (non-blank key + content) is "duplicated"
-                // when more than one row's content CONTAINS its content as a substring
-                // (the row itself always matches, so one exact copy or one longer
-                // container is enough to flag it). The old implementation re-scanned the
-                // whole list with a Contains() count per candidate — O(n²) string scans.
-                // Equivalent result, but: exact duplicates resolved by grouping (O(n)),
-                // containment checks run only on remaining unique contents with length
-                // pruning and early exit.
-                var duplicatedClippings = FindDuplicatedClippings(clippings, progress);
-
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
 
                 // 让「回收体积」成为真实值:

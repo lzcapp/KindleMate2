@@ -9,7 +9,7 @@ using KindleMate2.Avalonia.ViewModels;
 namespace KindleMate2.Avalonia.Views;
 
 /// <summary>
-/// 「清洗标注文本」的改动预览窗口 —— 只读,不写任何东西。
+/// 「维护数据库」的改动预览窗口 —— 只读,不写任何东西。
 ///
 /// 流程仍是"先看后做":只读预扫 → 本窗口逐条列出会改什么 → 确认后才落库。
 /// 清洗在应用内没有撤销路径,所以这一步是用户唯一的复核机会,值得给一个正经窗口:
@@ -23,15 +23,15 @@ public partial class ClippingCleanPreviewWindow : Window {
         InitializeComponent();
     }
 
-    public ClippingCleanPreviewWindow(ClippingCleanReport report) : this() {
-        DataContext = new ClippingCleanPreviewViewModel(report);
+    public ClippingCleanPreviewWindow(DatabaseMaintenancePlan plan) : this() {
+        DataContext = new ClippingCleanPreviewViewModel(plan);
         // 行数不定 ⇒ 高度更容易顶穿屏幕,与主窗口用同一套夹取口径。
         WindowSizing.ClampToWorkingArea(this);
     }
 
-    /// <summary>打开预览并等待用户决定。返回 true 表示确认清洗。</summary>
-    public static async Task<bool> ConfirmAsync(Window owner, ClippingCleanReport report) {
-        var window = new ClippingCleanPreviewWindow(report);
+    /// <summary>打开预览并等待用户决定。返回 true 表示确认维护。</summary>
+    public static async Task<bool> ConfirmAsync(Window owner, DatabaseMaintenancePlan plan) {
+        var window = new ClippingCleanPreviewWindow(plan);
         return await window.ShowDialog<bool>(owner);
     }
 
