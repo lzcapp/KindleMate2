@@ -105,8 +105,12 @@ internal static class Program {
             var runtimeShowsOs = about.Runtime.Contains(runtimeOs, StringComparison.Ordinal);
             var runtimeShowsRid = about.Runtime.Contains(runtimeRid, StringComparison.Ordinal);
             var runtimeOk = runtimeShowsOs && runtimeShowsRid;
-            report.AppendLine($"  runtime 含 OS={runtimeShowsOs}(OS={runtimeOs}) 含 RID={runtimeShowsRid}(RID={runtimeRid})" +
-                              $" -> {(runtimeOk ? "OK" : "失败!运行环境分不出平台")}");
+            // 行首用 **ASCII 探针名**、行尾用 `result=OK` —— 与其它探针同一形状。
+            // CI 的 grep 模式必须能匹配**真实输出**(踩过一次:模式里写了个实际不存在的单空格,
+            // 于是 CI 三个作业全红)。ASCII 前缀 + `.*result=OK` 是最不容易写错的形状。
+            report.AppendLine($"about runtime: os='{runtimeOs}' rid='{runtimeRid}'" +
+                              $" showsOs={runtimeShowsOs} showsRid={runtimeShowsRid}" +
+                              $" -> result={(runtimeOk ? "OK" : "失败!运行环境分不出平台")}");
 
             // 清洗预览的**视图层数据**。VM 在 Avalonia 工程里,单测项目不引用 Avalonia ⇒ 只能在这里钉。
             // 钉的是上一版真正翻车的那一点:被清洗掉的标点必须**单独**暴露给视图(视图靠它加删除线),
