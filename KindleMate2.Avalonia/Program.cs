@@ -106,6 +106,9 @@ internal static class Program {
             // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
             ProbeListItemMeta(report);
 
+            // 分享卡片的内容组装
+            ProbeShareCard(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -472,6 +475,59 @@ internal static class Program {
                           $" 生词项 MetaTail='{wordItem.MetaTail}'(期望只有词干/词频)" +
                           $" 无元信息项 HasMetaTail={bareItem.HasMetaTail}(期望 False)" +
                           $" -> result={(ok ? "OK" : "失败!书名不该出现在 MetaTail 里")}");
+    }
+
+    /// <summary>
+    /// 分享卡片的内容组装。
+    ///
+    /// 内容口径是**用户定死的**:只留「标注内容 + 书名 + 作者」,页数/日期一律舍去 ——
+    /// 这条断言就钉这个口径(多塞进页数/日期会立刻红)。
+    /// 顺带数 <c>CanShareSelectedClipping</c> 的通知次数:它绑在菜单项/按钮的 IsVisible 上,
+    /// 不发通知就会停在初始状态(同一个坑本仓已踩过两次)。
+    /// </summary>
+    private static void ProbeShareCard(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var notified = 0;
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(MainWindowViewModel.CanShareSelectedClipping)) notified++;
+        };
+
+        var clip = new KindleMate2.Domain.Entities.KM2DB.Clipping {
+            Key = "k1",
+            Content = "  一段标注正文  ",
+            BookName = "某本书",
+            AuthorName = "某作者",
+            BriefType = (long)KindleMate2.Domain.Entities.KM2DB.BriefType.Highlight
+        };
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k1", Primary = "内容", Book = "某本书", Clipping = clip
+        };
+        var card = vm.BuildShareCardModel();
+        var canShare = vm.CanShareSelectedClipping;
+
+        // 生词项不是标注 ⇒ 做不出分享图
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k2", Primary = "用法",
+            Lookup = new KindleMate2.Domain.Entities.KM2DB.Lookup { WordKey = "en:beautiful", Title = "某本书" }
+        };
+        var lookupCard = vm.BuildShareCardModel();
+
+        vm.SelectedItem = null;
+        var noneCard = vm.BuildShareCardModel();
+
+        var ok = canShare && card is { } c
+                 && c.Quote == "一段标注正文"        // Flatten 会把首尾空白压掉
+                 && c.BookName == "某本书"
+                 && c.AuthorName == "某作者"
+                 && c.HasType && c.IsHighlight
+                 && lookupCard is null && noneCard is null
+                 && notified >= 3;
+        report.AppendLine($"share card: 可分享={canShare}(期望 True)" +
+                          $" 正文='{card?.Quote}' 书名='{card?.BookName}' 作者='{card?.AuthorName}'" +
+                          $" 类型={card?.TypeText}(期望 划线)" +
+                          $" 生词项={lookupCard is null} 无选中={noneCard is null}(期望 True/True)" +
+                          $" 通知={notified}(期望 ≥3)" +
+                          $" -> result={(ok ? "OK" : "失败!分享卡片内容不符合口径")}");
     }
 
     /// <summary>
