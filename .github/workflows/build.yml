@@ -81,6 +81,7 @@ jobs:
           grep -q "recycle bin view:.*result=OK" "$out"
           # 列表项元信息行:书名必须不在 MetaTail 里(它单独占一列、负责省略)
           grep -q "list meta row:.*result=OK" "$out"
+          grep -q "context menu:.*result=OK" "$out"
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
@@ -169,6 +170,7 @@ jobs:
           # 回收站视图能进能出
           grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
+          grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 

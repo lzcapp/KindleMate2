@@ -275,6 +275,13 @@
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
                 <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+                <!-- 这两条作用于**选中那一行**,而不是左栏节点:左栏停在「全部标注」或搜索结果里时,
+                     行所属的书与节点根本不是一回事(沿用节点名会改错书)。
+                     回收站视图下都收起 —— 那里的行是从原始行临时拼的(键已不在 clippings 里),改不动。 -->
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameSelectedBook"
+                          IsVisible="{Binding CanRenameSelectedItemBook}" />
+                <MenuItem Header="{x:Static shared:Strings.Edit_Clippings}" Click="OnEditSelectedClipping"
+                          IsVisible="{Binding CanEditSelectedClipping}" />
                 <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected"
                           IsVisible="{Binding !IsRecycleBinView}" />
                 <MenuItem Header="{x:Static shared:Strings.Restore}" Click="OnRestoreFromRecycleBin"
@@ -370,6 +377,14 @@
         <Border.ContextMenu>
           <ContextMenu>
             <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+            <!-- 详情面板的右键菜单覆盖整块面板(书名、正文、标签都能触发)——
+                 这正是"在详情的书名上重命名、在详情的标注内容上编辑"的实现方式。
+                 注意:正文那三个 SelectableTextBlock 必须显式清掉主题自带的 ContextFlyout,
+                 否则它会抢在父级 ContextMenu 之前弹出来(见下面的 ContextFlyout="{x:Null}")。 -->
+            <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameSelectedBook"
+                      IsVisible="{Binding CanRenameSelectedItemBook}" />
+            <MenuItem Header="{x:Static shared:Strings.Edit_Clippings}" Click="OnEditSelectedClipping"
+                      IsVisible="{Binding CanEditSelectedClipping}" />
           </ContextMenu>
         </Border.ContextMenu>
         <Grid RowDefinitions="Auto,*,Auto" Margin="16,14">
@@ -396,27 +411,35 @@
             <TextBlock Classes="ts" Text="{Binding Detail.Subtitle}" Margin="0,4,0,0" TextWrapping="Wrap" />
           </StackPanel>
 
-          <ScrollViewer Grid.Row="1" Margin="0,14,0,0" IsVisible="{Binding Detail.HasSelection}">
+          <ScrollViewer x:Name="DetailContentScroll" Grid.Row="1" Margin="0,14,0,0"
+                        IsVisible="{Binding Detail.HasSelection}">
             <StackPanel>
               <Rectangle Height="1" Fill="{DynamicResource KmBorderBrush}" Margin="0,0,0,14" />
 
+              <!-- 下面三个 SelectableTextBlock 都显式清掉 ContextFlyout:
+                   Avalonia 的 FluentTheme 给 SelectableTextBlock 内置了一个只含 Copy 的 ContextFlyout,
+                   而 ContextFlyout 优先于父级的 ContextMenu ⇒ 不清掉的话,
+                   在正文上右键永远弹内置那个,详情面板的菜单(复制/重命名书籍/编辑标注)根本看不到。 -->
               <StackPanel IsVisible="{Binding Detail.HasQuote}">
                 <TextBlock Classes="tt" Text="{Binding Detail.QuoteLabel}" />
                 <Border BorderBrush="{DynamicResource KmBorderStrongBrush}" BorderThickness="2,0,0,0"
                         Padding="11,0,0,0" Margin="0,7,0,0">
                   <SelectableTextBlock Text="{Binding Detail.Quote}" TextWrapping="Wrap" FontSize="13"
-                                       LineHeight="23" Foreground="{DynamicResource KmTextSecondaryBrush}" />
+                                       LineHeight="23" Foreground="{DynamicResource KmTextSecondaryBrush}"
+                                       ContextFlyout="{x:Null}" />
                 </Border>
               </StackPanel>
 
               <StackPanel IsVisible="{Binding Detail.HasNote}" Margin="0,16,0,0">
                 <TextBlock Classes="tt" Text="{Binding Detail.NoteLabel}" />
                 <SelectableTextBlock Text="{Binding Detail.Note}" TextWrapping="Wrap" FontSize="14"
-                                     LineHeight="25" Margin="0,7,0,0" />
+                                     LineHeight="25" Margin="0,7,0,0"
+                                     ContextFlyout="{x:Null}" />
               </StackPanel>
 
               <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Text="{Binding Detail.Body}"
-                                   TextWrapping="Wrap" FontSize="14" LineHeight="25" />
+                                   TextWrapping="Wrap" FontSize="14" LineHeight="25"
+                                   ContextFlyout="{x:Null}" />
             </StackPanel>
           </ScrollViewer>
 

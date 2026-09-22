@@ -123,6 +123,9 @@ internal static class Program {
             // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
             ProbeListItemMeta(report);
 
+            // 列表行 / 详情面板右键菜单的可用性判定
+            ProbeContextMenuAvailability(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -211,9 +214,13 @@ internal static class Program {
                     // DeletedCount 也要数:它是**另一个独立的绑定源**(左栏「回收站 N」绑的就是它),
                     // 只通知 StatusLeft 的话状态栏会更新、左栏却永远停在初始值 0 —— 实测过的真症状。
                     var deletedNotified = 0;
+                    // 进/出回收站时,右键菜单那两条可用性也必须收到通知 —— 否则菜单项会停在初始状态。
+                    var menuNotified = 0;
                     startupVm.PropertyChanged += (_, e) => {
                         if (e.PropertyName == nameof(MainWindowViewModel.HeaderTitle)) titleNotified++;
                         if (e.PropertyName == nameof(MainWindowViewModel.DeletedCount)) deletedNotified++;
+                        if (e.PropertyName is nameof(MainWindowViewModel.CanRenameSelectedItemBook)
+                            or nameof(MainWindowViewModel.CanEditSelectedClipping)) menuNotified++;
                     };
 
                     var navBefore = startupVm.SelectedNav != null;
@@ -230,13 +237,15 @@ internal static class Program {
                     var binOk = navBefore && enteredBin && navCleared && binTitle
                                 && titleOnEnter >= 1 && titleOnLeave > titleOnEnter
                                 && !leftBin && normalTitle
-                                && deletedNotified >= 1;
+                                && deletedNotified >= 1
+                                && menuNotified >= 2;   // 进回收站时「重命名书籍」「编辑标注」各通知一次
                     report.AppendLine($"recycle bin view: 进入前有选中={navBefore}(期望 True,前提)" +
                                       $" 进入={enteredBin}(期望 True) 左栏已清空={navCleared}(期望 True)" +
                                       $" 标题为回收站={binTitle}(期望 True) 回常规列表后={leftBin}(期望 False)" +
                                       $" 标题为全部标注={normalTitle}(期望 True)" +
                                       $" 标题通知=[进入后:{titleOnEnter} 离开后:{titleOnLeave}](期望 ≥1 且递增)" +
                                       $" DeletedCount 通知={deletedNotified}(期望 ≥1,左栏「回收站 N」靠它)" +
+                                      $" 菜单可用性通知={menuNotified}(期望 ≥2)" +
                                       $" -> result={(binOk ? "OK" : "失败!回收站视图状态不正确")}");
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
@@ -489,6 +498,60 @@ internal static class Program {
                           $" 生词项 MetaTail='{wordItem.MetaTail}'(期望只有词干/词频)" +
                           $" 无元信息项 HasMetaTail={bareItem.HasMetaTail}(期望 False)" +
                           $" -> result={(ok ? "OK" : "失败!书名不该出现在 MetaTail 里")}");
+    }
+
+    /// <summary>
+    /// 列表行 / 详情面板右键菜单的可用性判定(<c>CanRenameSelectedItemBook</c> /
+    /// <c>CanEditSelectedClipping</c> / <c>SelectedItemBookName</c>)。
+    ///
+    /// 两条判定都取自**选中行自己**而不是左栏节点 —— 左栏停在「全部标注」或搜索结果里时,
+    /// 行所属的书与节点根本不是一回事(沿用节点名会改错书)。
+    ///
+    /// 同时**数通知次数**:这三个都是绑定到菜单项 <c>IsVisible</c> 的计算属性,
+    /// 不发通知就会停在初始状态 —— 同一个坑刚在左栏「回收站 N」上踩过。
+    /// </summary>
+    private static void ProbeContextMenuAvailability(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var notified = new List<string>();
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName is nameof(MainWindowViewModel.CanRenameSelectedItemBook)
+                or nameof(MainWindowViewModel.CanEditSelectedClipping)
+                or nameof(MainWindowViewModel.SelectedItemBookName)) {
+                notified.Add(e.PropertyName);
+            }
+        };
+
+        var clipping = new KindleMate2.Domain.Entities.KM2DB.Clipping {
+            Key = "k1", Content = "内容", BookName = "某本书"
+        };
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k1", Primary = "内容", Book = "某本书", Clipping = clipping
+        };
+        var clipBook = vm.SelectedItemBookName;
+        var clipRename = vm.CanRenameSelectedItemBook;
+        var clipEdit = vm.CanEditSelectedClipping;
+
+        var lookup = new KindleMate2.Domain.Entities.KM2DB.Lookup { WordKey = "en:beautiful", Title = "某本书" };
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k2", Primary = "用法", Book = "某本书", Lookup = lookup
+        };
+        var lookupRename = vm.CanRenameSelectedItemBook;
+        var lookupEdit = vm.CanEditSelectedClipping;
+
+        vm.SelectedItem = null;
+        var noneRename = vm.CanRenameSelectedItemBook;
+        var noneEdit = vm.CanEditSelectedClipping;
+
+        // 三次换行 × 三个属性 = 9 次通知。断言与**运行时值**比,不比文案。
+        var ok = clipBook == "某本书" && clipRename && clipEdit
+                 && lookupRename && !lookupEdit
+                 && !noneRename && !noneEdit
+                 && notified.Count >= 9;
+        report.AppendLine($"context menu: 标注行 改名={clipRename}/编辑={clipEdit}(期望 True/True) 书名='{clipBook}'" +
+                          $" 生词行 改名={lookupRename}/编辑={lookupEdit}(期望 True/False)" +
+                          $" 无选中 改名={noneRename}/编辑={noneEdit}(期望 False/False)" +
+                          $" 通知={notified.Count}(期望 ≥9)" +
+                          $" -> result={(ok ? "OK" : "失败!右键菜单可用性判定不符合预期")}");
     }
 
     /// <summary>
