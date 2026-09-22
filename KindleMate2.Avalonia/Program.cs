@@ -103,6 +103,9 @@ internal static class Program {
             // 表格里"整列同值"的列是否收起(同样够不着单测)
             ProbeTableColumns(report);
 
+            // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
+            ProbeListItemMeta(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -400,6 +403,33 @@ internal static class Program {
     /// <summary><c>Lookup.Word</c> 是从 <c>WordKey</c>("语言:词")里切出来的,所以只能设 WordKey。</summary>
     private static KindleMate2.Domain.Entities.KM2DB.Lookup MakeLookup(string wordKey, string? stem = null) =>
         new() { WordKey = wordKey, Stem = stem, Usage = "u" };
+
+    /// <summary>
+    /// 列表项元信息行的构成(模型层,同样够不着单测)。
+    ///
+    /// 钉住一条不变量:**书名不在 <c>MetaTail</c> 里**。
+    /// 它单独占一列、由那一列负责省略;若有人把书名重新并回 <c>MetaTail</c>,
+    /// 那一行会把书名显示两遍(一列一截),而且长书名又会把「第 N 页」挤没 ——
+    /// 正是这次修掉的毛病(横向 StackPanel 让 TextTrimming 永不触发、整行溢出)。
+    /// </summary>
+    private static void ProbeListItemMeta(System.Text.StringBuilder report) {
+        const string longBook = "第一本复杂性创伤后压力症候群自我疗愈圣经:在童年创伤中求生到茁壮的恢复指南";
+
+        var clipItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k1", Primary = "内容", Book = longBook, Place = "第 798 页" };
+        var wordItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k2", Primary = "用法", Book = "某本书", Extra = "词干 beautiful · 词频 3" };
+        var bareItem = new KindleMate2.Avalonia.Models.ListItem { Key = "k3", Primary = "内容" };
+
+        var ok = clipItem.MetaTail == "第 798 页" && clipItem.HasMetaTail
+                 && !clipItem.MetaTail.Contains(longBook, StringComparison.Ordinal)
+                 && wordItem.MetaTail == "词干 beautiful · 词频 3"
+                 && !wordItem.MetaTail.Contains("某本书", StringComparison.Ordinal)
+                 && !bareItem.HasMetaTail && bareItem.MetaTail.Length == 0;
+
+        report.AppendLine($"list meta row: 标注项 MetaTail='{clipItem.MetaTail}'(期望只有页码)" +
+                          $" 生词项 MetaTail='{wordItem.MetaTail}'(期望只有词干/词频)" +
+                          $" 无元信息项 HasMetaTail={bareItem.HasMetaTail}(期望 False)" +
+                          $" -> result={(ok ? "OK" : "失败!书名不该出现在 MetaTail 里")}");
+    }
 
     /// <summary>
     /// 写操作端到端自检:把真实库复制到临时目录后,在该副本上依次执行
