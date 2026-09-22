@@ -35,13 +35,15 @@
            刻意用纯字符串 Content 而不是在按钮里套 TextBlock:全局 Style Selector="TextBlock"
            会把 Foreground 定死成 KmTextBrush(样式 setter 压过继承),套进按钮后文字会比「仓库」
            行更亮、悬停也不跟着变色 —— 那就不是一致样式了。
-           路径可能很长,窗口宽固定 460 且不可缩放,所以靠 ToolTip 兜底完整值。 -->
+           路径可能很长,窗口宽固定 460 且不可缩放,所以靠 ToolTip 兜底完整值。
+           三处链接一律 ghost+link:不吃 Button 基线的 MinHeight=28 —— 否则按钮所在的整行会被撑到
+           28px,与纯文本行(约 16px)交替出现,六行之间就出现 25/31/37 三种行距(见 App.axaml)。 -->
       <TextBlock Grid.Row="1" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Program_Path}" VerticalAlignment="Center" />
-      <Button Grid.Row="1" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+      <Button Grid.Row="1" Grid.Column="1" Classes="ghost link" HorizontalAlignment="Left"
               Content="{Binding ProgramPath}" ToolTip.Tip="{Binding ProgramPath}" Click="OnOpenProgramPath" />
 
       <TextBlock Grid.Row="2" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_DataPath}" VerticalAlignment="Center" />
-      <Button Grid.Row="2" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+      <Button Grid.Row="2" Grid.Column="1" Classes="ghost link" HorizontalAlignment="Left"
               Content="{Binding DataPath}" ToolTip.Tip="{Binding DataPath}" Click="OnOpenDataPath" />
 
       <TextBlock Grid.Row="3" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Database}" VerticalAlignment="Center" />
@@ -54,7 +56,7 @@
       <TextBlock Grid.Row="4" Grid.Column="1" FontSize="12" Text="{Binding Runtime}" VerticalAlignment="Center" />
 
       <TextBlock Grid.Row="5" Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_About_Repo}" VerticalAlignment="Center" />
-      <Button Grid.Row="5" Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+      <Button Grid.Row="5" Grid.Column="1" Classes="ghost link" HorizontalAlignment="Left"
               Content="{Binding RepoUrl}" Click="OnOpenRepo" />
     </Grid>
 

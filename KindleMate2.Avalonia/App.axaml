@@ -141,6 +141,19 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
     </Style>
+    <!--
+      内联文本链接:这类按钮长得就是一段文字(ghost + 无内边距),不该吃 Button 基线的 MinHeight=28。
+      28 是给"动作按钮"的最小可点高度,留在这里会把**按钮所在的整行**撑到 28px ——
+      关于窗口里三行链接(28px)与三行纯文本(约 16px)于是交替出现,行距在 25/31/37 之间跳,
+      读起来就是"行距不一致";状态栏「设备未连接」被更新按钮撑高也是同一类。
+      覆盖链与既有的 Button.ghost / Button.seg(改 MinHeight 为 24)完全同构,不是新机制。
+      注意:三条链接按钮都改用本类后,别再往它们身上加 MinHeight/Padding —— 类选择器在本文件里
+      定义在 Style Selector="Button" 之后,靠"后定义者胜"覆盖基线,再写行内值就等于又绕回原样。
+    -->
+    <Style Selector="Button.link">
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
     <Style Selector="Button.active">
       <Setter Property="Background" Value="{DynamicResource KmAccentSoftBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource KmAccentBrush}" />
