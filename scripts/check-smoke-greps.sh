@@ -82,6 +82,46 @@ if [ "${#assertions[@]}" -eq 0 ]; then
     exit 2
 fi
 
+# 自检:build.yml 里**每一条 grep 都必须被归类**,不允许出现"没被认出来"的。
+#
+# 为什么是"全量归类"而不是"找出针对报告却没被抓到的":后者得先知道报告变量叫什么,
+# 而变量一改名(`$out` → `$report`)它自己也瞎了 —— 实测过:抽取只剩 5 条,却照样打印「全部通过」。
+# 归类规则:
+#   ① 被上面的严格正则抓到                → 待校验
+#   ② 模式以 `$` 开头(如 `"$expect"`)      → shell 变量,运行时才展开 ⇒ 跳过
+#   ③ 文件参数是源码路径(.axaml / .cs)    → 源码断言,不是报告断言 ⇒ 跳过
+#   ④ 其余                                → ⚠ 未识别,退出码 2
+unclassified=""
+while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    text="${entry#*:}"
+
+    if printf '%s\n' "$text" | grep -qE 'grep -qE? "[^"]+" "\$(work/smoke\.txt|out)"'; then
+        continue
+    fi
+
+    pattern="$(printf '%s\n' "$text" \
+        | grep -oE "grep -[A-Za-z]+ [\"'][^\"']*[\"']" | head -1 \
+        | sed -E "s/^grep -[A-Za-z]+ [\"']//; s/[\"']\$//")"
+    case "$pattern" in
+        '$'*) continue ;;
+    esac
+    case "$text" in
+        *.axaml*|*.cs*) continue ;;
+    esac
+
+    unclassified="$unclassified$entry"$'\n'
+done < <(grep -nE '^[[:space:]]*grep ' "$build_yml" || true)
+
+if [ -n "$unclassified" ]; then
+    echo "⚠ 以下 grep 本脚本**认不出来** —— 它可能针对报告、也可能不是:" >&2
+    printf '%s' "$unclassified" | sed 's/^/    /' >&2
+    echo "本脚本只认这三种:① grep -q|-qE \"<模式>\" \"\$out\"|\"\$work/smoke.txt\";" >&2
+    echo "                  ② 模式本身是 shell 变量(如 \"\$expect\");③ 文件参数是源码(.axaml/.cs)。" >&2
+    echo "请把它归到其中一类(或更新抽取正则),否则它会被**静默漏检**(脚本仍会打印「全部通过」)。" >&2
+    exit 2
+fi
+
 for line in "${assertions[@]}"; do
     flag=""
     case "$line" in
