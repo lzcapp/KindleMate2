@@ -283,9 +283,14 @@
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="models:ListItem">
-                <Grid ColumnDefinitions="3,*" ColumnSpacing="10">
-                  <Border Grid.Column="0" Classes="kbar" Width="3" CornerRadius="2" />
-                  <StackPanel Grid.Column="1" Spacing="5">
+                <!-- 分组标题行(生词域:查询 / 标注)。VM 把它作为**独立一行**插进 Items
+                     (见 BuildWordDomainItems),这里只负责把那一行画成小标题。
+                     用第 0 个 Auto 行承载:非标题行时它不可见 ⇒ 高度收成 0,普通行布局一字不变。 -->
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="3,*" ColumnSpacing="10">
+                  <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Classes="ts" Text="{Binding SectionTitle}"
+                             IsVisible="{Binding IsSectionHeader}" FontWeight="SemiBold" Margin="0,10,0,2" />
+                  <Border Grid.Row="1" Grid.Column="0" Classes="kbar" Width="3" CornerRadius="2" />
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
                     <TextBlock Text="{Binding Primary}" FontSize="13" TextTrimming="CharacterEllipsis" />
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                       <!-- 书名占 * 列并**由它负责省略**。刻意不套横向 StackPanel:

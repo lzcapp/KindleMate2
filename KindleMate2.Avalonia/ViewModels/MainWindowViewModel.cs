@@ -366,9 +366,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ? nav.Name
             : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
 
+    // 生词域要**只数查询行**:中栏切段后 Items 里混着标题行与标注行,
+    // 直接数 Count 会把「1 条查询」说成「22 条查询」。
     public string HeaderSubtitle => IsClipDomain
         ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, Items.Count)
-        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, Items.Count);
+        : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, Items.Count(i => i.Lookup != null));
 
     // —— 状态栏 ——
     public int BookCount => _allClippings.Select(c => c.BookName).Where(b => !string.IsNullOrWhiteSpace(b)).Distinct().Count();
@@ -1520,8 +1522,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private void RebuildLookups() {
         IEnumerable<Lookup> query = _allLookups;
-        if (_selectedNav is { IsAll: false } nav) {
-            query = query.Where(l => string.Equals(l.Word, nav.Key, StringComparison.OrdinalIgnoreCase));
+        // 选中具体生词时中栏会切成「查询 / 标注」两段(见 BuildWordDomainItems)。
+        var selectedWord = _selectedNav is { IsAll: false } nav ? nav.Key : null;
+        if (selectedWord != null) {
+            var word = selectedWord;
+            query = query.Where(l => string.Equals(l.Word, word, StringComparison.OrdinalIgnoreCase));
         }
         var keyword = _searchText.Trim();
         if (keyword.Length > 0) {
@@ -1536,16 +1541,78 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ? query.OrderByDescending(l => l.Timestamp, StringComparer.Ordinal)
             : query.OrderBy(l => l.Timestamp, StringComparer.Ordinal)).ToList();
 
+        var containing = selectedWord != null
+            ? FindClippingsContainingWord(selectedWord)
+            : new List<Clipping>();
+
         // 整批替换;逐条 Add 会产生与条目数同量级的界面通知
-        var items = new List<ListItem>(ordered.Count);
-        foreach (var lookup in ordered) {
-            items.Add(ToListItem(lookup));
-        }
-        Items.ReplaceAll(items);
+        // (要不要切段由 BuildWordDomainItems 自己判 —— 判据放那儿自检才够得着。)
+        Items.ReplaceAll(BuildWordDomainItems(ordered, containing, selectedWord, keyword.Length > 0));
         LookupTable.ReplaceAll(ordered);
-        SelectedItem = Items.FirstOrDefault();
+        // 标题行不是记录 ⇒ 自动选中要跳过它,否则一进生词域右栏就是个空面板。
+        SelectedItem = Items.FirstOrDefault(i => !i.IsSectionHeader);
         SelectedLookupTable = LookupTable.FirstOrDefault();
         if (SelectedItem == null) Detail = DetailModel.Empty;
+    }
+
+    /// <summary>
+    /// 生词域中栏的行序列:切成「查询」「标注」两段(各带一行小标题)。
+    ///
+    /// **为什么单独抽一个方法**:无头自检拿不到真库数据(CI 跑的是空库),而"切段结构对不对"
+    /// 恰恰是这次改动最该钉住的东西 —— 抽出来它才够得着(自检 new 一个空 VM 就能调)。
+    /// 非 static 是因为 <c>ToListItem(Lookup)</c> 要读实例上的词干/词频索引。
+    ///
+    /// <paramref name="selectedWord"/> 为 null(全部生词视图)或 <paramref name="hasSearch"/> 为 true 时
+    /// **不切段**,输出一条平表:
+    /// · 全部生词是跨词的一条平表,切段没有意义;
+    /// · 搜索筛的是中栏的内容,而标注段不参与这个筛选口径 —— 与其留一段不受搜索影响的内容
+    ///   让人以为搜索坏了,不如整段收起。
+    /// 这两个判据**刻意放在函数里而不是调用处**:放调用处,自检就只能验结构、验不到判据本身。
+    ///
+    /// 空段不出标题行:没有内容还留一行「0 条…」只是噪音。
+    /// </summary>
+    public List<ListItem> BuildWordDomainItems(
+        IReadOnlyList<Lookup> lookups, IReadOnlyList<Clipping> clippings,
+        string? selectedWord, bool hasSearch) {
+        var sectioned = selectedWord != null && !hasSearch;
+        var items = new List<ListItem>(lookups.Count + clippings.Count + 2);
+        if (sectioned && lookups.Count > 0) {
+            items.Add(SectionHeader(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, lookups.Count)));
+        }
+        foreach (var lookup in lookups) items.Add(ToListItem(lookup));
+        if (sectioned && clippings.Count > 0) {
+            items.Add(SectionHeader(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippings.Count)));
+        }
+        foreach (var clip in clippings) items.Add(ToListItem(clip));
+        return items;
+    }
+
+    /// <summary>
+    /// 一行分组标题。<c>Key</c> 留空、不挂 Clipping/Lookup ⇒ 即使被选中,
+    /// 右栏也只会拿到空详情(见 <see cref="RebuildDetailFromListItem"/>)。
+    /// </summary>
+    private static ListItem SectionHeader(string title) => new() { Key = string.Empty, SectionTitle = title };
+
+    /// <summary>
+    /// 找出**正文里出现过这个词**的标注。
+    ///
+    /// 口径原样沿用右栏原先那段列表(2026-09-22 把它挪到中栏、成为独立一段):
+    /// · 单字词返回空 —— 一个字几乎命中每一条,列出来只是噪音;
+    /// · 顺序跟随中栏的排序开关(按时间),与标注域的列表一致 ——
+    ///   挪过来之后它就是"中栏的一个列表",排序按钮理应管到它。
+    /// </summary>
+    private List<Clipping> FindClippingsContainingWord(string word) {
+        var matched = new List<Clipping>();
+        if (word.Length <= 1) return matched;
+        foreach (var clip in _allClippings) {
+            var content = clip.Content.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
+            if (content.Trim().Length == 0) continue;
+            if (!content.Contains(word, StringComparison.OrdinalIgnoreCase)) continue;
+            matched.Add(clip);
+        }
+        return (_sortDescending
+            ? matched.OrderByDescending(c => c.ClippingDate, StringComparer.Ordinal)
+            : matched.OrderBy(c => c.ClippingDate, StringComparer.Ordinal)).ToList();
     }
 
     private static bool MatchClipping(Clipping c, string k, string type) {
@@ -1611,7 +1678,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 详情面板 ——
 
     private void RebuildDetailFromListItem() {
-        if (_selectedItem == null) {
+        // 分组标题行不是一条记录,没有详情可显示 —— 空面板(而不是留着上一行的内容,
+        // 那会让人以为面板是陈旧的)。
+        if (_selectedItem == null || _selectedItem.IsSectionHeader) {
             Detail = DetailModel.Empty;
             return;
         }
@@ -1689,22 +1758,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 : usage);
         }
 
-        var clippingEntries = new List<string>();
-        if (word.Length > 1) {
-            foreach (var clip in _allClippings.OrderBy(c => c.PageNumber)) {
-                var content = clip.Content.Replace(AppConstants.SpaceForNewLine, Environment.NewLine);
-                if (content.Trim().Length == 0) continue;
-                if (!content.Contains(word, StringComparison.OrdinalIgnoreCase)) continue;
-                clippingEntries.Add(clip.BookName is { Length: > 0 }
-                    ? string.Concat(content, string.Format(CultureInfo.CurrentCulture, AppConstants.BookTitleFormat, clip.BookName))
-                    : content);
-            }
-        }
+        // 「这个词出现过的标注」**不再拼进正文** —— 2026-09-22 起挪到中栏、成为独立一段
+        // (见 FindClippingsContainingWord)。右栏只有 330px,20 条长标注挤在里面根本读不了;
+        // 中栏本来就空着,而且它本来就是个列表。
+        // 副标题里**仍报条数**:那是个有用的概览(要看明细就去点中栏那一段)。
+        var clippingCount = FindClippingsContainingWord(word).Count;
 
         var builder = new StringBuilder();
         foreach (var entry in lookupEntries) builder.Append("• ").Append(entry.Trim()).Append('\n');
-        if (lookupEntries.Count > 0 && clippingEntries.Count > 0) builder.Append('\n');
-        foreach (var entry in clippingEntries) builder.Append("• ").Append(entry.Trim()).Append('\n');
 
         var stats = new List<string>();
         if (stem.Length > 0 && !string.Equals(stem, word, StringComparison.OrdinalIgnoreCase)) {
@@ -1716,8 +1777,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (lookupEntries.Count > 0) {
             stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_LookupCount, lookupEntries.Count));
         }
-        if (clippingEntries.Count > 0) {
-            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippingEntries.Count));
+        if (clippingCount > 0) {
+            stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippingCount));
         }
 
         return new DetailModel {

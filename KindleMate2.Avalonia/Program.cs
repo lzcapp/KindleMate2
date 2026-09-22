@@ -106,6 +106,9 @@ internal static class Program {
             // 列表项元信息行:书名不在 MetaTail 里(它单独占一列、负责省略)
             ProbeListItemMeta(report);
 
+            // 生词域中栏的两段结构(查询 / 标注)
+            ProbeWordSections(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -472,6 +475,92 @@ internal static class Program {
                           $" 生词项 MetaTail='{wordItem.MetaTail}'(期望只有词干/词频)" +
                           $" 无元信息项 HasMetaTail={bareItem.HasMetaTail}(期望 False)" +
                           $" -> result={(ok ? "OK" : "失败!书名不该出现在 MetaTail 里")}");
+    }
+
+    /// <summary>
+    /// 生词域中栏的两段结构(查询 / 标注)。
+    ///
+    /// 2026-09-22:右栏那段「这个词出现过的标注」挪到中栏,与查询分成两段。
+    /// 这里钉三件事:
+    /// <list type="number">
+    /// <item>切段后行的**顺序与归属**:标题 → 查询行 → 标题 → 标注行,不多不少;</item>
+    /// <item>标题行**不是记录**(不挂 Clipping/Lookup)⇒ 选中它右栏必须是空面板 ——
+    ///   否则会留着上一条的内容,看起来像面板坏了;</item>
+    /// <item><c>HeaderSubtitle</c> **只数查询行**:它要是把标题行/标注行也数进去,
+    ///   抬头就会把「1 条查询」说成「3 条查询」。</item>
+    /// </list>
+    /// 不切段(全部生词视图 / 有搜索词)时必须是一条**平表** —— 一个标题行都不许有;
+    /// 空段也不许留标题行(「0 条标注」只是噪音)。
+    ///
+    /// 断言里**不得出现本地化文案**(CI 跑的是 en 环境):所以只比结构、数量,
+    /// 以及"副标题加不加标注段都该是同一句",不比标题文字。
+    /// </summary>
+    private static void ProbeWordSections(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel { DomainIndex = 1 };   // 1 = 生词域(会重建左栏,必须在塞行之前)
+        var lookups = new List<KindleMate2.Domain.Entities.KM2DB.Lookup> { MakeLookup("en:beautiful", "beautiful") };
+        var clippings = new List<KindleMate2.Domain.Entities.KM2DB.Clipping> {
+            MakeClipping("甲书", "一句含 beautiful 的标注"),
+            MakeClipping("乙书", "另一句含 beautiful 的标注")
+        };
+        var noLookups = new List<KindleMate2.Domain.Entities.KM2DB.Lookup>();
+        var noClippings = new List<KindleMate2.Domain.Entities.KM2DB.Clipping>();
+
+        // 判据的三种输入都要走一遍:选中生词 → 切;全部生词 / 有搜索词 → 不切
+        var sectioned = vm.BuildWordDomainItems(lookups, clippings, "beautiful", hasSearch: false);
+        var allWords = vm.BuildWordDomainItems(lookups, clippings, selectedWord: null, hasSearch: false);
+        var searching = vm.BuildWordDomainItems(lookups, clippings, "beautiful", hasSearch: true);
+        var onlyClippings = vm.BuildWordDomainItems(noLookups, clippings, "beautiful", hasSearch: false);
+        var nothing = vm.BuildWordDomainItems(noLookups, noClippings, "beautiful", hasSearch: false);
+
+        var h0 = sectioned.ElementAtOrDefault(0);
+        var r1 = sectioned.ElementAtOrDefault(1);
+        var h2 = sectioned.ElementAtOrDefault(2);
+        var r3 = sectioned.ElementAtOrDefault(3);
+
+        // 选中标题行 ⇒ 右栏空面板;选中查询行 ⇒ 有详情(两者必须不同,否则"空面板"根本没生效)
+        vm.Items.ReplaceAll(sectioned);
+        if (r1 != null) vm.SelectedItem = r1;
+        var lookupDetail = vm.Detail.HasSelection;
+        if (h0 != null) vm.SelectedItem = h0;
+        var headerDetail = vm.Detail.HasSelection;
+
+        // 副标题只报查询条数 ⇒ 加不加标注段都该是同一句话(否则会变成「3 条查询」)
+        vm.Items.ReplaceAll(vm.BuildWordDomainItems(lookups, noClippings, "beautiful", hasSearch: false));
+        var subtitleAlone = vm.HeaderSubtitle;
+        vm.Items.ReplaceAll(sectioned);
+        var subtitleWithClippings = vm.HeaderSubtitle;
+        var subtitleStable = string.Equals(subtitleAlone, subtitleWithClippings, StringComparison.Ordinal);
+
+        var headerDistinct = h0 is not null && h2 is not null
+                             && h0.SectionTitle.Length > 0 && h2.SectionTitle.Length > 0
+                             && !string.Equals(h0.SectionTitle, h2.SectionTitle, StringComparison.Ordinal);
+        var structureOk = sectioned.Count == 5
+                          && h0 is { IsSectionHeader: true, Clipping: null, Lookup: null }
+                          && r1 is { IsSectionHeader: false, Lookup: not null }
+                          && h2 is { IsSectionHeader: true, Clipping: null, Lookup: null }
+                          && r3 is { IsSectionHeader: false, Clipping: not null }
+                          && sectioned.Count(i => i.Clipping != null) == 2
+                          && headerDistinct;
+        // 两条"不切段"的判据都要钉:全部生词视图、以及有搜索词时
+        var flatOk = allWords.Count == 3 && allWords.All(i => !i.IsSectionHeader)
+                     && searching.Count == 3 && searching.All(i => !i.IsSectionHeader);
+        var emptyOk = onlyClippings.Count == 3 && onlyClippings[0].IsSectionHeader
+                      && onlyClippings.Count(i => i.Clipping != null) == 2
+                      && nothing.Count == 0;
+
+        var ok = structureOk && flatOk && emptyOk && lookupDetail && !headerDetail && subtitleStable;
+
+        report.AppendLine($"word sections: 切段行数={sectioned.Count}(期望 5)" +
+                          $" 标题0={h0?.IsSectionHeader}(期望 True) 查询行={r1?.Lookup != null}(期望 True)" +
+                          $" 标题2={h2?.IsSectionHeader}(期望 True)" +
+                          $" 标注行={sectioned.Count(i => i.Clipping != null)}(期望 2)" +
+                          $" 两个标题不同={headerDistinct}(期望 True)" +
+                          $" 全部生词平表={allWords.Count}(期望 3)/标题行 {allWords.Count(i => i.IsSectionHeader)}(期望 0)" +
+                          $" 有搜索词平表={searching.Count}(期望 3)/标题行 {searching.Count(i => i.IsSectionHeader)}(期望 0)" +
+                          $" 只有标注={onlyClippings.Count}(期望 3) 全空={nothing.Count}(期望 0)" +
+                          $" 查询行详情={lookupDetail}(期望 True) 标题行详情={headerDetail}(期望 False)" +
+                          $" 副标题不随标注段变={subtitleStable}(期望 True)" +
+                          $" -> result={(ok ? "OK" : "失败!两段结构不符合预期")}");
     }
 
     /// <summary>

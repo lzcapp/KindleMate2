@@ -63,6 +63,18 @@ public sealed class ListItem {
     public bool IsBookmark => Kind == TypeKind.Bookmark;
     public bool IsCut => Kind == TypeKind.Cut;
 
+    /// <summary>
+    /// 分组标题行的文字(如「1 条查询」「20 条标注」)。**非空即代表这是一行分组标题** ——
+    /// 它没有正文、没有详情,只负责把中栏切成两段(生词域:查询 / 标注)。
+    ///
+    /// 复用既有那两条计数文案、而不是新造「查询」「标注」标签:它们已带三种语言,
+    /// 而且正是用户在右栏副标题里见过的措辞 —— 一眼认得出,不用重新学。
+    /// </summary>
+    public string SectionTitle { get; init; } = string.Empty;
+
+    /// <summary>是否为分组标题行(不挂 Clipping / Lookup,详情为空)。</summary>
+    public bool IsSectionHeader => SectionTitle.Length > 0;
+
     /// <summary>标注项来源(生词项为 null)。</summary>
     public Clipping? Clipping { get; init; }
 
