@@ -275,6 +275,9 @@
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
                 <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+                <!-- 分享为图片:只作用于**选中那一行**;回收站视图下收起(那里的行是临时拼的) -->
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_ShareImage}" Click="OnShareSelectedClipping"
+                          IsVisible="{Binding CanShareSelectedClipping}" />
                 <!-- 这两条作用于**选中那一行**,而不是左栏节点:左栏停在「全部标注」或搜索结果里时,
                      行所属的书与节点根本不是一回事(沿用节点名会改错书)。
                      回收站视图下都收起 —— 那里的行是从原始行临时拼的(键已不在 clippings 里),改不动。 -->
@@ -377,6 +380,8 @@
         <Border.ContextMenu>
           <ContextMenu>
             <MenuItem Header="{x:Static shared:Strings.Copy}" Click="OnContextCopy" />
+            <MenuItem Header="{x:Static shared:Strings.Ui_Op_ShareImage}" Click="OnShareSelectedClipping"
+                      IsVisible="{Binding CanShareSelectedClipping}" />
             <!-- 详情面板的右键菜单覆盖整块面板(书名、正文、标签都能触发)——
                  这正是"在详情的书名上重命名、在详情的标注内容上编辑"的实现方式。
                  注意:正文那三个 SelectableTextBlock 必须显式清掉主题自带的 ContextFlyout,
@@ -443,12 +448,15 @@
             </StackPanel>
           </ScrollViewer>
 
-          <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,14,0,0"
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,14,0,0"
                 IsVisible="{Binding Detail.HasSelection}">
             <Button Grid.Column="0" Classes="primary" Content="{x:Static shared:Strings.Copy}" Click="OnCopyDetail" />
             <Button Grid.Column="1" Classes="ghost seg" Content="{x:Static shared:Strings.Ui_Action_Export}"
                     Margin="8,0,0,0" Click="OnMenuExportMarkdown" />
-            <Button Grid.Column="3" Classes="danger" Content="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
+            <Button Grid.Column="2" Classes="ghost seg" Content="{x:Static shared:Strings.Ui_Op_ShareImage}"
+                    Margin="8,0,0,0" Click="OnShareSelectedClipping"
+                    IsVisible="{Binding CanShareSelectedClipping}" />
+            <Button Grid.Column="4" Classes="danger" Content="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected" />
           </Grid>
 
         </Grid>

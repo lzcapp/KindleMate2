@@ -678,6 +678,18 @@
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>重命名书籍</value>
   </data>
+  <data name="Ui_Op_ShareImage" xml:space="preserve">
+    <value>分享为图片</value>
+  </data>
+  <data name="Ui_Share_Saved_Format" xml:space="preserve">
+    <value>已保存分享图:{0}</value>
+  </data>
+  <data name="Ui_Share_Failed" xml:space="preserve">
+    <value>分享图生成失败</value>
+  </data>
+  <data name="Ui_Share_Footer" xml:space="preserve">
+    <value>由 Kindle Mate 2 生成</value>
+  </data>
   <data name="Ui_Result_NothingToExport" xml:space="preserve">
     <value>无内容可导出</value>
   </data>

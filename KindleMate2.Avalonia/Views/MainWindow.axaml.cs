@@ -534,6 +534,47 @@ public partial class MainWindow : Window {
         vm.StatusText = Strings.Ui_Status_Copied;
     }
 
+    // —— 分享为图片(2026-09-22 新增) ——
+
+    /// <summary>
+    /// 把当前选中的标注渲染成一张分享图(PNG)。
+    ///
+    /// 流程:选存哪(系统保存对话框)→ 渲染 → 状态栏给出路径 + 定位到文件。
+    /// 渲染失败只弹一句提示,不留半张图 —— 所以先渲染到目标路径、失败就不管它
+    /// (半成品会被下一次保存覆盖,不额外清理)。
+    /// </summary>
+    private async void OnShareSelectedClipping(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (vm.BuildShareCardModel() is not { } card) {
+            vm.StatusText = Strings.Ui_Status_NoSelection;
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+            Title = Strings.Ui_Op_ShareImage,
+            SuggestedFileName = card.SuggestedFileName(Strings.Ui_Op_ShareImage),
+            DefaultExtension = "png",
+            FileTypeChoices = new[] {
+                new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } }
+            }
+        });
+        var path = file?.TryGetLocalPath();
+        if (string.IsNullOrEmpty(path)) return;
+
+        try {
+            await ShareCardRenderer.RenderToPngAsync(card, path);
+        } catch (Exception ex) {
+            KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
+            await AppDialog.AlertAsync(this, Strings.Failed, Strings.Ui_Share_Failed);
+            return;
+        }
+
+        vm.StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Share_Saved_Format, path);
+        // 定位失败只记日志 —— 图已经存好了,打不开文件夹不该算这次分享失败
+        // (与统计页截图同一处理)。
+        try { ShellHelper.RevealFile(path); } catch (Exception ex) { KindleMate2.Shared.Diagnostics.AppLog.Write(ex); }
+    }
+
     // —— 列表 / 详情动作 ——
 
     /// <summary>点击左栏「回收站」→ 把已删除(可恢复)的条目载入主列表(仅显示,不改数据)。</summary>

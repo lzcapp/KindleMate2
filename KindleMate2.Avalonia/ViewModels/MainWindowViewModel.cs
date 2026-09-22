@@ -319,6 +319,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             _selectedItem = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasSelectedItem));
+            // 分享图的可用性取自**选中行自己** ⇒ 换行必须一起通知
+            // (绑定的计算属性不发通知,菜单项会永远停在初始状态 —— 这个坑本仓已踩过两次)。
+            OnPropertyChanged(nameof(CanShareSelectedClipping));
             // 右键菜单的两条可用性判定取自**选中行自己** ⇒ 换行必须一起通知。
             // (这正是不久前刚踩过的坑:绑定的计算属性不发通知 ⇒ 菜单项永远停在初始状态。)
             NotifySelectedItemDerived();
@@ -1019,6 +1022,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             OnPropertyChanged();
             // 标题依赖它(回收站视图下显示「回收站」而不是左栏那个节点名)。
             OnPropertyChanged(nameof(HeaderTitle));
+            // 分享图也依赖它:回收站里的行是从原始行临时拼的,做不出分享图。
+            OnPropertyChanged(nameof(CanShareSelectedClipping));
             // 右键菜单的两条可用性也依赖它:回收站视图下「重命名书籍」「编辑标注」都要收起
             // (那里的行是从原始行临时拼的,改不动)。
             NotifySelectedItemDerived();
@@ -1368,6 +1373,52 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>当前选中标注的正文(输入框初值)。</summary>
     public string SelectedClippingContent => _selectedItem?.Clipping?.Content ?? string.Empty;
+
+    // —— 分享图(2026-09-22 新增) ——
+
+    /// <summary>
+    /// 选中项能否生成分享图:得是一条标注,且不在回收站视图里
+    /// (回收站的行是从原始行临时拼的,没有可分享的"活"标注)。
+    /// </summary>
+    public bool CanShareSelectedClipping =>
+        !IsRecycleBinView && _selectedItem?.Clipping is { } clip && clip.Key.Length > 0;
+
+    /// <summary>
+    /// 组装分享卡片的内容。没选中标注(或正在看回收站)时返回 null。
+    ///
+    /// 内容口径由用户定死:只留 **标注内容 + 书名 + 作者**,页数/日期一律舍去 ——
+    /// 分享图上没人看那两样,还挤占正文的版面。类型标签保留(划线/笔记/书签/摘抄),
+    /// 它是视觉识别,且与应用里那四套 chip 配色同源。
+    ///
+    /// 正文走 <see cref="Flatten"/> 压成单行:卡片正文是 hero,保留原文换行会让版式忽宽忽窄。
+    /// </summary>
+    public ShareCardModel? BuildShareCardModel() {
+        if (!CanShareSelectedClipping || _selectedItem?.Clipping is not { } clip) return null;
+        var (typeText, kind) = TypeTextMap.Of(clip.BriefType);
+        var (location, clippingTime) = SplitClippingKey(clip.Key);
+        return new ShareCardModel {
+            Quote = Flatten(clip.Content),
+            BookName = clip.BookName ?? string.Empty,
+            AuthorName = clip.AuthorName ?? string.Empty,
+            TypeText = typeText,
+            Kind = kind,
+            Location = location,
+            ClippingTime = clippingTime
+        };
+    }
+
+    /// <summary>
+    /// 从标注主键 <c>标注日期|位置</c> 里拆出「位置」与「时间(能直接进文件名的形式)」。
+    /// 键里没有 <c>|</c> 时两段都返回空串,由 <see cref="ShareCardModel.SuggestedFileName"/> 退回默认值。
+    ///
+    /// 时间**刻意不做 DateTime 解析**:解析要处理文化差异(非公历文化下 <c>2017-06-11</c>
+    /// 可能被解成别的年份),而我们只需要一段稳定、唯一的文本 —— 换个字符就够。
+    /// </summary>
+    private static (string Location, string Time) SplitClippingKey(string key) {
+        var separator = key.IndexOf('|', StringComparison.Ordinal);
+        if (separator < 0) return (string.Empty, string.Empty);
+        return (key[(separator + 1)..], key[..separator].Replace(' ', '-'));
+    }
 
     // —— 列表行 / 详情面板的右键菜单要用到的判定 ——
     //
