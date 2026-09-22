@@ -191,8 +191,12 @@ internal static class Program {
                     // HeaderTitle 是**计算属性** —— 直接读它永远是"对"的,漏发通知也看不出来。
                     // 所以这里数通知次数:视图只认通知,不发就等于没更新。
                     var titleNotified = 0;
+                    // DeletedCount 也要数:它是**另一个独立的绑定源**(左栏「回收站 N」绑的就是它),
+                    // 只通知 StatusLeft 的话状态栏会更新、左栏却永远停在初始值 0 —— 实测过的真症状。
+                    var deletedNotified = 0;
                     startupVm.PropertyChanged += (_, e) => {
                         if (e.PropertyName == nameof(MainWindowViewModel.HeaderTitle)) titleNotified++;
+                        if (e.PropertyName == nameof(MainWindowViewModel.DeletedCount)) deletedNotified++;
                     };
 
                     var navBefore = startupVm.SelectedNav != null;
@@ -208,12 +212,14 @@ internal static class Program {
                     // navBefore 是**前提**而不是结论:左栏本来就空的话,"被清成 null"证明不了任何事。
                     var binOk = navBefore && enteredBin && navCleared && binTitle
                                 && titleOnEnter >= 1 && titleOnLeave > titleOnEnter
-                                && !leftBin && normalTitle;
+                                && !leftBin && normalTitle
+                                && deletedNotified >= 1;
                     report.AppendLine($"recycle bin view: 进入前有选中={navBefore}(期望 True,前提)" +
                                       $" 进入={enteredBin}(期望 True) 左栏已清空={navCleared}(期望 True)" +
                                       $" 标题为回收站={binTitle}(期望 True) 回常规列表后={leftBin}(期望 False)" +
                                       $" 标题为全部标注={normalTitle}(期望 True)" +
                                       $" 标题通知=[进入后:{titleOnEnter} 离开后:{titleOnLeave}](期望 ≥1 且递增)" +
+                                      $" DeletedCount 通知={deletedNotified}(期望 ≥1,左栏「回收站 N」靠它)" +
                                       $" -> result={(binOk ? "OK" : "失败!回收站视图状态不正确")}");
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
