@@ -501,6 +501,9 @@
   <data name="Ui_Menu_SyncToDevice" xml:space="preserve">
     <value>同步到 Kindle 设备</value>
   </data>
+  <data name="Ui_Menu_SyncToDevice_NeedsDevice" xml:space="preserve">
+    <value>请先连接 Kindle 设备后再同步</value>
+  </data>
   <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
     <value>导出为 Markdown</value>
   </data>

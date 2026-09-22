@@ -132,6 +132,19 @@ jobs:
             expect="Devices.Linux.DeviceManager"
           fi
           grep -q "$expect" "$work/smoke.txt"
+          # 「同步到 Kindle 设备」菜单项:设备未连接时必须置灰,并说清原因。
+          # 三条行为断言都取**确定性**状态 —— 自检里前两条来自"库还没开"(探测必然未连接),
+          # 后两条由自检直接给绑定源赋两种值;都不看真实探测,因为 runner 上必然没设备,
+          # 而开发机上可能真插着 Kindle,照真实探测断言就随现场硬件变色。
+          #   no session : 置灰 + 提示「先打开数据库」(优先于「先连接设备」)
+          #   offline    : 置灰 + 提示「先连接设备」
+          #   online     : 可点 + 提示不再停在「先连接设备」
+          grep -q "sync menu(no session): enabled=False hintOpensDb=True" "$work/smoke.txt"
+          grep -q "sync menu(offline): enabled=False hintNeedsDevice=True" "$work/smoke.txt"
+          grep -q "sync menu(online): enabled=True hintNeedsDevice=False" "$work/smoke.txt"
+          # 上面三条钉的是**绑定源**;编译期绑定只保证路径能解析,不保证菜单项还挂着这个属性
+          # (菜单重构时删掉 IsEnabled= 不会编译报错,菜单却再也不置灰了)。所以在源码上钉一句。
+          grep -Eq 'IsEnabled="\{Binding +IsDeviceConnected\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           # 清洗预览的视图层拼装(噪音单独暴露 + 尾部不被截断)—— 同 Windows 作业的理由
           grep -q "clean preview:.*result=OK" "$work/smoke.txt"
           # 表格列冗余判定 —— 同 Windows 作业的理由
