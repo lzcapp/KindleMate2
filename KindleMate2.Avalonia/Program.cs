@@ -94,6 +94,23 @@ internal static class Program {
             // 关于页数据
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
+            // 「运行环境」那一行必须带上 **RID**:这一行的用途就是排查"装的是哪个平台的包"
+            // (例如"macOS 包里有没有 Devices.MacOS.dll"),而旧写法用 Environment.OSVersion.Platform,
+            // 它在 macOS 与 Linux 上**都**返回 "Unix" ⇒ 根本分不出平台。
+            // 断言与**运行时的 RID** 比,而不是写死 "osx-arm64" —— 这样三个平台都成立。
+            var runtimeRid = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+            var runtimeOs = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+            // 两半都要在:OSDescription 负责"人读得出是哪个系统",RID 负责"对应哪个发布包"。
+            // 只查 RID 的话,把平台那半退回 Environment.OSVersion.Platform(显示 "Unix")照样能过 —— 那就白测了。
+            var runtimeShowsOs = about.Runtime.Contains(runtimeOs, StringComparison.Ordinal);
+            var runtimeShowsRid = about.Runtime.Contains(runtimeRid, StringComparison.Ordinal);
+            var runtimeOk = runtimeShowsOs && runtimeShowsRid;
+            // 行首用 **ASCII 探针名**、行尾用 `result=OK` —— 与其它探针同一形状。
+            // CI 的 grep 模式必须能匹配**真实输出**(踩过一次:模式里写了个实际不存在的单空格,
+            // 于是 CI 三个作业全红)。ASCII 前缀 + `.*result=OK` 是最不容易写错的形状。
+            report.AppendLine($"about runtime: os='{runtimeOs}' rid='{runtimeRid}'" +
+                              $" showsOs={runtimeShowsOs} showsRid={runtimeShowsRid}" +
+                              $" -> result={(runtimeOk ? "OK" : "失败!运行环境分不出平台")}");
 
             // 清洗预览的**视图层数据**。VM 在 Avalonia 工程里,单测项目不引用 Avalonia ⇒ 只能在这里钉。
             // 钉的是上一版真正翻车的那一点:被清洗掉的标点必须**单独**暴露给视图(视图靠它加删除线),
