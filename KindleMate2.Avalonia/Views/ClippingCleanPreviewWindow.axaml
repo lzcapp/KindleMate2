@@ -1,0 +1,111 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:KindleMate2.Avalonia.ViewModels"
+        xmlns:shared="using:KindleMate2.Shared"
+        x:Class="KindleMate2.Avalonia.Views.ClippingCleanPreviewWindow"
+        mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="640"
+        x:DataType="vm:ClippingCleanPreviewViewModel"
+        Title="{x:Static shared:Strings.Ui_Menu_CleanClippingText}"
+        Icon="/Assets/bookmark.ico"
+        Width="780" Height="640" MinWidth="560" MinHeight="400"
+        WindowStartupLocation="CenterOwner">
+
+  <!--
+    清洗预览。做成**独立窗口**而不是复用通用确认框,有两个硬理由:
+    · 通用确认框是 Width=420 + SizeToContent=Height + 无滚动 —— 5 条长样例就能把
+      窗口撑到屏幕外(上一版就是这样),而且没有地方放"逐条列表";
+    · 差异要**逐字高亮**(被清洗掉的标点加删除线),通用确认框的正文只是一个 TextBlock 字符串。
+  -->
+  <DockPanel>
+
+    <!-- 概要:改多少条、扫了多少条、会不会备份、跳过了多少条 -->
+    <Border DockPanel.Dock="Top" Background="{DynamicResource KmSurfaceBrush}"
+            BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,0,0,1"
+            Padding="20,16">
+      <StackPanel Spacing="6">
+        <TextBlock Classes="title" Text="{x:Static shared:Strings.Ui_Menu_CleanClippingText}" />
+        <TextBlock Text="{Binding Summary}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource KmTextSecondaryBrush}" />
+        <TextBlock Classes="ts" Text="{Binding Skipped}" IsVisible="{Binding HasSkipped}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <!-- 底部:图例 + 按钮。图例放在按钮左边,提示"删除线是什么"不必占一行标题。 -->
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource KmSurfaceBrush}"
+            BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0,1,0,0"
+            Padding="16,12">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Grid.Column="0" Classes="tt" Text="{x:Static shared:Strings.Ui_Dlg_ClippingClean_Legend}"
+                   TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,0,16,0" />
+        <Button Grid.Column="1" x:Name="CancelButton" Margin="0,0,8,0"
+                Content="{x:Static shared:Strings.Cancel}" Click="OnCancel" />
+        <Button Grid.Column="2" x:Name="OkButton" Classes="primary"
+                Content="{Binding OkText}" Click="OnOk" />
+      </Grid>
+    </Border>
+
+    <!-- 逐条改动。列表自身滚动,窗口高度由屏幕可用区域夹取(WindowSizing)。 -->
+    <Grid RowDefinitions="Auto,*" Margin="16,14,16,0">
+      <TextBlock Grid.Row="0" Classes="ts" Text="{Binding Header}" Margin="4,0,0,8" />
+
+      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+        <StackPanel Spacing="6">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ClippingCleanPreviewRow">
+                <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="7"
+                        Background="{DynamicResource KmSurfaceBrush}"
+                        BorderBrush="{DynamicResource KmBorderBrush}" BorderThickness="0.5">
+                  <StackPanel Spacing="4">
+
+                    <!-- 定位:书名 · 位置(悬停看完整主键) -->
+                    <TextBlock Classes="tt" Text="{Binding Source}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding FullKey}" />
+
+                    <!-- 改前:噪音用删除线 + 底色高亮。底色不是装饰 —— 纯空白的噪音
+                         只有靠底色才看得见,否则那一行会显示成"什么都没改"。 -->
+                    <Grid ColumnDefinitions="Auto,*">
+                      <TextBlock Grid.Column="0" Classes="ts" Margin="0,0,10,0"
+                                 Text="{x:Static shared:Strings.Ui_Dlg_ClippingClean_Before}" />
+                      <TextBlock Grid.Column="1" TextWrapping="Wrap">
+                        <Run Text="{Binding LeadingNoise}"
+                             Foreground="{DynamicResource KmChipCutFgBrush}"
+                             Background="{DynamicResource KmChipCutBgBrush}"
+                             TextDecorations="Strikethrough" />
+                        <Run Text="{Binding Head}" />
+                        <Run Text="{Binding Tail}" />
+                        <Run Text="{Binding TrailingNoise}"
+                             Foreground="{DynamicResource KmChipCutFgBrush}"
+                             Background="{DynamicResource KmChipCutBgBrush}"
+                             TextDecorations="Strikethrough" />
+                      </TextBlock>
+                    </Grid>
+
+                    <!-- 改后:即上面那行去掉删除线部分 -->
+                    <Grid ColumnDefinitions="Auto,*">
+                      <TextBlock Grid.Column="0" Classes="ts" Margin="0,0,10,0"
+                                 Text="{x:Static shared:Strings.Ui_Dlg_ClippingClean_After}" />
+                      <TextBlock Grid.Column="1" TextWrapping="Wrap">
+                        <Run Text="{Binding Head}" />
+                        <Run Text="{Binding Tail}" />
+                      </TextBlock>
+                    </Grid>
+
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- 超出上限时说明剩下的去哪了 —— 不留一个"看起来列完了"的错觉 -->
+          <TextBlock Classes="tt" Text="{Binding More}" IsVisible="{Binding HasMore}"
+                     TextWrapping="Wrap" Margin="4,2,4,12" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

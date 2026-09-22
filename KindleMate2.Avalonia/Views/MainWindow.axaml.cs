@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,7 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using KindleMate2.Application.Models;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
@@ -45,27 +42,10 @@ public partial class MainWindow : Window {
     /// 这里按 <c>WorkingArea</c>(已扣除任务栏)夹取;MinWidth/MinHeight 也必须一起夹,
     /// 否则可用区域比最小值还小时,最小值自身就会顶穿屏幕。
     /// 可用区域足够大时本方法不改变任何取值 —— 大屏行为与之前完全一致。
+    ///
+    /// 实现已抽到 <see cref="WindowSizing.ClampToWorkingArea"/> 供其他窗口复用。
     /// </remarks>
-    private void ClampToWorkingArea() {
-        if (Screens is not { } screens) {
-            return;
-        }
-
-        var screen = screens.ScreenFromWindow(this) ?? screens.Primary;
-        if (screen is not { } current) {
-            return;
-        }
-
-        // WorkingArea 是物理像素,而窗口的 Width/Height 是逻辑单位,必须按缩放换算。
-        var scaling = current.Scaling > 0 ? current.Scaling : 1d;
-        var maxWidth = current.WorkingArea.Width / scaling;
-        var maxHeight = current.WorkingArea.Height / scaling;
-
-        MinWidth = Math.Min(MinWidth, maxWidth);
-        MinHeight = Math.Min(MinHeight, maxHeight);
-        Width = Math.Min(Width, maxWidth);
-        Height = Math.Min(Height, maxHeight);
-    }
+    private void ClampToWorkingArea() => WindowSizing.ClampToWorkingArea(this);
 
     private async void OnOpened(object? sender, EventArgs e) {
         // 构造期若还拿不到屏幕信息,这里兜底;夹取是取小值,重复调用无副作用。
@@ -405,38 +385,10 @@ public partial class MainWindow : Window {
             return;
         }
 
-        var ok = await AppDialog.ConfirmAsync(this, Strings.Ui_Menu_CleanClippingText,
-            BuildCleanPreview(preview), Strings.Ui_Dlg_ClippingClean_Ok);
+        // 逐条列出的预览窗口(独立窗口,可滚动、带差异高亮),不再把样例压成一段文字。
+        var ok = await ClippingCleanPreviewWindow.ConfirmAsync(this, preview);
         if (!ok) return;
         await ShowResultAsync(await vm.CleanClippingTextsAsync());
-    }
-
-    /// <summary>确认框里最多列几条样例 —— 再多用户也不会读,框还会长到看不完。</summary>
-    private const int CleanSampleRows = 5;
-
-    /// <summary>样例里单侧文本的显示上限。确认框只为让人核对"清洗口径对不对",不必看全文。</summary>
-    private const int CleanSampleChars = 60;
-
-    private static string BuildCleanPreview(ClippingCleanReport report) {
-        var lines = new List<string> {
-            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Message_Format,
-                report.ChangedCount, report.Scanned),
-            string.Empty,
-            Strings.Ui_Dlg_ClippingClean_Samples + ":"
-        };
-        lines.AddRange(report.Changes.Take(CleanSampleRows).Select(change =>
-            string.Format(CultureInfo.CurrentCulture, Strings.Ui_Dlg_ClippingClean_Sample_Format,
-                FlattenForDialog(change.Before), FlattenForDialog(change.After))));
-        if (report.ChangedCount > CleanSampleRows) {
-            lines.Add("…");
-        }
-        return string.Join(Environment.NewLine, lines);
-    }
-
-    /// <summary>把标注正文压成一行并截断 —— 换行会把确认框撑散,长文也读不过来。</summary>
-    private static string FlattenForDialog(string? text) {
-        var flat = (text ?? string.Empty).Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
-        return flat.Length <= CleanSampleChars ? flat : flat[..CleanSampleChars] + "…";
     }
 
     private async void OnMenuRebuildDb(object? sender, RoutedEventArgs e) {

@@ -95,6 +95,11 @@ internal static class Program {
             var about = AboutViewModel.Load(vm.Session);
             report.AppendLine($"about: {about.Product} | ver={about.Version} | db={about.DatabaseName} ({about.DatabaseSize}) | runtime={about.Runtime}");
 
+            // 清洗预览的**视图层数据**。VM 在 Avalonia 工程里,单测项目不引用 Avalonia ⇒ 只能在这里钉。
+            // 钉的是上一版真正翻车的那一点:被清洗掉的标点必须**单独**暴露给视图(视图靠它加删除线),
+            // 而且不能被正文的中间省略吃掉 —— 否则「改前 / 改后」在预览里会一模一样,预览等于白做。
+            ProbeCleanPreview(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -197,6 +202,62 @@ internal static class Program {
             }
             return 1;
         }
+    }
+
+    /// <summary>
+    /// 「清洗标注文本」预览窗口的数据探针。
+    ///
+    /// 为什么必须放在这里:预览的 VM 在 Avalonia 工程里,而测试工程**不引用 Avalonia**
+    /// (那是刻意的分层),所以这段拼装逻辑在单测里够不着 —— 只能靠这个无头自检钉住。
+    ///
+    /// 断言的三件事,正是上一版预览真正翻车的地方:
+    /// <list type="number">
+    /// <item>被清洗掉的标点要**单独**给出(视图靠它加删除线),不能混在正文里;</item>
+    /// <item>**尾部**噪音不能被正文的中间省略吃掉(上一版只留前缀,尾部改动永远看不见);</item>
+    /// <item>拼出来的「改前」与「改后」必须不同 —— 一样就等于预览没起作用。</item>
+    /// </list>
+    ///
+    /// 断言里**不得出现本地化文案**:自检在 CI 上跑的是 en 环境,拿中文串去比必然假红。
+    /// </summary>
+    private static void ProbeCleanPreview(System.Text.StringBuilder report) {
+        const string tailNoise = "\u300C";     // 「
+        // 必须长过 ClippingCleanPreviewRow.DefaultCoreChars(80),否则测不到"中间省略"这一环。
+        var longCore = string.Concat(Enumerable.Repeat(
+            "留學派和家人們都相當恐懼不安,因為自己可能會在不知不覺間,被誣陷為間諜團或是體制反對勢力。", 3));
+
+        var cleanReport = new KindleMate2.Application.Models.ClippingCleanReport {
+            Scanned = 3,
+            ChangedCount = 2,
+            AllPunctuationCount = 1,
+            Changes = new[] {
+                // 只在首部有噪音
+                new KindleMate2.Application.Models.ClippingCleanChange(
+                    "2099-01-01 00:00:00|100-120", "自检书甲", "。他走过去。", "他走过去。"),
+                // 只在尾部有噪音,且正文长到会被中间省略 —— 上一版正是被这里截掉
+                new KindleMate2.Application.Models.ClippingCleanChange(
+                    "2099-01-02 00:00:00|130-150", "自检书乙", longCore + tailNoise, longCore)
+            }
+        };
+
+        var preview = new ClippingCleanPreviewViewModel(cleanReport);
+        var head = preview.Rows[0];
+        var tail = preview.Rows[1];
+
+        var beforeLine = tail.LeadingNoise + tail.Head + tail.Tail + tail.TrailingNoise;
+        var afterLine = tail.Head + tail.Tail;
+
+        var ok = preview.Rows.Count == 2
+                 && head.LeadingNoise == "\u3002" && head.TrailingNoise.Length == 0
+                 && tail.LeadingNoise.Length == 0 && tail.TrailingNoise == tailNoise
+                 && tail.Tail.Length > 0                       // 正文被中间省略 ⇒ 尾部仍在
+                 && beforeLine.EndsWith(tailNoise, StringComparison.Ordinal)
+                 && !string.Equals(beforeLine, afterLine, StringComparison.Ordinal);
+
+        report.AppendLine($"clean preview: rows={preview.Rows.Count}" +
+                          $" headNoise='{head.LeadingNoise}' tailNoise='{tail.TrailingNoise}'" +
+                          $" coreElided={tail.Tail.Length > 0}" +
+                          $" changed={(ok ? "yes" : "NO")}" +
+                          $" -> result={(ok ? "OK" : "失败!预览拼装不符合预期")}");
     }
 
     /// <summary>

@@ -72,6 +72,9 @@ jobs:
           ./publish/smoke/KindleMate2.Avalonia.exe --smoke "$db" "$out"
           cat "$out"
           grep -q "Devices.Windows.DeviceManager" "$out"
+          # 清洗预览的视图层拼装在 Avalonia 工程里,单测够不着 ⇒ 在这里钉。
+          # 只断言结构,不断言文案(CI 是 en 环境,拿中文串比必然假红)。
+          grep -q "clean preview:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -125,6 +128,8 @@ jobs:
             expect="Devices.Linux.DeviceManager"
           fi
           grep -q "$expect" "$work/smoke.txt"
+          # 清洗预览的视图层拼装(噪音单独暴露 + 尾部不被截断)—— 同 Windows 作业的理由
+          grep -q "clean preview:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是
