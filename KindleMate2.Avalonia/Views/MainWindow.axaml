@@ -195,8 +195,15 @@
           -->
           <Button Classes="ghost" Content="{Binding UpdateButtonText}" Click="OnUpdateClick"
                   IsVisible="{Binding IsUpdateAvailable}" Cursor="Hand" Margin="0,0,8,0" />
-          <Ellipse Width="6" Height="6" Fill="{DynamicResource KmTextTertiaryBrush}" />
-          <TextBlock Classes="tt" Text="{Binding DeviceStatus}" />
+          <!--
+            这一排的每个孩子都必须自己声明 VerticalAlignment="Center"，不能靠默认值。
+            默认是 Stretch：更新按钮的基线样式带 MinHeight=28(见 App.axaml)，有更新时它把整排
+            撑到 28px，而 TextBlock/Ellipse 于是被拉伸到这个高度 —— 文字画在自己的**顶部**，
+            比左侧居中的「有新版本 …」高出约 7px(2026-09-22 用户报的错位)。
+            没有更新按钮时整排只有一行文字高，拉伸等于自身高度，缺陷不显形 ⇒ 只有"有更新时"才现形。
+          -->
+          <Ellipse Width="6" Height="6" Fill="{DynamicResource KmTextTertiaryBrush}" VerticalAlignment="Center" />
+          <TextBlock Classes="tt" Text="{Binding DeviceStatus}" VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
     </Border>
