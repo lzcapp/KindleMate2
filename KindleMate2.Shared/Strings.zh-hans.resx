@@ -826,7 +826,7 @@
     <value>未打开数据库</value>
   </data>
   <data name="Ui_About_RuntimeFormat" xml:space="preserve">
-    <value>{0} · .NET {1}</value>
+    <value>{0} · {1} · {2}</value>
   </data>
   <data name="Ui_About_DataPath" xml:space="preserve">
     <value>数据路径</value>

@@ -85,6 +85,9 @@ jobs:
           # 源码断言:分享入口的接线（编译期绑定不保证菜单项还在，见 MainWindow.axaml）
           grep -q 'Click="OnShareSelectedClipping"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q 'IsVisible="{Binding CanShareSelectedClipping}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          grep -q "context menu:.*result=OK" "$out"
+          # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
+          grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -151,6 +154,19 @@ jobs:
           # 上面三条钉的是**绑定源**;编译期绑定只保证路径能解析,不保证菜单项还挂着这个属性
           # (菜单重构时删掉 IsEnabled= 不会编译报错,菜单却再也不置灰了)。所以在源码上钉一句。
           grep -Eq 'IsEnabled="\{Binding +IsDeviceConnected\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 时间戳格式串**只许**在 AppConstants 里定义一次。
+          # 它此前散在五个地方(两个常量 + 三处硬编码:库备份/维护清单/导入文件/清空前保底/统计截图),
+          # 而那条 InvariantCulture 修复当年就是**分头改的** —— 所以这里把两件事都钉住:
+          # ① 不许再硬编码这个格式串;② 每个用点都必须配 InvariantCulture
+          #    (非公历日历会把年份变成 2569/1405/1448,文件名就读不出日期、也排不了序)。
+          # 用 git grep 而不是 grep -r:只搜**被跟踪的**源码 —— grep -r 会扫进 bin/obj
+          # (CI 到这一步已经构建过),既慢又可能命中生成物;而 BSD grep(macOS)不支持 --exclude-dir。
+          if git grep -n 'ToString("yyyyMMdd_HHmmss"' -- '*.cs'; then
+            echo "时间戳格式串又被硬编码了 —— 请改用 AppConstants.FileTimestampFormat"; exit 1
+          fi
+          if git grep -n 'ToString(AppConstants.FileTimestampFormat' -- '*.cs' | grep -v InvariantCulture; then
+            echo "时间戳用点漏了 InvariantCulture —— 非公历日历下年份会变成 2569/1405/1448"; exit 1
+          fi
           # 清洗预览的视图层拼装(噪音单独暴露 + 尾部不被截断)—— 同 Windows 作业的理由
           grep -q "clean preview:.*result=OK" "$work/smoke.txt"
           # 表格列冗余判定 —— 同 Windows 作业的理由
@@ -159,6 +175,8 @@ jobs:
           grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "share card:.*result=OK" "$work/smoke.txt"
+          grep -q "context menu:.*result=OK" "$work/smoke.txt"
+          grep -q "about runtime:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

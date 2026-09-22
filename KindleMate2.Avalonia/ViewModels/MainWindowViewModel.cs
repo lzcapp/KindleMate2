@@ -322,6 +322,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             // 分享图的可用性取自**选中行自己** ⇒ 换行必须一起通知
             // (绑定的计算属性不发通知,菜单项会永远停在初始状态 —— 这个坑本仓已踩过两次)。
             OnPropertyChanged(nameof(CanShareSelectedClipping));
+            // 右键菜单的两条可用性判定取自**选中行自己** ⇒ 换行必须一起通知。
+            // (这正是不久前刚踩过的坑:绑定的计算属性不发通知 ⇒ 菜单项永远停在初始状态。)
+            NotifySelectedItemDerived();
             RebuildDetailFromListItem();
         }
     }
@@ -658,7 +661,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         var importDir = Path.Combine(session.BackupDirectory, AppConstants.ImportsPathName);
-        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+        var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
         var clippingsFile = Path.Combine(importDir, "MyClippings_" + stamp + FileExtension.TXT);
         var wordsFile = Path.Combine(importDir, "vocab_" + stamp + FileExtension.DB);
 
@@ -861,10 +864,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         DatabaseMaintenancePlan? plan) {
         try {
             Directory.CreateDirectory(session.BackupDirectory);
-            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
-            // 非公历日历下年份会变成 2569/1405 之类,清单文件名就读不出日期了
-            // (与 ClearAllDataAsync 里那个备份文件名同一个坑)。
-            var stamp = DateTime.Now.ToString(AppConstants.BackupDateFormat, CultureInfo.InvariantCulture);
+            // 格式与 culture 的约定集中在 AppConstants.FileTimestampFormat
+            // ——当年这个坑是分头改的,现在只留一处说明。
+            var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var path = Path.Combine(session.BackupDirectory, $"Maintenance_{stamp}.txt");
 
             var removals = plan?.Cleanup.Removals ?? [];
@@ -932,9 +934,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         return RunOperationAsync(() => {
             Directory.CreateDirectory(session.BackupDirectory);
-            // 时间戳显式走 InvariantCulture:字符串插值里的格式说明符默认用 CurrentCulture,
-            // 非公历日历下年份会变成 2569/1405/1448 之类,清空前的这份保底备份就读不出日期了。
-            var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            // 格式与 culture 的约定集中在 AppConstants.FileTimestampFormat ——
+            // 清空前的这份保底备份读不出日期,用户就没法按名字找回来。
+            var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
             File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
@@ -1022,6 +1024,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             OnPropertyChanged(nameof(HeaderTitle));
             // 分享图也依赖它:回收站里的行是从原始行临时拼的,做不出分享图。
             OnPropertyChanged(nameof(CanShareSelectedClipping));
+            // 右键菜单的两条可用性也依赖它:回收站视图下「重命名书籍」「编辑标注」都要收起
+            // (那里的行是从原始行临时拼的,改不动)。
+            NotifySelectedItemDerived();
         }
     }
 
@@ -1162,10 +1167,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 此前只调了 ClippingService,导致改完书名后生词本里仍显示旧书名(见原版 FrmMain.cs:1196-1197)。
     /// </summary>
     public Task<OperationResult> RenameCurrentBookAsync(string newName, string newAuthor) {
-        if (_session is not { } session || _selectedNav is not { IsAll: false } nav) {
+        if (_selectedNav is not { IsAll: false } nav) {
             return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Ui_Status_PickBookFirst));
         }
-        var oldName = nav.Key;
+        return RenameBookAsync(nav.Key, newName, newAuthor);
+    }
+
+    /// <summary>
+    /// 重命名**指定的**那本书(不限于左栏当前节点)。
+    ///
+    /// 左栏菜单传 <see cref="CurrentBookName"/>;列表行与详情面板的右键菜单传那一行自己的书名 ——
+    /// 左栏停在「全部标注」或搜索结果里时,行所属的书与左栏节点根本不是一个东西,
+    /// 沿用 CurrentBookName 会改错书。
+    /// </summary>
+    public Task<OperationResult> RenameBookAsync(string oldName, string newName, string newAuthor) {
+        if (_session is not { } session || oldName.Length == 0) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Ui_Status_PickBookFirst));
+        }
         return RunOperationAsync(() => {
             session.LookupService.RenameBook(oldName, newName, newAuthor);
             return session.ClippingService.RenameBook(oldName, newName, newAuthor)
@@ -1401,6 +1419,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (separator < 0) return (string.Empty, string.Empty);
         return (key[(separator + 1)..], key[..separator].Replace(' ', '-'));
     }
+
+    // —— 列表行 / 详情面板的右键菜单要用到的判定 ——
+    //
+    // 这两条都**取选中行自己的信息**,而不是左栏节点:左栏停在「全部标注」或搜索结果里时,
+    // 行所属的书与左栏节点不是一个东西(沿用 CurrentBookName 会改错书)。
+    // 回收站视图两者都关掉:那里的行是从原始行临时拼出来的(键在 clippings 里已不存在),
+    // 改书名叫不醒任何一行、改正文更是无从写起 —— 与其点下去报错,不如不给。
+
+    /// <summary>
+    /// 当前选中那一行所属的**书名** —— 标注取 <c>BookName</c>,生词取 <c>Title</c>。
+    /// </summary>
+    public string SelectedItemBookName =>
+        _selectedItem?.Clipping?.BookName ?? _selectedItem?.Lookup?.Title ?? string.Empty;
+
+    /// <summary>选中行是否属于某一本书(决定右键「重命名书籍」是否可用)。</summary>
+    public bool CanRenameSelectedItemBook => !IsRecycleBinView && SelectedItemBookName.Length > 0;
+
+    /// <summary>
+    /// 选中行派生的那几个属性一起通知。
+    /// 目前是右键菜单的两条可用性判定 + 选中行书名 —— 它们全都只看 <c>_selectedItem</c>,
+    /// 换行/进回收站时**必须**跟着更新,否则菜单项会停在初始状态(与 <c>NotifyCountsChanged</c> 同一个理由)。
+    /// </summary>
+    private void NotifySelectedItemDerived() {
+        OnPropertyChanged(nameof(SelectedItemBookName));
+        OnPropertyChanged(nameof(CanRenameSelectedItemBook));
+        OnPropertyChanged(nameof(CanEditSelectedClipping));
+    }
+
+    /// <summary>
+    /// 选中的是不是一条**能改的标注** —— 生词项不算(它不是标注),
+    /// 回收站项也不算(那一行已不在 <c>clippings</c> 里,写不进去)。
+    /// </summary>
+    public bool CanEditSelectedClipping =>
+        !IsRecycleBinView && _selectedItem?.Clipping is { } clip && clip.Key.Length > 0;
 
     /// <summary>
     /// 保存编辑后的标注正文。对齐原版:更新 <c>clippings.content</c>,
