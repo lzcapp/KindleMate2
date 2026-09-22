@@ -337,9 +337,10 @@
               </ContextMenu>
             </dg:DataGrid.ContextMenu>
             <dg:DataGrid.Columns>
-              <!-- 选中某个生词时整列同值 ⇒ 收起(同「书籍 / 作者」,理由见上面那张表的注释) -->
+              <!-- 选中某个生词时整列同值 ⇒ 收起(同「书籍 / 作者」,理由见上面那张表的注释)。
+                   「词干」与「生词」分开判:跨生词搜索可能命中同一词干的多个词形。 -->
               <dg:DataGridTextColumn Tag="word" Header="{x:Static shared:Strings.Ui_Col_Word}" Binding="{Binding Word}" Width="130" />
-              <dg:DataGridTextColumn Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
+              <dg:DataGridTextColumn Tag="stem" Header="{x:Static shared:Strings.Stem}" Binding="{Binding Stem}" Width="110" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Frequency}" Binding="{Binding Frequency}" Width="60" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Content}" Binding="{Binding Usage}" Width="*" />
               <dg:DataGridTextColumn Header="{x:Static shared:Strings.Books}" Binding="{Binding Title}" Width="130" />

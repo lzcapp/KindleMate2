@@ -56,7 +56,8 @@ public partial class MainWindow : Window {
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e) {
         if (e.PropertyName is nameof(MainWindowViewModel.ShowClipBookColumns)
-            or nameof(MainWindowViewModel.ShowWordColumn)) {
+            or nameof(MainWindowViewModel.ShowWordColumn)
+            or nameof(MainWindowViewModel.ShowStemColumn)) {
             ApplyTableColumnVisibility();
         }
     }
@@ -67,6 +68,7 @@ public partial class MainWindow : Window {
         SetColumnVisible(ClipTableGrid, "book", showBookColumns);
         SetColumnVisible(ClipTableGrid, "author", showBookColumns);
         SetColumnVisible(WordTableGrid, "word", Vm?.ShowWordColumn ?? true);
+        SetColumnVisible(WordTableGrid, "stem", Vm?.ShowStemColumn ?? true);
     }
 
     /// <summary>按 <c>Tag</c> 定位列 —— 比按下标稳(列顺序调整不会悄悄改错对象)。</summary>

@@ -236,16 +236,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 表格里"整列同值"的列 ——
     //
     // 左栏选中**某一本书**时,「书籍 / 作者」两列整列都是同一个值:白占 240px 宽度、
-    // 把「内容」挤窄,每一行还在重复同一句话。生词表同理(选中某个生词时「生词」列整列同值)。
+    // 把「内容」挤窄,每一行还在重复同一句话。生词表同理 —— 选中某个生词时
+    // 「生词」与「词干」两列整列同值。
     //
     // 判据刻意取**表里的数据**而不是"左栏选了什么":
     //   · 回收站、以及"选中某本书后再看回收站"这类跨书视图同样会被正确处理,
     //     不必为每个视图补一条条件(左栏选中项与表内容本来就可能不同步);
     //   · 空表按"无冗余信息"处理 → 收起;
     //   · 表内容一变就重算,不会出现"换了视图列没跟着换"。
+    //
+    // 「生词」与「词干」**分开判**:两者通常一起同值,但并不必然 ——
+    // 跨生词搜索时完全可能命中同一个词干的多个词形(beautiful / beautifully),
+    // 那时「词干」列确实是废话,而「生词」列不是。硬绑在一起就会藏错。
 
     private bool _showClipBookColumns = true;
     private bool _showWordColumn = true;
+    private bool _showStemColumn = true;
 
     /// <summary>标注表格是否显示「书籍 / 作者」两列(整列同值时不显示)。</summary>
     public bool ShowClipBookColumns => _showClipBookColumns;
@@ -253,7 +259,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>生词表格是否显示「生词」列(整列同值时不显示)。</summary>
     public bool ShowWordColumn => _showWordColumn;
 
-    /// <summary>按当前表内容重算上面两个标志,变了才发通知。</summary>
+    /// <summary>生词表格是否显示「词干」列(整列同值时不显示)。</summary>
+    public bool ShowStemColumn => _showStemColumn;
+
+    /// <summary>按当前表内容重算上面三个标志,变了才发通知。</summary>
     private void RefreshTableColumnRedundancy() {
         var showBookColumns = !AllSame(ClipTable, c => c.BookName);
         if (showBookColumns != _showClipBookColumns) {
@@ -265,6 +274,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (showWordColumn != _showWordColumn) {
             _showWordColumn = showWordColumn;
             OnPropertyChanged(nameof(ShowWordColumn));
+        }
+
+        var showStemColumn = !AllSame(LookupTable, l => l.Stem);
+        if (showStemColumn != _showStemColumn) {
+            _showStemColumn = showStemColumn;
+            OnPropertyChanged(nameof(ShowStemColumn));
         }
     }
 
@@ -1365,6 +1380,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // —— 过滤 / 列表重建 ——
 
     public void ApplyFilter() {
+        // 走到这里就意味着**主列表要被重建成常规内容**(筛选 / 排序 / 换节点 / 换域 / 重载)——
+        // 回收站那批合成行马上就被换掉了,所以"正在看回收站"必须跟着复位。
+        //
+        // 此前它只置 true、从无置 false(全仓库仅 LoadRecycleBinAsync 一处赋值),
+        // 于是看过一次回收站之后:「列表右键菜单永久变成『恢复』(『删除』再也不出现)」
+        // 且「管理 → 清空回收站」永久可见。
+        //
+        // 放在这个**唯一漏斗**上,而不是逐个调用方去补:ApplyFilter 的调用方
+        // (SearchText / SearchType / SortDescending / SelectedNav / RebuildNav)正是
+        // "用户要求看常规列表"的全部入口,漏掉任何一个都会留下同一个 bug 的变体。
+        IsRecycleBinView = false;
+
         if (IsClipDomain) RebuildClippings();
         else RebuildLookups();
 

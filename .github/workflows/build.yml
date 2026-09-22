@@ -77,6 +77,8 @@ jobs:
           grep -q "clean preview:.*result=OK" "$out"
           # 表格列冗余判定(整列同值时收起)—— 同样是单测够不着的 VM 行为
           grep -q "table columns:.*result=OK" "$out"
+          # 回收站视图能进能出(IsRecycleBinView 必须复位)
+          grep -q "recycle bin view:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -134,6 +136,8 @@ jobs:
           grep -q "clean preview:.*result=OK" "$work/smoke.txt"
           # 表格列冗余判定 —— 同 Windows 作业的理由
           grep -q "table columns:.*result=OK" "$work/smoke.txt"
+          # 回收站视图能进能出
+          grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

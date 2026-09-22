@@ -146,6 +146,22 @@ internal static class Program {
                 var newDbPath = Path.Combine(freshDir, AppConstants.DatabaseFileName);
                 report.AppendLine($"startup: fatal={startupFatal} ok={startupOk} err='{startupError}' created={File.Exists(newDbPath)} hasSession={startupVm.HasSession}");
                 report.AppendLine($"  newDbSize={new FileInfo(newDbPath).Length}B  migrationWarning='{startupVm.MigrationWarning}'");
+
+                // 回收站视图必须"进得去也出得来"。IsRecycleBinView 此前只置 true、从无置 false,
+                // 于是看过一次回收站之后:列表右键菜单永久停在「恢复」(「删除」再也不出现),
+                // 「管理 → 清空回收站」也永久可见。
+                // 复位点选在 ApplyFilter —— "主列表要被重建成常规内容"的唯一漏斗
+                // (筛选 / 排序 / 换节点 / 换域 / 重载都从它走),漏掉任何一个调用方都会留下变体。
+                if (startupVm.HasSession) {
+                    startupVm.LoadRecycleBinAsync().GetAwaiter().GetResult();
+                    var enteredBin = startupVm.IsRecycleBinView;
+                    startupVm.ApplyFilter();
+                    var leftBin = startupVm.IsRecycleBinView;
+                    report.AppendLine($"recycle bin view: 进入={enteredBin}(期望 True) 回常规列表后={leftBin}(期望 False)" +
+                                      $" -> result={(enteredBin && !leftBin ? "OK" : "失败!回收站标志未复位")}");
+                } else {
+                    report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
+                }
             } finally {
                 Environment.CurrentDirectory = originalCwd;
                 try { Directory.Delete(freshDir, true); } catch { /* 清理失败不影响结论 */ }
@@ -264,20 +280,25 @@ internal static class Program {
     }
 
     /// <summary>
-    /// 表格列冗余判定的探针:整列同值时收起「书籍 / 作者」/「生词」列。
+    /// 表格列冗余判定的探针:整列同值时收起「书籍 / 作者」/「生词」/「词干」列。
     ///
     /// 判据是**表里的数据**(而不是"左栏选了什么"),所以这里直接换表内容来验:
     /// 跨书 → 显示;同一本书 → 收起;再换回跨书 → 重新显示。
     /// 最后一跳最要紧:只在加载时算一次、之后不跟着表走的话,列会永远停在收起状态。
     /// 同时记录**通知序列** —— 判定对了但没发通知,视图照样不会更新(这类"接线"缺陷单测抓不到)。
+    ///
+    /// 「词干」与「生词」分开判:样本里特意放一组"同一个词干、不同词形"
+    /// (beautiful / beautifully),那时只该收起词干列 —— 硬绑在一起就会藏错。
     /// </summary>
     private static void ProbeTableColumns(System.Text.StringBuilder report) {
         var vm = new MainWindowViewModel();
         var bookNotified = new List<bool>();
         var wordNotified = new List<bool>();
+        var stemNotified = new List<bool>();
         vm.PropertyChanged += (_, e) => {
             if (e.PropertyName == nameof(MainWindowViewModel.ShowClipBookColumns)) bookNotified.Add(vm.ShowClipBookColumns);
             if (e.PropertyName == nameof(MainWindowViewModel.ShowWordColumn)) wordNotified.Add(vm.ShowWordColumn);
+            if (e.PropertyName == nameof(MainWindowViewModel.ShowStemColumn)) stemNotified.Add(vm.ShowStemColumn);
         };
 
         vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
@@ -287,18 +308,36 @@ internal static class Program {
         vm.ClipTable.ReplaceAll(new[] { MakeClipping("甲书", "a"), MakeClipping("乙书", "b") });
         var mixedBooksAgain = vm.ShowClipBookColumns;
 
-        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful"), MakeLookup("en:beautiful") });
+        // ① 选中某个生词:词与词干都整列同值 ⇒ 两列都收起
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:beautiful", "beautiful") });
         var sameWord = vm.ShowWordColumn;
-        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful"), MakeLookup("en:careful") });
+        var sameWordStem = vm.ShowStemColumn;
+
+        // ② 同一词干的不同词形:词干列是废话,生词列不是 ⇒ 只收起词干
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:beautifully", "beautiful") });
+        var stemOnly = vm.ShowStemColumn;
+        var wordKept = vm.ShowWordColumn;
+
+        // ③ 不同词干:两列都回来
+        vm.LookupTable.ReplaceAll(new[] { MakeLookup("en:beautiful", "beautiful"), MakeLookup("en:careful", "careful") });
         var mixedWords = vm.ShowWordColumn;
+        var mixedStems = vm.ShowStemColumn;
 
         var notified = bookNotified.Count == 2 && !bookNotified[0] && bookNotified[1]
-                       && wordNotified.Count == 2 && !wordNotified[0] && wordNotified[1];
-        var ok = mixedBooks && !sameBook && mixedBooksAgain && !sameWord && mixedWords && notified;
+                       && wordNotified.Count == 2 && !wordNotified[0] && wordNotified[1]
+                       && stemNotified.Count == 2 && !stemNotified[0] && stemNotified[1];
+        var ok = mixedBooks && !sameBook && mixedBooksAgain
+                 && !sameWord && !sameWordStem
+                 && !stemOnly && wordKept
+                 && mixedWords && mixedStems
+                 && notified;
 
         report.AppendLine($"table columns: 跨书={mixedBooks}(期望 True) 同书={sameBook}(期望 False)" +
-                          $" 再跨书={mixedBooksAgain}(期望 True) 同词={sameWord}(期望 False) 跨词={mixedWords}(期望 True)" +
-                          $" 通知=[book:{bookNotified.Count} word:{wordNotified.Count}](各期望 2,且 False→True)" +
+                          $" 再跨书={mixedBooksAgain}(期望 True)" +
+                          $" 同词={sameWord}/同词干={sameWordStem}(期望 False/False)" +
+                          $" 同词干异词形:词={wordKept}(期望 True) 词干={stemOnly}(期望 False)" +
+                          $" 异词异干={mixedWords}/{mixedStems}(期望 True/True)" +
+                          $" 通知=[book:{bookNotified.Count} word:{wordNotified.Count} stem:{stemNotified.Count}](各期望 2,且 False→True)" +
                           $" -> result={(ok ? "OK" : "失败!列显隐判定不符合预期")}");
     }
 
@@ -306,8 +345,8 @@ internal static class Program {
         new() { Key = book + "|" + content, Content = content, BookName = book };
 
     /// <summary><c>Lookup.Word</c> 是从 <c>WordKey</c>("语言:词")里切出来的,所以只能设 WordKey。</summary>
-    private static KindleMate2.Domain.Entities.KM2DB.Lookup MakeLookup(string wordKey) =>
-        new() { WordKey = wordKey, Usage = "u" };
+    private static KindleMate2.Domain.Entities.KM2DB.Lookup MakeLookup(string wordKey, string? stem = null) =>
+        new() { WordKey = wordKey, Stem = stem, Usage = "u" };
 
     /// <summary>
     /// 写操作端到端自检:把真实库复制到临时目录后,在该副本上依次执行
