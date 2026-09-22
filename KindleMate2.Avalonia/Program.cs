@@ -152,13 +152,40 @@ internal static class Program {
                 // 「管理 → 清空回收站」也永久可见。
                 // 复位点选在 ApplyFilter —— "主列表要被重建成常规内容"的唯一漏斗
                 // (筛选 / 排序 / 换节点 / 换域 / 重载都从它走),漏掉任何一个调用方都会留下变体。
+                //
+                // 同时钉住另外两条:
+                //   · 进入回收站要**清掉左栏选中** —— 否则"再点一次原来那本书"是无变化事件
+                //     (SelectedNav 的 setter 对同一实例直接 return),用户出不来;
+                //   · 标题在回收站视图下要显示「回收站」,而不是左栏那个节点名(内容跨书,那是撒谎)。
+                // 断言一律与 Strings.* 比较(两侧同源),不写死中文 —— CI 是 en 环境。
                 if (startupVm.HasSession) {
+                    // HeaderTitle 是**计算属性** —— 直接读它永远是"对"的,漏发通知也看不出来。
+                    // 所以这里数通知次数:视图只认通知,不发就等于没更新。
+                    var titleNotified = 0;
+                    startupVm.PropertyChanged += (_, e) => {
+                        if (e.PropertyName == nameof(MainWindowViewModel.HeaderTitle)) titleNotified++;
+                    };
+
+                    var navBefore = startupVm.SelectedNav != null;
                     startupVm.LoadRecycleBinAsync().GetAwaiter().GetResult();
+                    var titleOnEnter = titleNotified;
                     var enteredBin = startupVm.IsRecycleBinView;
+                    var navCleared = startupVm.SelectedNav == null;
+                    var binTitle = startupVm.HeaderTitle == Strings.Ui_Nav_RecycleBin;
                     startupVm.ApplyFilter();
+                    var titleOnLeave = titleNotified;
                     var leftBin = startupVm.IsRecycleBinView;
-                    report.AppendLine($"recycle bin view: 进入={enteredBin}(期望 True) 回常规列表后={leftBin}(期望 False)" +
-                                      $" -> result={(enteredBin && !leftBin ? "OK" : "失败!回收站标志未复位")}");
+                    var normalTitle = startupVm.HeaderTitle == Strings.Ui_Header_AllClippings;
+                    // navBefore 是**前提**而不是结论:左栏本来就空的话,"被清成 null"证明不了任何事。
+                    var binOk = navBefore && enteredBin && navCleared && binTitle
+                                && titleOnEnter >= 1 && titleOnLeave > titleOnEnter
+                                && !leftBin && normalTitle;
+                    report.AppendLine($"recycle bin view: 进入前有选中={navBefore}(期望 True,前提)" +
+                                      $" 进入={enteredBin}(期望 True) 左栏已清空={navCleared}(期望 True)" +
+                                      $" 标题为回收站={binTitle}(期望 True) 回常规列表后={leftBin}(期望 False)" +
+                                      $" 标题为全部标注={normalTitle}(期望 True)" +
+                                      $" 标题通知=[进入后:{titleOnEnter} 离开后:{titleOnLeave}](期望 ≥1 且递增)" +
+                                      $" -> result={(binOk ? "OK" : "失败!回收站视图状态不正确")}");
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
                 }

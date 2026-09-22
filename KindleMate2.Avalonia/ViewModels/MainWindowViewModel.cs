@@ -351,9 +351,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public int NavSectionCount => IsClipDomain ? BookCount : WordCount;
 
     // —— 主区标题 ——
-    public string HeaderTitle => _selectedNav is { IsAll: false } nav
-        ? nav.Name
-        : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
+    //
+    // 回收站优先:它不是"某本书的列表"(内容跨书),左栏那个节点名放这里就是撒谎。
+    // 进入/离开回收站时由 IsRecycleBinView 的 setter 一并通知本属性。
+    public string HeaderTitle => IsRecycleBinView
+        ? Strings.Ui_Nav_RecycleBin
+        : _selectedNav is { IsAll: false } nav
+            ? nav.Name
+            : (IsClipDomain ? Strings.Ui_Header_AllClippings : Strings.Ui_Header_AllWords);
 
     public string HeaderSubtitle => IsClipDomain
         ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, Items.Count)
@@ -961,6 +966,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             if (_isRecycleBinView == value) return;
             _isRecycleBinView = value;
             OnPropertyChanged();
+            // 标题依赖它(回收站视图下显示「回收站」而不是左栏那个节点名)。
+            OnPropertyChanged(nameof(HeaderTitle));
         }
     }
 
@@ -997,6 +1004,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ClipTable.ReplaceAll(table);
             SelectedItem = Items.FirstOrDefault();
             SelectedClipTable = ClipTable.FirstOrDefault();
+
+            // 回收站不是"某本书的列表":左栏那个高亮继续挂在书上会撒谎,
+            // 更要紧的是 —— 留着高亮会让"再点一次这本书"变成**无变化**事件
+            // (SelectedNav 的 setter 对同一实例直接 return,不会重建列表),
+            // 用户就出不来了;清掉之后任何一次节点点击都是一次真正的切换。
+            //
+            // 这里直接改字段而**不走 setter**:setter 会顺带 ApplyFilter(),
+            // 把常规列表整份重建一遍(实测库 5752 行)再被下面的回收站内容整个替换掉 —— 纯浪费。
+            // 代价是得手动补上 setter 里还需要的那条通知(左栏列表靠它清掉选中)。
+            _selectedNav = null;
+            OnPropertyChanged(nameof(SelectedNav));
+
             IsRecycleBinView = true;
             return OperationResult.Silent;
         } finally {
