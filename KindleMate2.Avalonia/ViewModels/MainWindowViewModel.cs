@@ -502,8 +502,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
         } finally {
             IsBusy = false;
-            OnPropertyChanged(nameof(StatusLeft));
-            OnPropertyChanged(nameof(StatusRight));
+            NotifyCountsChanged();
         }
     }
 
@@ -547,9 +546,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (match != null) SelectedNav = match;
     }
 
-    private void NotifyCounts() {
+    /// <summary>
+    /// 「计数类」派生属性**一起**通知 —— 必须成对,别只发其中一个。
+    ///
+    /// <see cref="StatusLeft"/> 的正文里嵌着 <see cref="DeletedCount"/>,但两者是**各自独立**的绑定源:
+    /// 只通知前者,状态栏会更新,而左栏那个「回收站 N」会**永远停在初始值 0** ——
+    /// 它只在 DataContext 赋值那一刻求过一次值,而那时数据还没装进来(2026-09-22 实测症状:
+    /// 状态栏显示「已删除 604 条」,左栏却一直是 0)。所以凡是要通知 StatusLeft 的地方,一律走这里。
+    /// </summary>
+    private void NotifyCountsChanged() {
         OnPropertyChanged(nameof(StatusLeft));
         OnPropertyChanged(nameof(StatusRight));
+        OnPropertyChanged(nameof(DeletedCount));
+    }
+
+    private void NotifyCounts() {
+        NotifyCountsChanged();
         OnPropertyChanged(nameof(NavSectionCount));
     }
 
@@ -1473,8 +1485,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         OnPropertyChanged(nameof(HeaderTitle));
         OnPropertyChanged(nameof(HeaderSubtitle));
-        OnPropertyChanged(nameof(StatusLeft));
-        OnPropertyChanged(nameof(StatusRight));
+        NotifyCountsChanged();
         OnPropertyChanged(nameof(NavSectionTitle));
         OnPropertyChanged(nameof(NavSectionCount));
     }
