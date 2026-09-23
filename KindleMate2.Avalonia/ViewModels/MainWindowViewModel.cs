@@ -1549,7 +1549,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         _selectedItem = null;
         _selectedClipTable = null;
         _selectedLookupTable = null;
-        Detail = DetailModel.Empty;
+        ClearDetail();
         OnPropertyChanged(nameof(SelectedNav));
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedClipTable));
@@ -1678,7 +1678,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         ClipTable.ReplaceAll(ordered);
         SelectedItem = Items.FirstOrDefault();
         SelectedClipTable = ClipTable.FirstOrDefault();
-        if (SelectedItem == null) Detail = DetailModel.Empty;
+        if (SelectedItem == null) ClearDetail();
     }
 
     private void RebuildLookups() {
@@ -1713,7 +1713,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 标题行不是记录 ⇒ 自动选中要跳过它,否则一进生词域右栏就是个空面板。
         SelectedItem = Items.FirstOrDefault(i => !i.IsSectionHeader);
         SelectedLookupTable = LookupTable.FirstOrDefault();
-        if (SelectedItem == null) Detail = DetailModel.Empty;
+        if (SelectedItem == null) ClearDetail();
     }
 
     /// <summary>
@@ -1842,7 +1842,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 分组标题行不是一条记录,没有详情可显示 —— 空面板(而不是留着上一行的内容,
         // 那会让人以为面板是陈旧的)。
         if (_selectedItem == null || _selectedItem.IsSectionHeader) {
-            Detail = DetailModel.Empty;
+            ClearDetail();
             return;
         }
         if (_selectedItem.Clipping != null) {
@@ -1850,7 +1850,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         } else if (_selectedItem.Lookup != null) {
             ShowVocabDetail(_selectedItem.Lookup);
         } else {
-            Detail = DetailModel.Empty;
+            ClearDetail();
         }
     }
 
@@ -1958,6 +1958,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             DefinitionLabel = Strings.Ui_Word_OnlineDefinition,
             Definition = definition ?? string.Empty
         };
+    }
+
+    /// <summary>
+    /// 清空详情面板。**必须走这里,不要直接 <c>Detail = DetailModel.Empty</c>** ——
+    /// 清空的同时要取消在飞的查词:否则晚到的释义会把已经清掉的面板又填回**上一个词**的内容
+    /// (结果回来时只比对了"是不是同一个词",而面板早就不显示它了)。
+    /// </summary>
+    private void ClearDetail() {
+        _definitionSeed = null;
+        _definitionCancellation?.Cancel();
+        Detail = DetailModel.Empty;
     }
 
     /// <summary>
