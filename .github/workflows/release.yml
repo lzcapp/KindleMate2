@@ -186,11 +186,11 @@ jobs:
           fi
           mkdir -p "$data"
           cd "$data"
-          exec "$here/KindleMate2.Avalonia" "$@"
+          exec "$here/KindleMate2" "$@"
           LAUNCH
 
           # 可执行位必须在这里补上 —— 这是不用 zip、且必须在 Unix 上打包的原因。
-          chmod +x "$d/KindleMate2.Avalonia" "$d/kindlemate2"
+          chmod +x "$d/KindleMate2" "$d/kindlemate2"
           # 自包含包多一个 createdump 辅助程序,同样要可执行(不存在则跳过,别让 set -e 提前退出)
           if [ -f "$d/createdump" ]; then chmod +x "$d/createdump"; fi
           tar -czf "KindleMate2_${{ matrix.suffix }}.tar.gz" -C "$d" .
@@ -281,9 +281,9 @@ jobs:
           data="$HOME/Library/Application Support/KindleMate2"
           mkdir -p "$data" || exit 1
           cd "$data" || exit 1
-          exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/KindleMate2.Avalonia" "$@"
+          exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/KindleMate2" "$@"
           LAUNCH
-          chmod +x "$APP/Contents/MacOS/launch" "$APP/Contents/MacOS/KindleMate2.Avalonia"
+          chmod +x "$APP/Contents/MacOS/launch" "$APP/Contents/MacOS/KindleMate2"
 
           cat > "$APP/Contents/Info.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -433,7 +433,7 @@ jobs:
           $body = @('## Changes', '') + $log + @(
             '',
             '### 资产说明',
-            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.Avalonia.exe`。',
+            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.exe`。',
             '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后运行 `./kindlemate2`(启动器会自动切到数据目录,不必手动 cd)。',
             '- macOS:`KindleMate2_{macos-arm64,macos-x64}.dmg` —— 打开后把 `KindleMate2.app` 拖进 Applications。',
             '- 带 `_runtime` = 自包含(免装 .NET 运行时);不带 = 需先安装对应平台的 .NET 10 运行时。macOS 只提供自包含包。',

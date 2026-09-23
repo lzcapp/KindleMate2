@@ -69,7 +69,7 @@ jobs:
           # 且 --smoke 内部会切换当前目录,所以传参一律用绝对路径。
           db="$(cygpath -w "$work/empty.dat")"
           out="$(cygpath -w "$work/smoke.txt")"
-          ./publish/smoke/KindleMate2.Avalonia.exe --smoke "$db" "$out"
+          ./publish/smoke/KindleMate2.exe --smoke "$db" "$out"
           cat "$out"
           grep -q "Devices.Windows.DeviceManager" "$out"
           # 清洗预览的视图层拼装在 Avalonia 工程里,单测够不着 ⇒ 在这里钉。
@@ -150,7 +150,7 @@ jobs:
           set -euo pipefail
           work="$(mktemp -d)"
           touch "$work/empty.dat"
-          dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.Avalonia.dll \
+          dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.dll \
             --smoke "$work/empty.dat" "$work/smoke.txt"
           cat "$work/smoke.txt"
           # 断言当前平台选到了预期实现:macOS 走 Devices.MacOS(/Volumes),Linux 走 Devices.Linux

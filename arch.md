@@ -170,7 +170,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 
 | 手段 | 命令 | 覆盖 |
 |---|---|---|
-| 只读自检 | `KindleMate2.Avalonia --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
+| 只读自检 | `KindleMate2 --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
 | 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
 | CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |

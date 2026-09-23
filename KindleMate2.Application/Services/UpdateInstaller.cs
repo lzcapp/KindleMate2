@@ -189,7 +189,7 @@ public static class UpdateInstaller {
     /// 必须等进程真的退出:运行中的 exe 被占用,直接覆盖会失败(这正是不能自己更新自己的原因)。
     /// </summary>
     internal static string BuildWindowsScript(string preparedDirectory, string installDirectory, int processId,
-        string exeName = "KindleMate2.Avalonia.exe") => $"""
+        string exeName = "KindleMate2.exe") => $"""
         @echo off
         rem Kindle Mate 2 自动更新脚本(由应用生成)
         :waitloop

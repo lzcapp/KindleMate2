@@ -28,14 +28,14 @@
 
 Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
 
-- **Windows**：解压 `.zip` 后运行 `KindleMate2.Avalonia.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）；库文件建在程序所在目录（与旧版一致）
+- **Windows**：解压 `.zip` 后运行 `KindleMate2.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）；库文件建在程序所在目录（与旧版一致）
 - **Linux**：解压后运行 `./kindlemate2` —— 启动器会自动切到数据目录再拉起程序，不必手动 `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
   ~/KindleMate2/kindlemate2
   ```
   库文件在 `~/.local/share/KindleMate2/`（遵守 XDG，可用环境变量 `KINDLEMATE2_HOME` 覆盖）。
-  归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x kindlemate2 KindleMate2.Avalonia` 即可。
+  归档已保留可执行位；若用图形化解压工具导致权限丢失，`chmod +x kindlemate2 KindleMate2` 即可。
   > **从旧版 tar.gz 升级**：旧库还在原解压目录，先搬一次 ——
   > `mkdir -p ~/.local/share/KindleMate2 && cp 旧目录/KM2.dat ~/.local/share/KindleMate2/`
 - **macOS**：打开 `.dmg`，把 `KindleMate2.app` 拖进 Applications。产物**未做公证**（无 Apple 开发者账号），
@@ -44,6 +44,23 @@ Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NE
   xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
   ```
   库文件固定在 `~/Library/Application Support/KindleMate2/`。
+
+### 从旧版升级
+
+库文件（`KM2.dat`）与程序同目录，所以**把新包解压覆盖到原来的目录就行** —— 标注与生词本会自动沿用，
+既不需要导入，也不需要重新配置。
+
+- **从 Windows Forms 版（≤ `2026.09.07`）升级**：解压覆盖到原目录后，双击的仍是 `KindleMate2.exe`（可执行文件名与旧版一致）。
+  建议取 `_runtime` 自包含包 —— 旧壳依赖的是 .NET 8 运行时，而不带该后缀的新包要求 .NET 10。
+  与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 `DarkModeForms.dll`、`ReaLTaiizor.dll`）留着不影响使用，删掉也可以。
+  若你装过 `2026.09.13`–`2026.09.23` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
+  升级后请把残留的 `KindleMate2.Avalonia.exe` 与 `KindleMate2.Avalonia.dll` 删掉。
+- **从旧 Linux tar.gz 升级**：库还在原来的解压目录，先搬一次（见上方 Linux 一节）。
+- **想把程序换到新目录**：新目录首次运行会新建一个空库；把旧的 `KM2.dat` 拷进新目录即可，
+  也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
+
+> 主题与语言**不会**随库迁移：旧版把这两项存在库里，新版存在系统的应用数据目录
+> （Windows 为 `%APPDATA%\KindleMate2\settings.json`），升级后需要重新选一次。
 
 ## 构建
 
