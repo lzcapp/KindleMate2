@@ -678,15 +678,6 @@
   <data name="Ui_Word_OnlineDefinitionEncyclopedia" xml:space="preserve">
     <value>百科摘要 · {0}</value>
   </data>
-  <data name="Ui_Menu_Settings" xml:space="preserve">
-    <value>設定</value>
-  </data>
-  <data name="Ui_Menu_OnlineDefinition" xml:space="preserve">
-    <value>查詢線上釋義</value>
-  </data>
-  <data name="Ui_Tip_OnlineDefinition" xml:space="preserve">
-    <value>選中生詞時聯網查詢釋義；關閉後完全不發請求</value>
-  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} 條標註</value>
   </data>

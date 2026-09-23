@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
+using KindleMate2.Shared.Diagnostics;
 using System.Threading.Tasks;
 
 namespace KindleMate2.Application.Services;
@@ -70,8 +71,11 @@ public static class WordDefinitionService {
             return Parse(json);
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             throw;
-        } catch (Exception) {
+        } catch (Exception ex) {
             // 断网 / DNS 失败 / TLS 失败 / 超时 / 读流失败 —— 都是"这次没有释义"。
+            // **对用户完全静默**(需求原文:"没联网也不要报错"):界面不弹框、不显示任何东西。
+            // 但**记一行日志** —— 否则将来排查"这块为什么不出现"只能靠猜(没网?接口变了?还是这个词真没释义?)。
+            AppLog.Write($"[WordDefinition] '{word}' 查询失败:{ex.Message}");
             return null;
         }
     }

@@ -91,19 +91,6 @@
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_PurgeRecycleBin}" Click="OnPurgeRecycleBin"
                         IsVisible="{Binding IsRecycleBinView}" />
             </MenuItem>
-            <!--
-              应用级开关放这里。目前只有一项(联网查释义),但主题/语言将来若要收拢也进这个菜单 ——
-              所以立一个「设置」顶级项,而不是把开关塞进「帮助」。
-              ToggleType=CheckBox:菜单里带勾选框,一眼能看出当前是开还是关。
-            -->
-            <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Settings}">
-              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_OnlineDefinition}"
-                        ToggleType="CheckBox"
-                        IsChecked="{Binding IsOnlineDefinitionEnabled, Mode=TwoWay}"
-                        Click="OnToggleOnlineDefinition"
-                        ToolTip.Tip="{x:Static shared:Strings.Ui_Tip_OnlineDefinition}" />
-            </MenuItem>
-
             <MenuItem Header="{x:Static shared:Strings.Ui_Menu_Help}">
               <MenuItem Header="{x:Static shared:Strings.Ui_Update_Check}" Click="OnMenuCheckUpdates" />
               <MenuItem Header="{x:Static shared:Strings.About}" Click="OnMenuAbout" />

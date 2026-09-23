@@ -678,15 +678,6 @@
   <data name="Ui_Word_OnlineDefinitionEncyclopedia" xml:space="preserve">
     <value>Encyclopedia summary · {0}</value>
   </data>
-  <data name="Ui_Menu_Settings" xml:space="preserve">
-    <value>Settings</value>
-  </data>
-  <data name="Ui_Menu_OnlineDefinition" xml:space="preserve">
-    <value>Online definitions</value>
-  </data>
-  <data name="Ui_Tip_OnlineDefinition" xml:space="preserve">
-    <value>Look up a word's definition online when selected. When off, no request is sent.</value>
-  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} clippings</value>
   </data>

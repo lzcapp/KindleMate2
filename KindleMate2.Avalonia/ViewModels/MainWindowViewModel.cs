@@ -97,33 +97,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>
     /// **进程级**放行开关。自检路径(--smoke / --ops)会把它关掉:CI 不该依赖第三方词典
     /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
-    /// 用户的开关是 <see cref="IsOnlineDefinitionEnabled"/> —— **两个都放行**才会联网。
+    /// **刻意没有"用户开关"**(2026-09-23 用户拍定)。理由:触发范围本来就窄 ——
+    /// 只在**生词本**里选中一个词时才会联网(不碰生词本的用户一个字节都不发);而一个默认打开的开关
+    /// 保护力很薄(真想关的人得先知道它在哪),却要付出"为它新立一个设置菜单"的先例成本。
+    /// 行为如实写进 README 的「联网行为」章,不靠菜单兜底。
     /// </summary>
     public static bool OnlineDefinitionAllowed { get; set; } = true;
-
-    /// <summary>
-    /// 用户设置:是否在选中生词时联网查询释义(落 <c>AppSettings</c>,默认开)。
-    /// 关掉时**顺手取消在飞的那次请求** —— 否则关完还会蹦出一块释义(看起来像没关掉);
-    /// 重新打开时若正看着一个尚未查过的词,就立刻补查一次,不用再点一下。
-    /// </summary>
-    public bool IsOnlineDefinitionEnabled {
-        get => Settings?.OnlineDefinition ?? true;
-        set {
-            if (IsOnlineDefinitionEnabled == value) return;
-            OnPropertyChanged();
-            if (!value) {
-                _definitionCancellation?.Cancel();
-                return;
-            }
-            if (ShouldLookUpDefinition && _definitionSeed is { } seed
-                && seed.Word.Trim().Length > 0 && !_definitionCache.ContainsKey(seed.Word)) {
-                StartDefinitionLookup(seed.Word);
-            }
-        }
-    }
-
-    /// <summary>联网查释义是否放行:进程级开关(自检会关)与用户设置(菜单可关)**都**要开。</summary>
-    private bool ShouldLookUpDefinition => OnlineDefinitionAllowed && IsOnlineDefinitionEnabled;
 
     /// <summary>左栏导航(书籍 / 生词)。</summary>
     public ObservableCollection<NavItem> NavItems { get; } = new();
@@ -496,12 +475,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         settings.Save();
     }
 
-    /// <summary>持久化"是否联网查释义"(「设置」菜单里的开关)。</summary>
-    public void PersistOnlineDefinition(bool enabled) {
-        if (Settings is not { } settings) return;
-        settings.OnlineDefinition = enabled;
-        settings.Save();
-    }
 
     /// <summary>持久化语言选择并立即应用文化。</summary>
     public void PersistLanguage(string language) {
@@ -2044,7 +2017,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         Detail = BuildVocabDetail(seed, _definitionCache.TryGetValue(word, out var cachedDefinition) ? cachedDefinition : null);
 
         // 已经查过(不论有没有释义)就不再打接口,否则来回切选中项会反复发请求
-        if (ShouldLookUpDefinition && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
+        if (OnlineDefinitionAllowed && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
             StartDefinitionLookup(word);
         }
     }
