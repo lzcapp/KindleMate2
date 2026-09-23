@@ -35,10 +35,15 @@ internal static class Program {
 
     private static int RunSmoke(string dbPath, string? outFile) {
         var report = new System.Text.StringBuilder();
+        // 在线释义是联网功能:自检一律关掉。CI 不该依赖第三方词典(慢、易 flaky),
+        // 也不该把词条发出去;关掉之后"选中生词"这条路径在 CI 里变成纯本地行为。
+        // 与 DeviceManager 的 detectMtpDevices 同类 —— 测试确定性接缝。
+        MainWindowViewModel.OnlineDefinitionEnabled = false;
         try {
             var vm = new MainWindowViewModel();
             vm.OpenDatabaseAsync(dbPath).GetAwaiter().GetResult();
             report.AppendLine($"open: hasSession={vm.HasSession} status={vm.StatusText}");
+            report.AppendLine($"online definition: enabled={MainWindowViewModel.OnlineDefinitionEnabled}");
 
             // 域 0:标注 → 左栏书籍,主列表标注,详情面板
             vm.DomainIndex = 0;
@@ -777,6 +782,8 @@ internal static class Program {
     /// </summary>
     private static int RunOperations(string dbPath, string clippingsPath, string vocabDbPath, string outFile) {
         var report = new System.Text.StringBuilder();
+        // 同 --smoke:写操作自检也会选中生词,联网查释义在这里必须关掉(见 RunSmoke 的说明)。
+        MainWindowViewModel.OnlineDefinitionEnabled = false;
         var work = Path.Combine(Path.GetTempPath(), "km2ops");
         var originalCwd = Environment.CurrentDirectory;
         try {

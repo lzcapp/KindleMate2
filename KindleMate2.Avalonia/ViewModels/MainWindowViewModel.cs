@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using KindleMate2.Avalonia.Models;
 using KindleMate2.Avalonia.Services;
@@ -78,6 +79,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
+
+    /// <summary>在线释义的**本次会话缓存**(词 → 释义文本;值 null 表示"查过了,是空的")。
+    /// 缓存只为来回切换选中项时别反复打接口;**刻意不落库** —— 需求是"没联网就不显示",
+    /// 落库会让它在离线时仍然出现,也会给将来的库同步引入一份第三方数据。</summary>
+    private readonly Dictionary<string, string?> _definitionCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>在飞的那次查词。用户换选中项时要取消,免得旧结果盖到新词的详情上。</summary>
+    private CancellationTokenSource? _definitionCancellation;
+
+    /// <summary>当前详情面板对应的那条生词记录 —— 异步结果回来时用它确认"选中项没变过"。</summary>
+    private Lookup? _definitionSeed;
+
+    /// <summary>
+    /// 是否允许联网查释义。**自检路径(--smoke / --ops)会把它关掉**:CI 不该依赖第三方词典
+    /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
+    /// </summary>
+    public static bool OnlineDefinitionEnabled { get; set; } = true;
 
     /// <summary>左栏导航(书籍 / 生词)。</summary>
     public ObservableCollection<NavItem> NavItems { get; } = new();
@@ -356,7 +374,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             if (ReferenceEquals(_selectedLookupTable, value)) return;
             _selectedLookupTable = value;
             OnPropertyChanged();
-            if (_selectedLookupTable != null && IsWordDomain) Detail = BuildVocabDetail(_selectedLookupTable);
+            if (_selectedLookupTable != null && IsWordDomain) ShowVocabDetail(_selectedLookupTable);
         }
     }
 
@@ -1526,11 +1544,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         _distinctWordCount = 0;
         _noteHighlightMap.Clear();
         _vocabByWordKey.Clear();
+        _definitionCache.Clear();   // 库换了,旧的"在线释义"结论不再适用
         _selectedNav = null;
         _selectedItem = null;
         _selectedClipTable = null;
         _selectedLookupTable = null;
-        Detail = DetailModel.Empty;
+        ClearDetail();
         OnPropertyChanged(nameof(SelectedNav));
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedClipTable));
@@ -1659,7 +1678,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         ClipTable.ReplaceAll(ordered);
         SelectedItem = Items.FirstOrDefault();
         SelectedClipTable = ClipTable.FirstOrDefault();
-        if (SelectedItem == null) Detail = DetailModel.Empty;
+        if (SelectedItem == null) ClearDetail();
     }
 
     private void RebuildLookups() {
@@ -1694,7 +1713,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 标题行不是记录 ⇒ 自动选中要跳过它,否则一进生词域右栏就是个空面板。
         SelectedItem = Items.FirstOrDefault(i => !i.IsSectionHeader);
         SelectedLookupTable = LookupTable.FirstOrDefault();
-        if (SelectedItem == null) Detail = DetailModel.Empty;
+        if (SelectedItem == null) ClearDetail();
     }
 
     /// <summary>
@@ -1823,14 +1842,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 分组标题行不是一条记录,没有详情可显示 —— 空面板(而不是留着上一行的内容,
         // 那会让人以为面板是陈旧的)。
         if (_selectedItem == null || _selectedItem.IsSectionHeader) {
-            Detail = DetailModel.Empty;
+            ClearDetail();
             return;
         }
-        Detail = _selectedItem.Clipping != null
-            ? BuildClippingDetail(_selectedItem.Clipping)
-            : _selectedItem.Lookup != null
-                ? BuildVocabDetail(_selectedItem.Lookup)
-                : DetailModel.Empty;
+        if (_selectedItem.Clipping != null) {
+            Detail = BuildClippingDetail(_selectedItem.Clipping);
+        } else if (_selectedItem.Lookup != null) {
+            ShowVocabDetail(_selectedItem.Lookup);
+        } else {
+            ClearDetail();
+        }
     }
 
     private DetailModel BuildClippingDetail(Clipping clip) {
@@ -1881,7 +1902,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         };
     }
 
-    private DetailModel BuildVocabDetail(Lookup seed) {
+    /// <summary>
+    /// 拼生词详情。<paramref name="definition"/> 是**已经拿到的**在线释义(音标 + 释义行),
+    /// 为 <c>null</c> 时只是不显示那一块 —— 发起联网查询走 <see cref="ShowVocabDetail"/>。
+    /// </summary>
+    private DetailModel BuildVocabDetail(Lookup seed, string? definition = null) {
         var word = seed.Word;
         var wordKey = seed.WordKey ?? string.Empty;
         string stem = string.Empty, frequency = string.Empty;
@@ -1928,8 +1953,71 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Title = word,
             Subtitle = string.Join(" · ", stats),
             HasBody = true,
-            Body = builder.ToString().TrimEnd()
+            Body = builder.ToString().TrimEnd(),
+            HasDefinition = definition is { Length: > 0 },
+            DefinitionLabel = Strings.Ui_Word_OnlineDefinition,
+            Definition = definition ?? string.Empty
         };
+    }
+
+    /// <summary>
+    /// 清空详情面板。**必须走这里,不要直接 <c>Detail = DetailModel.Empty</c>** ——
+    /// 清空的同时要取消在飞的查词:否则晚到的释义会把已经清掉的面板又填回**上一个词**的内容
+    /// (结果回来时只比对了"是不是同一个词",而面板早就不显示它了)。
+    /// </summary>
+    private void ClearDetail() {
+        _definitionSeed = null;
+        _definitionCancellation?.Cancel();
+        Detail = DetailModel.Empty;
+    }
+
+    /// <summary>
+    /// 显示生词详情,**并顺手发起一次在线释义查询**(本次会话已查过就直接用缓存)。
+    /// 两个入口(中栏选中 / 列表行选中)都走这里 —— 免得"查词"这件事散在几处。
+    /// </summary>
+    private void ShowVocabDetail(Lookup seed) {
+        var word = seed.Word;
+        _definitionSeed = seed;
+        Detail = BuildVocabDetail(seed, _definitionCache.TryGetValue(word, out var cachedDefinition) ? cachedDefinition : null);
+
+        // 已经查过(不论有没有释义)就不再打接口,否则来回切选中项会反复发请求
+        if (OnlineDefinitionEnabled && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
+            StartDefinitionLookup(word);
+        }
+    }
+
+    private void StartDefinitionLookup(string word) {
+        _definitionCancellation?.Cancel();
+        _definitionCancellation?.Dispose();
+        var cancellation = new CancellationTokenSource();
+        _definitionCancellation = cancellation;
+        _ = LoadDefinitionAsync(word, cancellation.Token);
+    }
+
+    /// <summary>
+    /// 查一个词的在线释义,拿到后**原地补进详情面板**。
+    /// 拿不到(没联网 / 没这个词 / 接口变了)就什么都不做:那一块不显示,不弹提示、不报错 ——
+    /// 与「检查更新」同一条口径。
+    /// </summary>
+    private async Task LoadDefinitionAsync(string word, CancellationToken cancellationToken) {
+        string? text;
+        try {
+            var definition = await WordDefinitionService.LookupAsync(word, cancellationToken: cancellationToken)
+                .ConfigureAwait(true);
+            text = definition?.ToDisplayText();
+        } catch (OperationCanceledException) {
+            return;   // 选中项换过了 —— 不是"没有释义",什么都不记
+        }
+
+        if (cancellationToken.IsCancellationRequested) return;
+        _definitionCache[word] = text;
+
+        // 结果回来时用户可能已经切到别的词了 ⇒ 丢掉,否则旧词的释义会盖在新词的详情上
+        if (_definitionSeed is not { } seed || !string.Equals(seed.Word, word, StringComparison.OrdinalIgnoreCase)) return;
+        if (text is null) return;   // ★ 没有释义 / 没联网 ⇒ 不显示
+
+        // 重新走一遍拼装(而不是"复制旧模型再改字段"):字段只在一处组装,将来加字段不会漏
+        Detail = BuildVocabDetail(seed, text);
     }
 
     /// <summary>复制当前详情为纯文本(右键「复制」/ 动作按钮用)。</summary>
@@ -1938,6 +2026,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         var builder = new StringBuilder();
         builder.AppendLine(_detail.Title);
         if (_detail.Subtitle.Length > 0) builder.AppendLine(_detail.Subtitle);
+        if (_detail.HasDefinition) builder.AppendLine().AppendLine(_detail.DefinitionLabel).AppendLine(_detail.Definition);
         if (_detail.HasQuote) builder.AppendLine().AppendLine(_detail.QuoteLabel).AppendLine(_detail.Quote);
         if (_detail.HasNote) builder.AppendLine().AppendLine(_detail.NoteLabel).AppendLine(_detail.Note);
         if (_detail.HasBody) builder.AppendLine().AppendLine(_detail.Body);

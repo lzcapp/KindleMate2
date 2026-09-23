@@ -460,6 +460,21 @@
                                      ContextFlyout="{x:Null}" />
               </StackPanel>
 
+              <!--
+                在线释义(生词详情)。**拿不到就不显示**:没联网 / 接口没这个词 / 解析失败时
+                HasDefinition 都是 false,整块收起 —— 连"查询失败"都不出现,与「检查更新」
+                同一条口径(连不上外网不是错误,不该弹提示)。
+                放在「用法」列表(body)之前:先给词典释义,再给了 Kindle 记下的原句。
+                边距只加在**本块的下方** —— 收起时(IsVisible=false)不参与布局,
+                body 的上下间距保持原样,不给没有释义的情况留空档。
+              -->
+              <StackPanel IsVisible="{Binding Detail.HasDefinition}" Margin="0,0,0,16">
+                <TextBlock Classes="tt" Text="{Binding Detail.DefinitionLabel}" />
+                <SelectableTextBlock Text="{Binding Detail.Definition}" TextWrapping="Wrap" FontSize="14"
+                                     LineHeight="24" Margin="0,7,0,0"
+                                     ContextFlyout="{x:Null}" />
+              </StackPanel>
+
               <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Text="{Binding Detail.Body}"
                                    TextWrapping="Wrap" FontSize="14" LineHeight="25"
                                    ContextFlyout="{x:Null}" />
