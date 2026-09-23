@@ -241,6 +241,12 @@ jobs:
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"
+          # 表格模式:选中哪一行,动作就必须作用在那一行。
+          # 这条探针**端到端**(建临时库 → 切表格模式 → 选中某行 → 真删 → 回查库里少了谁),
+          # 不是只比属性 —— "同步写对了、但删除仍读旧源"那种半吊子修法会被它抓住。
+          # 放在本作业是因为它需要**会话**(那段自检在启动建库之后才跑);
+          # 顺带也与几个在飞的 PR 保持零重叠(它们动的是 Windows 作业那一段)。
+          grep -q "table selection:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

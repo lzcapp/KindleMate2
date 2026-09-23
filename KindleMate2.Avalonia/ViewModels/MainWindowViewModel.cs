@@ -367,6 +367,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </summary>
     public bool HasSelectedItem => _selectedItem is { IsSectionHeader: false };
 
+    /// <summary>
+    /// 重建列表期间**抑制**"表格选中 → 列表选中"的回写(见 <see cref="SyncSelectionFromTable"/>)。
+    ///
+    /// 重建时两处选中是程序**各自**设的(<c>SelectedItem = &lt;还原后的行&gt;</c>、
+    /// <c>SelectedClipTable = FirstOrDefault()</c>),它们本来就可能不是同一行。
+    /// 不回写则各留各的、互不干扰;回写的话后者会把前者拉回第一行 ——
+    /// 而"删除一行后落回原处"正是靠前者实现的,那就被**静默**毁掉了。
+    /// 用户点表格是另一回事:那时不在重建中,回写照常发生。
+    /// </summary>
+    private bool _suppressTableSelectionSync;
+
     /// <summary>表格模式 · 标注选中行。</summary>
     public Clipping? SelectedClipTable {
         get => _selectedClipTable;
@@ -374,7 +385,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             if (ReferenceEquals(_selectedClipTable, value)) return;
             _selectedClipTable = value;
             OnPropertyChanged();
-            if (_selectedClipTable != null && IsClipDomain) Detail = BuildClippingDetail(_selectedClipTable);
+            if (_selectedClipTable != null && IsClipDomain) {
+                Detail = BuildClippingDetail(_selectedClipTable);
+                SyncSelectionFromTable(_selectedClipTable, null);
+            }
         }
     }
 
@@ -385,7 +399,37 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             if (ReferenceEquals(_selectedLookupTable, value)) return;
             _selectedLookupTable = value;
             OnPropertyChanged();
-            if (_selectedLookupTable != null && IsWordDomain) ShowVocabDetail(_selectedLookupTable);
+            if (_selectedLookupTable != null && IsWordDomain) {
+                ShowVocabDetail(_selectedLookupTable);
+                SyncSelectionFromTable(null, _selectedLookupTable);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 表格的选中 → 回写到**列表的**选中(<c>_selectedItem</c>)。
+    ///
+    /// 为什么必须有这一步:删除 / 重命名书籍 / 重命名生词 / 编辑标注 / 分享图
+    /// **一律只读 <c>_selectedItem</c>**(列表的选中行),而两个 DataGrid 各有自己的选中项。
+    /// 表格模式下列表是隐藏的,用户**根本改不了** <c>_selectedItem</c> ⇒
+    /// 在表格里点第 4 行、右键「删除」,删掉的是列表里选中的那一行(重建后通常是第一行);
+    /// 而详情面板显示的却是表格里那一行 —— **看到 A、操作作用在 B**。
+    /// 2026-09-23 无头实测复现:表格点 seedk3,库里 seedk0 被删,且不报错。
+    ///
+    /// 按**实体引用**回找列表项即可:三处用的是同一批实例
+    /// (<c>RebuildClippings</c> 把同一组 Clipping 分别塞进 <c>Items</c> 与 <c>ClipTable</c>),
+    /// 所以这里只做引用比较 —— 不碰内容、不新建对象、不改顺序。
+    /// 走 <see cref="SelectedItem"/> 的 setter 而不是直接改字段:右栏详情与各菜单的可用性
+    /// 都挂在那条 setter 的通知上(直接改字段会静默漏掉它们,本仓踩过两次)。
+    /// </summary>
+    private void SyncSelectionFromTable(Clipping? clip, Lookup? lookup) {
+        if (_suppressTableSelectionSync) return;
+
+        var match = Items.FirstOrDefault(i => clip is not null
+            ? ReferenceEquals(i.Clipping, clip)
+            : ReferenceEquals(i.Lookup, lookup));
+        if (match is not null) {
+            SelectedItem = match;
         }
     }
 
@@ -1809,8 +1853,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // "用户要求看常规列表"的全部入口,漏掉任何一个都会留下同一个 bug 的变体。
         IsRecycleBinView = false;
 
-        if (IsClipDomain) RebuildClippings();
-        else RebuildLookups();
+        // 重建期间抑制"表格选中 → 列表选中"的回写(理由见 _suppressTableSelectionSync)。
+        // 必须包住整段:两个重建方法都会**先**设 SelectedItem(可能是"还原到原位置"的那一行)、
+        // **再**设 SelectedClipTable = FirstOrDefault() —— 不抑制的话后者会把前者拉回第一行。
+        _suppressTableSelectionSync = true;
+        try {
+            if (IsClipDomain) RebuildClippings();
+            else RebuildLookups();
+        } finally {
+            _suppressTableSelectionSync = false;
+        }
 
         OnPropertyChanged(nameof(HeaderTitle));
         OnPropertyChanged(nameof(HeaderSubtitle));
