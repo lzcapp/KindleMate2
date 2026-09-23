@@ -675,6 +675,18 @@
   <data name="Ui_Word_OnlineDefinitionFrom" xml:space="preserve">
     <value>在线释义 · {0}</value>
   </data>
+  <data name="Ui_Word_OnlineDefinitionEncyclopedia" xml:space="preserve">
+    <value>百科摘要 · {0}</value>
+  </data>
+  <data name="Ui_Menu_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Ui_Menu_OnlineDefinition" xml:space="preserve">
+    <value>查询在线释义</value>
+  </data>
+  <data name="Ui_Tip_OnlineDefinition" xml:space="preserve">
+    <value>选中生词时联网查询释义；关闭后完全不发请求</value>
+  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} 条标注</value>
   </data>

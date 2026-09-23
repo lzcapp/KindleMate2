@@ -1235,6 +1235,26 @@ namespace KindleMate2.Shared {
         ///   查找类似 在线释义 · {0} 的本地化字符串。
         /// </summary>
         public static string Ui_Word_OnlineDefinitionFrom => ResourceManager.GetString("Ui_Word_OnlineDefinitionFrom", resourceCulture);
+
+        /// <summary>
+        ///   查找类似 百科摘要 · {0} 的本地化字符串。
+        /// </summary>
+        public static string Ui_Word_OnlineDefinitionEncyclopedia => ResourceManager.GetString("Ui_Word_OnlineDefinitionEncyclopedia", resourceCulture);
+
+        /// <summary>
+        ///   查找类似 设置 的本地化字符串。
+        /// </summary>
+        public static string Ui_Menu_Settings => ResourceManager.GetString("Ui_Menu_Settings", resourceCulture);
+
+        /// <summary>
+        ///   查找类似 查询在线释义 的本地化字符串。
+        /// </summary>
+        public static string Ui_Menu_OnlineDefinition => ResourceManager.GetString("Ui_Menu_OnlineDefinition", resourceCulture);
+
+        /// <summary>
+        ///   查找类似 选中生词时联网查询释义；关闭后完全不发请求 的本地化字符串。
+        /// </summary>
+        public static string Ui_Tip_OnlineDefinition => ResourceManager.GetString("Ui_Tip_OnlineDefinition", resourceCulture);
         public static string Ui_Text_ClippingCount => ResourceManager.GetString("Ui_Text_ClippingCount", resourceCulture);
         public static string Ui_Text_LookupCount => ResourceManager.GetString("Ui_Text_LookupCount", resourceCulture);
         public static string Ui_Op_RenameBook => ResourceManager.GetString("Ui_Op_RenameBook", resourceCulture);

@@ -80,6 +80,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
+    /// <summary>查词去抖:选中生词后先等这么久再发请求 —— 用方向键连着切词时**一个请求都不发**。</summary>
+    private const int DefinitionDebounceMilliseconds = 300;
+
     /// <summary>在线释义的**本次会话缓存**(词 → 查词结果;值 null 表示"查过了,是空的")。
     /// 缓存只为来回切换选中项时别反复打接口;**刻意不落库** —— 需求是"没联网就不显示",
     /// 落库会让它在离线时仍然出现,也会给将来的库同步引入一份第三方数据。</summary>
@@ -92,10 +95,35 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private Lookup? _definitionSeed;
 
     /// <summary>
-    /// 是否允许联网查释义。**自检路径(--smoke / --ops)会把它关掉**:CI 不该依赖第三方词典
+    /// **进程级**放行开关。自检路径(--smoke / --ops)会把它关掉:CI 不该依赖第三方词典
     /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
+    /// 用户的开关是 <see cref="IsOnlineDefinitionEnabled"/> —— **两个都放行**才会联网。
     /// </summary>
-    public static bool OnlineDefinitionEnabled { get; set; } = true;
+    public static bool OnlineDefinitionAllowed { get; set; } = true;
+
+    /// <summary>
+    /// 用户设置:是否在选中生词时联网查询释义(落 <c>AppSettings</c>,默认开)。
+    /// 关掉时**顺手取消在飞的那次请求** —— 否则关完还会蹦出一块释义(看起来像没关掉);
+    /// 重新打开时若正看着一个尚未查过的词,就立刻补查一次,不用再点一下。
+    /// </summary>
+    public bool IsOnlineDefinitionEnabled {
+        get => Settings?.OnlineDefinition ?? true;
+        set {
+            if (IsOnlineDefinitionEnabled == value) return;
+            OnPropertyChanged();
+            if (!value) {
+                _definitionCancellation?.Cancel();
+                return;
+            }
+            if (ShouldLookUpDefinition && _definitionSeed is { } seed
+                && seed.Word.Trim().Length > 0 && !_definitionCache.ContainsKey(seed.Word)) {
+                StartDefinitionLookup(seed.Word);
+            }
+        }
+    }
+
+    /// <summary>联网查释义是否放行:进程级开关(自检会关)与用户设置(菜单可关)**都**要开。</summary>
+    private bool ShouldLookUpDefinition => OnlineDefinitionAllowed && IsOnlineDefinitionEnabled;
 
     /// <summary>左栏导航(书籍 / 生词)。</summary>
     public ObservableCollection<NavItem> NavItems { get; } = new();
@@ -465,6 +493,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public void PersistTheme(bool dark) {
         if (Settings is not { } settings) return;
         settings.Theme = dark ? "dark" : "light";
+        settings.Save();
+    }
+
+    /// <summary>持久化"是否联网查释义"(「设置」菜单里的开关)。</summary>
+    public void PersistOnlineDefinition(bool enabled) {
+        if (Settings is not { } settings) return;
+        settings.OnlineDefinition = enabled;
         settings.Save();
     }
 
@@ -1980,9 +2015,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </summary>
     private static string DescribeDefinitionSource(WordDefinition? definition) {
         if (definition is null) return string.Empty;
-        return definition.Source.Length > 0
-            ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Word_OnlineDefinitionFrom, definition.Source)
-            : Strings.Ui_Word_OnlineDefinition;
+        if (definition.Source.Length == 0) return Strings.Ui_Word_OnlineDefinition;
+        // 百科不是词典:标题写成「百科摘要 · 百度百科」,免得用户把它当词义读
+        var format = definition.IsEncyclopedia
+            ? Strings.Ui_Word_OnlineDefinitionEncyclopedia
+            : Strings.Ui_Word_OnlineDefinitionFrom;
+        return string.Format(CultureInfo.CurrentCulture, format, definition.Source);
     }
 
     /// <summary>
@@ -2006,7 +2044,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         Detail = BuildVocabDetail(seed, _definitionCache.TryGetValue(word, out var cachedDefinition) ? cachedDefinition : null);
 
         // 已经查过(不论有没有释义)就不再打接口,否则来回切选中项会反复发请求
-        if (OnlineDefinitionEnabled && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
+        if (ShouldLookUpDefinition && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
             StartDefinitionLookup(word);
         }
     }
@@ -2027,6 +2065,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private async Task LoadDefinitionAsync(string word, CancellationToken cancellationToken) {
         WordDefinition? definition;
         try {
+            // 去抖:手快时(方向键连着切词)先等一下,期间被取消就一个请求都不发
+            await Task.Delay(DefinitionDebounceMilliseconds, cancellationToken).ConfigureAwait(true);
             definition = await WordDefinitionService.LookupAsync(word, cancellationToken: cancellationToken)
                 .ConfigureAwait(true);
         } catch (OperationCanceledException) {

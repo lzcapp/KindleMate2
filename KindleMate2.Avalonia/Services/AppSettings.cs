@@ -18,6 +18,9 @@ public sealed class AppSettings {
     [JsonPropertyName("theme")] public string Theme { get; set; } = "system";
     [JsonPropertyName("language")] public string Language { get; set; } = "auto";
 
+    /// <summary>是否在选中生词时**联网**查询释义(默认开)。关掉后完全不发请求 —— 见「设置」菜单。</summary>
+    [JsonPropertyName("onlineDefinition")] public bool OnlineDefinition { get; set; } = true;
+
     [JsonIgnore] public string FilePath { get; private set; } = string.Empty;
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };

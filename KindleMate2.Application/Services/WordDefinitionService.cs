@@ -103,7 +103,8 @@ public static class WordDefinitionService {
             foreach (var section in SectionPriority(root)) {
                 var definitions = ReadDefinitions(root, section);
                 if (definitions.Count == 0) continue;
-                return new WordDefinition(ReadPhonetic(root), definitions, ReadSourceName(root, section));
+                return new WordDefinition(ReadPhonetic(root), definitions, ReadSourceName(root, section),
+                    section == "baike");
             }
             return null;   // ★ 没有释义就不显示
         } catch (JsonException) {
@@ -258,7 +259,11 @@ public static class WordDefinitionService {
 /// <param name="Definitions">至少一条(为空时不会构造出本对象)。</param>
 /// <param name="Source">来源名,直接取接口给的,如 <c>《现代汉语规范词典》</c> / <c>百度百科</c> / <c>有道词典</c>;
 /// 取不到时为空串(调用方退回"在线释义"这种不带来源的说法)。</param>
-public sealed record WordDefinition(string Phonetic, IReadOnlyList<string> Definitions, string Source) {
+/// <param name="IsEncyclopedia">这条是不是**百科摘要**(<c>baike</c> 段)。
+/// 是的话调用方会把标题写成「百科摘要 · …」而不是「在线释义 · …」——
+/// 百科会误命中同名条目(实测「谢了」命中同名歌曲),标题必须让人看出这不是词义。</param>
+public sealed record WordDefinition(string Phonetic, IReadOnlyList<string> Definitions, string Source,
+    bool IsEncyclopedia = false) {
     /// <summary>
     /// 拼成详情面板里那一块文本:音标/拼音单独一行(若有),下面是各行释义。
     /// 与「用法」列表(body)区分开 —— 那一段是 Kindle 记下的原句,这一段是词典释义。

@@ -752,6 +752,15 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
+    /// 「设置 → 查询在线释义」。勾选状态由 <c>IsChecked</c> 双向绑定到 VM,这里只负责**持久化** ——
+    /// "关掉时取消在飞的请求 / 打开时补查一次"都在 VM 的 setter 里,别在这里重复。
+    /// </summary>
+    private void OnToggleOnlineDefinition(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        vm.PersistOnlineDefinition(vm.IsOnlineDefinitionEnabled);
+    }
+
+    /// <summary>
     /// 「帮助 → 检查更新」。有更新时同时点亮主界面状态栏的「更新」按钮;
     /// 无更新或检查失败都只弹一句"已是最新" —— 检查更新的失败不该打断使用。
     /// </summary>

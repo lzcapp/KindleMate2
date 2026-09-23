@@ -239,6 +239,14 @@ public sealed class WordDefinitionTests {
     }
 
     [Fact]
+    public void Parse_MarksBaikeAsEncyclopedia() {
+        // 调用方据此把标题写成「百科摘要 · 百度百科」(而不是「在线释义 · 百度百科」)
+        Assert.True(WordDefinitionService.Parse(BaikeSample)!.IsEncyclopedia);
+        Assert.False(WordDefinitionService.Parse(AppleSample)!.IsEncyclopedia);
+        Assert.False(WordDefinitionService.Parse(ChineseDictionarySample)!.IsEncyclopedia);
+    }
+
+    [Fact]
     public void ToDisplayText_OmitsPhoneticLineWhenMissing() {
         var definition = new WordDefinition(string.Empty, new[] { "n. 苹果" }, "有道词典");
 
