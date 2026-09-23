@@ -259,6 +259,81 @@ internal static class Program {
                                       $" DeletedCount 通知={deletedNotified}(期望 ≥1,左栏「回收站 N」靠它)" +
                                       $" 菜单可用性通知={menuNotified}(期望 ≥2)" +
                                       $" -> result={(binOk ? "OK" : "失败!回收站视图状态不正确")}");
+
+                    // —— 表格模式:选中哪一行,动作就必须作用在那一行 ——
+                    //
+                    // 两个 DataGrid 的选中项此前**从不回写** _selectedItem,而删除 / 重命名书籍 /
+                    // 重命名生词 / 编辑标注 / 分享图**一律只读 _selectedItem**(列表的选中行)。
+                    // 表格模式下列表是隐藏的,用户根本改不了它 ⇒ 在表格里点第 4 行、右键「删除」,
+                    // 删掉的是列表里选中的那一行(重建后通常是第一行),而详情面板显示的是表格里那一行
+                    // —— 看到 A、操作作用在 B。2026-09-23 无头复现后修(见 SyncSelectionFromTable)。
+                    //
+                    // 这里做**端到端**核对:建临时库 → 切表格模式 → 选中某一行 → **真删** → 回查库里少了谁。
+                    // 只比 SelectedItem 是不够的:"同步写对了、但删除仍读旧源"照样能绿。
+                    // 全程不碰 GUI —— --smoke 本来就新建了一个库(见上面的 freshDir)。
+                    {
+                        var t = startupVm.Session!;
+                        for (var i = 0; i < 4; i++) {
+                            t.ClippingRepository.Add(new KindleMate2.Domain.Entities.KM2DB.Clipping {
+                                Key = $"tblk{i}",
+                                Content = $"内容{i}",
+                                BookName = $"书{i}",
+                                AuthorName = "作者",
+                                ClippingTypeLocation = "标注 位置 #1-1"
+                            });
+                        }
+                        startupVm.DomainIndex = 0;
+                        startupVm.ReloadAsync().GetAwaiter().GetResult();
+                        startupVm.IsListMode = false;                             // 切到表格模式
+                        var clipRow = startupVm.ClipTable[3];                     // 在表格里点第 4 行
+                        var clipTarget = clipRow.Key;                             // 期望:动作作用在**这一行**
+                        // 一切取值都取自"选中行自己",**不写死键名** —— 列表默认是倒序,
+                        // 行号对应的键随排序变(第一版写死了 w2,当场红)。
+                        startupVm.SelectedClipTable = clipRow;
+                        var clipTargetActual = startupVm.SelectedItem?.Clipping?.Key ?? "<无>";
+                        var clipBookActual = startupVm.SelectedItemBookName;      // 详情面板那几条动作的目标
+                        startupVm.DeleteSelectedAsync().GetAwaiter().GetResult();
+                        var left = t.ClippingRepository.GetAll()
+                            .Select(c => c.Key)
+                            .Where(k => k.StartsWith("tblk", StringComparison.Ordinal))
+                            .OrderBy(k => k)
+                            .ToList();
+
+                        // 生词表格走另一条支路(SelectedLookupTable 的 setter 与标注那边不是同一个)
+                        for (var i = 0; i < 4; i++) {
+                            t.VocabService.AddVocab(new KindleMate2.Domain.Entities.KM2DB.Vocab {
+                                Id = $"en:w{i}", WordKey = $"en:w{i}", Word = $"w{i}"
+                            });
+                            t.LookupService.AddLookup(new KindleMate2.Domain.Entities.KM2DB.Lookup {
+                                // timestamp 必须有值:删除走的是 (word_key, timestamp) 定位,空值会被拒
+                                WordKey = $"en:w{i}", Usage = $"用法{i}", Title = $"编号{i}书",
+                                Timestamp = $"2020-01-0{i + 1}"
+                            });
+                        }
+                        startupVm.DomainIndex = 1;
+                        startupVm.ReloadAsync().GetAwaiter().GetResult();
+                        startupVm.IsListMode = false;
+                        var wordRow = startupVm.LookupTable[2];                   // 在生词表里点第 3 行
+                        var wordTarget = wordRow.WordKey ?? string.Empty;
+                        startupVm.SelectedLookupTable = wordRow;
+                        startupVm.DeleteSelectedAsync().GetAwaiter().GetResult();
+                        var wordsLeft = t.LookupService.GetAllLookups()
+                            .Select(l => l.WordKey ?? string.Empty)
+                            .Where(k => k.StartsWith("en:w", StringComparison.Ordinal))
+                            .OrderBy(k => k)
+                            .ToList();
+
+                        // 四件事一起断言:两条支路的删除目标、详情面板的目标书名、**真的删掉了哪一行**。
+                        var tableOk = clipTargetActual == clipTarget
+                                      && clipBookActual == clipRow.BookName
+                                      && left.Count == 3 && !left.Contains(clipTarget)
+                                      && wordsLeft.Count == 3 && !wordsLeft.Contains(wordTarget);
+                        report.AppendLine($"table selection: 标注表 表格选中={clipTarget}" +
+                                          $" 删除实际作用在={clipTargetActual}/书名={clipBookActual}(期望 tblk3/书3)" +
+                                          $" 删完剩=[{string.Join(",", left)}](期望 3 条且不含 {clipTarget})" +
+                                          $" 生词表 表格选中={wordTarget} 删完剩=[{string.Join(",", wordsLeft)}](期望 3 条且不含它)" +
+                                          $" -> result={(tableOk ? "OK" : "失败!表格里选中哪一行,动作就该作用在那一行")}");
+                    }
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
                 }
