@@ -1244,6 +1244,12 @@ namespace KindleMate2.Shared {
         public static string Ui_Text_ClippingCount => ResourceManager.GetString("Ui_Text_ClippingCount", resourceCulture);
         public static string Ui_Text_LookupCount => ResourceManager.GetString("Ui_Text_LookupCount", resourceCulture);
         public static string Ui_Op_RenameBook => ResourceManager.GetString("Ui_Op_RenameBook", resourceCulture);
+        public static string Ui_Op_RenameWord => ResourceManager.GetString("Ui_Op_RenameWord", resourceCulture);
+        public static string Word_Renamed => ResourceManager.GetString("Word_Renamed", resourceCulture);
+        public static string Word_Renamed_Failed => ResourceManager.GetString("Word_Renamed_Failed", resourceCulture);
+        public static string Word_Name_Not_Changed => ResourceManager.GetString("Word_Name_Not_Changed", resourceCulture);
+        public static string Word_Name_Taken => ResourceManager.GetString("Word_Name_Taken", resourceCulture);
+        public static string Ui_Status_PickWordFirst => ResourceManager.GetString("Ui_Status_PickWordFirst", resourceCulture);
         public static string Ui_Op_ShareImage => ResourceManager.GetString("Ui_Op_ShareImage", resourceCulture);
         public static string Ui_Share_Saved_Format => ResourceManager.GetString("Ui_Share_Saved_Format", resourceCulture);
         public static string Ui_Share_Failed => ResourceManager.GetString("Ui_Share_Failed", resourceCulture);

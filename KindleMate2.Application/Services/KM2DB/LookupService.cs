@@ -74,6 +74,20 @@ namespace KindleMate2.Application.Services.KM2DB {
             return string.IsNullOrWhiteSpace(wordKey) ? throw new ArgumentException("WordKey cannot be null or empty", nameof(wordKey)) : repository.Delete(wordKey, timestamp);
         }
 
+        /// <summary>
+        /// 把某个词的全部查询行改挂到新键上。参数校验在这里做,拒绝条件在仓储里判
+        /// (要查唯一约束是否会被撞上,属数据层职责)。
+        /// </summary>
+        public int RenameWordKey(string oldWordKey, string newWordKey) {
+            if (string.IsNullOrWhiteSpace(oldWordKey)) {
+                throw new ArgumentException("旧 word_key 不能为空", nameof(oldWordKey));
+            }
+            if (string.IsNullOrWhiteSpace(newWordKey)) {
+                throw new ArgumentException("新 word_key 不能为空", nameof(newWordKey));
+            }
+            return repository.RenameWordKey(oldWordKey, newWordKey);
+        }
+
         public bool RenameBook(string originBookname, string bookname, string authorName) {
             var lookups = repository.GetByTitle(originBookname);
             var result = 0;

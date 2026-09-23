@@ -269,6 +269,39 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public int RenameWordKey(string oldWordKey, string newWordKey) {
+            if (string.IsNullOrWhiteSpace(oldWordKey)) {
+                throw new ArgumentException("旧 word_key 不能为空", nameof(oldWordKey));
+            }
+            if (string.IsNullOrWhiteSpace(newWordKey)) {
+                throw new ArgumentException("新 word_key 不能为空", nameof(newWordKey));
+            }
+            if (string.Equals(oldWordKey, newWordKey, StringComparison.Ordinal)) {
+                return 0;
+            }
+
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            // 先查会不会撞唯一约束 (word_key, timestamp)。
+            // 判据:新键下已存在某行,而旧键下也有**同一 timestamp** 的行 ⇒ 搬过去必然冲突。
+            // timestamp 为 NULL 的行不算冲突 —— 这与 SQLite 对 UNIQUE 中 NULL 的语义一致(彼此不相等)。
+            var conflictCmd = new SqliteCommand(
+                "SELECT COUNT(*) FROM lookups n WHERE n.word_key = @new_key " +
+                "AND EXISTS (SELECT 1 FROM lookups o WHERE o.word_key = @old_key AND o.timestamp = n.timestamp)",
+                connection);
+            conflictCmd.Parameters.AddWithValue("@old_key", oldWordKey);
+            conflictCmd.Parameters.AddWithValue("@new_key", newWordKey);
+            if (Convert.ToInt32(conflictCmd.ExecuteScalar()) > 0) {
+                return -1;
+            }
+
+            var cmd = new SqliteCommand("UPDATE lookups SET word_key = @new_key WHERE word_key = @old_key", connection);
+            cmd.Parameters.AddWithValue("@old_key", oldWordKey);
+            cmd.Parameters.AddWithValue("@new_key", newWordKey);
+            return cmd.ExecuteNonQuery();
+        }
+
         public bool DeleteAll() {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
