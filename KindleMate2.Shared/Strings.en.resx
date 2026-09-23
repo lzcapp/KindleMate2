@@ -750,8 +750,14 @@
   <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
     <value>This will strip leading and trailing punctuation from {0} of {1} clipping(s) and delete {2} empty and {3} duplicate row(s). Nothing else is changed, and the database is backed up first.</value>
   </data>
-  <data name="Ui_Maintenance_Result_Format" xml:space="preserve">
-    <value>Cleaned {0} of {1} clipping(s); cleanup removed {2} empty and {3} duplicate row(s), reclaiming {4}. Backup and change list: {5}</value>
+  <data name="Ui_Maintenance_Result_Cleaned_Format" xml:space="preserve">
+    <value>Cleaned the punctuation in {0} highlights ({1} scanned)</value>
+  </data>
+  <data name="Ui_Maintenance_Result_Deleted_Format" xml:space="preserve">
+    <value>Removed {0} empty and {1} duplicate entries</value>
+  </data>
+  <data name="Ui_Maintenance_Result_DeletedNone" xml:space="preserve">
+    <value>Nothing was removed</value>
   </data>
   <data name="Ui_Maintenance_Failed" xml:space="preserve">
     <value>Maintenance Failed</value>

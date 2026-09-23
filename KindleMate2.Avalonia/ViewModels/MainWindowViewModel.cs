@@ -865,17 +865,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             }
             var countEmpty = cleanResult.TryGetValue(AppConstants.EmptyCount, out var e) ? e : "0";
             var countDuplicated = cleanResult.TryGetValue(AppConstants.DuplicatedCount, out var d) ? d : "0";
-            var fileSizeDelta = cleanResult.TryGetValue(AppConstants.FileSizeDelta, out var f) ? f : "0";
 
-            var manifestPath = WriteMaintenanceManifest(session, cleaning, plan);
-            var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Maintenance_Result_Format,
-                cleaning.ChangedCount, cleaning.Scanned, countEmpty, countDuplicated,
-                fileSizeDelta, string.IsNullOrEmpty(manifestPath) ? "-" : manifestPath);
+            // 清单文件**静默落盘**:正文里既不提它、也不报它的路径(2026-09-23 用户明确
+            // "可以静默生成 log,但不要抛给用户")。此前那句末尾甩一个又长又深、在提示框里还**不可复制**的
+            // 绝对路径,读起来像日志而不像给人看的结论。
+            WriteMaintenanceManifest(session, cleaning, plan);
+
+            var builder = new StringBuilder();
+            builder.AppendLine(string.Format(CultureInfo.CurrentCulture,
+                Strings.Ui_Maintenance_Result_Cleaned_Format, cleaning.ChangedCount, cleaning.Scanned));
+            // 两项都是 0 时合成一句 —— "删除空条目 0 条、重复项 0 条" 这种逐项报零是清单腔,不是人话
+            builder.AppendLine(HasCount(countEmpty) || HasCount(countDuplicated)
+                ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Maintenance_Result_Deleted_Format,
+                    countEmpty, countDuplicated)
+                : Strings.Ui_Maintenance_Result_DeletedNone);
             if (cleaning.AllPunctuationCount > 0) {
-                message += Environment.NewLine + string.Format(CultureInfo.CurrentCulture,
-                    Strings.Ui_ClippingClean_Skipped_Format, cleaning.AllPunctuationCount);
+                builder.AppendLine(string.Format(CultureInfo.CurrentCulture,
+                    Strings.Ui_ClippingClean_Skipped_Format, cleaning.AllPunctuationCount));
             }
-            return message;
+            return builder.ToString().TrimEnd();
         }, true, Strings.Ui_Menu_MaintainDatabase, Strings.Ui_Maintenance_Failed);
     }
 
@@ -889,14 +897,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         string.Equals(message, AppConstants.DatabaseNoNeedCleaning, StringComparison.Ordinal);
 
     /// <summary>
+    /// 维护结果里的计数是不是"真有东西"。**按字符串判断**,因为结果字典里的值可能不是裸数字
+    /// (历史上就有格式化过的文本混进来,例如文件大小 "12 KB");
+    /// **解析不出来时按"有"处理** —— 宁可多显示一行,也不能把"真删了东西"藏起来。
+    /// </summary>
+    private static bool HasCount(string value) => !int.TryParse(value.Trim(), out var count) || count > 0;
+
+    /// <summary>
     /// 把这一遍动过的东西落成清单文件,返回文件路径(写失败返回空串)。
+    ///
+    /// ⚠️ **调用方不再把路径报给用户**(2026-09-23 用户明确:可以静默生成 log,但不要抛给用户)——
+    /// 文件照写,位置就在备份目录,用户从「备份」那一侧自取;正文只给人看的结论。
+    /// (返回路径保留,是因为自检与将来可能的"打开清单"入口要用。)
     ///
     /// 两段的来源刻意不同:清洗段用**执行结果**(真的写进库的才算数,与
     /// <c>CleanClippingTexts</c> 内部同源),清理段用**执行前的预演** ——
     /// <c>CleanDatabase</c> 只回报条数、不回报删了哪几行,键只能从预演里拿。
     ///
     /// 清单写失败**不该**让整个维护算失败 —— 数据那时已经改完了,报"维护失败"反而是谎话;
-    /// 吞掉异常、只留日志,正文里路径位置显示 "-"。
+    /// 吞掉异常、只留日志。
     /// </summary>
     private static string WriteMaintenanceManifest(DatabaseSession session, ClippingCleanReport cleaning,
         DatabaseMaintenancePlan? plan) {
