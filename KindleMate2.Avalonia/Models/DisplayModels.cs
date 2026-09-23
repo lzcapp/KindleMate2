@@ -120,6 +120,11 @@ public sealed class DetailModel {
     public string DefinitionLabel { get; init; } = string.Empty;
     public string Definition { get; init; } = string.Empty;
 
+    /// <summary>释义被截断了(只有百科会:实测「高要」414 字)⇒ 界面上给一个"展开全文"入口。
+    /// **由是否截断决定,不由展开状态决定** —— 展开之后那个"收起"入口还得在。</summary>
+    public bool HasDefinitionOverflow { get; init; }
+    public string DefinitionToggleLabel { get; init; } = string.Empty;
+
     public bool IsHighlight => Kind == TypeKind.Highlight;
     public bool IsNote => Kind == TypeKind.Note;
     public bool IsBookmark => Kind == TypeKind.Bookmark;

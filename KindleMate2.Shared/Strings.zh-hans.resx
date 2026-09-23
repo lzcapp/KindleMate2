@@ -678,6 +678,12 @@
   <data name="Ui_Word_OnlineDefinitionEncyclopedia" xml:space="preserve">
     <value>百科摘要 · {0}</value>
   </data>
+  <data name="Ui_Definition_Expand" xml:space="preserve">
+    <value>展开全文</value>
+  </data>
+  <data name="Ui_Definition_Collapse" xml:space="preserve">
+    <value>收起</value>
+  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} 条标注</value>
   </data>

@@ -473,6 +473,16 @@
                 <SelectableTextBlock Text="{Binding Detail.Definition}" TextWrapping="Wrap" FontSize="14"
                                      LineHeight="24" Margin="0,7,0,0"
                                      ContextFlyout="{x:Null}" />
+                <!--
+                  超长释义(实测只有百科会:「高要」414 字)默认只显示开头(DefinitionPreview 截到 100 字、尽量切在句末)。
+                  「展开全文」把取舍交给用户 —— 不做智能取舍:实测同一条规则对「高要」留住最有用的首句,
+                  对「没骨花卉」却会切掉"什么叫没骨"的第二句。
+                -->
+                <Button Classes="ghost link" HorizontalAlignment="Left" Margin="0,6,0,0"
+                        Foreground="{DynamicResource KmAccentBrush}"
+                        IsVisible="{Binding Detail.HasDefinitionOverflow}"
+                        Content="{Binding Detail.DefinitionToggleLabel}"
+                        Click="OnToggleDefinition" />
               </StackPanel>
 
               <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Text="{Binding Detail.Body}"

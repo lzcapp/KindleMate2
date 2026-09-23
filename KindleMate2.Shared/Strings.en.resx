@@ -678,6 +678,12 @@
   <data name="Ui_Word_OnlineDefinitionEncyclopedia" xml:space="preserve">
     <value>Encyclopedia summary · {0}</value>
   </data>
+  <data name="Ui_Definition_Expand" xml:space="preserve">
+    <value>Show full definition</value>
+  </data>
+  <data name="Ui_Definition_Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} clippings</value>
   </data>
