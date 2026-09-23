@@ -248,6 +248,11 @@
                           IsVisible="{Binding CanExportCurrent}" />
                 <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameCurrent"
                           IsVisible="{Binding CanRenameCurrentBook}" />
+                <!-- 生词域里「重命名书籍」收起,取而代之的是这条 —— 它改的是**那个词**本身。
+                     两条互斥:「重命名书籍」要「标注域 + 具体书」,这条要「生词域 + 具体词」,
+                     所以永远不会同时出现,用户看到的正好是当前域该有的那一条。 -->
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameWord}" Click="OnRenameCurrentWord"
+                          IsVisible="{Binding CanRenameCurrentWord}" />
                 <!-- 注意:这里删的是**左栏节点**(某本书 / 全部标注 / 全部生词 / 某个词),
                      对应原版 MenuBooksDelete_Click → DeleteNodes();不要改成删列表行的那套。 -->
                 <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteNavNode" />
@@ -284,6 +289,22 @@
           <ListBox IsVisible="{Binding ShowList}" ItemsSource="{Binding Items}"
                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                    DoubleTapped="OnEditClipping">
+            <!-- 分组标题行(生词域的「N 条查询」/「N 条标注」)**不能被选中** ——
+                 它不是一条记录,没有可删/可编辑/可复制的对象,选中它只会把右栏清空。
+                 VM 侧只保证「不算可操作」(HasSelectedItem)与「程序自动选中时跳过它」,
+                 这两条都管不住鼠标:标题行照样能被点出高亮,看着就像选中了一条数据。
+                 这里把它的 ListBoxItem 置为**不可用**:禁用容器不吃点击、也不给悬停高亮,
+                 键盘上下切换同样会跳过它 —— 正是小标题该有的样子。
+                 禁用会不会把标题弄灰?不会。Fluent 的 ListBoxItem ControlTheme 在 :disabled 下
+                 只下发一个 Foreground(落在 PART_ContentPresenter 上),而标题文字自带 .ts 的
+                 Foreground(样式值优先于继承值),外观一字不变 ⇒ 不必再压任何东西回去。
+                 注意 x:DataType 不能省:控件内联 <Style> 不继承外层 DataTemplate 的 x:DataType,
+                 缺了它这条绑定就解析不到 ListItem.IsSectionHeader(编译期直接报 AVLN2000)。 -->
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem" x:DataType="models:ListItem">
+                <Setter Property="IsEnabled" Value="{Binding !IsSectionHeader}" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
@@ -296,6 +317,11 @@
                      回收站视图下都收起 —— 那里的行是从原始行临时拼的(键已不在 clippings 里),改不动。 -->
                 <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameSelectedBook"
                           IsVisible="{Binding CanRenameSelectedItemBook}" />
+                <!-- 「重命名生词」与上面「重命名书籍」一样作用于**选中那一行**,而不是左栏节点:
+                     同一条查询行在"全部生词"或搜索结果里出现时,左栏可能正停在别的词上。
+                     只有查询行有词 ⇒ 标注行上这条自动收起(CanRenameSelectedWord 取自实体)。 -->
+                <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameWord}" Click="OnRenameSelectedWord"
+                          IsVisible="{Binding CanRenameSelectedWord}" />
                 <MenuItem Header="{x:Static shared:Strings.Edit_Clippings}" Click="OnEditSelectedClipping"
                           IsVisible="{Binding CanEditSelectedClipping}" />
                 <MenuItem Header="{x:Static shared:Strings.Delete}" Click="OnDeleteSelected"
@@ -314,7 +340,10 @@
                              IsVisible="{Binding IsSectionHeader}" FontWeight="SemiBold" Margin="0,10,0,2" />
                   <Border Grid.Row="1" Grid.Column="0" Classes="kbar" Width="3" CornerRadius="2" />
                   <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
-                    <TextBlock Text="{Binding Primary}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                    <!-- 绑 Inlines 而不是 Text:生词域里要把正文中命中的生词**加粗**,
+                         而 Text 是纯字符串,加粗不了其中一部分(见 EmphasisInlines)。
+                         内容始终由 PrimaryInlines 给全,不会因为没做高亮就变空白。 -->
+                    <TextBlock Inlines="{Binding PrimaryInlines}" FontSize="13" TextTrimming="CharacterEllipsis" />
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                       <!-- 书名占 * 列并**由它负责省略**。刻意不套横向 StackPanel:
                            横向 StackPanel 按**无限宽**测量子元素,TextTrimming 永不触发,
@@ -406,6 +435,10 @@
                  否则它会抢在父级 ContextMenu 之前弹出来(见下面的 ContextFlyout="{x:Null}")。 -->
             <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameBook}" Click="OnRenameSelectedBook"
                       IsVisible="{Binding CanRenameSelectedItemBook}" />
+            <!-- 这一条只在详情是**一条查询**时出现(标注行/分组标题行都没有词)——
+                     与上面那条「重命名书籍」同样按选中行的实体判断,不按域。 -->
+            <MenuItem Header="{x:Static shared:Strings.Ui_Op_RenameWord}" Click="OnRenameSelectedWord"
+                      IsVisible="{Binding CanRenameSelectedWord}" />
             <MenuItem Header="{x:Static shared:Strings.Edit_Clippings}" Click="OnEditSelectedClipping"
                       IsVisible="{Binding CanEditSelectedClipping}" />
           </ContextMenu>
@@ -473,9 +506,19 @@
                 <SelectableTextBlock Text="{Binding Detail.Definition}" TextWrapping="Wrap" FontSize="14"
                                      LineHeight="24" Margin="0,7,0,0"
                                      ContextFlyout="{x:Null}" />
+                <!--
+                  超长释义(实测只有百科会:「高要」414 字)默认只显示开头(DefinitionPreview 截到 100 字、尽量切在句末)。
+                  「展开全文」把取舍交给用户 —— 不做智能取舍:实测同一条规则对「高要」留住最有用的首句,
+                  对「没骨花卉」却会切掉"什么叫没骨"的第二句。
+                -->
+                <Button Classes="ghost link" HorizontalAlignment="Left" Margin="0,6,0,0"
+                        Foreground="{DynamicResource KmAccentBrush}"
+                        IsVisible="{Binding Detail.HasDefinitionOverflow}"
+                        Content="{Binding Detail.DefinitionToggleLabel}"
+                        Click="OnToggleDefinition" />
               </StackPanel>
 
-              <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Text="{Binding Detail.Body}"
+              <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Inlines="{Binding Detail.BodyInlines}"
                                    TextWrapping="Wrap" FontSize="14" LineHeight="25"
                                    ContextFlyout="{x:Null}" />
             </StackPanel>

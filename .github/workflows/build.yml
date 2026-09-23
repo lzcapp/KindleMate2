@@ -87,11 +87,25 @@ jobs:
           # 编译期绑定只保证 SectionTitle/IsSectionHeader 存在,不保证模板里还留着这一行 ——
           # 删掉它不报错,两段就悄悄退化成一条看不出分界的平表。
           grep -q 'IsVisible="{Binding IsSectionHeader}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 源码断言:标题行必须**点不动**(把它的 ListBoxItem 置为不可用)。
+          # 同上的理由,再叠一层:这条样式是纯视图层的,单测工程又不引 Avalonia,够不着 ——
+          # 删掉它不报错、测试也不红,标题行就又变成可点、可高亮、一点就把右栏清空。
+          # 注意绑定挂在 Setter 的 Value 上(不是 IsEnabled 上),模式必须照着真实写法写。
+          grep -Eq '<Setter +Property="IsEnabled" +Value="\{Binding +!IsSectionHeader\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q "share card:.*result=OK" "$out"
           # 源码断言:分享入口的接线（编译期绑定不保证菜单项还在，见 MainWindow.axaml）
           grep -q 'Click="OnShareSelectedClipping"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q 'IsVisible="{Binding CanShareSelectedClipping}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q "context menu:.*result=OK" "$out"
+          # 删除一行后列表不跳回顶部 —— 探针只钉得住"挑行判据"这条纯逻辑
+          grep -q "row restore:.*result=OK" "$out"
+          # 源码断言:上面那条判据要真被用上,靠的是两处接线,而这两处都是
+          # "删掉不报错、单测也不红"的胶水(单测工程不引 Avalonia,够不着 VM)。
+          # ① 行级删除把"原来那一行的位置"传下去(不传 ⇒ 功能静默失效);
+          grep -q 'restoreRowIndex: rowIndex' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          # ② 两处列表重建(标注 / 生词)都要走挑行函数(退回无脑 FirstOrDefault 同样静默失效)。
+          #    数量写死 2:将来若真多出第三处重建,这里该红一次,人工确认后再改这个数。
+          test "$(grep -c 'PickRowAfterRebuild() ??' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 2
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
@@ -196,12 +210,25 @@ jobs:
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "word sections:.*result=OK" "$work/smoke.txt"
           grep -q "nav menu:.*result=OK" "$work/smoke.txt"
+          # 「重命名生词」两处菜单的可用性。VM 那层单测够不着(单测工程不引 Avalonia),
+          # 而拼键/撞名那两条纯规则在 WordRenameRulesTests 里 —— 两层各钉各的。
+          grep -q "word rename:.*result=OK" "$work/smoke.txt"
           # 自检必须把联网查释义关掉:CI 不该依赖第三方词典(慢、易 flaky),也不该把词条发出去
           grep -q "online definition: enabled=False" "$work/smoke.txt"
           # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,
           # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
           grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 「重命名生词」共三处入口(左栏词节点 / 中栏列表行 / 详情面板),对齐「重命名书籍」。
+          # 左栏这条与上面的 CanRenameCurrentBook **互斥**:丢了 IsVisible 的话,
+          # 生词域的右键里会同时冒出「重命名书籍」和「重命名生词」两条。
+          # Click 与 IsVisible 都要钉:入口从菜单里消失不报错,探针也不红。
+          grep -Eq 'IsVisible="\{Binding +CanRenameCurrentWord\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          grep -q 'Click="OnRenameCurrentWord"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 另两处共用同一条判定,必须**两处都在** —— 只钉"存在"的话少掉一处不会被发现。
+          # 数量写死 2:将来若真多出第三处,这里该红一次,人工确认后再改这个数。
+          test "$(grep -c 'Click="OnRenameSelectedWord"' KindleMate2.Avalonia/Views/MainWindow.axaml)" -eq 2
+          test "$(grep -c 'IsVisible="{Binding CanRenameSelectedWord}"' KindleMate2.Avalonia/Views/MainWindow.axaml)" -eq 2
           # 生词详情的「在线释义」块:**条件可见** —— 只有联网查到释义才出现,没联网/没这个词就整块收起。
           # 编译期绑定不保证这一行还在(删掉 IsVisible 不报错,释义块会在没有释义时也占一块空白),
           # 所以与状态栏那条同理,在源码上钉一句。

@@ -133,10 +133,14 @@ internal static class Program {
 
             // 左栏右键菜单的域感知
             ProbeNavMenu(report);
+            // 「重命名生词」两处菜单的可用性(与上一条同属"右键菜单",放在一起)
+            ProbeWordRename(report);
             // 分享卡片的内容组装
             ProbeShareCard(report);
             // 列表行 / 详情面板右键菜单的可用性判定
             ProbeContextMenuAvailability(report);
+            // 删除一行之后,列表不该跳回顶部(挑行规则)
+            ProbeRowRestore(report);
 
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
@@ -692,40 +696,129 @@ internal static class Program {
     private static void ProbeNavMenu(System.Text.StringBuilder report) {
         var vm = new MainWindowViewModel();
         var notified = 0;
+        var wordNotified = 0;
         vm.PropertyChanged += (_, e) => {
             if (e.PropertyName == nameof(MainWindowViewModel.CanRenameCurrentBook)) notified++;
+            if (e.PropertyName == nameof(MainWindowViewModel.CanRenameCurrentWord)) wordNotified++;
         };
 
-        // ① 生词域 + 具体生词 ⇒ 两条都该收起
+        // ① 生词域 + 具体生词 ⇒「重命名书籍」「导出」收起;
+        //    「重命名生词」正好相反 —— 它是生词域里唯一该出现的那条改名入口。
         vm.DomainIndex = 1;
         vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "小心", Name = "小心" };
         var wordRename = vm.CanRenameCurrentBook;
         var wordExport = vm.CanExportCurrent;
+        var wordRenameWord = vm.CanRenameCurrentWord;
 
-        // ② 切回标注域 + 具体书 ⇒ 两条都该出现
+        // ② 切回标注域 + 具体书 ⇒ 前两条出现,「重命名生词」收起(互斥)
         vm.DomainIndex = 0;
         vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "某本书", Name = "某本书" };
         var bookRename = vm.CanRenameCurrentBook;
         var bookExport = vm.CanExportCurrent;
+        var bookRenameWord = vm.CanRenameCurrentWord;
 
-        // ③ 「全部标注」:标注域、但不是具体书 ⇒ 导出可用、重命名不可用
+        // ③ 「全部标注」:标注域、但不是具体书 ⇒ 导出可用、两条改名都不可用
         vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = string.Empty, Name = "全部", IsAll = true };
         var allRename = vm.CanRenameCurrentBook;
         var allExport = vm.CanExportCurrent;
+        var allRenameWord = vm.CanRenameCurrentWord;
+        var allCurrentWord = vm.CurrentWord;
 
         // ④ 只切域、不动节点 —— 最容易漏通知的一条
         var before = notified;
+        var wordBefore = wordNotified;
         vm.DomainIndex = 1;
         var switchNotified = notified > before;
+        var switchNotifiedWord = wordNotified > wordBefore;
 
-        var ok = !wordRename && !wordExport && bookRename && bookExport
-                 && !allRename && allExport && switchNotified && notified >= 4;
+        var ok = !wordRename && !wordExport && wordRenameWord && bookRename && bookExport
+                 && !bookRenameWord && !allRename && allExport && !allRenameWord
+                 && allCurrentWord.Length == 0
+                 && switchNotified && switchNotifiedWord && notified >= 4 && wordNotified >= 4;
 
-        report.AppendLine($"nav menu: 生词域 重命名={wordRename}/导出={wordExport}(期望 False/False)" +
-                          $" 标注域具体书={bookRename}/{bookExport}(期望 True/True)" +
-                          $" 全部标注={allRename}/{allExport}(期望 False/True)" +
-                          $" 只切域有通知={switchNotified}(期望 True) 通知共={notified}(期望 ≥4)" +
+        report.AppendLine($"nav menu: 生词域 重命名书籍={wordRename}/导出={wordExport}/重命名生词={wordRenameWord}(期望 False/False/True)" +
+                          $" 标注域具体书={bookRename}/{bookExport}/生词={bookRenameWord}(期望 True/True/False)" +
+                          $" 全部标注={allRename}/{allExport}/生词={allRenameWord}(期望 False/True/False)" +
+                          $" 全部标注无当前词={allCurrentWord.Length == 0}(期望 True)" +
+                          $" 只切域有通知={switchNotified}/{switchNotifiedWord}(期望 True/True)" +
+                          $" 通知共={notified}/{wordNotified}(各期望 ≥4)" +
                           $" -> result={(ok ? "OK" : "失败!左栏菜单没有跟着域走")}");
+    }
+
+    /// <summary>
+    /// 「重命名生词」在**视图层**能钉的部分:两处菜单的可用性。
+    ///
+    /// 拼新键、撞名判定那两条纯规则在 <c>WordRenameRulesTests</c> 里(Shared 层,单测够得着);
+    /// 这里只钉 VM 这层单测够不到的:可用性跟着**选中行 / 域与节点**走,
+    /// 而且换行必须发通知 —— 绑定的计算属性不发通知,菜单项就会永远停在初始状态
+    /// (这个坑本仓已踩过两次)。
+    ///
+    /// 可用性必须**正负例都验**:只验"选中查询行时为 true"的话,把它改成恒真探针照样绿。
+    /// </summary>
+    private static void ProbeWordRename(System.Text.StringBuilder report) {
+        var vm = new MainWindowViewModel();
+        var notified = 0;
+        vm.PropertyChanged += (_, e) => {
+            if (e.PropertyName is nameof(MainWindowViewModel.CanRenameSelectedWord)
+                or nameof(MainWindowViewModel.SelectedItemWord)) {
+                notified++;
+            }
+        };
+
+        // —— 详情面板那条:按**选中行自己**判(不按域) ——
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k1", Primary = "用法",
+            Lookup = new KindleMate2.Domain.Entities.KM2DB.Lookup { WordKey = "en:beautiful" }
+        };
+        var lookupWord = vm.SelectedItemWord;
+        var lookupCan = vm.CanRenameSelectedWord;
+
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem {
+            Key = "k2", Primary = "内容", Book = "某本书",
+            Clipping = new KindleMate2.Domain.Entities.KM2DB.Clipping { Key = "c1", Content = "内容", BookName = "某本书" }
+        };
+        var clipWord = vm.SelectedItemWord;
+        var clipCan = vm.CanRenameSelectedWord;
+
+        // 分组标题行不是记录、也没有词 ⇒ 必须不可用(否则点下去只会弹一个改不动的框)
+        vm.SelectedItem = new KindleMate2.Avalonia.Models.ListItem { Key = "h", SectionTitle = "1 条查询" };
+        var headerCan = vm.CanRenameSelectedWord;
+
+        vm.SelectedItem = null;
+        var noneCan = vm.CanRenameSelectedWord;
+
+        // —— 左栏那条:按**域 + 节点**判 ——
+        vm.DomainIndex = 1;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "小心", Name = "小心" };
+        var wordNodeCan = vm.CanRenameCurrentWord;
+        var wordNodeCurrent = vm.CurrentWord;
+
+        vm.DomainIndex = 0;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = "某本书", Name = "某本书" };
+        var bookNodeCan = vm.CanRenameCurrentWord;
+
+        vm.DomainIndex = 1;
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = string.Empty, Name = "全部", IsAll = true };
+        var allNodeCan = vm.CanRenameCurrentWord;
+        var allNodeCurrent = vm.CurrentWord;
+
+        // 4 次换选中行 × 2 个属性 = 8;换节点还会顺带清掉选中项,故只多不少。
+        var ok = lookupWord == "beautiful" && lookupCan
+                 && clipWord.Length == 0 && !clipCan
+                 && !headerCan && !noneCan
+                 && wordNodeCan && wordNodeCurrent == "小心"
+                 && !bookNodeCan
+                 && !allNodeCan && allNodeCurrent.Length == 0
+                 && notified >= 8;
+
+        report.AppendLine($"word rename: 查询行 词='{lookupWord}'/可用={lookupCan}(期望 beautiful/True)" +
+                          $" 标注行 词='{clipWord}'/可用={clipCan}(期望 空/False)" +
+                          $" 标题行={headerCan}(期望 False) 无选中={noneCan}(期望 False)" +
+                          $" 生词节点 可用={wordNodeCan}/当前词='{wordNodeCurrent}'(期望 True/小心)" +
+                          $" 标注域节点={bookNodeCan}(期望 False)" +
+                          $" 全部生词节点={allNodeCan}/当前词长度={allNodeCurrent.Length}(期望 False/0)" +
+                          $" 通知={notified}(期望 ≥8)" +
+                          $" -> result={(ok ? "OK" : "失败!重命名生词的菜单可用性不符合预期")}");
     }
 
     /// 分享卡片的内容组装。
@@ -850,6 +943,57 @@ internal static class Program {
                           $" 通知={notified.Count}(期望 ≥9)" +
                           $" -> result={(ok ? "OK" : "失败!右键菜单可用性判定不符合预期")}");
     }
+
+    /// <summary>
+    /// 删除**一行**之后,列表不该跳回顶部 —— 钉住"重建后落回原处"的挑行规则。
+    ///
+    /// 从前删除走统一写操作壳:重载 → RebuildNav → ApplyFilter → 重建列表,
+    /// 而重建的最后一步是"选中第一条"。于是删掉第 200 条会被扔回第 1 条
+    /// (Avalonia 的 <c>ListBox.AutoScrollToSelectedItem</c> 默认打开,选中项一变视口就跟着走),
+    /// 右栏详情也一并跳回第一条;连续清理时每删一条都要重新滚下去找位置。
+    ///
+    /// 这里只钉**纯判据**(<see cref="MainWindowViewModel.PickRowByIndex"/>);
+    /// 接线 —— 删除时把索引传下去、重建时读回来 —— 由 build.yml 的源码断言兜住。
+    /// 理由同别的视图层探针:单测工程不引 Avalonia,够不着 VM。
+    /// </summary>
+    private static void ProbeRowRestore(System.Text.StringBuilder report) {
+        var rows = new List<KindleMate2.Avalonia.Models.ListItem> {
+            ProbeRow("r0"), ProbeRow("r1"), ProbeRow("r2"), ProbeRow("r3")
+        };
+        // 生词域的形状:标题行夹在记录之间(标题行不是记录,挑中它右栏只会空着)
+        var sectioned = new List<KindleMate2.Avalonia.Models.ListItem> {
+            ProbeHeader("h0"), ProbeRow("w1"), ProbeHeader("h2"), ProbeRow("w3")
+        };
+        var empty = new List<KindleMate2.Avalonia.Models.ListItem>();
+
+        var inPlace = MainWindowViewModel.PickRowByIndex(rows, 2)?.Key;      // 原位:同一格里现在坐着谁
+        var lastGone = MainWindowViewModel.PickRowByIndex(rows, 4)?.Key;     // 删的是最后一条 ⇒ 退回上一条
+        var farBeyond = MainWindowViewModel.PickRowByIndex(rows, 99)?.Key;
+        var noRequest = MainWindowViewModel.PickRowByIndex(rows, -1);        // 没带请求 ⇒ 不还原
+        var emptyRows = MainWindowViewModel.PickRowByIndex(empty, 0);
+        var landsOnHeader = MainWindowViewModel.PickRowByIndex(sectioned, 2)?.Key;
+        var onlyHeaders = MainWindowViewModel.PickRowByIndex(
+            new List<KindleMate2.Avalonia.Models.ListItem> { ProbeHeader("h0") }, 0);
+
+        var ok = inPlace == "r2" && lastGone == "r3" && farBeyond == "r3"
+                 && noRequest is null && emptyRows is null
+                 && landsOnHeader == "w3" && onlyHeaders is null;
+
+        report.AppendLine($"row restore: 原位={inPlace}(期望 r2)" +
+                          $" 删末条={lastGone}(期望 r3) 远超界={farBeyond}(期望 r3)" +
+                          $" 无请求={noRequest is null}(期望 True) 空表={emptyRows is null}(期望 True)" +
+                          $" 落点是标题行={landsOnHeader}(期望 w3)" +
+                          $" 全是标题行={onlyHeaders is null}(期望 True)" +
+                          $" -> result={(ok ? "OK" : "失败!挑行规则不符合预期")}");
+    }
+
+    /// <summary>普通记录行(SectionTitle 为空即非标题行 —— IsSectionHeader 是它派生出来的)。</summary>
+    private static KindleMate2.Avalonia.Models.ListItem ProbeRow(string key) =>
+        new() { Key = key };
+
+    /// <summary>分组标题行:只设 SectionTitle,不挂 Clipping / Lookup。</summary>
+    private static KindleMate2.Avalonia.Models.ListItem ProbeHeader(string title) =>
+        new() { Key = title, SectionTitle = title };
 
     /// <summary>
     /// 写操作端到端自检:把真实库复制到临时目录后,在该副本上依次执行

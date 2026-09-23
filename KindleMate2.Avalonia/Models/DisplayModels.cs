@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Avalonia.Controls.Documents;
+using KindleMate2.Application.Services;
+using KindleMate2.Avalonia.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
 
@@ -34,6 +37,19 @@ public sealed class NavItem {
 public sealed class ListItem {
     public required string Key { get; init; }
     public string Primary { get; init; } = string.Empty;
+
+    /// <summary>
+    /// <see cref="Primary"/> 按生词切好的分段(见 <c>WordEmphasis</c>)。**默认空表** ——
+    /// 空表 = 不做高亮,渲染出来与 <see cref="Primary"/> 整段一致。
+    ///
+    /// 这里存的是**纯数据**(哪一段命中),<c>InlineCollection</c> 由
+    /// <see cref="PrimaryInlines"/> 现算 —— 这样 <c>BuildWordDomainItems</c> 无头可测。
+    /// </summary>
+    public IReadOnlyList<EmphasisSegment> PrimarySegments { get; init; } = Array.Empty<EmphasisSegment>();
+
+    /// <summary>列表行正文的渲染形态(界面绑这个,不再绑 <see cref="Primary"/>)。</summary>
+    public InlineCollection PrimaryInlines => EmphasisInlines.Build(PrimarySegments, Primary);
+
     public string Book { get; init; } = string.Empty;
     public string Place { get; init; } = string.Empty;
     public string Extra { get; init; } = string.Empty;
@@ -113,12 +129,26 @@ public sealed class DetailModel {
     public string Body { get; init; } = string.Empty;
 
     /// <summary>
+    /// <see cref="Body"/> 按生词切好的分段。生词详情的用法句里会把生词加粗 ——
+    /// 中栏「标注」段加粗、右栏同一句话却不高亮,看上去就像高亮坏了,所以两边同源。
+    /// </summary>
+    public IReadOnlyList<EmphasisSegment> BodySegments { get; init; } = Array.Empty<EmphasisSegment>();
+
+    /// <summary>正文的渲染形态(界面绑这个,不再绑 <see cref="Body"/>)。</summary>
+    public InlineCollection BodyInlines => EmphasisInlines.Build(BodySegments, Body);
+
+    /// <summary>
     /// 在线释义(生词详情专用)。**拿不到就不显示** —— 所以它由 <see cref="HasDefinition"/> 单独控制,
     /// 不并进 Body:Body 是 Kindle 记下的原句(离线数据),这一段是联网查来的,来源与可得性都不同。
     /// </summary>
     public bool HasDefinition { get; init; }
     public string DefinitionLabel { get; init; } = string.Empty;
     public string Definition { get; init; } = string.Empty;
+
+    /// <summary>释义被截断了(只有百科会:实测「高要」414 字)⇒ 界面上给一个"展开全文"入口。
+    /// **由是否截断决定,不由展开状态决定** —— 展开之后那个"收起"入口还得在。</summary>
+    public bool HasDefinitionOverflow { get; init; }
+    public string DefinitionToggleLabel { get; init; } = string.Empty;
 
     public bool IsHighlight => Kind == TypeKind.Highlight;
     public bool IsNote => Kind == TypeKind.Note;
