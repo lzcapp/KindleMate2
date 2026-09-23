@@ -80,10 +80,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private readonly Dictionary<string, string> _noteHighlightMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vocab> _vocabByWordKey = new(StringComparer.Ordinal);
 
-    /// <summary>在线释义的**本次会话缓存**(词 → 释义文本;值 null 表示"查过了,是空的")。
+    /// <summary>查词去抖:选中生词后先等这么久再发请求 —— 用方向键连着切词时**一个请求都不发**。</summary>
+    private const int DefinitionDebounceMilliseconds = 300;
+
+    /// <summary>在线释义的**本次会话缓存**(词 → 查词结果;值 null 表示"查过了,是空的")。
     /// 缓存只为来回切换选中项时别反复打接口;**刻意不落库** —— 需求是"没联网就不显示",
     /// 落库会让它在离线时仍然出现,也会给将来的库同步引入一份第三方数据。</summary>
-    private readonly Dictionary<string, string?> _definitionCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, WordDefinition?> _definitionCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>在飞的那次查词。用户换选中项时要取消,免得旧结果盖到新词的详情上。</summary>
     private CancellationTokenSource? _definitionCancellation;
@@ -92,10 +95,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private Lookup? _definitionSeed;
 
     /// <summary>
-    /// 是否允许联网查释义。**自检路径(--smoke / --ops)会把它关掉**:CI 不该依赖第三方词典
+    /// **进程级**放行开关。自检路径(--smoke / --ops)会把它关掉:CI 不该依赖第三方词典
     /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
+    /// **刻意没有"用户开关"**(2026-09-23 用户拍定)。理由:触发范围本来就窄 ——
+    /// 只在**生词本**里选中一个词时才会联网(不碰生词本的用户一个字节都不发);而一个默认打开的开关
+    /// 保护力很薄(真想关的人得先知道它在哪),却要付出"为它新立一个设置菜单"的先例成本。
+    /// 行为如实写进 README 的「联网行为」章,不靠菜单兜底。
     /// </summary>
-    public static bool OnlineDefinitionEnabled { get; set; } = true;
+    public static bool OnlineDefinitionAllowed { get; set; } = true;
 
     /// <summary>左栏导航(书籍 / 生词)。</summary>
     public ObservableCollection<NavItem> NavItems { get; } = new();
@@ -467,6 +474,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         settings.Theme = dark ? "dark" : "light";
         settings.Save();
     }
+
 
     /// <summary>持久化语言选择并立即应用文化。</summary>
     public void PersistLanguage(string language) {
@@ -1919,7 +1927,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 拼生词详情。<paramref name="definition"/> 是**已经拿到的**在线释义(音标 + 释义行),
     /// 为 <c>null</c> 时只是不显示那一块 —— 发起联网查询走 <see cref="ShowVocabDetail"/>。
     /// </summary>
-    private DetailModel BuildVocabDetail(Lookup seed, string? definition = null) {
+    private DetailModel BuildVocabDetail(Lookup seed, WordDefinition? definition = null) {
         var word = seed.Word;
         var wordKey = seed.WordKey ?? string.Empty;
         string stem = string.Empty, frequency = string.Empty;
@@ -1967,10 +1975,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Subtitle = string.Join(" · ", stats),
             HasBody = true,
             Body = builder.ToString().TrimEnd(),
-            HasDefinition = definition is { Length: > 0 },
-            DefinitionLabel = Strings.Ui_Word_OnlineDefinition,
-            Definition = definition ?? string.Empty
+            HasDefinition = definition is not null,
+            DefinitionLabel = DescribeDefinitionSource(definition),
+            Definition = definition?.ToDisplayText() ?? string.Empty
         };
+    }
+
+    /// <summary>
+    /// 释义块的标题,形如「在线释义 · 百度百科」。
+    /// **必须带来源**:百科段会误命中同名条目(实测查「谢了」命中的是**同名歌曲**),
+    /// 把来源亮出来,用户一眼就能判断这条可不可信;来源取不到时才退回不带来源的说法。
+    /// </summary>
+    private static string DescribeDefinitionSource(WordDefinition? definition) {
+        if (definition is null) return string.Empty;
+        if (definition.Source.Length == 0) return Strings.Ui_Word_OnlineDefinition;
+        // 百科不是词典:标题写成「百科摘要 · 百度百科」,免得用户把它当词义读
+        var format = definition.IsEncyclopedia
+            ? Strings.Ui_Word_OnlineDefinitionEncyclopedia
+            : Strings.Ui_Word_OnlineDefinitionFrom;
+        return string.Format(CultureInfo.CurrentCulture, format, definition.Source);
     }
 
     /// <summary>
@@ -1994,7 +2017,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         Detail = BuildVocabDetail(seed, _definitionCache.TryGetValue(word, out var cachedDefinition) ? cachedDefinition : null);
 
         // 已经查过(不论有没有释义)就不再打接口,否则来回切选中项会反复发请求
-        if (OnlineDefinitionEnabled && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
+        if (OnlineDefinitionAllowed && word.Trim().Length > 0 && !_definitionCache.ContainsKey(word)) {
             StartDefinitionLookup(word);
         }
     }
@@ -2013,24 +2036,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 与「检查更新」同一条口径。
     /// </summary>
     private async Task LoadDefinitionAsync(string word, CancellationToken cancellationToken) {
-        string? text;
+        WordDefinition? definition;
         try {
-            var definition = await WordDefinitionService.LookupAsync(word, cancellationToken: cancellationToken)
+            // 去抖:手快时(方向键连着切词)先等一下,期间被取消就一个请求都不发
+            await Task.Delay(DefinitionDebounceMilliseconds, cancellationToken).ConfigureAwait(true);
+            definition = await WordDefinitionService.LookupAsync(word, cancellationToken: cancellationToken)
                 .ConfigureAwait(true);
-            text = definition?.ToDisplayText();
         } catch (OperationCanceledException) {
             return;   // 选中项换过了 —— 不是"没有释义",什么都不记
         }
 
         if (cancellationToken.IsCancellationRequested) return;
-        _definitionCache[word] = text;
+        _definitionCache[word] = definition;
 
         // 结果回来时用户可能已经切到别的词了 ⇒ 丢掉,否则旧词的释义会盖在新词的详情上
         if (_definitionSeed is not { } seed || !string.Equals(seed.Word, word, StringComparison.OrdinalIgnoreCase)) return;
-        if (text is null) return;   // ★ 没有释义 / 没联网 ⇒ 不显示
+        if (definition is null) return;   // ★ 没有释义 / 没联网 ⇒ 不显示
 
         // 重新走一遍拼装(而不是"复制旧模型再改字段"):字段只在一处组装,将来加字段不会漏
-        Detail = BuildVocabDetail(seed, text);
+        Detail = BuildVocabDetail(seed, definition);
     }
 
     /// <summary>复制当前详情为纯文本(右键「复制」/ 动作按钮用)。</summary>

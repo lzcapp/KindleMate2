@@ -91,6 +91,23 @@ and the headless self-checks.
 - [x] Search Function (book / author / content / note)
 - [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync supports USB mass storage + MTP on all three)
 
+## Network access
+
+There are **only two things that need the network**, and neither sends your books, your highlights, or any local data:
+
+| Action | When | What is sent | How to turn it off |
+|---|---|---|---|
+| Update check | **Silently once at startup**, or manually via Help → Check for Updates | One HTTPS request to GitHub Releases; only public release metadata is read | No switch |
+| Online definitions | When you select a word in the **vocabulary list** (right-hand detail panel) | **The word itself**, to Youdao Dictionary's public endpoint | No switch (it only happens when you browse the vocabulary list and select a word) |
+
+When either one fails, **nothing is shown** in the UI (no error dialog, no error message). Definitions are cached
+for the current session only and are **never written to the database**.
+
+Everything else works fully offline: your data is a local SQLite file (`KM2.dat`) and device access goes over USB.
+
+Neither of the two can be turned off. If you need a **fully offline** build, compile it yourself with those two calls
+removed — the project is open source (MIT).
+
 ## Screenshots
 
 <img src="docs/screenshots/01.png" width="100%">
