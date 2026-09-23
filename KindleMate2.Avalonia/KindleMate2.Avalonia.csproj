@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <RootNamespace>KindleMate2.Avalonia</RootNamespace>
-    <AssemblyName>KindleMate2.Avalonia</AssemblyName>
+    <AssemblyName>KindleMate2</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <Product>Kindle Mate 2</Product>

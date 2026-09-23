@@ -59,12 +59,12 @@ dotnet build KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Debu
 
 ```bash
 # 只读链路：列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言
-KindleMate2.Avalonia(.exe) --smoke <db> [out.txt]
+KindleMate2(.exe) --smoke <db> [out.txt]
 
 # 写操作端到端：导入 → 导出 → 备份 → 重命名 → 编辑标注 → 删除 → 清理 → 重建
 #              → 清空 → 空库重导 → 删整本/删整词 → 回收站(删除→可见→恢复→回主表)
 #              → 重复 key 导入 → 批量插入降级 → 日志出口
-KindleMate2.Avalonia(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧格式库样本]
+KindleMate2(.exe) --ops <db> <clippings.txt> <vocab.db> <out.txt> [旧格式库样本]
 ```
 
 `--ops` **全程在临时副本上执行**，不会改动传入的库。测试夹具见

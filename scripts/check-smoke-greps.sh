@@ -6,7 +6,7 @@
 #   scripts/check-smoke-greps.sh <smoke 报告路径> [--build-yml <路径>]
 #
 # 先造一份报告(库用空文件即可,自检会自己造临时库):
-#   dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.Avalonia.dll \
+#   dotnet KindleMate2.Avalonia/bin/Release/net10.0/KindleMate2.dll \
 #       --smoke /tmp/empty.dat /tmp/smoke.txt
 #   scripts/check-smoke-greps.sh /tmp/smoke.txt
 #

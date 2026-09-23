@@ -44,7 +44,7 @@ public static class FileLogSink {
     /// 平台的应用数据目录。
     ///
     /// 不这么做的后果是日志**静默丢失** —— 而"没有日志"恰好是最难排查的那类故障:只要进程的
-    /// 当前目录不可写(例如直接以 <c>dotnet KindleMate2.Avalonia.dll</c> 启动、或从只读目录启动),
+    /// 当前目录不可写(例如直接以 <c>dotnet KindleMate2.dll</c> 启动、或从只读目录启动),
     /// 写入就会每次抛异常并被 catch 掉,用户与开发者都看不到任何痕迹。
     /// </summary>
     private static string ResolveWritablePath() {

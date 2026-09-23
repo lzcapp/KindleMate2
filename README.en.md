@@ -28,14 +28,14 @@ The runtime-dependent builds require the platform's [.NET 10 runtime](https://do
 
 Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
 
-- **Windows**: unzip the `.zip` and run `KindleMate2.Avalonia.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit); the library lives next to the program (same as older versions)
+- **Windows**: unzip the `.zip` and run `KindleMate2.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit); the library lives next to the program (same as older versions)
 - **Linux**: extract, then run `./kindlemate2` — the launcher switches to the data directory for you, no manual `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2
   ~/KindleMate2/kindlemate2
   ```
   The library lives in `~/.local/share/KindleMate2/` (XDG; override with the `KINDLEMATE2_HOME` environment variable).
-  The archives preserve the executable bit; if a GUI extractor drops it, run `chmod +x kindlemate2 KindleMate2.Avalonia`.
+  The archives preserve the executable bit; if a GUI extractor drops it, run `chmod +x kindlemate2 KindleMate2`.
   > **Upgrading from an older tar.gz**: your library is still in the old extracted folder — move it once:
   > `mkdir -p ~/.local/share/KindleMate2 && cp <old-dir>/KM2.dat ~/.local/share/KindleMate2/`
 - **macOS**: open the `.dmg` and drag `KindleMate2.app` into Applications. The build is **not notarized**
@@ -44,6 +44,25 @@ Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .N
   xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
   ```
   The library lives in `~/Library/Application Support/KindleMate2/`.
+
+### Upgrading from an older version
+
+The library (`KM2.dat`) lives next to the program, so **extracting the new build over your existing folder is all it takes** —
+clippings and vocabulary carry over, with nothing to import or reconfigure.
+
+- **From the Windows Forms build (≤ `2026.09.07`)**: extract the new archive over the old folder — you still double-click
+  `KindleMate2.exe`, whose name is unchanged. Prefer the `_runtime` (self-contained) build: the old shell depended on the
+  .NET 8 runtime, while builds without that suffix now require .NET 10. Files that share a name with the new build are
+  overwritten; other leftovers from the old shell (e.g. `DarkModeForms.dll`, `ReaLTaiizor.dll`) are harmless but can be
+  deleted. If you installed a build between `2026.09.13` and `2026.09.23`, its executable was named
+  `KindleMate2.Avalonia.exe` — delete the leftover `KindleMate2.Avalonia.exe` and `KindleMate2.Avalonia.dll`.
+- **From an older Linux tar.gz**: your library is still in the old extracted folder — move it once (see the Linux section above).
+- **Moving the program to a new folder**: the first run there creates an empty library. Copy your old `KM2.dat` into the new
+  folder, or use Manage → Import Kindle Mate 2 Database to merge the old library in.
+
+> Theme and language do **not** travel with the library: the old shell stored both inside the database, while the new build
+> keeps them in the platform's application-data directory (on Windows: `%APPDATA%\KindleMate2\settings.json`).
+> You will need to pick them once more.
 
 ## Building
 
