@@ -639,7 +639,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 注意:成功与否**靠返回串是否为空判定**,不是靠 bool —— 这是原版的既定契约,不要"改进"。
     /// </summary>
     private async Task<OperationResult> RunOperationAsync(Func<string> operation, bool reload,
-        string successTitle, string failureTitle, bool silentOnSuccess = false) {
+        string successTitle, string failureTitle, bool silentOnSuccess = false, int restoreRowIndex = -1) {
         if (_session == null) {
             return new OperationResult(false, failureTitle, failureTitle);
         }
@@ -648,6 +648,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         var previous = _selectedNav is { IsAll: false } nav ? nav.Key : null;
         IsBusy = true;
         Progress = OperationProgress.At(OperationStage.None);
+        // 只有**行级删除**才带索引(见 DeleteSelectedAsync);左栏删整本书/整个词不带 ——
+        // 那时列表内容本来就整体换掉了,还原索引没有意义。
+        // 置位要覆盖**整个操作期间**,而不是只给某一次重建:重载后 RebuildNav 与 RestoreSelection
+        // 会各触发一次 ApplyFilter,两次重建都得按同一个索引选行,否则第二次又退回第一条。
+        _pendingRestoreRowIndex = restoreRowIndex;
         try {
             var result = await Task.Run(operation);
             if (reload) {
@@ -666,6 +671,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return new OperationResult(false, failureTitle,
                 $"{failureTitle}{Environment.NewLine}{ex.InnerException?.Message ?? ex.Message}");
         } finally {
+            // 一次性:只在本次操作内有效,别让一次删除把行位置"粘"到之后每一次重建上
+            // (否则用户之后改搜索词、切排序,列表都会莫名其妙停在当初那个索引)。
+            _pendingRestoreRowIndex = -1;
             Progress = OperationProgress.At(OperationStage.None);
             IsBusy = false;
             NotifyCounts();
@@ -1156,16 +1164,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
+        // 删掉的只是**一行**,删完人还在这附近接着看 ⇒ 把这一行此刻的**位置**一并传下去,
+        // 让重载之后的选中落回原处。不带的话,重建会把选中冲成第一条
+        // (连带把视口拉回顶部、右栏详情也跳回第一条),连续清理时每删一条都要重新滚下去找位置。
+        // 索引取不到(-1)时就是不还原,行为与从前一致。
+        var rowIndex = _selectedItem is { } selected ? Items.IndexOf(selected) : -1;
         if (_selectedItem?.Clipping is { } clip) {
             var key = clip.Key;
             return RunOperationAsync(() => session.ClippingService.DeleteClipping(key) ? "-" : string.Empty,
-                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
+                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true, restoreRowIndex: rowIndex);
         }
         if (_selectedItem?.Lookup is { } lookup) {
             var wordKey = lookup.WordKey ?? string.Empty;
             var timestamp = lookup.Timestamp ?? string.Empty;
             return RunOperationAsync(() => session.LookupRepository.Delete(wordKey, timestamp) ? "-" : string.Empty,
-                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
+                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true, restoreRowIndex: rowIndex);
         }
         return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
     }
@@ -1674,6 +1687,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         OnPropertyChanged(nameof(NavSectionCount));
     }
 
+    /// <summary>
+    /// 一次性「重建后把选中行还原到这个索引」的请求,由 <see cref="RunOperationAsync"/> 在
+    /// **行级删除**期间置位、并在操作结束时清掉;别的路径一律是 -1(不还原)。
+    ///
+    /// 为什么需要它:删除 → 重载 → 重建列表,重建的最后一步是"选中第一条"。
+    /// 于是删掉第 200 条之后,列表跳回顶部、右栏详情也跳回第一条 ——
+    /// 而用户此时多半正一条条往下处理,丢位置比删错更烦人。
+    /// 注意 Avalonia 的 <c>ListBox.AutoScrollToSelectedItem</c> 默认是开的:
+    /// 一旦把选中项改回去,视口会自动跟过去,所以这里只要把"选中谁"定对就够,不用去碰滚动条。
+    /// </summary>
+    private int _pendingRestoreRowIndex = -1;
+
+    /// <summary>重建后该选中哪一行 —— 有还原请求就按索引挑,没有(返回 null)则调用方退回第一条。</summary>
+    private ListItem? PickRowAfterRebuild() => PickRowByIndex(Items, _pendingRestoreRowIndex);
+
+    /// <summary>
+    /// 按索引挑要选中的行:越界取最后一条;分组标题行跳过(它不是记录,选中它右栏只会空着)。
+    ///
+    /// 之所以先往后找再往前兜底:原来那条已经被删掉了,同一个位置上现在坐着它的"下一条",
+    /// 这才是用户眼里"位置没动";只有删的是最后一条时,才退而选上一条。
+    /// 抽成静态纯函数是为了自检够得着(<c>--smoke</c> 的 word/clip 两个探针)。
+    /// </summary>
+    public static ListItem? PickRowByIndex(IReadOnlyList<ListItem> rows, int index) {
+        if (index < 0 || rows.Count == 0) return null;
+        var start = Math.Min(index, rows.Count - 1);
+        for (var i = start; i < rows.Count; i++) {
+            if (!rows[i].IsSectionHeader) return rows[i];
+        }
+        for (var i = start - 1; i >= 0; i--) {
+            if (!rows[i].IsSectionHeader) return rows[i];
+        }
+        return null;
+    }
+
     private void RebuildClippings() {
         IEnumerable<Clipping> query = _allClippings;
         if (_selectedNav is { IsAll: false } nav) {
@@ -1697,7 +1744,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
         Items.ReplaceAll(items);
         ClipTable.ReplaceAll(ordered);
-        SelectedItem = Items.FirstOrDefault();
+        // 有一次性还原请求(行级删除)就落回原处,否则仍是第一条(切节点/改搜索/改排序等)。
+        SelectedItem = PickRowAfterRebuild() ?? Items.FirstOrDefault();
         SelectedClipTable = ClipTable.FirstOrDefault();
         if (SelectedItem == null) ClearDetail();
     }
@@ -1732,7 +1780,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         Items.ReplaceAll(BuildWordDomainItems(ordered, containing, selectedWord, keyword.Length > 0));
         LookupTable.ReplaceAll(ordered);
         // 标题行不是记录 ⇒ 自动选中要跳过它,否则一进生词域右栏就是个空面板。
-        SelectedItem = Items.FirstOrDefault(i => !i.IsSectionHeader);
+        // 同 RebuildClippings:行级删除带了还原请求时落回原处(挑行时同样跳过标题行)。
+        SelectedItem = PickRowAfterRebuild() ?? Items.FirstOrDefault(i => !i.IsSectionHeader);
         SelectedLookupTable = LookupTable.FirstOrDefault();
         if (SelectedItem == null) ClearDetail();
     }

@@ -92,6 +92,15 @@ jobs:
           grep -q 'Click="OnShareSelectedClipping"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q 'IsVisible="{Binding CanShareSelectedClipping}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q "context menu:.*result=OK" "$out"
+          # 删除一行后列表不跳回顶部 —— 探针只钉得住"挑行判据"这条纯逻辑
+          grep -q "row restore:.*result=OK" "$out"
+          # 源码断言:上面那条判据要真被用上,靠的是两处接线,而这两处都是
+          # "删掉不报错、单测也不红"的胶水(单测工程不引 Avalonia,够不着 VM)。
+          # ① 行级删除把"原来那一行的位置"传下去(不传 ⇒ 功能静默失效);
+          grep -q 'restoreRowIndex: rowIndex' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          # ② 两处列表重建(标注 / 生词)都要走挑行函数(退回无脑 FirstOrDefault 同样静默失效)。
+          #    数量写死 2:将来若真多出第三处重建,这里该红一次,人工确认后再改这个数。
+          test "$(grep -c 'PickRowAfterRebuild() ??' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 2
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"

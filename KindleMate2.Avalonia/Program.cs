@@ -137,6 +137,8 @@ internal static class Program {
             ProbeShareCard(report);
             // 列表行 / 详情面板右键菜单的可用性判定
             ProbeContextMenuAvailability(report);
+            // 删除一行之后,列表不该跳回顶部(挑行规则)
+            ProbeRowRestore(report);
 
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
@@ -775,6 +777,57 @@ internal static class Program {
                           $" 通知={notified.Count}(期望 ≥9)" +
                           $" -> result={(ok ? "OK" : "失败!右键菜单可用性判定不符合预期")}");
     }
+
+    /// <summary>
+    /// 删除**一行**之后,列表不该跳回顶部 —— 钉住"重建后落回原处"的挑行规则。
+    ///
+    /// 从前删除走统一写操作壳:重载 → RebuildNav → ApplyFilter → 重建列表,
+    /// 而重建的最后一步是"选中第一条"。于是删掉第 200 条会被扔回第 1 条
+    /// (Avalonia 的 <c>ListBox.AutoScrollToSelectedItem</c> 默认打开,选中项一变视口就跟着走),
+    /// 右栏详情也一并跳回第一条;连续清理时每删一条都要重新滚下去找位置。
+    ///
+    /// 这里只钉**纯判据**(<see cref="MainWindowViewModel.PickRowByIndex"/>);
+    /// 接线 —— 删除时把索引传下去、重建时读回来 —— 由 build.yml 的源码断言兜住。
+    /// 理由同别的视图层探针:单测工程不引 Avalonia,够不着 VM。
+    /// </summary>
+    private static void ProbeRowRestore(System.Text.StringBuilder report) {
+        var rows = new List<KindleMate2.Avalonia.Models.ListItem> {
+            ProbeRow("r0"), ProbeRow("r1"), ProbeRow("r2"), ProbeRow("r3")
+        };
+        // 生词域的形状:标题行夹在记录之间(标题行不是记录,挑中它右栏只会空着)
+        var sectioned = new List<KindleMate2.Avalonia.Models.ListItem> {
+            ProbeHeader("h0"), ProbeRow("w1"), ProbeHeader("h2"), ProbeRow("w3")
+        };
+        var empty = new List<KindleMate2.Avalonia.Models.ListItem>();
+
+        var inPlace = MainWindowViewModel.PickRowByIndex(rows, 2)?.Key;      // 原位:同一格里现在坐着谁
+        var lastGone = MainWindowViewModel.PickRowByIndex(rows, 4)?.Key;     // 删的是最后一条 ⇒ 退回上一条
+        var farBeyond = MainWindowViewModel.PickRowByIndex(rows, 99)?.Key;
+        var noRequest = MainWindowViewModel.PickRowByIndex(rows, -1);        // 没带请求 ⇒ 不还原
+        var emptyRows = MainWindowViewModel.PickRowByIndex(empty, 0);
+        var landsOnHeader = MainWindowViewModel.PickRowByIndex(sectioned, 2)?.Key;
+        var onlyHeaders = MainWindowViewModel.PickRowByIndex(
+            new List<KindleMate2.Avalonia.Models.ListItem> { ProbeHeader("h0") }, 0);
+
+        var ok = inPlace == "r2" && lastGone == "r3" && farBeyond == "r3"
+                 && noRequest is null && emptyRows is null
+                 && landsOnHeader == "w3" && onlyHeaders is null;
+
+        report.AppendLine($"row restore: 原位={inPlace}(期望 r2)" +
+                          $" 删末条={lastGone}(期望 r3) 远超界={farBeyond}(期望 r3)" +
+                          $" 无请求={noRequest is null}(期望 True) 空表={emptyRows is null}(期望 True)" +
+                          $" 落点是标题行={landsOnHeader}(期望 w3)" +
+                          $" 全是标题行={onlyHeaders is null}(期望 True)" +
+                          $" -> result={(ok ? "OK" : "失败!挑行规则不符合预期")}");
+    }
+
+    /// <summary>普通记录行(SectionTitle 为空即非标题行 —— IsSectionHeader 是它派生出来的)。</summary>
+    private static KindleMate2.Avalonia.Models.ListItem ProbeRow(string key) =>
+        new() { Key = key };
+
+    /// <summary>分组标题行:只设 SectionTitle,不挂 Clipping / Lookup。</summary>
+    private static KindleMate2.Avalonia.Models.ListItem ProbeHeader(string title) =>
+        new() { Key = title, SectionTitle = title };
 
     /// <summary>
     /// 写操作端到端自检:把真实库复制到临时目录后,在该副本上依次执行
