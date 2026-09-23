@@ -314,7 +314,10 @@
                              IsVisible="{Binding IsSectionHeader}" FontWeight="SemiBold" Margin="0,10,0,2" />
                   <Border Grid.Row="1" Grid.Column="0" Classes="kbar" Width="3" CornerRadius="2" />
                   <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
-                    <TextBlock Text="{Binding Primary}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                    <!-- 绑 Inlines 而不是 Text:生词域里要把正文中命中的生词**加粗**,
+                         而 Text 是纯字符串,加粗不了其中一部分(见 EmphasisInlines)。
+                         内容始终由 PrimaryInlines 给全,不会因为没做高亮就变空白。 -->
+                    <TextBlock Inlines="{Binding PrimaryInlines}" FontSize="13" TextTrimming="CharacterEllipsis" />
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                       <!-- 书名占 * 列并**由它负责省略**。刻意不套横向 StackPanel:
                            横向 StackPanel 按**无限宽**测量子元素,TextTrimming 永不触发,
@@ -475,7 +478,7 @@
                                      ContextFlyout="{x:Null}" />
               </StackPanel>
 
-              <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Text="{Binding Detail.Body}"
+              <SelectableTextBlock IsVisible="{Binding Detail.HasBody}" Inlines="{Binding Detail.BodyInlines}"
                                    TextWrapping="Wrap" FontSize="14" LineHeight="25"
                                    ContextFlyout="{x:Null}" />
             </StackPanel>
