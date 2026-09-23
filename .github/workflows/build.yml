@@ -206,6 +206,11 @@ jobs:
           # 编译期绑定不保证这一行还在(删掉 IsVisible 不报错,释义块会在没有释义时也占一块空白),
           # 所以与状态栏那条同理,在源码上钉一句。
           grep -Eq 'IsVisible="\{Binding +Detail.HasDefinition\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 启动自动查更新的接线:编译期绑定管不到"方法有没有被调用",删掉那一行不报错,
+          # 只是用户再也收不到自动提示 —— 而他并不知道自己"应该"收到。故在源码上钉一句。
+          # 断言专门找 CheckForUpdatesQuietlyAsync 这个**独立名字**:若图省事复用菜单的
+          # CheckForUpdatesAsync,菜单那处调用会让这条断言恒真(项目踩过"空断言")。
+          grep -q 'CheckForUpdatesQuietlyAsync();' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"
