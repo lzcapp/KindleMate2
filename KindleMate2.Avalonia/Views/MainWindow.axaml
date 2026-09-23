@@ -284,6 +284,22 @@
           <ListBox IsVisible="{Binding ShowList}" ItemsSource="{Binding Items}"
                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                    DoubleTapped="OnEditClipping">
+            <!-- 分组标题行(生词域的「N 条查询」/「N 条标注」)**不能被选中** ——
+                 它不是一条记录,没有可删/可编辑/可复制的对象,选中它只会把右栏清空。
+                 VM 侧只保证「不算可操作」(HasSelectedItem)与「程序自动选中时跳过它」,
+                 这两条都管不住鼠标:标题行照样能被点出高亮,看着就像选中了一条数据。
+                 这里把它的 ListBoxItem 置为**不可用**:禁用容器不吃点击、也不给悬停高亮,
+                 键盘上下切换同样会跳过它 —— 正是小标题该有的样子。
+                 禁用会不会把标题弄灰?不会。Fluent 的 ListBoxItem ControlTheme 在 :disabled 下
+                 只下发一个 Foreground(落在 PART_ContentPresenter 上),而标题文字自带 .ts 的
+                 Foreground(样式值优先于继承值),外观一字不变 ⇒ 不必再压任何东西回去。
+                 注意 x:DataType 不能省:控件内联 <Style> 不继承外层 DataTemplate 的 x:DataType,
+                 缺了它这条绑定就解析不到 ListItem.IsSectionHeader(编译期直接报 AVLN2000)。 -->
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem" x:DataType="models:ListItem">
+                <Setter Property="IsEnabled" Value="{Binding !IsSectionHeader}" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="{x:Static shared:Strings.Refresh}" Click="OnRefreshCurrent" />
