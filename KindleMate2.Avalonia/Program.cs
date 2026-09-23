@@ -338,6 +338,73 @@ internal static class Program {
                                           $" 生词表 表格选中={wordTarget} 删完剩=[{string.Join(",", wordsLeft)}](期望 3 条且不含它)" +
                                           $" -> result={(tableOk ? "OK" : "失败!表格里选中哪一行,动作就该作用在那一行")}");
                     }
+
+                    // —— 重命名生词撞名:**静默并入**,而且数据要真改对 ——
+                    //
+                    // 2026-09-23 用户实测:撞名时被弹框「已存在同名生词,请先处理那一个再改名」拦下,
+                    // 他要求静默解决(可以合并或删除)。改成并入后,这里做**端到端**核对:
+                    // 真库、真改名、真回查 —— 只比 VM 属性证明不了"lookups 真被搬走、重号行真被丢掉"。
+                    // (顺带把"MergeWordKey 那条 SQL 没有覆盖"的缺口补上。)
+                    {
+                        var t = startupVm.Session!;
+                        // A 的键下 t1/t2,B 的键下 t2/t3 —— t2 重号(同一个词、同一时间、同一本书),
+                        // 并入时该被丢掉;t1 该搬到 B 下;B 自己的 t2/t3 不动。
+                        t.VocabService.AddVocab(new KindleMate2.Domain.Entities.KM2DB.Vocab {
+                            Id = "en:wmA", WordKey = "en:wmA", Word = "wmA"
+                        });
+                        t.VocabService.AddVocab(new KindleMate2.Domain.Entities.KM2DB.Vocab {
+                            Id = "en:wmB", WordKey = "en:wmB", Word = "wmB"
+                        });
+                        // 再放一个**没有 word_key** 的词条:它只有显示名可改,键应保持为空
+                        t.VocabService.AddVocab(new KindleMate2.Domain.Entities.KM2DB.Vocab {
+                            Id = "nokey", WordKey = null, Word = "wmC"
+                        });
+                        foreach (var (key, ts) in new[] {
+                                     ("en:wmA", "2020-01-01"), ("en:wmA", "2020-01-02"),
+                                     ("en:wmB", "2020-01-02"), ("en:wmB", "2020-01-03")
+                                 }) {
+                            t.LookupService.AddLookup(new KindleMate2.Domain.Entities.KM2DB.Lookup {
+                                WordKey = key, Usage = ts, Title = "书", Timestamp = ts
+                            });
+                        }
+
+                        startupVm.DomainIndex = 1;
+                        startupVm.ReloadAsync().GetAwaiter().GetResult();
+                        // 左栏节点数用**差值**断言,不写死 —— 前面几个探针也往库里塞过词
+                        var wordNodesBefore = startupVm.NavItems.Count(n => !n.IsAll);
+
+                        // ① wmA → wmB(撞名)
+                        var merged = startupVm.RenameWordAsync("wmA", "wmB").GetAwaiter().GetResult();
+                        var keysAfter = t.LookupService.GetAllLookups()
+                            .Where(l => (l.WordKey ?? string.Empty).StartsWith("en:wm", StringComparison.Ordinal))
+                            .Select(l => l.Timestamp ?? string.Empty)
+                            .OrderBy(s => s)
+                            .ToList();
+                        var staleRows = t.LookupService.GetAllLookups().Count(l => l.WordKey == "en:wmA");
+                        var aVocab = t.VocabService.GetAllVocabs().FirstOrDefault(v => v.Id == "en:wmA");
+                        var bVocab = t.VocabService.GetAllVocabs().FirstOrDefault(v => v.Id == "en:wmB");
+                        var wordNodesAfter = startupVm.NavItems.Count(n => !n.IsAll);
+
+                        // ② wmC → wmD(空位,不该并入;无键词条的键保持为空)
+                        var plain = startupVm.RenameWordAsync("wmC", "wmD").GetAwaiter().GetResult();
+                        var cVocab = t.VocabService.GetAllVocabs().FirstOrDefault(v => v.Id == "nokey");
+
+                        var mergeOk = merged.Ok && merged.Message == Strings.Word_Merged
+                                      && keysAfter.SequenceEqual(new[] { "2020-01-01", "2020-01-02", "2020-01-03" })
+                                      && staleRows == 0
+                                      && aVocab is { Word: "wmB", WordKey: "en:wmB" }
+                                      && bVocab is not null
+                                      && wordNodesAfter == wordNodesBefore - 1        // wmA 那个节点消失了
+                                      && plain.Ok && plain.Message == Strings.Word_Renamed
+                                      && cVocab is { Word: "wmD", WordKey: null };
+                        report.AppendLine($"word merge: 并入后 lookups=[{string.Join("/", keysAfter)}](期望 01-01/02/03)" +
+                                          $" 旧键残留={staleRows}(期望 0)" +
+                                          $" A 词条=[{aVocab?.Word}/{aVocab?.WordKey}](期望 wmB/en:wmB)" +
+                                          $" 左栏节点 {wordNodesBefore}→{wordNodesAfter}(期望少 1)" +
+                                          $" 文案并入={merged.Message == Strings.Word_Merged}(期望 True)" +
+                                          $" 改空位={plain.Message == Strings.Word_Renamed}/无键词条=[{cVocab?.Word}/{cVocab?.WordKey ?? "<null>"}](期望 wmD/null)" +
+                                          $" -> result={(mergeOk ? "OK" : "失败!撞名该静默并入,且数据要真改对")}");
+                    }
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
                 }

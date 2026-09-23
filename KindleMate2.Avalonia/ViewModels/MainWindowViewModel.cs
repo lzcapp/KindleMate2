@@ -1365,15 +1365,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>
     /// 重命名一个生词(会覆盖该词的**全部**查询行与词条行)。成功标题 Successful、
-    /// 正文 <c>Word_Renamed</c>;失败 <c>Word_Renamed_Failed</c>。
+    /// 正文 <c>Word_Renamed</c>(撞名并入时是 <c>Word_Merged</c>);失败 <c>Word_Renamed_Failed</c>。
+    ///
+    /// **新名字已被别的生词占用时不拒绝,而是并入那一个**(用户 2026-09-23 明确要求静默解决)。
+    /// 并入时 <c>lookups</c> 里与目标键重号的行会被丢掉 —— 那些行跟目标下同 timestamp 的行
+    /// 本就是同一次阅读事件,见 <c>ILookupRepository.MergeWordKey</c>。
     ///
     /// 执行**顺序**有讲究:
     /// <list type="number">
-    /// <item>先改 <c>lookups</c> —— 它可能因 (word_key,timestamp) 撞上唯一约束而整体失败;
-    ///   放在最前面,失败时一行都还没动过,不会留下"词条改名了、查询还挂在旧键上"的半截状态。</item>
+    /// <item>先改 <c>lookups</c> —— 它要动 (word_key,timestamp) 唯一约束(并入时得先删重号行);
+    ///   放在最前面,出事时一行都还没动过,不会留下"词条改名了、查询还挂在旧键上"的半截状态。</item>
     /// <item>再改 <c>vocab</c>。**<c>id</c> 一律不动** —— 它是导入去重键
     ///   (<c>KM2DatabaseService</c> 按 <c>Id</c> 判重),改掉的话下次从设备导入
-    ///   会把旧词原样加回来,改名等于白做。</item>
+    ///   会把旧词原样加回来,改名等于白做。并入时被并的词条行**保留**、只改指向:
+    ///   <c>vocab.word_key</c> 没有唯一约束,而按 word_key 建的字典是"后者覆盖"——
+    ///   两行同键不会出错,也不丢 <c>stem</c>/<c>translation</c>。</item>
     /// </list>
     ///
     /// 左栏菜单传 <see cref="CurrentWord"/>;详情面板传 <see cref="SelectedItemWord"/> ——
@@ -1391,23 +1397,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             ? newWord
             : null;
 
+        // 撞名时**静默并入**那一个(用户 2026-09-23 要求:不要弹「已存在同名生词,请先处理那一个」把操作拦下)。
+        // 判定必须在操作**之前**、用当前缓存 —— 操作里两个词会被并成一个,那之后就判不出来了。
+        var merging = IsWordNameTaken(newWord, exceptWord: oldWord);
+
         var result = await RunOperationAsync(() => {
             var vocabs = session.VocabService.GetAllVocabs()
                 .Where(v => string.Equals(v.Word, oldWord, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             if (vocabs.Count == 0) return string.Empty;
 
-            // ① 查询行先改。键冲突(-1)⇒ 整件事作废,此时一行都还没改过。
+            // ① 查询行先并。与目标键重号的行会被丢掉 —— 它们跟目标那一条本就是同一次阅读事件
+            //    (见 MergeWordKey)。放最前面是因为它要动唯一约束:出事时一行都还没改过。
             var oldKeys = vocabs
                 .Select(v => v.WordKey)
                 .Where(k => !string.IsNullOrEmpty(k))
                 .Select(k => k!)
                 .Distinct(StringComparer.Ordinal);
             foreach (var oldKey in oldKeys) {
-                var newKey = WordRenameRules.BuildWordKey(oldKey, newWord);
-                if (session.LookupService.RenameWordKey(oldKey, newKey) < 0) {
-                    return string.Empty;
-                }
+                session.LookupService.MergeWordKey(oldKey, WordRenameRules.BuildWordKey(oldKey, newWord));
             }
 
             // ② 再改词条。word_key 有值就连键一起改(前缀照旧),没有就只改显示名。
@@ -1418,7 +1426,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 vocab.Word = newWord;
                 session.VocabService.UpdateVocab(vocab);
             }
-            return Strings.Word_Renamed;
+            // 撞名时文案要说清"并进去了",否则用户发现少了一个词会以为出了错。
+            return merging ? Strings.Word_Merged : Strings.Word_Renamed;
         }, true, Strings.Successful, Strings.Word_Renamed_Failed);
 
         // 改名之后**旧节点名已经不存在了** ⇒ 统一写操作壳那套"按操作前的节点名还原"必然落空,

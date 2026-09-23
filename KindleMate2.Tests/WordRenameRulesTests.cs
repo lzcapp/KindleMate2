@@ -186,21 +186,24 @@ public sealed class WordRenameRulesTests {
             WordRenameRules.Decide("beautiful", "beautifully", nameTakenByOtherWord: false));
     }
 
-    /// <summary>⑤ 撞上别的生词 → 本版**拒绝**(不合并,见 <see cref="WordRenameAction.NameTaken"/>)。</summary>
+    /// <summary>
+    /// ⑤ 撞上别的生词 → **并入那一个**(不拦、不弹框)。
+    /// 2026-09-23 改:原来这里返回"拒绝",用户实际遇到后要求静默解决(可合并或删除)。
+    /// </summary>
     [Fact]
-    public void RenamedOntoAnotherWord_IsRefused() {
-        Assert.Equal(WordRenameAction.NameTaken,
+    public void RenamedOntoAnotherWord_MergesIntoIt() {
+        Assert.Equal(WordRenameAction.MergeIntoExisting,
             WordRenameRules.Decide("beautiful", "careful", nameTakenByOtherWord: true));
     }
 
-    /// <summary>⑥ 端到端串起来(数据 → 判定):改成已有生词必须落 NameTaken,改到空位必须落 Rename。</summary>
+    /// <summary>⑥ 端到端串起来(数据 → 判定):改成已有生词落 MergeIntoExisting,改到空位落 Rename。</summary>
     [Fact]
     public void EndToEnd_DataPlusDecide() {
         const string word = "beautiful";
         var ontoExisting = WordRenameRules.IsNameTakenByOther(Words, "careful", exceptWord: word);
         var ontoFree = WordRenameRules.IsNameTakenByOther(Words, "beautifully", exceptWord: word);
 
-        Assert.Equal(WordRenameAction.NameTaken, WordRenameRules.Decide(word, "careful", ontoExisting));
+        Assert.Equal(WordRenameAction.MergeIntoExisting, WordRenameRules.Decide(word, "careful", ontoExisting));
         Assert.Equal(WordRenameAction.Rename, WordRenameRules.Decide(word, "beautifully", ontoFree));
     }
 }

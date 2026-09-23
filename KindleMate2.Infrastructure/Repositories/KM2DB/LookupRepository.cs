@@ -269,7 +269,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
-        public int RenameWordKey(string oldWordKey, string newWordKey) {
+        public int MergeWordKey(string oldWordKey, string newWordKey) {
             if (string.IsNullOrWhiteSpace(oldWordKey)) {
                 throw new ArgumentException("旧 word_key 不能为空", nameof(oldWordKey));
             }
@@ -282,24 +282,31 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
+            using var transaction = connection.BeginTransaction();
 
-            // 先查会不会撞唯一约束 (word_key, timestamp)。
-            // 判据:新键下已存在某行,而旧键下也有**同一 timestamp** 的行 ⇒ 搬过去必然冲突。
-            // timestamp 为 NULL 的行不算冲突 —— 这与 SQLite 对 UNIQUE 中 NULL 的语义一致(彼此不相等)。
-            var conflictCmd = new SqliteCommand(
-                "SELECT COUNT(*) FROM lookups n WHERE n.word_key = @new_key " +
-                "AND EXISTS (SELECT 1 FROM lookups o WHERE o.word_key = @old_key AND o.timestamp = n.timestamp)",
-                connection);
-            conflictCmd.Parameters.AddWithValue("@old_key", oldWordKey);
-            conflictCmd.Parameters.AddWithValue("@new_key", newWordKey);
-            if (Convert.ToInt32(conflictCmd.ExecuteScalar()) > 0) {
-                return -1;
-            }
+            // ① 先删"会撞唯一约束 (word_key, timestamp)"的那批:它们与目标键下同 timestamp 的行
+            //    本就是一回事(同一个词、同一次阅读),搬过去只会撞上。
+            //    这一步必须在 UPDATE 之前 —— 否则 UPDATE 会因约束失败而整条回滚,一条都搬不过去。
+            //    timestamp 为 NULL 的行不算冲突(与 SQLite 对 UNIQUE 中 NULL 的语义一致:彼此不相等),
+            //    所以它们不会被删,也不会让 UPDATE 失败。
+            var dropCmd = new SqliteCommand(
+                "DELETE FROM lookups WHERE word_key = @old_key " +
+                "AND EXISTS (SELECT 1 FROM lookups b WHERE b.word_key = @new_key AND b.timestamp = lookups.timestamp)",
+                connection, transaction);
+            dropCmd.Parameters.AddWithValue("@old_key", oldWordKey);
+            dropCmd.Parameters.AddWithValue("@new_key", newWordKey);
+            dropCmd.ExecuteNonQuery();
 
-            var cmd = new SqliteCommand("UPDATE lookups SET word_key = @new_key WHERE word_key = @old_key", connection);
-            cmd.Parameters.AddWithValue("@old_key", oldWordKey);
-            cmd.Parameters.AddWithValue("@new_key", newWordKey);
-            return cmd.ExecuteNonQuery();
+            // ② 剩下的整批搬过去。
+            var moveCmd = new SqliteCommand(
+                "UPDATE lookups SET word_key = @new_key WHERE word_key = @old_key", connection, transaction);
+            moveCmd.Parameters.AddWithValue("@old_key", oldWordKey);
+            moveCmd.Parameters.AddWithValue("@new_key", newWordKey);
+            var moved = moveCmd.ExecuteNonQuery();
+
+            // 两步放在一个事务里:要么整件事都成,要么一行都不动。
+            transaction.Commit();
+            return moved;
         }
 
         public bool DeleteAll() {

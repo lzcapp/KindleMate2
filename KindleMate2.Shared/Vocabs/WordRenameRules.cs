@@ -12,8 +12,15 @@ public enum WordRenameAction {
     /// <summary>可以改。</summary>
     Rename,
 
-    /// <summary>新名字已被**别的**生词占用 —— 本版**直接拒绝**(不合并)。</summary>
-    NameTaken
+    /// <summary>
+    /// 新名字已被**别的**生词占用 ⇒ **并入那一个**。
+    ///
+    /// 2026-09-23 改:原来这里弹「已存在同名生词,请先处理那一个再改名」把用户拦下,
+    /// 用户明确要求**静默解决**(可以合并或删除)。改成合并:
+    /// 把当前这个词的记录整批改挂到同名生词的键上,重号的行丢掉(见
+    /// <c>ILookupRepository.MergeWordKey</c> 的说明 —— 丢掉的那些本来就是同一条记录)。
+    /// </summary>
+    MergeIntoExisting
 }
 
 /// <summary>
@@ -73,12 +80,13 @@ public static class WordRenameRules {
     /// "名字一个字都没动,却告诉你已被别的生词占用"。
     /// 注意"只改大小写"(beautiful → Beautiful)算**改了**(序数比较),会走到改名 ——
     /// 左栏是按忽略大小写分组的,改完整组一起变,不会分裂成两项。
+    /// 撞名不再拒绝,而是并入(<see cref="WordRenameAction.MergeIntoExisting"/>)。
     /// </summary>
     public static WordRenameAction Decide(string? oldWord, string? newWord, bool nameTakenByOtherWord) {
         if (string.Equals(newWord, oldWord, StringComparison.Ordinal)) {
             return WordRenameAction.Unchanged;
         }
 
-        return nameTakenByOtherWord ? WordRenameAction.NameTaken : WordRenameAction.Rename;
+        return nameTakenByOtherWord ? WordRenameAction.MergeIntoExisting : WordRenameAction.Rename;
     }
 }

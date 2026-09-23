@@ -705,8 +705,8 @@
   <data name="Word_Name_Not_Changed" xml:space="preserve">
     <value>生词名称未改变</value>
   </data>
-  <data name="Word_Name_Taken" xml:space="preserve">
-    <value>已存在同名生词,请先处理那一个再改名</value>
+  <data name="Word_Merged" xml:space="preserve">
+    <value>生词合并成功</value>
   </data>
   <data name="Ui_Status_PickWordFirst" xml:space="preserve">
     <value>请先在左侧选择一个生词</value>
