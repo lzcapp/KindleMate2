@@ -1787,7 +1787,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (sectioned && clippings.Count > 0) {
             items.Add(SectionHeader(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippings.Count)));
         }
-        foreach (var clip in clippings) items.Add(ToListItem(clip));
+        // 标注段的行**一定**含这个词(它们就是这么筛出来的),所以生词必然画得出高亮 ——
+        // 高亮用的词就用 selectedWord,与筛选同源,不另取一份。
+        foreach (var clip in clippings) items.Add(ToListItem(clip, selectedWord));
         return items;
     }
 
@@ -1830,11 +1832,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         return Hit(c.Content) || Hit(c.BookName) || Hit(c.AuthorName);
     }
 
-    private static ListItem ToListItem(Clipping clip) {
+    /// <summary>
+    /// 剪藏 → 列表行。<paramref name="emphasisWord"/> 非空时把正文里的它**加粗**
+    /// (生词域的中栏:那一段列的就是"正文里出现过这个词的剪藏",生词藏在中间得自己找)。
+    /// 其余场合传 null —— 高亮只服务于"正在看某个生词"这个语境,无关列表不加。
+    /// </summary>
+    private static ListItem ToListItem(Clipping clip, string? emphasisWord = null) {
         var (typeText, kind) = TypeTextMap.Of(clip.BriefType);
+        var primary = Flatten(clip.Content);
         return new ListItem {
             Key = clip.Key,
-            Primary = Flatten(clip.Content),
+            Primary = primary,
+            PrimarySegments = WordEmphasis.Split(primary, emphasisWord),
             Book = clip.BookName ?? string.Empty,
             Place = (clip.PageNumber ?? 0) > 0
                 ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Page, clip.PageNumber ?? 0)
@@ -1862,9 +1871,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         var usage = Flatten(lookup.Usage ?? string.Empty);
+        var primary = usage.Length > 0 ? usage : (lookup.Word ?? string.Empty);
         return new ListItem {
             Key = string.Concat(wordKey, "\u0001", lookup.Timestamp ?? string.Empty),
-            Primary = usage.Length > 0 ? usage : lookup.Word,
+            Primary = primary,
+            PrimarySegments = WordEmphasis.Split(primary, lookup.Word),
             Book = lookup.Title ?? string.Empty,
             Time = lookup.Timestamp ?? string.Empty,
             Extra = string.Join(" · ", extra),
@@ -1872,7 +1883,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Kind = TypeKind.None,
             Lookup = lookup,
             LookupWordKey = wordKey
-        };    }
+        };
+    }
 
     private static string Flatten(string? text) =>
         string.IsNullOrEmpty(text)
@@ -1977,6 +1989,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         var builder = new StringBuilder();
         foreach (var entry in lookupEntries) builder.Append("• ").Append(entry.Trim()).Append('\n');
 
+        var body = builder.ToString().TrimEnd();
+
         var stats = new List<string>();
         if (stem.Length > 0 && !string.Equals(stem, word, StringComparison.OrdinalIgnoreCase)) {
             stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_Stem, stem));
@@ -2000,7 +2014,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Title = word,
             Subtitle = string.Join(" · ", stats),
             HasBody = true,
-            Body = builder.ToString().TrimEnd(),
+            Body = body,
+            // 右栏这几句用法与中栏的「查询」段是同一批句子 —— 只在中栏加粗、右栏不加,
+            // 同一句话两种样子,看上去就像高亮坏了,所以两边同源。
+            BodySegments = WordEmphasis.Split(body, word),
             HasDefinition = definition is not null,
             DefinitionLabel = DescribeDefinitionSource(definition),
             Definition = _definitionExpanded ? fullDefinition : preview.Text,
