@@ -87,6 +87,11 @@ jobs:
           # 编译期绑定只保证 SectionTitle/IsSectionHeader 存在,不保证模板里还留着这一行 ——
           # 删掉它不报错,两段就悄悄退化成一条看不出分界的平表。
           grep -q 'IsVisible="{Binding IsSectionHeader}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 源码断言:标题行必须**点不动**(把它的 ListBoxItem 置为不可用)。
+          # 同上的理由,再叠一层:这条样式是纯视图层的,单测工程又不引 Avalonia,够不着 ——
+          # 删掉它不报错、测试也不红,标题行就又变成可点、可高亮、一点就把右栏清空。
+          # 注意绑定挂在 Setter 的 Value 上(不是 IsEnabled 上),模式必须照着真实写法写。
+          grep -Eq '<Setter +Property="IsEnabled" +Value="\{Binding +!IsSectionHeader\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q "share card:.*result=OK" "$out"
           # 源码断言:分享入口的接线（编译期绑定不保证菜单项还在，见 MainWindow.axaml）
           grep -q 'Click="OnShareSelectedClipping"' KindleMate2.Avalonia/Views/MainWindow.axaml
