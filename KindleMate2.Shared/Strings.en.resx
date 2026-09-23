@@ -672,6 +672,9 @@
   <data name="Ui_Word_OnlineDefinition" xml:space="preserve">
     <value>Online definition</value>
   </data>
+  <data name="Ui_Word_OnlineDefinitionFrom" xml:space="preserve">
+    <value>Online definition · {0}</value>
+  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} clippings</value>
   </data>
