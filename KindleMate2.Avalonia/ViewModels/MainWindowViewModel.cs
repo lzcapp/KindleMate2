@@ -1299,6 +1299,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     /// <summary>
+    /// **启动时的静默检查**:查到就点亮状态栏的「更新」按钮,**不弹窗、不打断**
+    /// (没更新 / 连不上都当没这回事,与菜单那条共用同一套口径与同一条实现)。
+    /// 下载与安装仍由用户点「更新」触发 —— 本方法只负责"让他知道"。
+    ///
+    /// 为什么与 <see cref="CheckForUpdatesAsync"/> 分开命名而不是直接复用:
+    /// 菜单那处也调用同名方法,若启动路径复用它,CI 里"启动确实接了这一步"的源码断言
+    /// 会因为菜单那次调用而**恒真** —— 这种"空断言"本项目踩过,故刻意留一个可被 grep 的独立名字。
+    /// </summary>
+    public async Task CheckForUpdatesQuietlyAsync() {
+        await CheckForUpdatesAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
     /// 下载并启动替换脚本。返回 <c>Restart = true</c> 表示**调用方应当立即退出进程**:
     /// 脚本正在等我们退出,退出之后它才会替换文件并重新启动。
     ///

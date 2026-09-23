@@ -146,6 +146,11 @@ public partial class MainWindow : Window {
 
         StartDevicePolling();
         _ = RefreshDeviceStatusAsync();
+
+        // 启动时静默查一次更新(用户 2026-09-23 定的档位:**只自动查、点亮徽标**,
+        // 下载与安装仍由他点)。放在启动流程的末尾:不与建库 / 备份确认抢 IO;
+        // 它是异步的,不会阻塞界面;失败静默(UpdateChecker 自己只写日志)。
+        if (Vm is { } updateVm) _ = updateVm.CheckForUpdatesQuietlyAsync();
     }
 
     /// <summary>
