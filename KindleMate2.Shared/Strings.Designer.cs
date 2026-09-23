@@ -1241,6 +1241,16 @@ namespace KindleMate2.Shared {
         /// </summary>
         public static string Ui_Word_OnlineDefinitionEncyclopedia => ResourceManager.GetString("Ui_Word_OnlineDefinitionEncyclopedia", resourceCulture);
 
+        /// <summary>
+        ///   查找类似 展开全文 的本地化字符串。
+        /// </summary>
+        public static string Ui_Definition_Expand => ResourceManager.GetString("Ui_Definition_Expand", resourceCulture);
+
+        /// <summary>
+        ///   查找类似 收起 的本地化字符串。
+        /// </summary>
+        public static string Ui_Definition_Collapse => ResourceManager.GetString("Ui_Definition_Collapse", resourceCulture);
+
         public static string Ui_Text_ClippingCount => ResourceManager.GetString("Ui_Text_ClippingCount", resourceCulture);
         public static string Ui_Text_LookupCount => ResourceManager.GetString("Ui_Text_LookupCount", resourceCulture);
         public static string Ui_Op_RenameBook => ResourceManager.GetString("Ui_Op_RenameBook", resourceCulture);

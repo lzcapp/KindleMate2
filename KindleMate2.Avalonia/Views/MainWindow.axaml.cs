@@ -752,6 +752,13 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
+    /// 「展开全文 / 收起」(生词详情的释义块)。展开状态在 VM 里、且**每次换词重置**,这里只转发一下。
+    /// </summary>
+    private void OnToggleDefinition(object? sender, RoutedEventArgs e) {
+        Vm?.ToggleDefinitionExpanded();
+    }
+
+    /// <summary>
     /// 「帮助 → 检查更新」。有更新时同时点亮主界面状态栏的「更新」按钮;
     /// 无更新或检查失败都只弹一句"已是最新" —— 检查更新的失败不该打断使用。
     /// </summary>

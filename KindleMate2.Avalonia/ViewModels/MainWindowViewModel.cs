@@ -94,6 +94,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>当前详情面板对应的那条生词记录 —— 异步结果回来时用它确认"选中项没变过"。</summary>
     private Lookup? _definitionSeed;
 
+    /// <summary>释义正文是否处于"展开全文"状态。**每次换词重置**(否则看下一个词会误以为已经展开)。</summary>
+    private bool _definitionExpanded;
+
     /// <summary>
     /// **进程级**放行开关。自检路径(--smoke / --ops)会把它关掉:CI 不该依赖第三方词典
     /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
@@ -1969,6 +1972,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             stats.Add(string.Format(CultureInfo.CurrentCulture, Strings.Ui_Text_ClippingCount, clippingCount));
         }
 
+        // 释义正文:超长时(只有百科会)截断 —— 不截的话几百字会把下面的标注挤出屏幕
+        var fullDefinition = definition?.ToDisplayText() ?? string.Empty;
+        var preview = DefinitionPreview.Shorten(fullDefinition);
+
         return new DetailModel {
             HasSelection = true,
             Title = word,
@@ -1977,8 +1984,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Body = builder.ToString().TrimEnd(),
             HasDefinition = definition is not null,
             DefinitionLabel = DescribeDefinitionSource(definition),
-            Definition = definition?.ToDisplayText() ?? string.Empty
+            Definition = _definitionExpanded ? fullDefinition : preview.Text,
+            HasDefinitionOverflow = definition is not null && preview.Shortened,
+            DefinitionToggleLabel = _definitionExpanded ? Strings.Ui_Definition_Collapse : Strings.Ui_Definition_Expand
         };
+    }
+
+    /// <summary>
+    /// 「展开全文 / 收起」。只改显示长度,所以重走一遍拼装即可(字段只在一处组装)——
+    /// 与在线释义结果回来时同一个理由,别在这里复制旧 DetailModel 改字段。
+    /// </summary>
+    public void ToggleDefinitionExpanded() {
+        if (_definitionSeed is not { } seed) return;
+        if (!_definitionCache.TryGetValue(seed.Word, out var definition) || definition is null) return;
+        _definitionExpanded = !_definitionExpanded;
+        Detail = BuildVocabDetail(seed, definition);
     }
 
     /// <summary>
@@ -2014,6 +2034,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     private void ShowVocabDetail(Lookup seed) {
         var word = seed.Word;
         _definitionSeed = seed;
+        _definitionExpanded = false;   // 换词就收起
         Detail = BuildVocabDetail(seed, _definitionCache.TryGetValue(word, out var cachedDefinition) ? cachedDefinition : null);
 
         // 已经查过(不论有没有释义)就不再打接口,否则来回切选中项会反复发请求
