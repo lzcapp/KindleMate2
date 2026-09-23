@@ -669,6 +669,9 @@
   <data name="Ui_Text_Frequency" xml:space="preserve">
     <value>词频 {0}</value>
   </data>
+  <data name="Ui_Word_OnlineDefinition" xml:space="preserve">
+    <value>在线释义</value>
+  </data>
   <data name="Ui_Text_ClippingCount" xml:space="preserve">
     <value>{0} 条标注</value>
   </data>

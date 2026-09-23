@@ -196,10 +196,16 @@ jobs:
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "word sections:.*result=OK" "$work/smoke.txt"
           grep -q "nav menu:.*result=OK" "$work/smoke.txt"
+          # 自检必须把联网查释义关掉:CI 不该依赖第三方词典(慢、易 flaky),也不该把词条发出去
+          grep -q "online definition: enabled=False" "$work/smoke.txt"
           # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,
           # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
           grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 生词详情的「在线释义」块:**条件可见** —— 只有联网查到释义才出现,没联网/没这个词就整块收起。
+          # 编译期绑定不保证这一行还在(删掉 IsVisible 不报错,释义块会在没有释义时也占一块空白),
+          # 所以与状态栏那条同理,在源码上钉一句。
+          grep -Eq 'IsVisible="\{Binding +Detail.HasDefinition\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"

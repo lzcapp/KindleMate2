@@ -112,6 +112,14 @@ public sealed class DetailModel {
     public bool HasBody { get; init; }
     public string Body { get; init; } = string.Empty;
 
+    /// <summary>
+    /// 在线释义(生词详情专用)。**拿不到就不显示** —— 所以它由 <see cref="HasDefinition"/> 单独控制,
+    /// 不并进 Body:Body 是 Kindle 记下的原句(离线数据),这一段是联网查来的,来源与可得性都不同。
+    /// </summary>
+    public bool HasDefinition { get; init; }
+    public string DefinitionLabel { get; init; } = string.Empty;
+    public string Definition { get; init; } = string.Empty;
+
     public bool IsHighlight => Kind == TypeKind.Highlight;
     public bool IsNote => Kind == TypeKind.Note;
     public bool IsBookmark => Kind == TypeKind.Bookmark;
