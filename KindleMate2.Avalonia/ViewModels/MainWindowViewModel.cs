@@ -22,6 +22,7 @@ using KindleMate2.Shared;
 using KindleMate2.Shared.Books;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Diagnostics;
+using KindleMate2.Shared.Vocabs;
 
 namespace KindleMate2.Avalonia.ViewModels;
 
@@ -1278,6 +1279,117 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }, true, Strings.Successful, Strings.Book_Renamed_Failed);
     }
 
+    // —— 重命名生词(2026-09-23;原版无此功能) ——
+    //
+    // 与「重命名书籍」最要紧的差别:**一个生词的身份是 word_key,不是显示名**。
+    //   · `vocab.word` 是存储列,左栏按它分组;
+    //   · `lookups` 表**没有 word 列** —— `Lookup.Word` 是从 `word_key` 现算出来的
+    //     (取第一个 ':' 之后),而中栏列表正是按 `Lookup.Word` 过滤。
+    // 只改显示列的话:左栏显示新名、中栏那批查询行一条都匹配不上 ——
+    // 看上去就像"这个词的查询记录凭空没了"。所以改名必须同时改键与显示名,
+    // 且键的**前缀原样保留**。规则在 WordRenameRules 里(抽出去才测得到)。
+
+    /// <summary>左栏生词节点右键的「重命名生词」是否可用 —— 生词域 + 选中具体词(不是「全部生词」)。</summary>
+    public bool CanRenameCurrentWord => IsWordDomain && _selectedNav is { IsAll: false };
+
+    /// <summary>
+    /// 详情面板右键的「重命名生词」是否可用 —— 当前那一行确实是**一条查询**。
+    /// 标注行与分组标题行都不挂 <c>Lookup</c>,所以只看这一条就够。
+    ///
+    /// 这里**故意不写** <c>!IsRecycleBinView</c>:回收站的行是由原始标注行临时拼出来的
+    /// (<c>ToListItem(Clipping)</c> 只挂 <c>Clipping</c>),<c>Lookup</c> 必为 null ⇒
+    /// 那条守卫恒为真、是死条件。写上去只会让人以为"回收站那一支有单独逻辑"。
+    /// (对比 <see cref="HasLiveSelectedClipping"/>:那边必须判回收站,因为回收站的行
+    /// **带着非空的 Key**,只判 Key 是拦不住的。)
+    /// </summary>
+    public bool CanRenameSelectedWord => SelectedItemWord.Length > 0;
+
+    /// <summary>左栏当前选中的词(左栏菜单重命名时的初值)。</summary>
+    public string CurrentWord => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
+
+    /// <summary>
+    /// 当前选中**行**所属的词(详情面板重命名用)。标注行 / 分组标题行返回空串,调用方据此拒绝。
+    /// </summary>
+    public string SelectedItemWord => _selectedItem?.Lookup?.Word ?? string.Empty;
+
+    /// <summary>
+    /// 新词是否已被**别的**生词占用。比较口径(忽略大小写)见 <see cref="WordRenameRules"/> ——
+    /// 必须与左栏生词的分组口径一致,别照抄「重命名书籍」那边的序数比较。
+    /// </summary>
+    public bool IsWordNameTaken(string newWord, string? exceptWord = null) =>
+        WordRenameRules.IsNameTakenByOther(_allVocabs.Select(v => v.Word), newWord, exceptWord);
+
+    /// <summary>
+    /// 重命名一个生词(会覆盖该词的**全部**查询行与词条行)。成功标题 Successful、
+    /// 正文 <c>Word_Renamed</c>;失败 <c>Word_Renamed_Failed</c>。
+    ///
+    /// 执行**顺序**有讲究:
+    /// <list type="number">
+    /// <item>先改 <c>lookups</c> —— 它可能因 (word_key,timestamp) 撞上唯一约束而整体失败;
+    ///   放在最前面,失败时一行都还没动过,不会留下"词条改名了、查询还挂在旧键上"的半截状态。</item>
+    /// <item>再改 <c>vocab</c>。**<c>id</c> 一律不动** —— 它是导入去重键
+    ///   (<c>KM2DatabaseService</c> 按 <c>Id</c> 判重),改掉的话下次从设备导入
+    ///   会把旧词原样加回来,改名等于白做。</item>
+    /// </list>
+    ///
+    /// 左栏菜单传 <see cref="CurrentWord"/>;详情面板传 <see cref="SelectedItemWord"/> ——
+    /// 左栏停在「全部生词」或搜索结果里时,行所属的词与左栏节点根本不是一回事。
+    /// </summary>
+    public async Task<OperationResult> RenameWordAsync(string oldWord, string newWord) {
+        if (_session is not { } session || oldWord.Length == 0) {
+            return new OperationResult(false, Strings.Prompt, Strings.Ui_Status_PickWordFirst);
+        }
+
+        // 只有在"人就在这个词的节点上"改名时才把左栏跟到新名字上。
+        // 若是在「全部生词」或搜索结果里改某一行的词,左栏不该被拽走(那不是用户当下的位置)。
+        var followNode = _selectedNav is { IsAll: false } nav
+                         && string.Equals(nav.Key, oldWord, StringComparison.OrdinalIgnoreCase)
+            ? newWord
+            : null;
+
+        var result = await RunOperationAsync(() => {
+            var vocabs = session.VocabService.GetAllVocabs()
+                .Where(v => string.Equals(v.Word, oldWord, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (vocabs.Count == 0) return string.Empty;
+
+            // ① 查询行先改。键冲突(-1)⇒ 整件事作废,此时一行都还没改过。
+            var oldKeys = vocabs
+                .Select(v => v.WordKey)
+                .Where(k => !string.IsNullOrEmpty(k))
+                .Select(k => k!)
+                .Distinct(StringComparer.Ordinal);
+            foreach (var oldKey in oldKeys) {
+                var newKey = WordRenameRules.BuildWordKey(oldKey, newWord);
+                if (session.LookupService.RenameWordKey(oldKey, newKey) < 0) {
+                    return string.Empty;
+                }
+            }
+
+            // ② 再改词条。word_key 有值就连键一起改(前缀照旧),没有就只改显示名。
+            foreach (var vocab in vocabs) {
+                if (!string.IsNullOrEmpty(vocab.WordKey)) {
+                    vocab.WordKey = WordRenameRules.BuildWordKey(vocab.WordKey, newWord);
+                }
+                vocab.Word = newWord;
+                session.VocabService.UpdateVocab(vocab);
+            }
+            return Strings.Word_Renamed;
+        }, true, Strings.Successful, Strings.Word_Renamed_Failed);
+
+        // 改名之后**旧节点名已经不存在了** ⇒ 统一写操作壳那套"按操作前的节点名还原"必然落空,
+        // 左栏会掉回「全部生词」。所以在操作**结束之后**再切一次节点(此刻 IsBusy 已复位,
+        // 切节点就是一次普通的界面动作,与删除那条路互不干扰)。
+        if (result.Ok && followNode is not null) {
+            var target = NavItems.FirstOrDefault(n => !n.IsAll
+                && string.Equals(n.Key, followNode, StringComparison.OrdinalIgnoreCase));
+            if (target is not null) {
+                SelectedNav = target;
+            }
+        }
+        return result;
+    }
+
     // —— 设备 ——
 
     /// <summary>
@@ -1555,6 +1667,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         OnPropertyChanged(nameof(SelectedItemBookName));
         OnPropertyChanged(nameof(CanRenameSelectedItemBook));
         OnPropertyChanged(nameof(CanEditSelectedClipping));
+        // 「重命名生词」的可用性也取自**选中行自己**(那一行必须是条查询) ⇒ 一并通知。
+        OnPropertyChanged(nameof(CanRenameSelectedWord));
+        OnPropertyChanged(nameof(SelectedItemWord));
     }
 
     /// <summary>
@@ -1704,6 +1819,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 放在这个**唯一漏斗**上:换域、换节点、重建左栏最终都会走到这里。
         OnPropertyChanged(nameof(CanRenameCurrentBook));
         OnPropertyChanged(nameof(CanExportCurrent));
+        // 「重命名生词」同理:它依赖「哪个域 + 选中哪个词节点」。
+        OnPropertyChanged(nameof(CanRenameCurrentWord));
+        OnPropertyChanged(nameof(CurrentWord));
         NotifyCountsChanged();
         OnPropertyChanged(nameof(NavSectionTitle));
         OnPropertyChanged(nameof(NavSectionCount));

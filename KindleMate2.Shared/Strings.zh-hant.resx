@@ -693,6 +693,24 @@
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>重新命名書籍</value>
   </data>
+  <data name="Ui_Op_RenameWord" xml:space="preserve">
+    <value>重新命名生詞</value>
+  </data>
+  <data name="Word_Renamed" xml:space="preserve">
+    <value>生詞重命名成功</value>
+  </data>
+  <data name="Word_Renamed_Failed" xml:space="preserve">
+    <value>生詞重命名失敗</value>
+  </data>
+  <data name="Word_Name_Not_Changed" xml:space="preserve">
+    <value>生詞名稱未改變</value>
+  </data>
+  <data name="Word_Name_Taken" xml:space="preserve">
+    <value>已存在同名生詞,請先處理那一個再改名</value>
+  </data>
+  <data name="Ui_Status_PickWordFirst" xml:space="preserve">
+    <value>請先在左側選擇一個生詞</value>
+  </data>
   <data name="Ui_Op_ShareImage" xml:space="preserve">
     <value>分享為圖片</value>
   </data>

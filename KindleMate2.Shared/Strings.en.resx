@@ -693,6 +693,24 @@
   <data name="Ui_Op_RenameBook" xml:space="preserve">
     <value>Rename book</value>
   </data>
+  <data name="Ui_Op_RenameWord" xml:space="preserve">
+    <value>Rename word</value>
+  </data>
+  <data name="Word_Renamed" xml:space="preserve">
+    <value>Word renamed</value>
+  </data>
+  <data name="Word_Renamed_Failed" xml:space="preserve">
+    <value>Word Renamed Failed</value>
+  </data>
+  <data name="Word_Name_Not_Changed" xml:space="preserve">
+    <value>Word name not changed</value>
+  </data>
+  <data name="Word_Name_Taken" xml:space="preserve">
+    <value>A word with this name already exists; handle that one first</value>
+  </data>
+  <data name="Ui_Status_PickWordFirst" xml:space="preserve">
+    <value>Pick a word on the left first</value>
+  </data>
   <data name="Ui_Op_ShareImage" xml:space="preserve">
     <value>Share as Image</value>
   </data>

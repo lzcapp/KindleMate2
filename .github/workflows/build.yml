@@ -210,12 +210,25 @@ jobs:
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "word sections:.*result=OK" "$work/smoke.txt"
           grep -q "nav menu:.*result=OK" "$work/smoke.txt"
+          # 「重命名生词」两处菜单的可用性。VM 那层单测够不着(单测工程不引 Avalonia),
+          # 而拼键/撞名那两条纯规则在 WordRenameRulesTests 里 —— 两层各钉各的。
+          grep -q "word rename:.*result=OK" "$work/smoke.txt"
           # 自检必须把联网查释义关掉:CI 不该依赖第三方词典(慢、易 flaky),也不该把词条发出去
           grep -q "online definition: enabled=False" "$work/smoke.txt"
           # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,
           # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
           grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 「重命名生词」共三处入口(左栏词节点 / 中栏列表行 / 详情面板),对齐「重命名书籍」。
+          # 左栏这条与上面的 CanRenameCurrentBook **互斥**:丢了 IsVisible 的话,
+          # 生词域的右键里会同时冒出「重命名书籍」和「重命名生词」两条。
+          # Click 与 IsVisible 都要钉:入口从菜单里消失不报错,探针也不红。
+          grep -Eq 'IsVisible="\{Binding +CanRenameCurrentWord\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          grep -q 'Click="OnRenameCurrentWord"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 另两处共用同一条判定,必须**两处都在** —— 只钉"存在"的话少掉一处不会被发现。
+          # 数量写死 2:将来若真多出第三处,这里该红一次,人工确认后再改这个数。
+          test "$(grep -c 'Click="OnRenameSelectedWord"' KindleMate2.Avalonia/Views/MainWindow.axaml)" -eq 2
+          test "$(grep -c 'IsVisible="{Binding CanRenameSelectedWord}"' KindleMate2.Avalonia/Views/MainWindow.axaml)" -eq 2
           # 生词详情的「在线释义」块:**条件可见** —— 只有联网查到释义才出现,没联网/没这个词就整块收起。
           # 编译期绑定不保证这一行还在(删掉 IsVisible 不报错,释义块会在没有释义时也占一块空白),
           # 所以与状态栏那条同理,在源码上钉一句。

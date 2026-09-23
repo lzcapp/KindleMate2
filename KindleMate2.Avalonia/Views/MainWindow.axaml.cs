@@ -18,6 +18,7 @@ using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Books;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Vocabs;
 
 namespace KindleMate2.Avalonia.Views;
 
@@ -692,6 +693,65 @@ public partial class MainWindow : Window {
             return;
         }
         await RenameBookAsync(vm.SelectedItemBookName);
+    }
+
+    /// <summary>
+    /// 重命名生词 —— 左栏菜单与详情面板右键**共用**本方法,唯一差别是"要改哪个词":
+    /// 左栏传节点上的那个词;详情面板传**那一行自己的词**(左栏停在「全部生词」或搜索结果里时,
+    /// 两者根本不是一回事,沿用节点名会改错词)。
+    ///
+    /// 与「重命名书籍」**刻意不同**:这里不做同名合并 —— 新名字已被别的生词占用时直接拒绝。
+    /// 理由是数据层的 <c>(word_key, timestamp)</c> 唯一约束:合并得迁移甚至丢弃相撞的查询行,
+    /// 而"悄悄删数据"不该藏在一次改名里(见 <c>ILookupRepository.RenameWordKey</c>)。
+    /// 判定本身走 <see cref="WordRenameRules"/>(可测)。
+    /// </summary>
+    private async Task RenameWordAsync(string oldWord) {
+        if (Vm is not { } vm) return;
+        if (oldWord.Length == 0) {
+            vm.StatusText = Strings.Ui_Status_PickWordFirst;
+            return;
+        }
+
+        // 单字段对话框:标题复用「重命名」、字段名复用生词列头「生词」(与书籍那边复用「书名」同理)。
+        var input = await AppDialog.PromptAsync(this, Strings.Rename, Strings.Ui_Col_Word, oldWord);
+        if (input is not { } raw) return;   // 取消
+
+        var newWord = raw.Trim();
+        if (newWord.Length == 0) return;
+
+        var action = WordRenameRules.Decide(oldWord, newWord,
+            vm.IsWordNameTaken(newWord, exceptWord: oldWord));
+
+        if (action == WordRenameAction.Unchanged) {
+            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Word_Name_Not_Changed);
+            return;
+        }
+        if (action == WordRenameAction.NameTaken) {
+            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Word_Name_Taken);
+            return;
+        }
+
+        await ShowResultAsync(await vm.RenameWordAsync(oldWord, newWord));
+    }
+
+    /// <summary>左栏菜单:改左栏当前那个词。</summary>
+    private async void OnRenameCurrentWord(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (!vm.CanRenameCurrentWord) {
+            vm.StatusText = Strings.Ui_Status_PickWordFirst;
+            return;
+        }
+        await RenameWordAsync(vm.CurrentWord);
+    }
+
+    /// <summary>详情面板右键:改**那一行所属**的词(不一定是左栏节点那个)。</summary>
+    private async void OnRenameSelectedWord(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        if (!vm.CanRenameSelectedWord) {
+            vm.StatusText = Strings.Ui_Status_PickWordFirst;
+            return;
+        }
+        await RenameWordAsync(vm.SelectedItemWord);
     }
 
     private async void OnExportCurrent(object? sender, RoutedEventArgs e) {
