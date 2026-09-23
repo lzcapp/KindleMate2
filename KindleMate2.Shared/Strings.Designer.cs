@@ -1263,7 +1263,9 @@ namespace KindleMate2.Shared {
         public static string Ui_Dlg_ClippingClean_Samples => ResourceManager.GetString("Ui_Dlg_ClippingClean_Samples", resourceCulture);
         public static string Ui_Menu_MaintainDatabase => ResourceManager.GetString("Ui_Menu_MaintainDatabase", resourceCulture);
         public static string Ui_Maintenance_Message_Format => ResourceManager.GetString("Ui_Maintenance_Message_Format", resourceCulture);
-        public static string Ui_Maintenance_Result_Format => ResourceManager.GetString("Ui_Maintenance_Result_Format", resourceCulture);
+        public static string Ui_Maintenance_Result_Cleaned_Format => ResourceManager.GetString("Ui_Maintenance_Result_Cleaned_Format", resourceCulture);
+        public static string Ui_Maintenance_Result_Deleted_Format => ResourceManager.GetString("Ui_Maintenance_Result_Deleted_Format", resourceCulture);
+        public static string Ui_Maintenance_Result_DeletedNone => ResourceManager.GetString("Ui_Maintenance_Result_DeletedNone", resourceCulture);
         public static string Ui_Maintenance_Failed => ResourceManager.GetString("Ui_Maintenance_Failed", resourceCulture);
         public static string Ui_Maintenance_Ok => ResourceManager.GetString("Ui_Maintenance_Ok", resourceCulture);
         public static string Ui_Maintenance_None => ResourceManager.GetString("Ui_Maintenance_None", resourceCulture);

@@ -744,8 +744,14 @@
   <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
     <value>將清洗 {0} 條標註的首尾標點(共掃描 {1} 條),並刪除空條目 {2} 條、重複項 {3} 條;不會改動其他記錄,操作前會自動備份資料庫。</value>
   </data>
-  <data name="Ui_Maintenance_Result_Format" xml:space="preserve">
-    <value>已清洗 {0} 條(共掃描 {1} 條);清理刪除空條目 {2} 條、重複項 {3} 條,回收 {4}。備份與改動清單:{5}</value>
+  <data name="Ui_Maintenance_Result_Cleaned_Format" xml:space="preserve">
+    <value>已清洗 {0} 條標注的首尾標點（共掃描 {1} 條）</value>
+  </data>
+  <data name="Ui_Maintenance_Result_Deleted_Format" xml:space="preserve">
+    <value>刪除空條目 {0} 條、重複項 {1} 條</value>
+  </data>
+  <data name="Ui_Maintenance_Result_DeletedNone" xml:space="preserve">
+    <value>沒有刪除任何條目</value>
   </data>
   <data name="Ui_Maintenance_Failed" xml:space="preserve">
     <value>維護失敗</value>
