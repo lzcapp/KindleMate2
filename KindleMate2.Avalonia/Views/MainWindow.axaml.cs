@@ -700,9 +700,10 @@ public partial class MainWindow : Window {
     /// 左栏传节点上的那个词;详情面板传**那一行自己的词**(左栏停在「全部生词」或搜索结果里时,
     /// 两者根本不是一回事,沿用节点名会改错词)。
     ///
-    /// 与「重命名书籍」**刻意不同**:这里不做同名合并 —— 新名字已被别的生词占用时直接拒绝。
-    /// 理由是数据层的 <c>(word_key, timestamp)</c> 唯一约束:合并得迁移甚至丢弃相撞的查询行,
-    /// 而"悄悄删数据"不该藏在一次改名里(见 <c>ILookupRepository.RenameWordKey</c>)。
+    /// **新名字已被别的生词占用时不拦截,而是静默并入那一个**(2026-09-23 用户明确要求:
+    /// 原来弹「已存在同名生词,请先处理那一个再改名」把操作挡下了,他要求可以合并或删除)。
+    /// 并入时与目标键重号的**查询行会被丢掉** —— 那些行跟目标下同 timestamp 的行本就是同一回事,
+    /// 见 <c>ILookupRepository.MergeWordKey</c>。
     /// 判定本身走 <see cref="WordRenameRules"/>(可测)。
     /// </summary>
     private async Task RenameWordAsync(string oldWord) {
@@ -726,11 +727,8 @@ public partial class MainWindow : Window {
             await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Word_Name_Not_Changed);
             return;
         }
-        if (action == WordRenameAction.NameTaken) {
-            await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Word_Name_Taken);
-            return;
-        }
 
+        // 撞名(<see cref="WordRenameAction.MergeIntoExisting"/>)**不拦** —— 交给 VM 静默并入那一个生词。
         await ShowResultAsync(await vm.RenameWordAsync(oldWord, newWord));
     }
 

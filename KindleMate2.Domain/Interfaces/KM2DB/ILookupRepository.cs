@@ -40,16 +40,23 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         bool Delete(string wordKey, string timestamp);
 
         /// <summary>
-        /// 把某个词的**全部**查询行改挂到新的 word_key 上(「重命名生词」用)。
+        /// 把某个词的**全部**查询行并到另一个键上(「重命名生词」撞名时用)。
         ///
         /// lookups **没有主键**,身份就是 (word_key, timestamp) —— 没有"逐行改键"的余地,只能整批改。
-        /// 若新键会与既有行的 (word_key, timestamp) 相撞(说明这个新名字其实已经有查询记录了),
-        /// **原样返回 -1 且一行都不改**;调用方据此拒绝改名并提示。
-        /// 这里刻意**不用** <c>UPDATE OR REPLACE</c>:SQLite 的 OR REPLACE 会静默**删掉**撞上的那些行 ——
-        /// 改名不该有删数据的副作用。
+        ///
+        /// 分两步:
+        /// <list type="number">
+        /// <item>与目标键下**同 timestamp** 的行 —— 它们跟目标那一条本就是**同一次阅读事件**
+        ///   (同一个词、同一时间),搬过去必然撞唯一约束,所以**删掉**。
+        ///   这是"撞名静默解决"里"删除"的那一半;</item>
+        /// <item>其余的全部 UPDATE 到目标键。</item>
+        /// </list>
+        ///
+        /// 刻意**不用** <c>UPDATE OR REPLACE</c>:它删掉哪些行由唯一约束隐式决定,读代码时看不出来;
+        /// 这里把"删哪一批"写成显式的 DELETE,一眼可查。
         /// </summary>
-        /// <returns>被改写的行数;因键冲突而拒绝时为 -1;新旧键相同为 0。</returns>
-        int RenameWordKey(string oldWordKey, string newWordKey);
+        /// <returns>被改写(搬走)的行数。</returns>
+        int MergeWordKey(string oldWordKey, string newWordKey);
 
         bool DeleteAll();
     }

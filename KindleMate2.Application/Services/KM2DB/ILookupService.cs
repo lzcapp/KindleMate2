@@ -21,10 +21,11 @@ public interface ILookupService {
     bool RenameBook(string originBookname, string bookname, string authorName);
 
     /// <summary>
-    /// 把某个词的**全部**查询行改挂到新的 word_key 上(「重命名生词」用)。
-    /// 语义与拒绝条件见 <see cref="KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository.RenameWordKey"/>。
+    /// 把某个词的**全部**查询行并到另一个键上(「重命名生词」撞名时用)——
+    /// 与目标键重号的行会被丢掉(它们本就是同一条记录)。
+    /// 详细语义见 <see cref="KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository.MergeWordKey"/>。
     /// </summary>
-    /// <returns>被改写的行数;因键冲突而拒绝时为 -1;新旧键相同为 0。</returns>
-    int RenameWordKey(string oldWordKey, string newWordKey);
+    /// <returns>被改写(搬走)的行数。</returns>
+    int MergeWordKey(string oldWordKey, string newWordKey);
     bool LookupsToMarkdown(string filePath, string word = "");
 }
