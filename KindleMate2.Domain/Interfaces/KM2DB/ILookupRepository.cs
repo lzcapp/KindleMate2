@@ -28,6 +28,13 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int Add(List<Lookup> lookups);
 
+        /// <summary>
+        /// Updates the single lookup identified by (word_key, timestamp) — lookups have no primary
+        /// key and word_key alone is not unique, so (word_key, timestamp) is the row identity
+        /// (mirrors <see cref="Delete(string, string)"/>). <paramref name="lookup"/>.Timestamp is
+        /// therefore both the locator and the value written back (callers that rename books keep it
+        /// unchanged, so this is always the original timestamp).
+        /// </summary>
         bool Update(Lookup lookup);
 
         bool Delete(string wordKey);
