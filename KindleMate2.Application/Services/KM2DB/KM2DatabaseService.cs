@@ -420,6 +420,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     if (indexOf >= 0) {
                         clippingTypeLocation = metadata[..(indexOf - 1)];
                     }
+                    // 真实页码:在**已去掉日期段**的 clippingTypeLocation 上再解析一次。
+                    // 直接在整行 metadata 上取 location.Page 不行 —— 位置型条目的 Location 段被移除后,
+                    // 正则会把日期里的日号("January 1, 2026" → 1)当成页码。去掉日期段后:
+                    //   "…page 5 | Location 100-101" → 5;"…Location 100-101" → 0(无页码,走下面兜底)。
+                    var realPage = MyClippingsHelper.ParseLocation(clippingTypeLocation).Page;
                     indexOf = clippingTypeLocation.LastIndexOf('|');
                     var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
                     var pageNumber = -1;
@@ -441,6 +446,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                     } else if (isRomanMatched) {
                         var strMatched = StringHelper.RomanToInteger(pageStr).ToString();
                         isPageParsed = int.TryParse(strMatched, out pageNumber);
+                    }
+                    // 下面按 | 分段取数只用于**没有页码的位置型条目**兜底(位置末端,供同页笔记关联)。
+                    // 只要 realPage 解析出了真实页码,就用它覆盖 —— 否则 "page 5 | Location 100-101"
+                    // 的 PageNumber 会被 Location 末端 101 覆盖,真实页码 5 丢失。
+                    if (realPage > 0) {
+                        pageNumber = realPage;
+                        isPageParsed = true;
                     }
                     if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
                         skipCounts.PageFailed++;
