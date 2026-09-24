@@ -574,6 +574,21 @@ namespace KindleMate2.Infrastructure.Helpers {
             return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
         }
 
+        /// <summary>
+        /// 批量插入「逐条降级」兜底时,判定某条失败是否可以安全跳过:
+        /// <list type="bullet">
+        ///   <item>SQLite 约束冲突(SQLITE_CONSTRAINT = 19):重复主键 key / 唯一约束撞车;</item>
+        ///   <item><see cref="InvalidOperationException"/>:数据非法(如 key 为空,InsertOne 里
+        ///       <c>?? throw</c> 抛出的)。</item>
+        /// </list>
+        /// 其余一律 <c>false</c> —— 磁盘满(SQLITE_FULL)、库被锁(SQLITE_BUSY)、I/O / 损坏等
+        /// 系统性问题必须向上抛,绝不能伪装成「导入成功、只是少了几条」。
+        /// </summary>
+        public static bool IsSkippableInsertFailure(Exception ex) {
+            return ex is InvalidOperationException ||
+                   ex is SqliteException { SqliteErrorCode: 19 };
+        }
+
         public static int? GetSafeInt(SqliteDataReader reader, int ordinal) {
             return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
         }

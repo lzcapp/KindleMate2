@@ -395,6 +395,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             }
 
             // ② 兜底:逐条插入,每条独立事务,单条失败只跳过该条而不影响其余
+            //    但**只跳过可跳过项**(重复 key / key 为空);磁盘满、库被锁等系统性问题向上抛,
+            //    否则会被误报成「导入成功、只少几条」。
             var inserted = 0;
             foreach (Clipping clipping in listClippings) {
                 using var rowTransaction = connection.BeginTransaction();
@@ -403,7 +405,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         inserted++;
                     }
                     rowTransaction.Commit();
-                } catch {
+                } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
                     try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }
