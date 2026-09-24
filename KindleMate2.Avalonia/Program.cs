@@ -130,6 +130,8 @@ internal static class Program {
 
             // 生词域中栏的两段结构(查询 / 标注)
             ProbeWordSections(report);
+            // 生词域右栏详情里的生词高亮(与中栏那行同源)
+            ProbeDetailEmphasis(report);
 
             // 左栏右键菜单的域感知
             ProbeNavMenu(report);
@@ -748,6 +750,113 @@ internal static class Program {
                           $" 副标题不随标注段变={subtitleStable}(期望 True)" +
                           $" -> result={(ok ? "OK" : "失败!两段结构不符合预期")}");
     }
+
+    /// <summary>
+    /// 生词域里**右栏详情**的正文也要把生词加粗 —— 与中栏那一行同源。
+    ///
+    /// 起因(2026-09-24 用户报):生词域选中「朋友」,中栏「标注」段那行里「朋友」是粗的,
+    /// 点开右栏(同一句话的详情)却是素的 —— 高亮当时只在**生词详情**与**列表行**两处做了,
+    /// 剪藏详情那条路漏了,看上去像"高亮时灵时不灵"。
+    ///
+    /// 正负例都要:
+    ///   · 正例 —— 生词域 + 选中生词 ⇒ 命中的那一段**真的加粗**(读 Run.FontWeight,
+    ///     不是只读分段数据 —— 分段对了但没画成粗体,用户看到的还是没高亮);
+    ///   · 负例 —— 标注域(nav.Key 是**书名**)与「全部生词」⇒ 一段都不许命中。
+    ///     负例的正文里**必须含那个书名**,否则把域判据删掉探针照样绿(空断言)——
+    ///     而真实后果是:在标注域点开一条标注,书名只要出现在正文里就会被高亮。
+    ///
+    /// 顺带把 <c>EmphasisInlines</c> 那层钉上:它此前记的是"没有自动化,加粗没生效只能人工看",
+    /// 而在自检里读一遍 Run 序列就能验 —— 那句话可以撤掉了。
+    /// </summary>
+    private static void ProbeDetailEmphasis(System.Text.StringBuilder report) {
+        const string word = "朋友";
+        const string body = "原来明朝士大夫称儒学生员叫做朋友。";
+
+        // —— 正例:生词域 + 选中生词「朋友」——
+        var vm = new MainWindowViewModel { DomainIndex = 1 };
+        vm.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = word, Name = word };
+        var clip = MakeClipping("儒林外史", body);
+        // 中栏那一段**走真实构建路径**(ToListItem 里就用 selectedWord 切分段)。
+        // 手搓一个 ListItem 会让"中栏同源"变成空断言:PrimarySegments 默认就是空表。
+        var section = vm.BuildWordDomainItems(
+            Array.Empty<KindleMate2.Domain.Entities.KM2DB.Lookup>(), new[] { clip }, word, hasSearch: false);
+        var row = section.FirstOrDefault(i => i.Clipping is not null);
+        vm.Items.ReplaceAll(section);
+        if (row is not null) vm.SelectedItem = row;
+        var detail = vm.Detail;
+
+        var bodyHit = MatchedEmphasis(detail.BodySegments);
+        var bodyBold = BoldText(detail.BodyInlines);
+        var bodyLossless = EmphasisPlainText(detail.BodyInlines) == body;
+        // 中栏那一行:同一个词、同一串字,加粗也必须一致(否则又是"同一句话两种样子")
+        var rowHit = row is null ? string.Empty : MatchedEmphasis(row.PrimarySegments);
+
+        // 笔记条目走另一个分支(引文 + 笔记正文)。这一条没有配对划线 ⇒ 引文为空,
+        // 钉的是**笔记正文**那半 —— 它与中栏那行是同一串字(ToListItem(Clipping))。
+        var noteClip = new KindleMate2.Domain.Entities.KM2DB.Clipping {
+            Key = "n1",
+            Content = "笔记里也提到朋友",
+            BookName = "儒林外史",
+            PageNumber = 253,
+            BriefType = (long)KindleMate2.Domain.Entities.KM2DB.BriefType.Note
+        };
+        var noteRow = new KindleMate2.Avalonia.Models.ListItem { Key = noteClip.Key, Primary = noteClip.Content, Clipping = noteClip };
+        vm.Items.ReplaceAll(new[] { noteRow });
+        vm.SelectedItem = noteRow;
+        var noteDetail = vm.Detail;
+        var noteHit = MatchedEmphasis(noteDetail.NoteSegments);
+        var noteBold = BoldText(noteDetail.NoteInlines);
+        var noteLossless = EmphasisPlainText(noteDetail.NoteInlines) == noteClip.Content;
+
+        // —— 负例①:标注域。nav.Key 是**书名**,而正文里正好有书名 ——
+        const string book = "儒林外史";
+        var vmBook = new MainWindowViewModel();
+        vmBook.DomainIndex = 0;
+        vmBook.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = book, Name = book };
+        var bookClip = MakeClipping(book, "儒林外史里,朋友二字反复出现。");
+        var bookRow = new KindleMate2.Avalonia.Models.ListItem { Key = bookClip.Key, Primary = bookClip.Content, Clipping = bookClip };
+        vmBook.Items.ReplaceAll(new[] { bookRow });
+        vmBook.SelectedItem = bookRow;
+        var bookMatched = MatchedEmphasis(vmBook.Detail.BodySegments);
+        // 没高亮也不能把正文渲染丢字(分段为空时要退回整段)
+        var bookIntact = EmphasisPlainText(vmBook.Detail.BodyInlines) == bookClip.Content;
+
+        // —— 负例②:「全部生词」不是某一个词 ——
+        var vmAll = new MainWindowViewModel { DomainIndex = 1 };
+        vmAll.SelectedNav = new KindleMate2.Avalonia.Models.NavItem { Key = string.Empty, Name = "全部生词", IsAll = true };
+        var allClip = MakeClipping("儒林外史", body);
+        var allRow = new KindleMate2.Avalonia.Models.ListItem { Key = allClip.Key, Primary = body, Clipping = allClip };
+        vmAll.Items.ReplaceAll(new[] { allRow });
+        vmAll.SelectedItem = allRow;
+        var allMatched = MatchedEmphasis(vmAll.Detail.BodySegments);
+
+        var ok = bodyHit == word && bodyBold == word && bodyLossless && rowHit == word
+                 && noteHit == word && noteBold == word && noteLossless
+                 && bookMatched.Length == 0 && bookIntact && allMatched.Length == 0;
+
+        report.AppendLine($"detail emphasis: 正文命中='{bodyHit}'/加粗='{bodyBold}'(期望 {word})" +
+                          $" 正文还原={bodyLossless}(期望 True)" +
+                          $" 中栏同源='{rowHit}'(期望 {word})" +
+                          $" 笔记 命中='{noteHit}'/加粗='{noteBold}'/还原={noteLossless}" +
+                          $" 标注域(书名当词)命中长度={bookMatched.Length}(期望 0)" +
+                          $" 全部生词命中长度={allMatched.Length}(期望 0)" +
+                          $" 未高亮时正文不丢字={bookIntact}" +
+                          $" -> result={(ok ? "OK" : "失败!右栏详情没把生词加粗,或域判据漏了")}");
+    }
+
+    /// <summary>命中的那几段接起来(一段都没命中 ⇒ 空串)。</summary>
+    private static string MatchedEmphasis(IReadOnlyList<KindleMate2.Application.Services.EmphasisSegment> segments) =>
+        string.Concat(segments.Where(s => s.IsMatch).Select(s => s.Text));
+
+    /// <summary>渲染形态里**全部**文字 —— 必须与原文逐字相等,否则"没做高亮"反而把正文改没了。</summary>
+    private static string EmphasisPlainText(global::Avalonia.Controls.Documents.InlineCollection inlines) =>
+        string.Concat(inlines.OfType<global::Avalonia.Controls.Documents.Run>().Select(r => r.Text ?? string.Empty));
+
+    /// <summary>渲染形态里**加粗**的那几段 —— 用户看到的那一层,此前只靠肉眼。</summary>
+    private static string BoldText(global::Avalonia.Controls.Documents.InlineCollection inlines) =>
+        string.Concat(inlines.OfType<global::Avalonia.Controls.Documents.Run>()
+                             .Where(r => r.FontWeight == global::Avalonia.Media.FontWeight.Bold)
+                             .Select(r => r.Text ?? string.Empty));
 
     /// <summary>
     /// 左栏右键菜单的**域感知**:生词本里不该出现「重命名书籍」「导出」。
