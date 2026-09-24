@@ -43,7 +43,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var insertedVocabCount = 0;
                 var insertedLookupCount = 0;
 
-                var bookInfoMap = bookInfos.ToDictionary(b => b.Id ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+                // 源库 book_key 理论唯一,但重复/空 id 会让 ToDictionary 抛 ArgumentException、
+                // 整份导入失败。这里容忍重复(取首条),空 id 兜底为 ""。
+                var bookInfoMap = new Dictionary<string, BookInfo>(StringComparer.OrdinalIgnoreCase);
+                foreach (var bookInfo in bookInfos) {
+                    bookInfoMap.TryAdd(bookInfo.Id ?? string.Empty, bookInfo);
+                }
 
                 // Dedup against one in-memory snapshot of existing vocab ids instead of a
                 // GetById round-trip (new connection + query) per candidate row.
