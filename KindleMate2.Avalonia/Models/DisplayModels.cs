@@ -121,9 +121,28 @@ public sealed class DetailModel {
     public string QuoteLabel { get; init; } = string.Empty;
     public string Quote { get; init; } = string.Empty;
 
+    /// <summary>
+    /// <see cref="Quote"/> 按生词切好的分段。笔记条目的引文是**原文划线**,
+    /// 与被引的那条划线的正文是同一类东西 —— 正文高亮、引文不高亮,读起来像两个功能。
+    /// </summary>
+    public IReadOnlyList<EmphasisSegment> QuoteSegments { get; init; } = Array.Empty<EmphasisSegment>();
+
+    /// <summary>引文的渲染形态(界面绑这个,不再绑 <see cref="Quote"/>)。</summary>
+    public InlineCollection QuoteInlines => EmphasisInlines.Build(QuoteSegments, Quote);
+
     public bool HasNote { get; init; }
     public string NoteLabel { get; init; } = string.Empty;
     public string Note { get; init; } = string.Empty;
+
+    /// <summary>
+    /// <see cref="Note"/> 按生词切好的分段。笔记条目的**笔记正文**在中栏就是以
+    /// <c>ListItem.Primary</c> 显示的同一串字(走 <c>ToListItem(Clipping)</c>),
+    /// 那边已按生词加粗 —— 右栏不加就又成了"同一句话两种样子"。
+    /// </summary>
+    public IReadOnlyList<EmphasisSegment> NoteSegments { get; init; } = Array.Empty<EmphasisSegment>();
+
+    /// <summary>笔记正文的渲染形态(界面绑这个,不再绑 <see cref="Note"/>)。</summary>
+    public InlineCollection NoteInlines => EmphasisInlines.Build(NoteSegments, Note);
 
     public bool HasBody { get; init; }
     public string Body { get; init; } = string.Empty;
@@ -131,6 +150,10 @@ public sealed class DetailModel {
     /// <summary>
     /// <see cref="Body"/> 按生词切好的分段。生词详情的用法句里会把生词加粗 ——
     /// 中栏「标注」段加粗、右栏同一句话却不高亮,看上去就像高亮坏了,所以两边同源。
+    ///
+    /// 这里覆盖的**不止生词详情**:生词域里点中栏「标注」段的一条,右栏出的是那条**剪藏**
+    /// 的详情(见 <c>BuildClippingDetail</c>)—— 中栏那行加了粗、右栏同一句话不加,
+    /// 与上面正是同一个毛病(2026-09-24 用户发现)。
     /// </summary>
     public IReadOnlyList<EmphasisSegment> BodySegments { get; init; } = Array.Empty<EmphasisSegment>();
 

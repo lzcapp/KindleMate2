@@ -480,7 +480,9 @@
                 <TextBlock Classes="tt" Text="{Binding Detail.QuoteLabel}" />
                 <Border BorderBrush="{DynamicResource KmBorderStrongBrush}" BorderThickness="2,0,0,0"
                         Padding="11,0,0,0" Margin="0,7,0,0">
-                  <SelectableTextBlock Text="{Binding Detail.Quote}" TextWrapping="Wrap" FontSize="13"
+                  <!-- 绑 Inlines 而不是 Text:生词域里正文中的生词要**加粗**,
+                       而 Text 是纯字符串,加粗不了其中一部分(同下面正文那个,见 EmphasisInlines)。 -->
+                  <SelectableTextBlock Inlines="{Binding Detail.QuoteInlines}" TextWrapping="Wrap" FontSize="13"
                                        LineHeight="23" Foreground="{DynamicResource KmTextSecondaryBrush}"
                                        ContextFlyout="{x:Null}" />
                 </Border>
@@ -488,7 +490,7 @@
 
               <StackPanel IsVisible="{Binding Detail.HasNote}" Margin="0,16,0,0">
                 <TextBlock Classes="tt" Text="{Binding Detail.NoteLabel}" />
-                <SelectableTextBlock Text="{Binding Detail.Note}" TextWrapping="Wrap" FontSize="14"
+                <SelectableTextBlock Inlines="{Binding Detail.NoteInlines}" TextWrapping="Wrap" FontSize="14"
                                      LineHeight="25" Margin="0,7,0,0"
                                      ContextFlyout="{x:Null}" />
               </StackPanel>

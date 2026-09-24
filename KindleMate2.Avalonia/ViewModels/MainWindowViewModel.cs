@@ -1352,6 +1352,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     public string CurrentWord => _selectedNav is { IsAll: false } nav ? nav.Key : string.Empty;
 
     /// <summary>
+    /// 右栏正文**要高亮**的那个生词 —— 只在「生词域 + 选中了具体生词」时才有值,其余场合为 null。
+    ///
+    /// 为什么不能直接用 <see cref="CurrentWord"/>:两个域的 <c>nav.Key</c> 是**两种东西** ——
+    /// 生词域是词,标注域是**书名**。少了域判据,在标注域里点一条标注就会把书名当生词去加粗
+    /// (书名几乎总是出现在自己的正文里,于是满屏加粗,而且看上去像随机的)。
+    ///
+    /// 为什么复用左栏选中词而不是另取一份:中栏「标注」段正是用
+    /// <c>FindClippingsContainingWord(nav.Key)</c> 筛出来的(见 <see cref="RebuildLookups"/>),
+    /// 两边同源才不会出现"列出来了却一个字没加粗"。
+    /// </summary>
+    private string? EmphasisWord => IsWordDomain && _selectedNav is { IsAll: false } nav ? nav.Key : null;
+
+    /// <summary>
     /// 当前选中**行**所属的词(详情面板重命名用)。标注行 / 分组标题行返回空串,调用方据此拒绝。
     /// </summary>
     public string SelectedItemWord => _selectedItem?.Lookup?.Word ?? string.Empty;
@@ -2137,6 +2150,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
     }
 
+    /// <summary>
+    /// 拼剪藏详情。正文按 <see cref="EmphasisWord"/> 切分出高亮段 ——
+    /// 生词域里从「标注」段点进来的这一条,中栏那行**已经**把生词加粗了,
+    /// 右栏同一句话不加,用户看到的就是"高亮时灵时不灵"(2026-09-24 报的正是这个)。
+    ///
+    /// <see cref="EmphasisWord"/> 为 null(标注域 / 回收站)时切出来是整段未命中,
+    /// 渲染与改动前逐字一致 —— 所以这里不必再判一次域。
+    /// </summary>
     private DetailModel BuildClippingDetail(Clipping clip) {
         var (typeText, kind) = TypeTextMap.Of(clip.BriefType);
         var place = (clip.PageNumber ?? 0) > 0
@@ -2144,6 +2165,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             : string.Empty;
         var subtitle = string.Join(" · ", new[] { clip.AuthorName ?? string.Empty, place }
             .Where(s => s.Length > 0));
+
+        var emphasis = EmphasisWord;
 
         var model = new DetailModel {
             HasSelection = true,
@@ -2167,9 +2190,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 HasQuote = quote.Length > 0,
                 QuoteLabel = Strings.Ui_Type_Highlight,
                 Quote = quote,
+                QuoteSegments = WordEmphasis.Split(quote, emphasis),
                 HasNote = true,
                 NoteLabel = Strings.Ui_Type_Note,
-                Note = clip.Content
+                Note = clip.Content,
+                NoteSegments = WordEmphasis.Split(clip.Content, emphasis)
             };
         }
 
@@ -2181,7 +2206,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             Kind = kind,
             Time = model.Time,
             HasBody = true,
-            Body = clip.Content
+            Body = clip.Content,
+            BodySegments = WordEmphasis.Split(clip.Content, emphasis)
         };
     }
 
