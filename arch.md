@@ -222,6 +222,6 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
   `CS0103: InitializeComponent 不存在`。
-- **自动更新**：Avalonia 壳内置了更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。站点 AppCast（`update_*.xml`）不在本仓库，发版后需手动指向新的 Release。
+- **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。

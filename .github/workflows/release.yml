@@ -53,8 +53,9 @@ name: release
 #      Linux 的 glibc 底线由 2.23 抬到 2.27(CentOS 7 这类 glibc 2.17 的发行版不再可运行)。
 #      Windows / macOS 的 OS 下限不变(两份 supported-os 表逐字相同)。
 #
-# 注意:应用内自动更新 AppCast(update_*.xml)由站点 https://github.lzc.app/KindleMate2/ 托管
-# (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
+# 注:应用内自动更新直接走本仓库的 GitHub Releases API(见 Application/Services/UpdateChecker),
+# 不使用 AppCast —— 旧的 update_*.xml 是 WinForms 壳 AutoUpdater 时代的产物,已随壳退役删除。
+# 因此发版无"更新 AppCast"这一步。
 
 permissions:
   contents: read
