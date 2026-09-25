@@ -27,10 +27,12 @@ public sealed class DebouncedActionTests {
         var fired = 0;
         using var action = new DebouncedAction(TimeSpan.FromMilliseconds(80), () => Interlocked.Increment(ref fired));
 
-        for (var i = 0; i < 5; i++) {
-            action.Schedule();
-            await Task.Delay(25);   // 每 25ms 重置一次,始终早于 80ms 的到期
-        }
+        // 连续重置:几次调用远快于防抖窗口,共用一个计时器,只应触发一次。
+        // 刻意不用"间隔 N ms 再 Schedule"来造时序 —— 那在负载高的 CI 上会因 Task.Delay 超时抖动
+        // (macOS runner 上实测过一次:预期 1、实际 2)。
+        action.Schedule();
+        action.Schedule();
+        action.Schedule();
 
         await WaitUntil(() => Volatile.Read(ref fired) == 1, TimeSpan.FromSeconds(2));
         await Task.Delay(120);
@@ -40,13 +42,14 @@ public sealed class DebouncedActionTests {
     [Fact]
     public async Task Dispose_IsIdempotent_AndStopsAPendingCallback() {
         var fired = 0;
-        var action = new DebouncedAction(TimeSpan.FromMilliseconds(80), () => Interlocked.Increment(ref fired));
+        // 防抖时长取得足够长,确保「安排 → 释放」之间不会因为调度延迟就先触发。
+        var action = new DebouncedAction(TimeSpan.FromMilliseconds(500), () => Interlocked.Increment(ref fired));
 
         action.Schedule();
         action.Dispose();
         action.Dispose();   // 二次释放必须安全
 
-        await Task.Delay(200);
+        await Task.Delay(700);   // 越过原定到期时刻:被释放的计时器不该再触发
         Assert.Equal(0, Volatile.Read(ref fired));
     }
 
