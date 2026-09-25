@@ -1430,8 +1430,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 .ToList();
             if (vocabs.Count == 0) return string.Empty;
 
-            // ① 查询行先并。与目标键重号的行会被丢掉 —— 它们跟目标那一条本就是同一次阅读事件
-            //    (见 MergeWordKey)。放最前面是因为它要动唯一约束:出事时一行都还没改过。
+            // ① 查询行先并。与目标行同 timestamp、或同句同书同作者(句子非空)的源行会被丢掉
+            //    —— 它们跟目标那一条本就是同一次阅读事件(见 MergeWordKey)。
+            //    放最前面是因为它要动唯一约束:出事时一行都还没改过。
             var oldKeys = vocabs
                 .Select(v => v.WordKey)
                 .Where(k => !string.IsNullOrEmpty(k))

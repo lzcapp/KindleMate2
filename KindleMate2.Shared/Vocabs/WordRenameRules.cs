@@ -17,8 +17,9 @@ public enum WordRenameAction {
     ///
     /// 2026-09-23 改:原来这里弹「已存在同名生词,请先处理那一个再改名」把用户拦下,
     /// 用户明确要求**静默解决**(可以合并或删除)。改成合并:
-    /// 把当前这个词的记录整批改挂到同名生词的键上,重号的行丢掉(见
-    /// <c>ILookupRepository.MergeWordKey</c> 的说明 —— 丢掉的那些本来就是同一条记录)。
+    /// 把当前这个词的记录整批改挂到同名生词的键上,与目标行同 timestamp 或
+    /// 同句同书的行丢掉(见 <c>ILookupRepository.MergeWordKey</c> 的说明 ——
+    /// 丢掉的那些本来就是同一条记录)。
     /// </summary>
     MergeIntoExisting
 }
