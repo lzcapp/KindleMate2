@@ -6,7 +6,8 @@ using KindleMate2.Shared.Diagnostics;
 namespace KindleMate2.Application.Services;
 
 /// <summary>发布页上的一个下载资产。</summary>
-public sealed record UpdateAsset(string Name, string DownloadUrl, long Size);
+/// <param name="ChecksumUrl">同一发布页上 <c>SHA256SUMS</c> 资产的下载地址(旧发布可能没有,此时为 null)。</param>
+public sealed record UpdateAsset(string Name, string DownloadUrl, long Size, string? ChecksumUrl = null);
 
 /// <summary>一次「有新版本」的结果。</summary>
 /// <param name="Version">发布页上的版本(取自 tag,形如 <c>2026.09.17</c>)。</param>
@@ -107,10 +108,15 @@ public static class UpdateChecker {
             available.Add(new UpdateAsset(name!, url!, size));
         }
 
+        // SHA256SUMS 是发布流程附带生成的校验和清单(见 release.yml);旧发布没有该资产时为 null。
+        var checksumUrl = available
+            .FirstOrDefault(a => string.Equals(a.Name, "SHA256SUMS", StringComparison.OrdinalIgnoreCase))
+            ?.DownloadUrl;
+
         foreach (var candidate in wanted) {
             var match = available.FirstOrDefault(a => string.Equals(a.Name, candidate, StringComparison.OrdinalIgnoreCase));
             if (match is not null) {
-                return match;
+                return match with { ChecksumUrl = checksumUrl };
             }
         }
 

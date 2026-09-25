@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text;
 using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services;
@@ -58,22 +60,86 @@ public static class UpdateInstaller {
         response.EnsureSuccessStatusCode();
 
         var total = asset.Size > 0 ? asset.Size : response.Content.Headers.ContentLength ?? 0;
-        await using var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        await using var destination = File.Create(target);
 
-        var buffer = new byte[81920];
+        // 写入流必须在校验之前关闭/落盘 —— 否则 File.OpenRead 会因文件仍被占用而失败。
         long written = 0;
-        int read;
-        while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0) {
-            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-            written += read;
-            if (total > 0) {
-                progress?.Report((double)written / total);
+        await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+        await using (var destination = File.Create(target)) {
+            var buffer = new byte[81920];
+            int read;
+            while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0) {
+                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                written += read;
+                if (total > 0) {
+                    progress?.Report((double)written / total);
+                }
             }
         }
 
         AppLog.Write($"[UpdateInstaller] 已下载 {asset.Name}({written} 字节)");
+
+        // 下载完立刻校验完整性(有清单时)。放在解压/替换之前 —— 坏包不该走到"删旧包"那一步。
+        await VerifyChecksumAsync(asset, target, client, cancellationToken).ConfigureAwait(false);
+
         return target;
+    }
+
+    /// <summary>
+    /// 用发布页的 <c>SHA256SUMS</c> 校验下载文件。清单存在时必须命中且哈希一致,否则抛异常中止更新;
+    /// 清单缺失(旧发布没有该资产)时跳过并记日志 —— 兼容历史版本。
+    /// </summary>
+    private static async Task VerifyChecksumAsync(UpdateAsset asset, string filePath, HttpClient client,
+        CancellationToken cancellationToken) {
+        if (string.IsNullOrWhiteSpace(asset.ChecksumUrl)) {
+            AppLog.Write($"[UpdateInstaller] {asset.Name} 发布页无 SHA256SUMS,跳过完整性校验");
+            return;
+        }
+
+        string checksumText;
+        try {
+            checksumText = await client.GetStringAsync(asset.ChecksumUrl, cancellationToken).ConfigureAwait(false);
+        } catch (Exception ex) {
+            throw new InvalidOperationException($"下载校验和失败,已中止更新:{ex.Message}", ex);
+        }
+
+        var expected = ParseExpectedHash(checksumText, asset.Name);
+        if (expected is null) {
+            throw new InvalidOperationException($"SHA256SUMS 里没有 {asset.Name} 的记录,已中止更新");
+        }
+
+        await using var stream = File.OpenRead(filePath);
+        var actual = Convert.ToHexString(
+            await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false));
+
+        if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase)) {
+            throw new InvalidOperationException(
+                $"{asset.Name} 的 SHA-256 不匹配(期望 {expected},实际 {actual}),已中止更新");
+        }
+
+        AppLog.Write($"[UpdateInstaller] {asset.Name} SHA-256 校验通过");
+    }
+
+    /// <summary>
+    /// 解析 <c>sha256sum</c> 风格清单里某个文件名的哈希:行形如 <c>&lt;hex&gt;␠␠&lt;文件名&gt;</c>
+    /// (GNU coreutils 在文本模式下可能带 <c>*</c> 前缀)。找不到返回 null。
+    /// </summary>
+    internal static string? ParseExpectedHash(string checksumText, string fileName) {
+        foreach (var raw in checksumText.Split('\n')) {
+            var line = raw.Trim();
+            if (line.Length == 0) {
+                continue;
+            }
+            var separator = line.IndexOf(' ');
+            if (separator <= 0) {
+                continue;
+            }
+            var hash = line[..separator];
+            var name = line[(separator + 1)..].Trim().TrimStart('*');
+            if (string.Equals(name, fileName, StringComparison.Ordinal)) {
+                return hash;
+            }
+        }
+        return null;
     }
 
     /// <summary>按扩展名解压(tar.gz / zip)。两种发布产物都用得上,且两条路径都要能被测试真的跑一遍。</summary>

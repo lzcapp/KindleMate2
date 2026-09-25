@@ -13,6 +13,7 @@ namespace KindleMate2.Tests;
 /// 运行方式:
 /// <code>dotnet test KindleMate2.Tests --filter "FullyQualifiedName~UpdateProbeTests" --logger "console;verbosity=detailed"</code>
 /// </summary>
+[Trait("Category", "Manual")]
 public sealed class UpdateProbeTests {
     private readonly ITestOutputHelper _output;
 
@@ -20,6 +21,7 @@ public sealed class UpdateProbeTests {
 
     [Fact]
     public async Task Probe_QueriesRealGitHubReleases() {
+        if (!ManualTestGate.RequireNetwork(_output)) return;
         // 故意传一个很老的版本,这样只要仓库有发布就应当判定"有更新"
         var info = await UpdateChecker.CheckAsync("0.0.1", "osx-arm64");
 
@@ -43,6 +45,7 @@ public sealed class UpdateProbeTests {
 
     [Fact]
     public async Task Probe_TreatsCurrentReleaseAsUpToDate() {
+        if (!ManualTestGate.RequireNetwork(_output)) return;
         // 与上一条相反:把"当前版本"设成一个极大的版本,应当判定没有更新
         var info = await UpdateChecker.CheckAsync("9999.12.31", "osx-arm64");
 

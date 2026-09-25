@@ -27,6 +27,7 @@ namespace KindleMate2.Tests;
 ///         FORCE_RESET_ON_CLOSE 标记),见 <c>Probe_TwoConsecutiveSessions_SecondStillOpens</c>。</item>
 /// </list>
 /// </summary>
+[Trait("Category", "Manual")]
 public sealed class MtpDeviceProbeTests {
     private readonly ITestOutputHelper _output;
 
@@ -34,6 +35,7 @@ public sealed class MtpDeviceProbeTests {
 
     [Fact]
     public void Probe_PrintsWhatLibMtpSees() {
+        if (!ManualTestGate.RequireDevice(_output)) return;
         if (!MtpInterop.IsAvailable()) {
             _output.WriteLine("未安装 libmtp —— 跳过(CI 环境属正常)。本地可 brew install libmtp。");
             return;
@@ -70,6 +72,7 @@ public sealed class MtpDeviceProbeTests {
     /// </summary>
     [Fact]
     public void Probe_ImportsFromRealDevice_ViaDeviceManager() {
+        if (!ManualTestGate.RequireDevice(_output)) return;
         if (!MtpInterop.IsAvailable()) {
             _output.WriteLine("未安装 libmtp —— 跳过。");
             return;
@@ -128,6 +131,7 @@ public sealed class MtpDeviceProbeTests {
     /// </summary>
     [Fact]
     public void Probe_MtpWriteBack_RoundTripsByteForByte() {
+        if (!ManualTestGate.RequireDevice(_output)) return;
         if (!MtpInterop.IsAvailable()) {
             _output.WriteLine("未安装 libmtp —— 跳过。");
             return;
@@ -213,6 +217,7 @@ public sealed class MtpDeviceProbeTests {
     /// </summary>
     [Fact]
     public void Probe_TwoConsecutiveSessions_SecondStillOpens() {
+        if (!ManualTestGate.RequireDevice(_output)) return;
         if (!MtpInterop.IsAvailable()) {
             _output.WriteLine("未安装 libmtp —— 跳过。");
             return;
@@ -255,6 +260,7 @@ public sealed class MtpDeviceProbeTests {
     /// </summary>
     [Fact]
     public void Probe_DetectsMtpKindleOnUsb_WithoutSessionOrReset() {
+        if (!ManualTestGate.RequireDevice(_output)) return;
         if (!KindleUsbProbe.IsAvailable()) {
             _output.WriteLine("libusb 不可用(未随包也未安装)—— 跳过。");
             return;

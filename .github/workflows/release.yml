@@ -57,7 +57,7 @@ name: release
 # (不在本仓库);发布后需在站点把对应 AppCast 指向本 Release 资产(workflow 不含该步骤)。
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
@@ -71,6 +71,24 @@ on:
         default: ''
 
 jobs:
+  # 发布前必须先过测试:此前 release 流程完全不跑 dotnet test,打一个 tag 就能把未经测试的
+  # 二进制发出去。这里在 ubuntu 上跑跨平台单测(真机/联网探测默认跳过),publish 各 job 依赖它。
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Run tests
+        run: dotnet test KindleMate2.Tests/KindleMate2.Tests.csproj -c Release --filter "Category!=Manual"
+
   # 版本号只解析一次,供各构建与发布 job 复用(原先在 publish / release 各写一遍,改一处容易漏另一处;
   # 版本号错了会让 Release 打错 tag,所以收敛成单一来源)。
   version:
@@ -81,22 +99,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # 输入经 env 传入,不直接插值进脚本 —— 否则手动 dispatch 的 version 里塞
+      # `"; <payload>; #` 会被当 PowerShell 执行(命令注入)。
       - name: Resolve version
         id: ver
         shell: pwsh
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if ("${{ github.ref_type }}" -eq 'tag') { $v = "${{ github.ref_name }}" }
-          else { $v = "${{ github.event.inputs.version }}" }
-          if ($v -eq '') {
+          if ($env:REF_TYPE -eq 'tag') { $v = $env:REF_NAME }
+          else { $v = $env:INPUT_VERSION }
+          if ($v -eq '' -or $v -eq $null) {
             $m = Select-String -Path 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj' -Pattern '<Version>([^<]+)</Version>'
             $v = $m.Matches[0].Groups[1].Value
           }
           if ($v -eq '') { throw '无法解析版本号:请显式传入 version,或检查 csproj 里的 <Version>' }
+          # 只允许数字点分(可带预发布后缀):版本号随后要拼进 `-p:Version=` 与 tag,
+          # 校验能挡住借它做命令注入 / 非法 tag。
+          if ($v -notmatch '^\d+(\.\d+){1,3}(-[0-9A-Za-z.]+)?$') { throw "版本号含非法字符,拒绝:$v" }
           Write-Output "本次发布版本号: $v"
           Write-Output "version=$v" >> $env:GITHUB_OUTPUT
 
   publish:
-    needs: version
+    needs: [version, test]
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -143,7 +170,7 @@ jobs:
   # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在 Linux 上由 Devices.Linux
   # 兜底,Windows / macOS 专有实现各自按「平台 + TFM」条件引用,不参与本产物的编译。
   publish-linux:
-    needs: version
+    needs: [version, test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -225,7 +252,7 @@ jobs:
   # macOS 产物:.app 装在 .dmg 里(见文件头变更 C)。
   # 只出自包含版;框架依赖版在 macOS 上要求用户自行安装 .NET 运行时,不值当为对称多发两个。
   publish-macos:
-    needs: version
+    needs: [version, test]
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -248,6 +275,44 @@ jobs:
 
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Release -r ${{ matrix.rid }} --self-contained true -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+
+      # macOS 签名/公证是**可选**的:配置了 APPLE_CERTIFICATE_BASE64 就启用,否则退回 ad-hoc。
+      # 这样未持有 Apple 开发者账号(或 fork)时仍能构建,只是用户首启需清 quarantine。
+      - name: Detect macOS signing credentials
+        id: signing
+        shell: bash
+        env:
+          CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+        run: |
+          if [ -n "${CERT_B64:-}" ]; then
+            echo "signed=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=0" >> "$GITHUB_OUTPUT"
+            echo "未配置 APPLE_CERTIFICATE_BASE64 → 本次 macOS 产物用 ad-hoc 签名(用户需清 quarantine)"
+          fi
+
+      - name: Import Developer ID certificate
+        if: steps.signing.outputs.signed == '1'
+        shell: bash
+        env:
+          CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KC="$RUNNER_TEMP/km2-signing.keychain-db"
+          KC_PASS="$(openssl rand -hex 16)"
+          echo "$CERT_B64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KC_PASS" "$KC" >/dev/null
+          security list-keychain -d user -s "$KC" $(security list-keychain -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          IDENTITY="$(security find-identity -v -p codesigning "$KC" | awk -F'"' '/Developer ID Application/{print $2; exit}')"
+          if [ -z "$IDENTITY" ]; then echo "::error::证书里没有 Developer ID Application 身份"; exit 1; fi
+          echo "签名身份:$IDENTITY"
+          echo "IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
       # 图标:仓库里最大的图标源是 Assets/bookmark.png(256×256),512/1024 两档只能插值放大。
       - name: Build .icns from bookmark.png
@@ -308,8 +373,23 @@ jobs:
           # 脚本本身可在本机单独跑,便于脱离 CI 验证。
           bash scripts/bundle-libmtp.sh "$APP" --arch universal --build-dir build/libmtp
 
-          # ad-hoc 签名:没有 Apple 开发者账号做不了公证,但 arm64 上「有有效签名」是硬要求。
-          codesign --force --deep --sign - "$APP"
+          # 签名:有 Developer ID 就正式签(hardened runtime + entitlements,由内向外),否则退回
+          # ad-hoc。两条路都必须让**内嵌原生库**拿到有效签名(arm64 上内核要求所有可执行代码有签名)。
+          # ⚠️ 真正 JIT 的进程镜像是 .NET apphost `Contents/MacOS/KindleMate2`(launch 脚本 exec 到它),
+          #    所以 JIT 相关 entitlements 必须签在它上面,而不是 CFBundleExecutable(launch,bash)。
+          #    Developer ID 分支目前**未经真机验证**(尚无 Apple 账号);启用后需实跑一次确认公证通过。
+          ENTITLEMENTS="$GITHUB_WORKSPACE/scripts/macos-entitlements.plist"
+          if [ -n "${IDENTITY:-}" ]; then
+            echo "Developer ID 签名:$IDENTITY"
+            for f in $(find "$APP/Contents" -type f \( -name '*.dylib' -o -name '*.so' -o -name 'createdump' \)); do
+              codesign --force --options runtime --timestamp --sign "$IDENTITY" "$f"
+            done
+            codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP/Contents/MacOS/KindleMate2"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          else
+            echo "无 Developer ID 凭据 → ad-hoc 签名(用户首次启动需清 quarantine)"
+            codesign --force --deep --sign - "$APP"
+          fi
           codesign --verify --verbose=2 "$APP"
           echo "app bundle 就绪:$(du -sh "$APP" | cut -f1)"
 
@@ -322,7 +402,39 @@ jobs:
           ln -s /Applications "build/dmg/Applications"   # 打开镜像后可直接拖入 Applications
           hdiutil create -volname "Kindle Mate 2" -srcfolder build/dmg -ov -format UDZO \
             "KindleMate2_${{ matrix.suffix }}.dmg"
+          # 有 Developer ID 时把 dmg 也签上(公证要求外层也签)
+          if [ -n "${IDENTITY:-}" ]; then
+            codesign --force --timestamp --sign "$IDENTITY" "KindleMate2_${{ matrix.suffix }}.dmg"
+          fi
           ls -l "KindleMate2_${{ matrix.suffix }}.dmg"
+
+      # 公证 + 装订(仅签名时)。notarytool 会把 dmg 上传给 Apple 审核,通过后把凭据装订进 dmg,
+      # 用户下载后 Gatekeeper 离线也能验过 —— 这是"免清 quarantine"的关键一步。
+      - name: Notarize dmg + staple
+        if: steps.signing.outputs.signed == '1'
+        shell: bash
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          DMG="KindleMate2_${{ matrix.suffix }}.dmg"
+          if [ -n "${APPLE_API_KEY_BASE64:-}" ]; then
+            KEY_DIR="$RUNNER_TEMP/private_keys"
+            mkdir -p "$KEY_DIR"
+            echo "$APPLE_API_KEY_BASE64" | base64 --decode > "$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8"
+            AUTH=(--key "$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+          else
+            AUTH=(--apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID")
+          fi
+          xcrun notarytool submit "$DMG" "${AUTH[@]}" --wait
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          echo "已公证并装订:$DMG"
 
       # 发版前把产物真验一遍:挂载镜像 → 校验 bundle 签名 → 架构匹配时用 launcher 实跑 --smoke。
       # 签名、权限、架构、launcher 的 cd 逻辑,任何一项不对都在这里变红灯,而不是发一个跑不起来的包。
@@ -393,9 +505,65 @@ jobs:
           path: KindleMate2_${{ matrix.suffix }}.dmg
           retention-days: 1
 
+  # 生成并 GPG 签名 SHA256SUMS。独立成 job 是因为 gpg 在 Linux runner 上是一等公民
+  # (Windows runner 未预装 gpg),且签名与"创建 Release"解耦。
+  # 覆盖对象 = 12 个二进制资产(应用内更新正是校验这些);LGPL 源码包的哈希不在此列。
+  checksums:
+    needs: [publish, publish-linux, publish-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all binary assets
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum KindleMate2_* > SHA256SUMS
+          cat SHA256SUMS
+
+      # 复用维护者的 GPG 密钥(带口令)对清单做分离签名。公钥随 Release 一并发布,
+      # 用户无需从 keyserver 取。缺 secret 直接报错,避免发出"看似签了其实没签"的发布。
+      - name: GPG-sign SHA256SUMS
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::缺少 GPG_PRIVATE_KEY secret,无法签名发布包"; exit 1
+          fi
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          # 带口令的密钥在无人值守环境下靠 loopback 提供口令;显式允许它更稳。
+          echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg --armor --export > dist/KindleMate2-release-key.asc
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+              --detach-sign --armor --output dist/SHA256SUMS.asc dist/SHA256SUMS
+          # 自检:签名必须能验过,否则宁可让发布失败
+          gpg --verify dist/SHA256SUMS.asc dist/SHA256SUMS
+          echo "签名指纹:$(gpg --with-colons --list-keys | awk -F: '/^fpr:/{print $10; exit}')"
+
+      - name: Upload signed checksums
+        uses: actions/upload-artifact@v7
+        with:
+          name: assets-checksums
+          path: |
+            dist/SHA256SUMS
+            dist/SHA256SUMS.asc
+            dist/KindleMate2-release-key.asc
+          retention-days: 1
+
   release:
-    needs: [version, publish, publish-linux, publish-macos]
+    needs: [version, publish, publish-linux, publish-macos, checksums]
     runs-on: windows-latest
+    # 只有这一个 job 需要写权限(创建 Release);其余 job 只读。
+    permissions:
+      contents: write
     steps:
       - name: Checkout (full history for notes)
         uses: actions/checkout@v7
@@ -423,9 +591,14 @@ jobs:
           }
           Get-ChildItem dist | Select-Object Name, Length | Format-Table
 
+      # SHA256SUMS / SHA256SUMS.asc / KindleMate2-release-key.asc 由上面的 checksums job
+      # 生成并签名,已随「Download all assets」(merge-multiple)一起落进 dist。
+
       - name: Build release notes (previous tag .. HEAD)
         shell: pwsh
         run: |
+          # 注:一旦启用 macOS 签名/公证(配置了 APPLE_* secrets),请把下面那条
+          #     「macOS 未做公证…清 quarantine」的说明改掉。
           $tags = @(git tag --sort=-version:refname)
           $prev = $null
           if ($tags.Count -gt 1) { $prev = $tags[1] }
@@ -439,6 +612,11 @@ jobs:
             '- 带 `_runtime` = 自包含(免装 .NET 运行时);不带 = 需先安装对应平台的 .NET 10 运行时。macOS 只提供自包含包。',
             '- **本版起目标框架由 .NET 8 升到 .NET 10**(.NET 8 支持于 2026-11-10 终止):使用**不带 `_runtime` 后缀**的包,请把 .NET 8 运行时替换为 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)(Windows 需 Desktop Runtime);改用带 `_runtime` 的包则无需安装任何运行时。',
             '- Linux 自本版起要求 glibc ≥ 2.27(此前为 2.23):CentOS 7 等老发行版请改用自包含包或先升级系统。',
+            '',
+            '**校验下载(完整性)**',
+            '- 每个 Release 附 `SHA256SUMS`(SHA-256 清单)、`SHA256SUMS.asc`(维护者 GPG 签名)与公钥 `KindleMate2-release-key.asc`。',
+            '- 验证:`gpg --import KindleMate2-release-key.asc` → `gpg --verify SHA256SUMS.asc SHA256SUMS` → `sha256sum -c SHA256SUMS`(Windows 可用 `Get-FileHash`)。',
+            '- 应用内「检查更新」在下载安装包后会自动按 `SHA256SUMS` 校验 SHA-256。',
             '',
             '**各平台数据目录**',
             '- Windows:程序所在目录(与旧版一致)。',

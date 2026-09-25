@@ -1,6 +1,6 @@
 # KindleMate2 架构文档
 
-> 最后更新：2026-09-13
+> 最后更新：2026-09-25
 
 ## 项目概述
 
@@ -9,7 +9,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 统计与导出（Markdown）。
 
 当前形态：**Avalonia 是唯一的桌面 UI**，架构按分层组织，并已做到
-**库层跨平台**（Windows / macOS / Linux 均可构建，Windows 具备完整设备支持）。
+**库层与设备层均跨平台**（Windows / macOS / Linux 均可构建，三平台设备同步均支持）。
 
 ---
 
@@ -24,8 +24,10 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | 领域层 (Domain) | `KindleMate2.Domain` | 实体与仓储接口 |
 | 基础设施层 (Infrastructure) | `KindleMate2.Infrastructure` | SQLite 仓储实现、建库 / 迁移 / 备份、Markdown 导出 |
 | 共享层 (Shared) | `KindleMate2.Shared` | 常量、实体、多语言资源（`Strings`） |
-| 平台实现 | `KindleMate2.Devices.Windows` | Windows 专有设备实现（USB 盘符 + MTP + WMI） |
-| 测试 | `KindleMate2.Tests` | 单元测试（83 个） |
+| 平台实现 | `KindleMate2.Devices.Windows` | Windows 专有设备实现（USB 盘符 + MTP(MediaDevices) + WMI） |
+| 平台实现 | `KindleMate2.Devices.Posix` | macOS/Linux 共用的设备实现（libmtp P/Invoke + libusb 只读探测 + 卷扫描） |
+| 平台壳 | `KindleMate2.Devices.MacOS` / `KindleMate2.Devices.Linux` | 上面 Posix 实现的薄壳（候选挂载根不同），均为中性 `net10.0` |
+| 测试 | `KindleMate2.Tests` | 单元测试（`dotnet test`；真机/联网探测默认跳过，需环境变量开启） |
 
 > 历史说明：早期的 WPF（`KindleMate2.UI`）与 Windows Forms（`KindleMate2`）两个壳
 > 已于 2026-09-13 退役删除，`DarkModeForms` 子模块随之移除。
@@ -41,6 +43,9 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Application` | `net10.0` | 纯跨平台 |
 | `KindleMate2.Avalonia` | `net10.0-windows;net10.0` | Windows 用 `WinExe`，其他平台用 `Exe` |
 | `KindleMate2.Devices.Windows` | `net10.0-windows` | 仅被 Avalonia 的 Windows TFM 引用 |
+| `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
+| `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
+| `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
 | `KindleMate2.Tests` | `net10.0` | 只引用 Application / Infrastructure / Domain，可跨平台运行 |
 
 ### 3. 项目依赖关系
@@ -52,6 +57,7 @@ graph TD
     UI --> DOM["KindleMate2.Domain<br/>net10.0"]
     UI --> SH["KindleMate2.Shared<br/>net10.0"]
     UI -. "仅 Windows TFM" .-> DEV["KindleMate2.Devices.Windows<br/>net10.0-windows"]
+    UI -. "非 Windows" .-> POS["Devices.MacOS / Devices.Linux<br/>net10.0（薄壳）"]
 
     APP --> DOM
     APP --> INF
@@ -62,6 +68,12 @@ graph TD
     DEV --> INF
     DEV --> SH
 
+    POS --> POSIX["KindleMate2.Devices.Posix<br/>net10.0"]
+    POSIX --> APP
+    POSIX --> DOM
+    POSIX --> INF
+    POSIX --> SH
+
     INF --> DOM
     INF --> SH
 
@@ -70,21 +82,19 @@ graph TD
     T["KindleMate2.Tests<br/>net10.0"] --> APP
     T --> INF
     T --> DOM
+    T --> POS
+    T --> POSIX
 ```
 
 ### 4. 平台专有代码的边界
 
 **原则：平台专有代码一律收敛到独立程序集，不在业务层散布条件编译。**
 
-- 唯一平台专有程序集是 `KindleMate2.Devices.Windows`（USB 盘符枚举、MTP、WMI 事件监听）。
-- `Application` 只定义跨平台接口 `IDeviceManager`；非 Windows 平台使用
-  `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛
-  `PlatformNotSupportedException` 而不是静默失败）。
-- **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 ——
-  否则 Application 就得引用 Windows 专有程序集。Avalonia 在
-  `Services/DatabaseSession.cs` 内按 `#if WINDOWS` 选择实现。
-- Avalonia 壳仅在 Windows TFM 下引用设备项目，因此 `KindleMate2.Devices.Windows.dll`
-  只出现在 `net10.0-windows` 的输出目录中。
+- Windows 专有程序集是 `KindleMate2.Devices.Windows`（USB 盘符枚举、MTP(MediaDevices)、WMI 事件监听，`net10.0-windows`，依赖 `MediaDevices` + `System.Management`）。
+- macOS / Linux 的设备实现是纯 BCL 的 `KindleMate2.Devices.Posix`（`net10.0`：libmtp 的 P/Invoke 绑定、libusb 只读 USB 探测、卷扫描），由两个薄壳 `Devices.MacOS` / `Devices.Linux` 注入各自的候选挂载根；因此这两个程序集可在**任意平台**编译与单测（用例把卷根指到临时目录）。
+- `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
+- **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
+- Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。
 
 ---
 
@@ -172,7 +182,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 |---|---|---|
 | 只读自检 | `KindleMate2 --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
-| 单元测试 | `dotnet test KindleMate2.Tests` | 83 个用例，跨平台 TFM |
+| 单元测试 | `dotnet test KindleMate2.Tests` | 跨平台 TFM；真机 / 联网探测默认跳过，需 `KM2_MANUAL_DEVICE_TESTS=1` / `KM2_MANUAL_NETWORK_TESTS=1` 手动开启 |
 | CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
 | CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz（内含 `kindlemate2` 启动器）+ macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
 
@@ -182,9 +192,9 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 
 ## 已知边界与待办
 
-- **非 Windows 的 Kindle 设备支持**尚未实现（`NullDeviceManager` 兜底）；
-  macOS / Linux 的挂载点与 libmtp 需要各自实现。
-  **因此非 Windows 虽有发布包，设备同步仍不可用**，其余功能完整。
+- **设备支持**：Windows 走 USB 盘符 + MTP(MediaDevices)；macOS / Linux 走 USB 大容量存储 + MTP(libmtp，`Devices.Posix`)。
+  macOS 发布包内嵌 libmtp/libusb；Linux 依赖系统自带的 libmtp/libusb（缺失时仅 MTP 机型不可用，USB 大容量存储照常）。
+  三者之外的平台才落到 `NullDeviceManager`，设备同步不可用，其余功能完整。
 - **各平台打包发布已完成**：`release.yml` 共 12 个资产 —— Windows 六变体 zip（x64/x86/arm64 ×
   框架依赖/自包含）+ Linux 四变体 tar.gz（linux-x64 / linux-arm64 × 两种）+ macOS 两个 dmg
   （macos-arm64 / macos-x64，均自包含，内含 `KindleMate2.app`）。
@@ -197,7 +207,10 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
   iconutil / codesign / hdiutil 也只有 macOS 有）：bundle 内放一个 `launch` 脚本当 `CFBundleExecutable`，
   先 `cd` 到 `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，
   而库路径按「当前目录」解析（与原版一致）；**不能切进 .app 内部**（更新应用会丢数据，且改动 bundle
-  内容会破坏代码签名）。  签名只到 ad-hoc（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine。
+  内容会破坏代码签名）。**签名默认只到 ad-hoc**（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine；
+  `release.yml` 已预留可选的 Developer ID 签名 + 公证（配置 `APPLE_CERTIFICATE_BASE64` 等 secrets 即启用，
+  含 `scripts/macos-entitlements.plist`；未配置时自动回退 ad-hoc）。该正式签名路径尚未实机验证。
+  另：`checksums` job 用维护者的 GPG 密钥（`GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`）对 `SHA256SUMS` 做分离签名。
   **三平台数据目录约定**：Windows = 程序所在目录（同旧版，双击 exe 的默认工作目录）；
   Linux = `~/.local/share/KindleMate2/`；macOS = `~/Library/Application Support/KindleMate2/`。
   库文件与 `Backups`/`Imports`/`Temp`/`Exports` 都在这之下（由启动器切换工作目录实现，程序本身不改）。
@@ -205,6 +218,6 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
   `CS0103: InitializeComponent 不存在`。
-- **自动更新**（AutoUpdater.NET + AppCast）尚未迁移到 Avalonia 壳。
+- **自动更新**：Avalonia 壳内置了更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。站点 AppCast（`update_*.xml`）不在本仓库，发版后需手动指向新的 Release。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。

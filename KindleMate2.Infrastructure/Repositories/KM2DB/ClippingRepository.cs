@@ -160,15 +160,15 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var sql = type switch {
-                AppEntities.SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' ESCAPE '\\' OR bookname LIKE '%' || @strSearch || '%' ESCAPE '\\' OR authorname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
             var query = "SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -395,6 +395,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             }
 
             // ② 兜底:逐条插入,每条独立事务,单条失败只跳过该条而不影响其余
+            //    但**只跳过可跳过项**(重复 key / key 为空);磁盘满、库被锁等系统性问题向上抛,
+            //    否则会被误报成「导入成功、只少几条」。
             var inserted = 0;
             foreach (Clipping clipping in listClippings) {
                 using var rowTransaction = connection.BeginTransaction();
@@ -403,7 +405,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         inserted++;
                     }
                     rowTransaction.Commit();
-                } catch {
+                } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
                     try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }

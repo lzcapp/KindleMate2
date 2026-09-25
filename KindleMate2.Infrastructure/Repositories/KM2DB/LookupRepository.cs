@@ -123,25 +123,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var sql = string.Empty;
             switch (type) {
                 case AppEntities.SearchType.BookTitle:
-                    sql = "WHERE title LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE title LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Author:
-                    sql = "WHERE authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Content:
-                    sql = "WHERE usage LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE usage LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Vocabulary:
                 case AppEntities.SearchType.Stem:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.All:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\' OR usage LIKE '%' || @strSearch || '%' ESCAPE '\\' OR title LIKE '%' || @strSearch || '%' ESCAPE '\\' OR authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
             }
             var query = "SELECT DISTINCT * FROM lookups " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -232,7 +232,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key", connection);
+            // lookups 没有主键,身份是 (word_key, timestamp)(同一词可被查多次)。
+            // 之前只按 word_key 定位,会把同键**所有行**一并改写,并把它们的 timestamp
+            // 压成同一个值 —— 直接撞 UNIQUE(word_key, timestamp) 且误改无关行。
+            // 这里用 null 安全的 IS 对齐 Delete(wordKey, timestamp) 的定位口径。
+            var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key AND timestamp IS @timestamp", connection);
             cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
             cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
