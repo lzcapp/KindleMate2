@@ -721,12 +721,17 @@ namespace KindleMate2.Application.Services.KM2DB {
         private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings,
             IProgress<OperationProgress>? progress = null, bool crossBookDuplicates = true) {
             if (!crossBookDuplicates) {
-                // 导入收尾的清理:判重只在**同一本书内**生效。跨书同文的两行是两条各自独立的
-                // 高亮(导入链路按「书+作者+内容」判重、有意保留跨书同文,见 KmateDedup
-                // 与 DataLayerFixTests 的导入用例)—— 跨书判重会把用户**库里已有**的那条
-                // 一并删掉。逐书递归即可复用同一套判定(精确重复 + 包含检查都限本书内)。
+                // 导入收尾的清理:判重只在**同一本书内**生效。跨书同文是两条各自独立的高亮 ——
+                // 两条导入链路都**有意保留**它:My Clippings.txt 走 HandleClippings 的
+                // key=日期|位置 判重(跨书 key 不同,两条都留);KM/km3 .dat 走 KmateDedup 的
+                // (书, 作者, 内容) 判重。跨书判重会把用户**库里已有**的那条一并删掉,
+                // 所以这里逐书递归,复用同一套判定(精确重复 + 包含检查都限本书内)。
+                //
+                // 分组键取 (书, 作者),与 KmateDedup 的作用域对齐 —— 只按书名分组会把
+                // 「同名、不同作者」的两本书并成一本,可能误删。
                 var perBook = new List<Clipping>();
-                foreach (var bookGroup in clippings.GroupBy(c => c.BookName ?? string.Empty, StringComparer.Ordinal)) {
+                foreach (var bookGroup in clippings.GroupBy(
+                    c => (Book: c.BookName ?? string.Empty, Author: c.AuthorName ?? string.Empty))) {
                     perBook.AddRange(FindDuplicatedClippings(bookGroup.ToList(), progress));
                 }
                 return perBook;

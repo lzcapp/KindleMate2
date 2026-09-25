@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using KindleMate2.Shared.Diagnostics;
@@ -8,7 +7,19 @@ namespace KindleMate2.Application.Services;
 
 /// <summary>发布页上的一个下载资产。</summary>
 /// <param name="ChecksumUrl">同一发布页上 <c>SHA256SUMS</c> 资产的下载地址(旧发布可能没有,此时为 null)。</param>
-public sealed record UpdateAsset(string Name, string DownloadUrl, long Size, string? ChecksumUrl = null);
+public sealed record UpdateAsset(string Name, string DownloadUrl, long Size, string? ChecksumUrl = null) {
+    /// <summary>
+    /// 资产名能否安全拼进本地路径:非空、不是 <c>.</c>/<c>..</c>、且不含任何目录分隔符
+    /// (<c>/</c> 与 <c>\</c> 都拒 —— 后者在 Unix 上不是分隔符,但发布资产名从不含它)。
+    /// 发布页 JSON 的 <c>name</c> 会直接参与 <c>Path.Combine</c>,不挡的话文件会落到临时目录之外。
+    /// 检查侧与安装侧共用这一处判定。
+    /// </summary>
+    public static bool IsSafeName(string? name) =>
+        !string.IsNullOrWhiteSpace(name)
+        && name is not ("." or "..")
+        && name.IndexOf('/') < 0
+        && name.IndexOf('\\') < 0;
+}
 
 /// <summary>一次「有新版本」的结果。</summary>
 /// <param name="Version">发布页上的版本(取自 tag,形如 <c>2026.09.17</c>)。</param>
@@ -106,8 +117,8 @@ public static class UpdateChecker {
             }
 
             // 资产名会直接参与本地路径拼接:含分隔符/相对段的一律不认(正常名从不含)。
-            if (!string.Equals(Path.GetFileName(name!), name!, StringComparison.Ordinal)) {
-                AppLog.Write($"[UpdateChecker] 跳过含路径分隔符的资产名:{name}");
+            if (!UpdateAsset.IsSafeName(name)) {
+                AppLog.Write($"[UpdateChecker] 跳过含路径分隔符或相对段的资产名:{name}");
                 continue;
             }
 

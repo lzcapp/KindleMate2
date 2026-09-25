@@ -48,47 +48,63 @@ public static class UpdateInstaller {
     /// <summary>下载到临时目录,返回文件路径。失败抛异常(调用方要提示用户)。</summary>
     public static async Task<string> DownloadAsync(UpdateAsset asset, IProgress<double>? progress = null,
         HttpClient? httpClient = null, CancellationToken cancellationToken = default) {
-        var directory = Path.Combine(Path.GetTempPath(), "km2-update-" + Guid.NewGuid().ToString("N")[..8]);
-        Directory.CreateDirectory(directory);
         // 资产名来自发布页 JSON:含路径分隔符/相对段时 Path.Combine 会把文件落到临时目录之外,
-        // 这里直接拒绝(正常资产名从不含分隔符;UpdateChecker 侧也有一道同样的闸)。
-        var fileName = Path.GetFileName(asset.Name);
-        if (!string.Equals(fileName, asset.Name, StringComparison.Ordinal)) {
-            throw new InvalidOperationException($"非法的资产名(含路径分隔符):{asset.Name}");
+        // 这里直接拒绝(正常资产名从不含分隔符;UpdateChecker 侧共用同一处判定)。
+        // 先校验再建目录 —— 非法名一个临时目录都不该落。
+        if (!UpdateAsset.IsSafeName(asset.Name)) {
+            throw new InvalidOperationException($"非法的资产名(含路径分隔符或相对段):{asset.Name}");
         }
+        var fileName = asset.Name;
+
+        var directory = Path.Combine(TempRoot, "km2-update-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(directory);
         var target = Path.Combine(directory, fileName);
 
-        using var owned = httpClient is null ? new HttpClient { Timeout = TimeSpan.FromMinutes(10) } : null;
-        var client = httpClient ?? owned!;
+        try {
+            using var owned = httpClient is null ? new HttpClient { Timeout = TimeSpan.FromMinutes(10) } : null;
+            var client = httpClient ?? owned!;
 
-        using var response = await client.GetAsync(asset.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-            .ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+            using var response = await client.GetAsync(asset.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-        var total = asset.Size > 0 ? asset.Size : response.Content.Headers.ContentLength ?? 0;
+            var total = asset.Size > 0 ? asset.Size : response.Content.Headers.ContentLength ?? 0;
 
-        // 写入流必须在校验之前关闭/落盘 —— 否则 File.OpenRead 会因文件仍被占用而失败。
-        long written = 0;
-        await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-        await using (var destination = File.Create(target)) {
-            var buffer = new byte[81920];
-            int read;
-            while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0) {
-                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                written += read;
-                if (total > 0) {
-                    progress?.Report((double)written / total);
+            // 写入流必须在校验之前关闭/落盘 —— 否则 File.OpenRead 会因文件仍被占用而失败。
+            long written = 0;
+            await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+            await using (var destination = File.Create(target)) {
+                var buffer = new byte[81920];
+                int read;
+                while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0) {
+                    await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                    written += read;
+                    if (total > 0) {
+                        progress?.Report((double)written / total);
+                    }
                 }
             }
+
+            AppLog.Write($"[UpdateInstaller] 已下载 {asset.Name}({written} 字节)");
+
+            // 下载完立刻校验完整性(清单缺失/命中不到/哈希不一致一律中止)。放在解压/替换之前
+            // —— 坏包不该走到"删旧包"那一步。
+            await VerifyChecksumAsync(asset, target, client, cancellationToken).ConfigureAwait(false);
+
+            return target;
+        } catch {
+            // fail-closed:清单缺失/哈希不符都会抛到这里。半成品/未校验过的包不该留在临时目录
+            // (这里的所有文件流都已随 try 作用域退出而关闭,删得掉)。
+            TryDeleteDirectory(directory);
+            throw;
         }
+    }
 
-        AppLog.Write($"[UpdateInstaller] 已下载 {asset.Name}({written} 字节)");
+    /// <summary>临时目录根。生产恒为系统临时目录;测试改写它以隔离「失败清理」断言。</summary>
+    internal static string TempRoot { get; set; } = Path.GetTempPath();
 
-        // 下载完立刻校验完整性(清单缺失/命中不到/哈希不一致一律中止)。放在解压/替换之前
-        // —— 坏包不该走到"删旧包"那一步。
-        await VerifyChecksumAsync(asset, target, client, cancellationToken).ConfigureAwait(false);
-
-        return target;
+    private static void TryDeleteDirectory(string directory) {
+        try { Directory.Delete(directory, true); } catch { /* best effort */ }
     }
 
     /// <summary>
