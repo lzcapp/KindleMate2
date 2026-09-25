@@ -207,7 +207,10 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
   iconutil / codesign / hdiutil 也只有 macOS 有）：bundle 内放一个 `launch` 脚本当 `CFBundleExecutable`，
   先 `cd` 到 `~/Library/Application Support/KindleMate2/` 再 exec 真程序 —— Finder 启动时工作目录是 `/`，
   而库路径按「当前目录」解析（与原版一致）；**不能切进 .app 内部**（更新应用会丢数据，且改动 bundle
-  内容会破坏代码签名）。  签名只到 ad-hoc（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine。
+  内容会破坏代码签名）。**签名默认只到 ad-hoc**（无 Apple 开发者账号、未公证），用户首次启动需清 quarantine；
+  `release.yml` 已预留可选的 Developer ID 签名 + 公证（配置 `APPLE_CERTIFICATE_BASE64` 等 secrets 即启用，
+  含 `scripts/macos-entitlements.plist`；未配置时自动回退 ad-hoc）。该正式签名路径尚未实机验证。
+  另：`checksums` job 用维护者的 GPG 密钥（`GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`）对 `SHA256SUMS` 做分离签名。
   **三平台数据目录约定**：Windows = 程序所在目录（同旧版，双击 exe 的默认工作目录）；
   Linux = `~/.local/share/KindleMate2/`；macOS = `~/Library/Application Support/KindleMate2/`。
   库文件与 `Backups`/`Imports`/`Temp`/`Exports` 都在这之下（由启动器切换工作目录实现，程序本身不改）。

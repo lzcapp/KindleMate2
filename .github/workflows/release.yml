@@ -276,6 +276,44 @@ jobs:
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0 -c Release -r ${{ matrix.rid }} --self-contained true -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
 
+      # macOS 签名/公证是**可选**的:配置了 APPLE_CERTIFICATE_BASE64 就启用,否则退回 ad-hoc。
+      # 这样未持有 Apple 开发者账号(或 fork)时仍能构建,只是用户首启需清 quarantine。
+      - name: Detect macOS signing credentials
+        id: signing
+        shell: bash
+        env:
+          CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+        run: |
+          if [ -n "${CERT_B64:-}" ]; then
+            echo "signed=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=0" >> "$GITHUB_OUTPUT"
+            echo "未配置 APPLE_CERTIFICATE_BASE64 → 本次 macOS 产物用 ad-hoc 签名(用户需清 quarantine)"
+          fi
+
+      - name: Import Developer ID certificate
+        if: steps.signing.outputs.signed == '1'
+        shell: bash
+        env:
+          CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KC="$RUNNER_TEMP/km2-signing.keychain-db"
+          KC_PASS="$(openssl rand -hex 16)"
+          echo "$CERT_B64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KC_PASS" "$KC" >/dev/null
+          security list-keychain -d user -s "$KC" $(security list-keychain -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          IDENTITY="$(security find-identity -v -p codesigning "$KC" | awk -F'"' '/Developer ID Application/{print $2; exit}')"
+          if [ -z "$IDENTITY" ]; then echo "::error::证书里没有 Developer ID Application 身份"; exit 1; fi
+          echo "签名身份:$IDENTITY"
+          echo "IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
       # 图标:仓库里最大的图标源是 Assets/bookmark.png(256×256),512/1024 两档只能插值放大。
       - name: Build .icns from bookmark.png
         shell: bash
@@ -335,8 +373,23 @@ jobs:
           # 脚本本身可在本机单独跑,便于脱离 CI 验证。
           bash scripts/bundle-libmtp.sh "$APP" --arch universal --build-dir build/libmtp
 
-          # ad-hoc 签名:没有 Apple 开发者账号做不了公证,但 arm64 上「有有效签名」是硬要求。
-          codesign --force --deep --sign - "$APP"
+          # 签名:有 Developer ID 就正式签(hardened runtime + entitlements,由内向外),否则退回
+          # ad-hoc。两条路都必须让**内嵌原生库**拿到有效签名(arm64 上内核要求所有可执行代码有签名)。
+          # ⚠️ 真正 JIT 的进程镜像是 .NET apphost `Contents/MacOS/KindleMate2`(launch 脚本 exec 到它),
+          #    所以 JIT 相关 entitlements 必须签在它上面,而不是 CFBundleExecutable(launch,bash)。
+          #    Developer ID 分支目前**未经真机验证**(尚无 Apple 账号);启用后需实跑一次确认公证通过。
+          ENTITLEMENTS="$GITHUB_WORKSPACE/scripts/macos-entitlements.plist"
+          if [ -n "${IDENTITY:-}" ]; then
+            echo "Developer ID 签名:$IDENTITY"
+            for f in $(find "$APP/Contents" -type f \( -name '*.dylib' -o -name '*.so' -o -name 'createdump' \)); do
+              codesign --force --options runtime --timestamp --sign "$IDENTITY" "$f"
+            done
+            codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP/Contents/MacOS/KindleMate2"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          else
+            echo "无 Developer ID 凭据 → ad-hoc 签名(用户首次启动需清 quarantine)"
+            codesign --force --deep --sign - "$APP"
+          fi
           codesign --verify --verbose=2 "$APP"
           echo "app bundle 就绪:$(du -sh "$APP" | cut -f1)"
 
@@ -349,7 +402,39 @@ jobs:
           ln -s /Applications "build/dmg/Applications"   # 打开镜像后可直接拖入 Applications
           hdiutil create -volname "Kindle Mate 2" -srcfolder build/dmg -ov -format UDZO \
             "KindleMate2_${{ matrix.suffix }}.dmg"
+          # 有 Developer ID 时把 dmg 也签上(公证要求外层也签)
+          if [ -n "${IDENTITY:-}" ]; then
+            codesign --force --timestamp --sign "$IDENTITY" "KindleMate2_${{ matrix.suffix }}.dmg"
+          fi
           ls -l "KindleMate2_${{ matrix.suffix }}.dmg"
+
+      # 公证 + 装订(仅签名时)。notarytool 会把 dmg 上传给 Apple 审核,通过后把凭据装订进 dmg,
+      # 用户下载后 Gatekeeper 离线也能验过 —— 这是"免清 quarantine"的关键一步。
+      - name: Notarize dmg + staple
+        if: steps.signing.outputs.signed == '1'
+        shell: bash
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          DMG="KindleMate2_${{ matrix.suffix }}.dmg"
+          if [ -n "${APPLE_API_KEY_BASE64:-}" ]; then
+            KEY_DIR="$RUNNER_TEMP/private_keys"
+            mkdir -p "$KEY_DIR"
+            echo "$APPLE_API_KEY_BASE64" | base64 --decode > "$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8"
+            AUTH=(--key "$KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+          else
+            AUTH=(--apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID")
+          fi
+          xcrun notarytool submit "$DMG" "${AUTH[@]}" --wait
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          echo "已公证并装订:$DMG"
 
       # 发版前把产物真验一遍:挂载镜像 → 校验 bundle 签名 → 架构匹配时用 launcher 实跑 --smoke。
       # 签名、权限、架构、launcher 的 cd 逻辑,任何一项不对都在这里变红灯,而不是发一个跑不起来的包。
@@ -512,6 +597,8 @@ jobs:
       - name: Build release notes (previous tag .. HEAD)
         shell: pwsh
         run: |
+          # 注:一旦启用 macOS 签名/公证(配置了 APPLE_* secrets),请把下面那条
+          #     「macOS 未做公证…清 quarantine」的说明改掉。
           $tags = @(git tag --sort=-version:refname)
           $prev = $null
           if ($tags.Count -gt 1) { $prev = $tags[1] }
