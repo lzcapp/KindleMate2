@@ -1,7 +1,7 @@
 # Kindle Mate `2`
 
-![](Screenshots/banner.png#gh-light-mode-only)
-![](Screenshots/banner_dark.png#gh-dark-mode-only)
+![](docs/images/banner.png#gh-light-mode-only)
+![](docs/images/banner_dark.png#gh-dark-mode-only)
 
 [![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/blob/main/LICENSE) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
 ](https://github.com/lzcapp/KindleMate2/releases)
@@ -65,7 +65,7 @@ sha256sum -c SHA256SUMS        # Windows 可用 Get-FileHash
 - **从 Windows Forms 版（≤ `2026.09.07`）升级**：解压覆盖到原目录后，双击的仍是 `KindleMate2.exe`（可执行文件名与旧版一致）。
   建议取 `_runtime` 自包含包 —— 旧壳依赖的是 .NET 8 运行时，而不带该后缀的新包要求 .NET 10。
   与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 `DarkModeForms.dll`、`ReaLTaiizor.dll`）留着不影响使用，删掉也可以。
-  若你装过 `2026.09.13`–`2026.09.23` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
+  若你装过 `2026.09.13`–`2026.09.22` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
   升级后请把残留的 `KindleMate2.Avalonia.exe` 与 `KindleMate2.Avalonia.dll` 删掉。
 - **从旧 Linux tar.gz 升级**：库还在原来的解压目录，先搬一次（见上方 Linux 一节）。
 - **想把程序换到新目录**：新目录首次运行会新建一个空库；把旧的 `KM2.dat` 拷进新目录即可，
@@ -88,8 +88,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### 项目
 
-解决方案含 8 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Devices.MacOS` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
+解决方案含 10 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.Posix` / `Devices.MacOS` / `Devices.Linux` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
 壳自身的构建、运行与无头自检见 [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md)。
 
 > 早期基于 Windows Forms / WPF 的两个壳已退役。需要对照旧版行为时，可用只读 tag **`winforms-final`**

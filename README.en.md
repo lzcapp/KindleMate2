@@ -1,7 +1,7 @@
 # Kindle Mate `2`
 
-![](Screenshots/banner.png#gh-light-mode-only)
-![](Screenshots/banner_dark.png#gh-dark-mode-only)
+![](docs/images/banner.png#gh-light-mode-only)
+![](docs/images/banner_dark.png#gh-dark-mode-only)
 
 [![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/blob/main/LICENSE) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
 ](https://github.com/lzcapp/KindleMate2/releases)
@@ -66,7 +66,7 @@ clippings and vocabulary carry over, with nothing to import or reconfigure.
   `KindleMate2.exe`, whose name is unchanged. Prefer the `_runtime` (self-contained) build: the old shell depended on the
   .NET 8 runtime, while builds without that suffix now require .NET 10. Files that share a name with the new build are
   overwritten; other leftovers from the old shell (e.g. `DarkModeForms.dll`, `ReaLTaiizor.dll`) are harmless but can be
-  deleted. If you installed a build between `2026.09.13` and `2026.09.23`, its executable was named
+  deleted. If you installed a build between `2026.09.13` and `2026.09.22`, its executable was named
   `KindleMate2.Avalonia.exe` — delete the leftover `KindleMate2.Avalonia.exe` and `KindleMate2.Avalonia.dll`.
 - **From an older Linux tar.gz**: your library is still in the old extracted folder — move it once (see the Linux section above).
 - **Moving the program to a new folder**: the first run there creates an empty library. Copy your old `KM2.dat` into the new
@@ -92,8 +92,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### Projects
 
-The solution contains 8 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Devices.MacOS` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
+The solution contains 10 projects: `Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.Posix` / `Devices.MacOS` / `Devices.Linux` / `Avalonia` (**the only desktop UI**) / `Tests`. See [`arch.md`](arch.md) for the
 layering, and [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md) for building, running
 and the headless self-checks.
 
