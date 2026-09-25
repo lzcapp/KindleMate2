@@ -149,6 +149,15 @@ jobs:
           # ② 两处列表重建(标注 / 生词)都要走挑行函数(退回无脑 FirstOrDefault 同样静默失效)。
           #    数量写死 2:将来若真多出第三处重建,这里该红一次,人工确认后再改这个数。
           test "$(grep -c 'PickRowAfterRebuild() ??' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 2
+          # ③ 表格选中必须**跟随**列表选中(实体同源):各取各的 FirstOrDefault 会让删除/重建后
+          #    右栏详情显示第 0 行、菜单却操作还原行(2026-09 全项目审查发现,单测够不着 VM)。
+          grep -q 'SelectedClipTable = SelectedItem?.Clipping' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          grep -q 'SelectedLookupTable = SelectedItem?.Lookup' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          # ④ 导出/备份在忙碌期必须让路(连接串没设 busy_timeout,与写操作并发直接 SQLITE_BUSY);
+          #    数量 3 = 导出全部 / 导出当前书 / 备份数据库,多出第四个门禁时人工确认后改数。
+          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
+          test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
