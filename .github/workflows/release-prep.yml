@@ -6,7 +6,8 @@
 # - **不向 main 提交任何东西**。main 开了必需状态检查(build-and-test + 两个 cross-platform),
 #   直推「版本号提交」会被保护规则拒掉(GH006),而 github-actions[bot] 没有 bypass 权限。
 #   版本号由 release.yml 用 `-p:Version` 注入构建,产物与「关于」页版本都由此决定;
-#   csproj `<Version>` 只在 dispatch 留空时作回落,不再随发版自动 bump。
+#   csproj 不再维护 `<Version>`(版本由 git tag 派生,见 KindleMate2.Avalonia.csproj),
+#   所以这里也无需 bump 任何文件。
 #   (若确实要在 main 留下版本提交:改用「开 PR 走检查」,或给该 bot 配置 bypass —— 都需额外授权。)
 # - 必须用 API dispatch(gh workflow run)触发 release.yml,而不是依赖 push tag 事件:
 #   GitHub 规定 GITHUB_TOKEN 推送的 tag/commit 不会创建新的 workflow run。
