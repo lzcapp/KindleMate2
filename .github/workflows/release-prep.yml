@@ -1,14 +1,14 @@
-# 一键发版:填版本号(或留空用当天日期)→ 在 main 上打日期式 annotated tag → 推送 →
+# 一键发版:填版本号(或留空用当天北京时间)→ 在 main 上打 **GPG 签名的 annotated tag** → 推送 →
 # 显式 dispatch release.yml 触发跨平台构建 + GitHub Release。
 # 用法:仓库 Actions 页 → release-prep → Run workflow。
 #
 # 注意:
 # - **不向 main 提交任何东西**。main 开了必需状态检查(build-and-test + 两个 cross-platform),
 #   直推「版本号提交」会被保护规则拒掉(GH006),而 github-actions[bot] 没有 bypass 权限。
-#   版本号由 release.yml 用 `-p:Version` 注入构建,产物与「关于」页版本都由此决定;
-#   csproj 不再维护 `<Version>`(版本由 git tag 派生,见 KindleMate2.Avalonia.csproj),
-#   所以这里也无需 bump 任何文件。
-#   (若确实要在 main 留下版本提交:改用「开 PR 走检查」,或给该 bot 配置 bypass —— 都需额外授权。)
+#   版本号由 release.yml 用 `-p:Version` 注入;csproj 不再维护 `<Version>`(版本由 git tag 派生)。
+# - tag 用维护者的 GPG 密钥签名(与 checksums job 同一个 `GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`),
+#   发布 tag 可被 `git tag --verify` 验证。故本 job 跑在 **ubuntu**(gpg 是一等公民;
+#   Windows runner 未预装 gpg,且无人值守下签名的口令传递很别扭)。
 # - 必须用 API dispatch(gh workflow run)触发 release.yml,而不是依赖 push tag 事件:
 #   GitHub 规定 GITHUB_TOKEN 推送的 tag/commit 不会创建新的 workflow run。
 # - 若远端已存在同名 tag 会中止,防止误覆盖已发布版本。
@@ -32,9 +32,9 @@ permissions:
 
 jobs:
   tag-and-release:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout main (full history)
+      - name: Checkout main
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -42,50 +42,74 @@ jobs:
 
       - name: Resolve target version
         id: ver
-        shell: pwsh
         env:
-          # 经 env 传入,不插值进脚本 —— 否则输入里的 `"; <payload>; #` 会被当 PowerShell 执行。
+          # 经 env 传入,不插值进脚本 —— 否则输入里的 `"; <payload>; #` 会被当命令执行。
           INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          $v = "$env:INPUT_VERSION".Trim()
-          if ($v -eq '') {
-            $bj = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([System.DateTime]::UtcNow, 'China Standard Time')
-            $v = $bj.ToString('yyyy.MM.dd')
-          } else {
+          set -euo pipefail
+          v="${INPUT_VERSION:-}"
+          if [ -z "$v" ]; then
+            # 中国无夏令时,直接 UTC+8 即北京时间(不依赖时区库,跨平台一致)
+            v="$(TZ='Asia/Shanghai' date +%Y.%m.%d)"
+          else
             # 容错输入:2026.9.7 → 2026.09.07(年 4 位;月/日 1–2 位,自动补零)
-            $parts = $v -split '\.'
-            if ($parts.Count -ne 3 -or $parts[0] -notmatch '^\d{4}$' -or
-                $parts[1] -notmatch '^\d{1,2}$' -or $parts[2] -notmatch '^\d{1,2}$') {
-              throw "版本号格式错误: '$v'(应为 2026.09.07 或 2026.9.7 式)"
-            }
-            $m = [int]$parts[1]
-            $d = [int]$parts[2]
-            if ($m -lt 1 -or $m -gt 12 -or $d -lt 1 -or $d -gt 31) {
-              throw "非法的年月日: '$v'"
-            }
-            $v = '{0}.{1:D2}.{2:D2}' -f $parts[0], $m, $d
-            Write-Output "规范化版本号: $v"
-          }
-          $remote = git ls-remote --tags origin "refs/tags/$v"
-          if ($LASTEXITCODE -ne 0) { throw 'git ls-remote 失败,请重试' }
-          if ($remote) { throw "远端已存在 tag '$v',请换版本号(该版本可能已发布过)" }
-          Write-Output "version=$v" >> $env:GITHUB_OUTPUT
+            if ! [[ "$v" =~ ^([0-9]{4})\.([0-9]{1,2})\.([0-9]{1,2})$ ]]; then
+              echo "::error::版本号格式错误: '$v'(应为 2026.09.07 或 2026.9.7 式)"; exit 1
+            fi
+            m=$((10#${BASH_REMATCH[2]})); d=$((10#${BASH_REMATCH[3]}))
+            if [ "$m" -lt 1 ] || [ "$m" -gt 12 ] || [ "$d" -lt 1 ] || [ "$d" -gt 31 ]; then
+              echo "::error::非法的年月日: '$v'"; exit 1
+            fi
+            v="$(printf '%s.%02d.%02d' "${BASH_REMATCH[1]}" "$m" "$d")"
+            echo "规范化版本号: $v"
+          fi
+          if [ -n "$(git ls-remote --tags origin "refs/tags/$v")" ]; then
+            echo "::error::远端已存在 tag '$v',请换版本号(该版本可能已发布过)"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
-      - name: Tag and dispatch release
-        shell: pwsh
+      - name: Import GPG key and configure git identity
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::缺少 GPG_PRIVATE_KEY secret,无法签名 tag"; exit 1
+          fi
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          fingerprint="$(gpg --with-colons --list-secret-keys | awk -F: '/^fpr:/{print $10; exit}')"
+          if [ -z "$fingerprint" ]; then echo "::error::导入后仍找不到私钥"; exit 1; fi
+          echo "签名指纹: $fingerprint"
+          git config user.name "lzcapp"
+          git config user.email "admin@lzc.app"
+          git config user.signingkey "$fingerprint"
+          # 无人值守签名:给 git 调用的 gpg 套一层 loopback + 口令文件(带口令的密钥在 CI 里不会弹 pinentry)
+          printf '%s' "$GPG_PASSPHRASE" > "$RUNNER_TEMP/gpg-pass"
+          chmod 600 "$RUNNER_TEMP/gpg-pass"
+          cat > "$RUNNER_TEMP/gpg-loopback" <<'EOS'
+          #!/bin/sh
+          exec gpg --pinentry-mode loopback --passphrase-file "$GPG_PASSPHRASE_FILE" "$@"
+          EOS
+          chmod +x "$RUNNER_TEMP/gpg-loopback"
+          git config gpg.program "$RUNNER_TEMP/gpg-loopback"
+          echo "GPG_PASSPHRASE_FILE=$RUNNER_TEMP/gpg-pass" >> "$GITHUB_ENV"
+
+      - name: Tag (GPG-signed), push and dispatch release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          $v = $env:VERSION
-          # 每一步原生命令都显式查 $LASTEXITCODE:pwsh 只把**最后一条**原生命令的退出码
-          # 当作步骤结果;若不查,push / dispatch 失败会被后续成功的命令掩盖。
-          git tag -a $v -m "Release $v"
-          if ($LASTEXITCODE -ne 0) { throw "git tag '$v' 失败" }
-          # 只推 tag,不推 main(见文件头:main 有必需状态检查,直推会被拒)
-          git push origin $v
-          if ($LASTEXITCODE -ne 0) { throw "git push origin $v 失败" }
+          set -euo pipefail
+          v="$VERSION"
+          # 每一步原生命令都显式失败即停(set -e):push / dispatch 失败不会被后续成功命令掩盖。
+          git tag -s "$v" -m "Release $v"
+          # 自检:tag 签名必须能验过
+          git tag --verify "$v"
+          git push origin "$v"
           # GITHUB_TOKEN push 不触发 release.yml(平台防递归),改用 API dispatch
-          gh workflow run release.yml --repo "$env:GITHUB_REPOSITORY" -f "version=$v"
-          if ($LASTEXITCODE -ne 0) { throw 'dispatch release.yml 失败' }
-          Write-Output "已打 tag $v 并 dispatch release.yml,构建请到 Actions 页查看"
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" -f "version=$v"
+          echo "已打 GPG 签名 tag $v 并 dispatch release.yml,构建请到 Actions 页查看"
