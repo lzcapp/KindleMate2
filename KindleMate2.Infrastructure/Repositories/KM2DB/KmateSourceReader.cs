@@ -1,4 +1,5 @@
 using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB;
@@ -43,7 +44,7 @@ public static class KmateSourceReader {
         }
 
         try {
-            using var connection = new SqliteConnection($"Data Source={sourcePath};Mode=ReadOnly;");
+            using var connection = new SqliteConnection(DatabaseHelper.BuildConnectionString(sourcePath, SqliteOpenMode.ReadOnly, sharedCache: false));
             connection.Open();
 
             var tables = GetTableNames(connection);

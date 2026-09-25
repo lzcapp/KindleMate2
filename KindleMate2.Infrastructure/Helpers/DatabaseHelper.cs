@@ -56,7 +56,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     Directory.CreateDirectory(directory);
                 }
 
-                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWriteCreate;");
+                using var connection = new SqliteConnection(BuildConnectionString(filePath, SqliteOpenMode.ReadWriteCreate, sharedCache: true));
                 connection.Open();
 
                 foreach (var script in GetTableCreationScripts()) {
@@ -345,7 +345,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 // 独立连接:VACUUM 不能在调用方的事务里执行。这里也不带 Cache=Shared —— 
                 // 快照连接没有理由加入调用方的共享缓存。
-                using var connection = new SqliteConnection($"Data Source={fullSourcePath};Mode=ReadOnly;");
+                using var connection = new SqliteConnection(BuildConnectionString(fullSourcePath, SqliteOpenMode.ReadOnly, sharedCache: false));
                 connection.Open();
 
                 using (var busyCommand = connection.CreateCommand()) {
@@ -428,7 +428,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             try {
-                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
+                using var connection = new SqliteConnection(BuildConnectionString(filePath, SqliteOpenMode.ReadWrite, sharedCache: true));
                 connection.Open();
                 using var command = new SqliteCommand("VACUUM;", connection);
                 command.ExecuteNonQuery();
@@ -601,8 +601,20 @@ namespace KindleMate2.Infrastructure.Helpers {
             return reader.IsDBNull(ordinal) ? defaultValue : reader.GetInt32(ordinal);
         }
         
+        /// <summary>
+        /// 用 <see cref="SqliteConnectionStringBuilder"/> 构造连接串 —— 不要用字符串插值拼
+        /// <c>Data Source=…</c>:路径里含 <c>;</c>(Unix 与 Windows 都合法)会被解析成额外关键字而报错。
+        /// </summary>
+        public static string BuildConnectionString(string dbFile, SqliteOpenMode mode, bool sharedCache) {
+            return new SqliteConnectionStringBuilder {
+                DataSource = dbFile,
+                Mode = mode,
+                Cache = sharedCache ? SqliteCacheMode.Shared : SqliteCacheMode.Default
+            }.ToString();
+        }
+
         public static string GetConnectionString(string dbFile) {
-            return $"Data Source={dbFile};Cache=Shared;Mode=ReadWrite;";
+            return BuildConnectionString(dbFile, SqliteOpenMode.ReadWrite, sharedCache: true);
         }
     }
 }
