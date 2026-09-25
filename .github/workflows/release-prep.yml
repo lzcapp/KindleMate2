@@ -38,8 +38,11 @@ jobs:
       - name: Resolve target version
         id: ver
         shell: pwsh
+        env:
+          # 经 env 传入,不插值进脚本 —— 否则输入里的 `"; <payload>; #` 会被当 PowerShell 执行。
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          $v = "${{ github.event.inputs.version }}".Trim()
+          $v = "$env:INPUT_VERSION".Trim()
           if ($v -eq '') {
             $bj = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([System.DateTime]::UtcNow, 'China Standard Time')
             $v = $bj.ToString('yyyy.MM.dd')
@@ -65,8 +68,10 @@ jobs:
 
       - name: Bump csproj version
         shell: pwsh
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          $v = "${{ steps.ver.outputs.version }}"
+          $v = $env:VERSION
           # 2026-09-13:发布目标已从 WinForms 壳改为 Avalonia 壳
           $path = 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj'
           $content = [System.IO.File]::ReadAllText($path)
@@ -78,6 +83,8 @@ jobs:
 
       - name: Commit version bump
         shell: pwsh
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -88,18 +95,26 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             Write-Output 'csproj 已是目标版本,无需 bump 提交'
           } else {
-            git commit -m "chore: 版本号升级至 ${{ steps.ver.outputs.version }}"
+            git commit -m "chore: 版本号升级至 $env:VERSION"
+            if ($LASTEXITCODE -ne 0) { throw '提交失败' }
           }
 
       - name: Tag, push and dispatch release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          $v = "${{ steps.ver.outputs.version }}"
+          $v = $env:VERSION
+          # 每一步原生命令都显式查 $LASTEXITCODE:pwsh 只把**最后一条**原生命令的退出码
+          # 当作步骤结果,若不查,push 失败也会被后面成功的 gh 掩盖、照样触发发布。
           git tag -a $v -m "Release $v"
+          if ($LASTEXITCODE -ne 0) { throw "git tag '$v' 失败" }
           git push origin main
+          if ($LASTEXITCODE -ne 0) { throw 'git push origin main 失败' }
           git push origin $v
+          if ($LASTEXITCODE -ne 0) { throw "git push origin $v 失败" }
           # GITHUB_TOKEN push 不触发 release.yml(平台防递归),改用 API dispatch
           gh workflow run release.yml --repo "$env:GITHUB_REPOSITORY" -f "version=$v"
+          if ($LASTEXITCODE -ne 0) { throw 'dispatch release.yml 失败' }
           Write-Output "已 dispatch release.yml (version=$v),构建请到 Actions 页查看"
