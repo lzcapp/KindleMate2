@@ -168,7 +168,20 @@ public sealed class ClippingMaintenanceTests : IDisposable {
         SeedClipping("k1", "内容一");
         SeedClipping("k2", "内容二");
 
-        _km2.DeleteAllData();
+        Assert.True(_km2.DeleteAllData());
+
+        Assert.Empty(_clippingRepo.GetAll());
+    }
+
+    /// <summary>
+    /// 只有标注、其余表全空的库(从未导过生词的用户):空表 DELETE 影响 0 行**不是失败**。
+    /// 此前仓库层 `ExecuteNonQuery() > 0` 让这种库清空成功却报 Clear_Failed。
+    /// </summary>
+    [Fact]
+    public void DeleteAllData_OnSingleDomainLibrary_Succeeds() {
+        SeedClipping("k1", "内容一");
+
+        Assert.True(_km2.DeleteAllData());
 
         Assert.Empty(_clippingRepo.GetAll());
     }
@@ -205,6 +218,26 @@ public sealed class ClippingMaintenanceTests : IDisposable {
         _km2.CleanDatabase(_db, out _);
 
         Assert.Equal(2, _clippingRepo.GetAll().Count);
+    }
+
+    /// <summary>
+    /// 导入收尾的清理(crossBookDuplicates: false)只判**同书内**重复:跨书同文是两条独立
+    /// 高亮,必须保留;同书同文照删。跨书一并删的原版语义由 DataLayerFixTests 的 legacy 用例钉住。
+    /// </summary>
+    [Fact]
+    public void CleanDatabase_CrossBookDuplicates_KeepsRowsWhenScopedToBook() {
+        SeedClipping("k1", "同一句话", book: "书一");
+        SeedClipping("k2", "同一句话", book: "书二");
+        SeedClipping("k3", "同书重复", book: "书三");
+        SeedClipping("k4", "同书重复", book: "书三");
+
+        _km2.CleanDatabase(_db, out _, crossBookDuplicates: false);
+
+        var keys = _clippingRepo.GetAll().Select(c => c.Key).ToList();
+        Assert.Contains("k1", keys);
+        Assert.Contains("k2", keys);
+        Assert.DoesNotContain("k3", keys);
+        Assert.DoesNotContain("k4", keys);
     }
 
     // ————————————————————————— 重建 —————————————————————————

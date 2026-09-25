@@ -370,11 +370,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>
     /// 重建列表期间**抑制**"表格选中 → 列表选中"的回写(见 <see cref="SyncSelectionFromTable"/>)。
     ///
-    /// 重建时两处选中是程序**各自**设的(<c>SelectedItem = &lt;还原后的行&gt;</c>、
-    /// <c>SelectedClipTable = FirstOrDefault()</c>),它们本来就可能不是同一行。
-    /// 不回写则各留各的、互不干扰;回写的话后者会把前者拉回第一行 ——
-    /// 而"删除一行后落回原处"正是靠前者实现的,那就被**静默**毁掉了。
-    /// 用户点表格是另一回事:那时不在重建中,回写照常发生。
+    /// 重建时两处选中由重建方法落定,且**取值同源**(表格侧跟随 <c>SelectedItem</c>,见
+    /// RebuildClippings / RebuildLookups 内注释)—— 不再有"表格把列表拉回第一行"的问题。
+    /// 抑制保留:回写虽是同值空转,却会再走一遍详情构建;更关键的是让"重建期间由
+    /// SelectedItem 一侧负责建详情"的边界保持单一。用户点表格是另一回事:
+    /// 那时不在重建中,回写照常发生。
     /// </summary>
     private bool _suppressTableSelectionSync;
 
@@ -798,6 +798,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // 这是**有意偏离原版**的一处,已在提交说明中标注。
 
     public Task<OperationResult> ExportAllMarkdownAsync() {
+        // 与写操作互斥:连接串没设 busy_timeout,导入/清理持锁期间并行导出会 SQLITE_BUSY
+        // 失败,还会被误报成「没有可导出的内容」。忙碌时与 RunOperationAsync 同样静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
@@ -816,6 +819,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
+        // 忙碌期与写操作互斥,理由见 ExportAllMarkdownAsync。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
@@ -840,6 +845,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 失败弹 <c>Backup_Clippings_Failed</c> 错误框。
     /// </summary>
     public Task<OperationResult> BackupDatabaseAsync() {
+        // 忙碌期与写操作互斥(备份要 VACUUM INTO 读一致快照,与导入抢锁同样会失败)。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
@@ -1029,6 +1036,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
         return RunOperationAsync(() => {
+            // 重建先 DeleteAll 再重插、跨多个连接无事务,中途失败会留下空表/半表 ——
+            // 与维护数据库一致,动手前先落一份保底备份(失败时至少能整库找回)。
+            session.ExportManager.BackupDatabase();
+
             if (!session.Km2DatabaseService.RebuildDatabase(out var result)) {
                 return string.Empty;
             }
@@ -1887,7 +1898,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         // 重建期间抑制"表格选中 → 列表选中"的回写(理由见 _suppressTableSelectionSync)。
         // 必须包住整段:两个重建方法都会**先**设 SelectedItem(可能是"还原到原位置"的那一行)、
-        // **再**设 SelectedClipTable = FirstOrDefault() —— 不抑制的话后者会把前者拉回第一行。
+        // **再**按 SelectedItem 落表格选中 —— 抑制让这段的详情构建只走列表侧一条路。
         _suppressTableSelectionSync = true;
         try {
             if (IsClipDomain) RebuildClippings();
@@ -1970,7 +1981,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         ClipTable.ReplaceAll(ordered);
         // 有一次性还原请求(行级删除)就落回原处,否则仍是第一条(切节点/改搜索/改排序等)。
         SelectedItem = PickRowAfterRebuild() ?? Items.FirstOrDefault();
-        SelectedClipTable = ClipTable.FirstOrDefault();
+        // 表格侧**跟着列表选中走**(两处装的是同一批实例,见 SyncSelectionFromTable 注释)。
+        // 早前取 ClipTable.FirstOrDefault():删除后 SelectedItem 已还原到原位,表格却指向
+        // 第 0 行,而 SelectedClipTable 的 setter 会无条件用表格那行覆写右栏 Detail(抑制开关
+        // 管不到它)⇒ 详情显示第 0 行、菜单却操作还原行。取 SelectedItem 的实体即三者同源。
+        SelectedClipTable = SelectedItem?.Clipping;
         if (SelectedItem == null) ClearDetail();
     }
 
@@ -2006,7 +2021,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         // 标题行不是记录 ⇒ 自动选中要跳过它,否则一进生词域右栏就是个空面板。
         // 同 RebuildClippings:行级删除带了还原请求时落回原处(挑行时同样跳过标题行)。
         SelectedItem = PickRowAfterRebuild() ?? Items.FirstOrDefault(i => !i.IsSectionHeader);
-        SelectedLookupTable = LookupTable.FirstOrDefault();
+        // 同 RebuildClippings:表格选中跟随列表选中(同一批实例),否则 setter 会用错误的行覆写详情。
+        // 选中的是「标注」段的剪贴行时 Lookup 为 null ⇒ 表格不选中,详情仍由 SelectedItem 一侧负责。
+        SelectedLookupTable = SelectedItem?.Lookup;
         if (SelectedItem == null) ClearDetail();
     }
 

@@ -276,7 +276,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("DELETE FROM vocab", connection);
-            return cmd.ExecuteNonQuery() > 0;
+            // 0 行受影响也是成功(空表):false 只应代表执行失败,而失败会抛异常由上层 catch。
+            cmd.ExecuteNonQuery();
+            return true;
         }
     }
 }

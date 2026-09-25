@@ -4,6 +4,7 @@ using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Diagnostics;
 using KindleMate2.Shared.Entities;
+using KindleMate2.Shared.Threading;
 
 namespace KindleMate2.Devices.Posix;
 
@@ -44,7 +45,6 @@ public class PosixDeviceManager : IDeviceManager {
     /// <c>/run/media/&lt;用户&gt;</c>、<c>/mnt</c> 等几种(发行版/桌面环境不同),所以要按列表依次扫。</summary>
     private readonly IReadOnlyList<string> _volumeRoots;
     private readonly TimeSpan _pollInterval;
-    private readonly TimeSpan _debounceInterval;
     private readonly bool _detectMtpDevices;
 
     /// <summary>守连接状态(<see cref="_driveLetter"/> / <see cref="_deviceType"/>),与 Windows 实现同名同职责。</summary>
@@ -64,7 +64,12 @@ public class PosixDeviceManager : IDeviceManager {
 
     private CancellationTokenSource? _pollCts;
     private Task? _pollTask;
-    private System.Threading.Timer? _debounceTimer;
+
+    /// <summary>
+    /// 观测到变化后的防抖上报器。释放竞态(取消轮询不等待在飞的那一轮)统一由
+    /// <see cref="DebouncedAction"/> 处理,与 Windows 实现共用同一份语义。
+    /// </summary>
+    private readonly DebouncedAction _debounce;
 
     /// <summary>
     /// 上一次「已上报」的连接状态,即 UI 当前知道的状态。防抖到期复检后与它不一致才上报。
@@ -113,8 +118,8 @@ public class PosixDeviceManager : IDeviceManager {
         _versionFilePath = versionFilePath;
         _volumeRoots = volumeRoots;
         _pollInterval = pollInterval ?? DefaultPollInterval;
-        _debounceInterval = debounceInterval ?? DefaultDebounceInterval;
         _detectMtpDevices = detectMtpDevices;
+        _debounce = new DebouncedAction(debounceInterval ?? DefaultDebounceInterval, OnDebounceElapsed);
     }
 
     public void StartWatching() {
@@ -142,7 +147,7 @@ public class PosixDeviceManager : IDeviceManager {
                     }
                     _observedConnected = connected;
                 }
-                ScheduleDebounceCheck();
+                _debounce.Schedule();
             }
         } catch (OperationCanceledException) {
             // Dispose 取消轮询,属正常退出路径
@@ -151,32 +156,22 @@ public class PosixDeviceManager : IDeviceManager {
         }
     }
 
-    private void ScheduleDebounceCheck() {
-        if (_debounceTimer == null) {
-            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, _debounceInterval,
-                System.Threading.Timeout.InfiniteTimeSpan);
-        } else {
-            // 防抖窗口内又发生变化则重新计时,只认最后稳定下来的那个状态。
-            _debounceTimer.Change(_debounceInterval, System.Threading.Timeout.InfiniteTimeSpan);
-        }
-    }
-
-    private void OnDebounceTimerElapsed(object? state) {
-        try {
-            var connected = IsKindleConnected();
-            lock (_reportedLockObj) {
-                // 复检结果同样是「已观测」状态,避免下一轮轮询把它当成新变化再启动一次防抖。
-                _observedConnected = connected;
-                if (_reportedConnected == connected) {
-                    return;
-                }
-                _reportedConnected = connected;
+    /// <summary>
+    /// 防抖到期:复检一次真实状态,与「已上报」不同才发事件。释放后晚到的调度由
+    /// <see cref="DebouncedAction"/> 挡掉,不会在这里补报。
+    /// </summary>
+    private void OnDebounceElapsed() {
+        var connected = IsKindleConnected();
+        lock (_reportedLockObj) {
+            // 复检结果同样是「已观测」状态,避免下一轮轮询把它当成新变化再启动一次防抖。
+            _observedConnected = connected;
+            if (_reportedConnected == connected) {
+                return;
             }
-            // 事件在锁外触发:订阅方可能回到 UI 线程,持锁调用有死锁风险。
-            ConnectionChanged?.Invoke(connected);
-        } catch (Exception ex) {
-            AppLog.Write($"[PosixDeviceManager.OnDebounceTimerElapsed] {ex}");
+            _reportedConnected = connected;
         }
+        // 事件在锁外触发:订阅方可能回到 UI 线程,持锁调用有死锁风险。
+        ConnectionChanged?.Invoke(connected);
     }
 
     public bool IsKindleConnected() {
@@ -516,6 +511,9 @@ public class PosixDeviceManager : IDeviceManager {
     }
 
     public void Dispose() {
+        // 幂等,并挡住在飞轮询那一轮的补报(取消轮询不等待它)—— 语义见 DebouncedAction。
+        _debounce.Dispose();
+
         var cts = _pollCts;
         var pollTask = _pollTask;
         _pollCts = null;
@@ -529,7 +527,8 @@ public class PosixDeviceManager : IDeviceManager {
             }
 
             if (pollTask is { IsCompleted: false }) {
-                // 不在 Dispose 里阻塞等待:轮询体只读 /Volumes,取消后至多再跑完一轮。
+                // 不在 Dispose 里阻塞等待:轮询体只读 /Volumes,取消后至多再跑完一轮(那一轮的
+                // 防抖调度已被 DebouncedAction 挡住,不会再上报)。
                 // 但要等它结束再释放 cts —— 回调仍持有注册时释放会抛 ObjectDisposedException。
                 pollTask.ContinueWith(_ => cts.Dispose(), CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -537,8 +536,5 @@ public class PosixDeviceManager : IDeviceManager {
                 cts.Dispose();
             }
         }
-
-        _debounceTimer?.Dispose();
-        _debounceTimer = null;
     }
 }
