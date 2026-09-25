@@ -31,8 +31,13 @@ jobs:
           gpgconf --kill gpg-agent || true
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           echo "hello" > SHA256SUMS
-          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+          # 口令走临时文件,不把明文塞进 gpg 的命令行参数(argv):同机能读 /proc 的进程
+          # 可以原样看到(与 release.yml / release-prep 同款写法)。
+          printf '%s' "$GPG_PASSPHRASE" > "$RUNNER_TEMP/gpg-pass"
+          chmod 600 "$RUNNER_TEMP/gpg-pass"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/gpg-pass" \
               --detach-sign --armor --output SHA256SUMS.asc SHA256SUMS
+          rm -f "$RUNNER_TEMP/gpg-pass"
           gpg --verify SHA256SUMS.asc SHA256SUMS
           echo "GPG 发布签名凭据验证通过"
           echo "指纹:$(gpg --with-colons --list-keys | awk -F: '/^fpr:/{print $10; exit}')"

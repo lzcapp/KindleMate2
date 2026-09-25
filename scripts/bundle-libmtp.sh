@@ -124,11 +124,16 @@ mkdir -p "$FRAMEWORKS" "$LICENSES"
 
 # ————————————————————— 下载 —————————————————————
 cd "$BUILD_DIR"
-[ -f "$LIBUSB_TARBALL" ] || curl -sSL -o "$LIBUSB_TARBALL" "$LIBUSB_URL"
-[ -f "$LIBMTP_TARBALL" ] || curl -sSL -o "$LIBMTP_TARBALL" "$LIBMTP_URL"
+[ -f "$LIBUSB_TARBALL" ] || curl -sSL --retry 3 --retry-delay 2 -o "$LIBUSB_TARBALL" "$LIBUSB_URL"
+[ -f "$LIBMTP_TARBALL" ] || curl -sSL --retry 3 --retry-delay 2 -o "$LIBMTP_TARBALL" "$LIBMTP_URL"
 
-# 记下校验和:CI 会把它写进构建日志,便于事后核对"随包分发的是哪一份源码"
-shasum -a 256 "$LIBUSB_TARBALL" "$LIBMTP_TARBALL"
+# SHA-256 钉死(与 release.yml 的 checksums job 同一对):上游/镜像被换包即失败;
+# 缓存里已有的旧下载同样会重验 —— 顺带挡住"被污染的构建缓存"。
+# 两处校验保证:打进 .app 的二进制与 Release 页签名清单里的源码包出自同一份字节。
+LIBMTP_SHA256="74a2b6e8cb4a0304e95b995496ea3ac644c29371649b892b856e22f12a0bdeed"
+LIBUSB_SHA256="fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
+echo "$LIBMTP_SHA256  $LIBMTP_TARBALL" | shasum -a 256 -c -
+echo "$LIBUSB_SHA256  $LIBUSB_TARBALL" | shasum -a 256 -c -
 
 tar xf "$LIBUSB_TARBALL"
 tar xf "$LIBMTP_TARBALL"
