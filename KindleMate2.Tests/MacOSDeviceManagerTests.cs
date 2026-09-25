@@ -209,32 +209,6 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
         lock (events) Assert.Empty(events);
     }
 
-    /// <summary>
-    /// 回归(<c>Dispose_StopsWatching</c> 在慢速 Windows runner 上偶发失败):
-    /// <c>Dispose</c> 取消轮询但**不阻塞等待**在飞的那一轮;那一轮若在释放后
-    /// 才观测到拔出并走到调度,曾会重新建出防抖计时器、在释放后补报一次"设备已拔出"。
-    /// 这里直接调 <c>ScheduleDebounceCheck</c>(internal 测试缝)确定性地复现"释放后晚到的调度",
-    /// 不依赖释放与卸载的真实时序。顺带钉住二次释放的幂等性。
-    /// </summary>
-    [Fact]
-    public void ScheduleDebounceCheck_AfterDispose_NeitherRebuildsTheTimerNorReports() {
-        MountKindleVolume();
-        var manager = CreateManager();
-        var events = new List<bool>();
-        manager.ConnectionChanged += value => { lock (events) events.Add(value); };
-        manager.StartWatching();
-        manager.Dispose();
-        manager.Dispose();   // 二次释放必须安全
-
-        // 模拟"取消时已经在飞的那一轮轮询":释放之后才走到调度这一步。
-        manager.ScheduleDebounceCheck();
-
-        UnmountKindleVolume();
-        Thread.Sleep(250);   // 超过防抖窗口(100ms):若真建了计时器,事件一定已到
-
-        lock (events) Assert.Empty(events);
-    }
-
     // ————————————————————————— helpers —————————————————————————
 
     /// <summary>

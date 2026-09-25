@@ -7,6 +7,7 @@ using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
 using MediaDevices;
 using KindleMate2.Shared.Diagnostics;
+using KindleMate2.Shared.Threading;
 
 namespace KindleMate2.Devices.Windows;
 
@@ -27,14 +28,22 @@ public class DeviceManager : IDeviceManager {
     private string _driveLetter = string.Empty;
     private readonly string _versionFilePath;
 
+    /// <summary>设备变化事件后的防抖上报器。WMI 事件可能在 <see cref="Dispose"/> 之后才到达,
+    /// 释放竞态统一由 <see cref="DebouncedAction"/> 处理,与 POSIX 实现共用同一份语义。</summary>
+    private readonly DebouncedAction _debounce;
+
     public Device.Type DeviceType => _deviceType;
     public string DriveLetter => _driveLetter;
     public bool IsConnected => !string.IsNullOrWhiteSpace(_driveLetter);
 
     public event Action<bool>? ConnectionChanged;
 
+    /// <summary>状态变化后的防抖时长,与 POSIX 实现取同一值。</summary>
+    private static readonly TimeSpan DebounceInterval = TimeSpan.FromMilliseconds(2500);
+
     public DeviceManager(string versionFilePath) {
         _versionFilePath = versionFilePath;
+        _debounce = new DebouncedAction(DebounceInterval, OnDebounceElapsed);
     }
 
     public void StartWatching() {
@@ -114,23 +123,14 @@ public class DeviceManager : IDeviceManager {
         DeviceEventHandler(sender);
     }
 
-    private System.Threading.Timer? _debounceTimer;
-
+    /// <summary>收到任一设备变化事件:重置防抖,静默后复检一次状态。释放后为空操作。</summary>
     private void DeviceEventHandler(object sender) {
-        if (_debounceTimer == null) {
-            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, 2500, System.Threading.Timeout.Infinite);
-        } else {
-            _debounceTimer.Change(2500, System.Threading.Timeout.Infinite);
-        }
+        _debounce.Schedule();
     }
 
-    private void OnDebounceTimerElapsed(object? state) {
-        try {
-            IsKindleConnected();
-            ConnectionChanged?.Invoke(IsConnected);
-        } catch (Exception ex) {
-            AppLog.Write($"[HandleUsbDeviceEvent] {ex}");
-        }
+    private void OnDebounceElapsed() {
+        IsKindleConnected();
+        ConnectionChanged?.Invoke(IsConnected);
     }
 
     private bool HandleUsbDevice() {
@@ -394,7 +394,9 @@ public class DeviceManager : IDeviceManager {
     }
 
     public void Dispose() {
-        _debounceTimer?.Dispose();
+        // 幂等,并挡住 Dispose 之后才到达的 WMI 事件(可能与 Stop/Dispose watcher 并发)。
+        _debounce.Dispose();
+
         _usbDeviceArrivalWatcher?.Stop();
         _usbDeviceArrivalWatcher?.Dispose();
         _usbDeviceRemovalWatcher?.Stop();
