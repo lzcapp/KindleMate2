@@ -53,6 +53,15 @@ name: release
 #      Linux 的 glibc 底线由 2.23 抬到 2.27(CentOS 7 这类 glibc 2.17 的发行版不再可运行)。
 #      Windows / macOS 的 OS 下限不变(两份 supported-os 表逐字相同)。
 #
+# 2026-09-25 变更 F:发版完整性加固(全项目审查批次 B)。
+#   ① 所有构建/发布 job 按 `refs/tags/<version>` 检出 —— 手动 dispatch 此前默认检出分支 HEAD,
+#      会造成「Release 标着版本号 X、实为分支最新代码」的错位(打 tag 的正常路径不受影响);
+#      test job 也随之挪到 tag 检出之后(测的必须是要发的那份代码)。
+#   ② 全部 action 钉到 40 位 commit SHA(只钉 tag 的话,上游可把 tag 重指向任意提交)。
+#   ③ GPG 口令改走 --passphrase-file(原先出现在 argv 里,同机可读 /proc 的进程能看到)。
+#   ④ LGPL 源码包(libmtp/libusb)下载即校验钉死的 SHA-256,并纳入签名的 SHA256SUMS。
+#   ⑤ 资产数量断言(12 个)+ 所有 upload-artifact 加 if-no-files-found: error。
+#
 # 注:应用内自动更新直接走本仓库的 GitHub Releases API(见 Application/Services/UpdateChecker),
 # 不使用 AppCast —— 旧的 update_*.xml 是 WinForms 壳 AutoUpdater 时代的产物,已随壳退役删除。
 # 因此发版无"更新 AppCast"这一步。
@@ -67,7 +76,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '手动发布版本号(留空则读取 csproj <Version>)'
+        description: '目标版本号(须为已存在的 git tag;留空 = 最新 tag,即重建最近一版)'
         required: false
         default: ''
 
@@ -75,13 +84,18 @@ jobs:
   # 发布前必须先过测试:此前 release 流程完全不跑 dotnet test,打一个 tag 就能把未经测试的
   # 二进制发出去。这里在 ubuntu 上跑跨平台单测(真机/联网探测默认跳过),publish 各 job 依赖它。
   test:
+    needs: [version]
     runs-on: ubuntu-latest
     steps:
+      # 按解析出的 tag 检出 —— 手动 dispatch 时默认检出的是分支 HEAD,不钉死就会
+      # 「Release 标着版本号 X、实为分支最新代码」;打 tag 的正常路径检出结果不变。
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
           cache: true
@@ -97,9 +111,10 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      # 全历史:csproj 不再维护 <Version>,版本号回落到 git tag,需要 tag 才能解析。
+      # 全历史:版本号来自 git tag(见下),需要完整 tag 列表才能解析回落;
+      # 各构建 job 也按解析出的 tag 检出(变更 F ①)。
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -116,14 +131,20 @@ jobs:
           if ($env:REF_TYPE -eq 'tag') { $v = $env:REF_NAME }
           else { $v = $env:INPUT_VERSION }
           if ($v -eq '' -or $v -eq $null) {
-            # csproj 不再维护 <Version> ⇒ 回落到最新的日期式 tag
+            # 手动 dispatch 留空 ⇒ 回落到最新的日期式 tag。各构建 job 一律按
+            # refs/tags/<v> 检出,所以这里回落的 tag 就是实际构建的对象 —— 不会再出现
+            # 「标着旧版本号、实为分支 HEAD」的错位。
             $v = (git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | Select-Object -First 1)
             if ($LASTEXITCODE -ne 0) { throw 'git tag 读取失败' }
           }
-          if ($v -eq '') { throw '无法解析版本号:请显式传入 version,或检查 csproj 里的 <Version>' }
+          if ($v -eq '') { throw '无法解析版本号:仓库尚无 tag,请显式传入 version(或先用 release-prep 打 tag)' }
           # 只允许数字点分(可带预发布后缀):版本号随后要拼进 `-p:Version=` 与 tag,
           # 校验能挡住借它做命令注入 / 非法 tag。
           if ($v -notmatch '^\d+(\.\d+){1,3}(-[0-9A-Za-z.]+)?$') { throw "版本号含非法字符,拒绝:$v" }
+          # 目标 tag 必须已存在:各构建 job 按 refs/tags/<v> 检出,不存在时那里也会失败,
+          # 但在这里先给出明确提示(手动 dispatch 拼错版本号时能立刻看到)。
+          git rev-parse -q --verify "refs/tags/$v" | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "远端不存在 tag '$v' —— 请先用 release-prep 创建" }
           Write-Output "本次发布版本号: $v"
           Write-Output "version=$v" >> $env:GITHUB_OUTPUT
 
@@ -144,10 +165,12 @@ jobs:
           - { rid: win-x86,   self: 'true',  suffix: x86_runtime }
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           # 必须 10.x(见文件头变更 D):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
           dotnet-version: 10.0.x
@@ -166,10 +189,11 @@ jobs:
           Compress-Archive -Path "publish/${{ matrix.suffix }}/*" -DestinationPath $name
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.zip
+          if-no-files-found: error
           retention-days: 1
 
   # Linux 产物(见文件头变更 B)。用 -f net10.0:设备层在 Linux 上由 Devices.Linux
@@ -187,10 +211,12 @@ jobs:
           - { rid: linux-arm64, self: 'true',  suffix: linux-arm64_runtime }
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -248,10 +274,11 @@ jobs:
           echo "unix 产物 + 启动器自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.tar.gz
+          if-no-files-found: error
           retention-days: 1
 
   # macOS 产物:.app 装在 .dmg 里(见文件头变更 C)。
@@ -271,10 +298,12 @@ jobs:
           - { rid: osx-x64,   suffix: macos-x64,   minos: '10.15' }
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -504,30 +533,59 @@ jobs:
           echo "macOS 产物启动自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.dmg
+          if-no-files-found: error
           retention-days: 1
 
   # 生成并 GPG 签名 SHA256SUMS。独立成 job 是因为 gpg 在 Linux runner 上是一等公民
   # (Windows runner 未预装 gpg),且签名与"创建 Release"解耦。
-  # 覆盖对象 = 12 个二进制资产(应用内更新正是校验这些);LGPL 源码包的哈希不在此列。
+  # 覆盖对象 = 12 个二进制资产(应用内更新正是校验这些)+ 2 个 LGPL 源码包
+  # (随 Release 分发的源码也可被用户 `sha256sum -c` 一并校验)。
   checksums:
     needs: [publish, publish-linux, publish-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Download all binary assets
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: dist
           merge-multiple: true
+
+      # LGPL-2.1 第 6 条:macOS 包内嵌了 libmtp/libusb,必须随 Release 提供对应源码。
+      # 与 scripts/bundle-libmtp.sh 使用同一 URL + 同一对钉死的 SHA-256:上游/镜像被换包即失败,
+      # 且这里入清单的字节与打进 .app 的构建输入同源(打包脚本同样校验这对哈希)。
+      - name: Fetch embedded library sources (LGPL, hash-pinned)
+        env:
+          LIBMTP_SHA256: 74a2b6e8cb4a0304e95b995496ea3ac644c29371649b892b856e22f12a0bdeed
+          LIBUSB_SHA256: fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf
+        run: |
+          set -euo pipefail
+          cd dist
+          curl -fsSL --retry 3 --retry-delay 2 -o libmtp-1.1.23.tar.gz \
+            "https://downloads.sourceforge.net/project/libmtp/libmtp/1.1.23/libmtp-1.1.23.tar.gz"
+          curl -fsSL --retry 3 --retry-delay 2 -o libusb-1.0.30.tar.bz2 \
+            "https://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-1.0.30/libusb-1.0.30.tar.bz2"
+          echo "$LIBMTP_SHA256  libmtp-1.1.23.tar.gz" | sha256sum -c -
+          echo "$LIBUSB_SHA256  libusb-1.0.30.tar.bz2" | sha256sum -c -
 
       - name: Generate SHA256SUMS
         run: |
           set -euo pipefail
           cd dist
-          sha256sum KindleMate2_* > SHA256SUMS
+          # 资产数量断言:12 = 6 个 Windows zip + 4 个 Linux tar.gz + 2 个 dmg。
+          # 某条矩阵腿静默没出产物时,在这里失败好过发出一个残缺 Release
+          # (上传侧的 if-no-files-found: error 是第一道闸,这里是全量汇总的第二道)。
+          count="$(ls KindleMate2_*.zip KindleMate2_*.tar.gz KindleMate2_*.dmg 2>/dev/null | wc -l)"
+          if [ "$count" -ne 12 ]; then
+            echo "::error::期望 12 个二进制资产,实际 $count 个"
+            ls -la
+            exit 1
+          fi
+          sha256sum KindleMate2_*.zip KindleMate2_*.tar.gz KindleMate2_*.dmg \
+            libmtp-1.1.23.tar.gz libusb-1.0.30.tar.bz2 > SHA256SUMS
           cat SHA256SUMS
 
       # 复用维护者的 GPG 密钥(带口令)对清单做分离签名。公钥随 Release 一并发布,
@@ -547,20 +605,28 @@ jobs:
           gpgconf --kill gpg-agent || true
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           gpg --armor --export > dist/KindleMate2-release-key.asc
-          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+          # 口令走临时文件,不把明文塞进 gpg 的命令行参数(argv):同机能读 /proc 的进程
+          # 可以原样看到(变更 F ③;与 release-prep 同款写法)。
+          printf '%s' "$GPG_PASSPHRASE" > "$RUNNER_TEMP/gpg-pass"
+          chmod 600 "$RUNNER_TEMP/gpg-pass"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/gpg-pass" \
               --detach-sign --armor --output dist/SHA256SUMS.asc dist/SHA256SUMS
+          rm -f "$RUNNER_TEMP/gpg-pass"
           # 自检:签名必须能验过,否则宁可让发布失败
           gpg --verify dist/SHA256SUMS.asc dist/SHA256SUMS
           echo "签名指纹:$(gpg --with-colons --list-keys | awk -F: '/^fpr:/{print $10; exit}')"
 
       - name: Upload signed checksums
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: assets-checksums
           path: |
             dist/SHA256SUMS
             dist/SHA256SUMS.asc
             dist/KindleMate2-release-key.asc
+            dist/libmtp-1.1.23.tar.gz
+            dist/libusb-1.0.30.tar.bz2
+          if-no-files-found: error
           retention-days: 1
 
   release:
@@ -571,33 +637,22 @@ jobs:
       contents: write
     steps:
       - name: Checkout (full history for notes)
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          # 发布说明要从 tag 算 prev..HEAD,必须检出被发布的那个 tag(变更 F ①)
+          ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Download all assets
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: dist
           merge-multiple: true
 
-      # LGPL-2.1 第 6 条:随包分发库的可执行文件时,必须同时提供其源码。
-      # macOS 包里内嵌了 libmtp/libusb(bundle-libmtp.sh 从这两个压缩包构建),
-      # 所以把**同一份**源码附到发布页上 —— 版本因此与二进制严格对应。
-      - name: Fetch embedded library sources (LGPL compliance)
-        shell: pwsh
-        run: |
-          $sources = [ordered]@{
-            'libmtp-1.1.23.tar.gz'  = 'https://downloads.sourceforge.net/project/libmtp/libmtp/1.1.23/libmtp-1.1.23.tar.gz'
-            'libusb-1.0.30.tar.bz2' = 'https://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-1.0.30/libusb-1.0.30.tar.bz2'
-          }
-          foreach ($name in $sources.Keys) {
-            Invoke-WebRequest -Uri $sources[$name] -OutFile "dist/$name" -MaximumRedirection 10
-          }
-          Get-ChildItem dist | Select-Object Name, Length | Format-Table
-
-      # SHA256SUMS / SHA256SUMS.asc / KindleMate2-release-key.asc 由上面的 checksums job
-      # 生成并签名,已随「Download all assets」(merge-multiple)一起落进 dist。
+      # SHA256SUMS / SHA256SUMS.asc / KindleMate2-release-key.asc 与两个 LGPL 源码包
+      # (libmtp/libusb)由上面的 checksums job 下载、校验钉死哈希并签名,已随
+      # 「Download all assets」(merge-multiple)一起落进 dist —— 此处不再另行从网络取,
+      # Release 页上的源码包与签名清单必然同源。
 
       - name: Build release notes (previous tag .. HEAD)
         shell: pwsh
@@ -605,9 +660,13 @@ jobs:
           # 注:一旦启用 macOS 签名/公证(配置了 APPLE_* secrets),请把下面那条
           #     「macOS 未做公证…清 quarantine」的说明改掉。
           $tags = @(git tag --sort=-version:refname)
+          # 上一版 = **本次发布 tag 的下一个更旧的 tag**,而不是全局第二新:
+          # 手动 dispatch 可以重建任意旧 tag,那时全局第二新可能比 HEAD 还新,prev..HEAD 会算空。
+          $cur = '${{ needs.version.outputs.version }}'
+          $idx = [array]::IndexOf($tags, $cur)
           $prev = $null
-          if ($tags.Count -gt 1) { $prev = $tags[1] }
-          $log = if ($prev) { git log "$prev..HEAD" --oneline } else { git log -20 --oneline }
+          if ($idx -ge 0 -and ($idx + 1) -lt $tags.Count) { $prev = $tags[$idx + 1] }
+          $log = if ($prev) { git log "$prev..$cur" --oneline } else { git log -20 --oneline }
           $body = @('## Changes', '') + $log + @(
             '',
             '### 资产说明',
@@ -643,7 +702,7 @@ jobs:
           $body | Out-File -FilePath notes.md -Encoding utf8
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ needs.version.outputs.version }}
           name: ${{ needs.version.outputs.version }}
