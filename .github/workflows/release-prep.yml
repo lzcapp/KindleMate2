@@ -12,8 +12,6 @@
 # - 必须用 API dispatch(gh workflow run)触发 release.yml,而不是依赖 push tag 事件:
 #   GitHub 规定 GITHUB_TOKEN 推送的 tag/commit 不会创建新的 workflow run。
 # - 若远端已存在同名 tag 会中止,防止误覆盖已发布版本。
-# - 发布后仍需在站点 https://github.lzc.app/KindleMate2/ 手动把 AppCast
-#   (update_*.xml)指向新 Release 资产(workflow 不含该步骤)。
 
 name: release-prep
 
