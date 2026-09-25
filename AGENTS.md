@@ -16,6 +16,8 @@
 - **`main` 受保护**：需要 PR + 3 个必需状态检查 —— `build-and-test`、`cross-platform (ubuntu-latest)`、
   `cross-platform (macos-latest)`。**不要在 main 上直接提交/推送**（会被 `GH006` 拒绝）。
   小改动同样走：分支 → 提交 → PR → 等 CI 全绿 → 评论 review。
+- **代理默认不合并**：可以提交、推送、开 PR、等 CI 全绿、`gh pr review --comment` 发自审评论，
+  但**不要 merge** —— 合并由维护者人工过目后执行（2026-09-25 约定；用户明确要求合并时除外）。
 - 提交使用 **GPG 签名**（本机 `commit.gpgsign=true`）。
 - 分支命名沿用仓库习惯：`fix/…`、`feat/…`、`chore/…`、`docs/…`、`ci/…`。
 
