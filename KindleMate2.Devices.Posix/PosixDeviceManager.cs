@@ -66,6 +66,15 @@ public class PosixDeviceManager : IDeviceManager {
     private Task? _pollTask;
     private System.Threading.Timer? _debounceTimer;
 
+    /// <summary>守 <see cref="_debounceTimer"/> 的创建/释放,并挡住 Dispose 之后重建计时器。</summary>
+    private readonly object _debounceLockObj = new object();
+
+    /// <summary>
+    /// 是否已释放。释放后不得再新建防抖计时器、也不得上报事件 —— 取消轮询**不等待**在飞的那一轮
+    /// (见 <see cref="Dispose"/>),那一轮若在释放后才观测到变化,会把刚释放的计时器重新建回来。
+    /// </summary>
+    private volatile bool _disposed;
+
     /// <summary>
     /// 上一次「已上报」的连接状态,即 UI 当前知道的状态。防抖到期复检后与它不一致才上报。
     /// null 表示尚未上报过(首次探测不算变化,与 Windows 实现一致:启动时不触发事件)。
@@ -151,17 +160,35 @@ public class PosixDeviceManager : IDeviceManager {
         }
     }
 
-    private void ScheduleDebounceCheck() {
-        if (_debounceTimer == null) {
-            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, _debounceInterval,
-                System.Threading.Timeout.InfiniteTimeSpan);
-        } else {
-            // 防抖窗口内又发生变化则重新计时,只认最后稳定下来的那个状态。
-            _debounceTimer.Change(_debounceInterval, System.Threading.Timeout.InfiniteTimeSpan);
+    /// <summary>
+    /// 安排一次防抖复检。由轮询在**观测值变化**后调用。
+    ///
+    /// <c>internal</c>(而非 private)是有意的测试缝:取消轮询不等待在飞的那一轮,而那一轮若在
+    /// <see cref="Dispose"/> 之后才走到这里,正是「释放后又补报一次」的成因。单测直接调用它即可
+    /// 确定性地复现,不必依赖"释放与卸载恰好同时"这种时序运气(见 MacOSDeviceManagerTests)。
+    /// </summary>
+    internal void ScheduleDebounceCheck() {
+        lock (_debounceLockObj) {
+            // Dispose 可能已经在飞的轮询轮次之前跑完:那之后不能再新建计时器 —— 否则它没人释放,
+            // 还会在释放后补报一次"设备已拔出"(CI 偶发:Dispose_StopsWatching)。
+            if (_disposed) {
+                return;
+            }
+            if (_debounceTimer == null) {
+                _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, _debounceInterval,
+                    System.Threading.Timeout.InfiniteTimeSpan);
+            } else {
+                // 防抖窗口内又发生变化则重新计时,只认最后稳定下来的那个状态。
+                _debounceTimer.Change(_debounceInterval, System.Threading.Timeout.InfiniteTimeSpan);
+            }
         }
     }
 
     private void OnDebounceTimerElapsed(object? state) {
+        // 释放后到达的计时器回调一律丢弃:此时订阅方多半已经在拆界面了。
+        if (_disposed) {
+            return;
+        }
         try {
             var connected = IsKindleConnected();
             lock (_reportedLockObj) {
@@ -516,6 +543,15 @@ public class PosixDeviceManager : IDeviceManager {
     }
 
     public void Dispose() {
+        lock (_debounceLockObj) {
+            if (_disposed) {
+                return;   // 幂等:二次释放直接返回,别把在飞的轮询/计时器再处理一遍
+            }
+            _disposed = true;
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
+
         var cts = _pollCts;
         var pollTask = _pollTask;
         _pollCts = null;
@@ -529,7 +565,8 @@ public class PosixDeviceManager : IDeviceManager {
             }
 
             if (pollTask is { IsCompleted: false }) {
-                // 不在 Dispose 里阻塞等待:轮询体只读 /Volumes,取消后至多再跑完一轮。
+                // 不在 Dispose 里阻塞等待:轮询体只读 /Volumes,取消后至多再跑完一轮(那一轮的
+                // ScheduleDebounceCheck 已被 _disposed 挡住,不会再上报)。
                 // 但要等它结束再释放 cts —— 回调仍持有注册时释放会抛 ObjectDisposedException。
                 pollTask.ContinueWith(_ => cts.Dispose(), CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -537,8 +574,5 @@ public class PosixDeviceManager : IDeviceManager {
                 cts.Dispose();
             }
         }
-
-        _debounceTimer?.Dispose();
-        _debounceTimer = null;
     }
 }
