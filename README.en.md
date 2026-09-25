@@ -3,7 +3,7 @@
 ![](Screenshots/banner.png#gh-light-mode-only)
 ![](Screenshots/banner_dark.png#gh-dark-mode-only)
 
-[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
+[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/blob/main/LICENSE) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
 ](https://github.com/lzcapp/KindleMate2/releases)
 
 **Kindle Mate 2** 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) 停止更新后提供替代的解决方案。
@@ -125,7 +125,7 @@ for the current session only and are **never written to the database**.
 Everything else works fully offline: your data is a local SQLite file (`KM2.dat`) and device access goes over USB.
 
 Neither of the two can be turned off. If you need a **fully offline** build, compile it yourself with those two calls
-removed — the project is open source (MIT).
+removed — the project is open source (GPL-3.0).
 
 ## Screenshots
 

@@ -3,7 +3,7 @@
 ![](Screenshots/banner.png#gh-light-mode-only)
 ![](Screenshots/banner_dark.png#gh-dark-mode-only)
 
-[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
+[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/blob/main/LICENSE) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
 ](https://github.com/lzcapp/KindleMate2/releases)
 
 **Kindle Mate 2** 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) 停止更新后提供替代的解决方案。
@@ -123,7 +123,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 其余功能全部离线可用：数据是本地 SQLite 文件（`KM2.dat`），设备读写走 USB，都不出网。
 
-以上两项都不可关闭。若你需要**完全离线**的版本，可以自行编译并去掉这两处调用（本程序是开源的，MIT 许可）。
+以上两项都不可关闭。若你需要**完全离线**的版本，可以自行编译并去掉这两处调用（本程序是开源的，GPL-3.0 许可）。
 
 ## 截图
 
