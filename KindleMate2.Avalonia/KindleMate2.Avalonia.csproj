@@ -15,7 +15,6 @@
     <Product>Kindle Mate 2</Product>
     <Company>lzcapp</Company>
     <Copyright>Copyright © 2026 lzcapp</Copyright>
-    <Version>2026.09.23</Version>
   </PropertyGroup>
 
   <!-- 程序图标:沿用原版 WinForms 壳的 bookmark.ico(与仓库根 bookmark.ico 字节一致)。
@@ -84,5 +83,39 @@
   <ItemGroup Condition="'$(IsLinuxDesktop)' == 'true'">
     <ProjectReference Include="..\KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj" />
   </ItemGroup>
+
+  <!--
+    版本号不再手工维护:由**最新的 git tag**(日期式,如 2026.09.23)在构建期派生。
+    - 发布时 release.yml 用 `-p:Version=<版本>` 覆盖,本 Target 自动跳过(见 Condition);
+    - tag 里的前导零对程序集版本无意义(且不合 semver),故去零:2026.09.23 → 2026.9.23;
+    - 取不到 tag(如浅克隆)时保持 SDK 默认(1.0.0),不报错。
+    之所以不用 MinVer:它按 semver 解析 tag,而本项目的日期式 tag 含前导零(09)会被判非法、直接忽略。
+  -->
+  <PropertyGroup>
+    <_Km2TagPattern>[0-9]*.[0-9]*.[0-9]*</_Km2TagPattern>
+  </PropertyGroup>
+
+  <Target Name="Km2SetVersionFromGitTag"
+          BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo"
+          Condition="'$(Version)' == '1.0.0'">
+    <Exec Command="git describe --tags --abbrev=0 --match &quot;$(_Km2TagPattern)&quot;"
+          ConsoleToMSBuild="true" IgnoreExitCode="true"
+          StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_Km2TagLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_Km2GitExit" />
+    </Exec>
+    <PropertyGroup>
+      <_Km2Tag>$([System.String]::Copy('$(_Km2TagLines)').Trim())</_Km2Tag>
+      <_Km2Semver>$([System.Text.RegularExpressions.Regex]::Replace($(_Km2Tag), '(^|\.)0+(\d)', '$1$2'))</_Km2Semver>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(_Km2GitExit)' == '0' and '$(_Km2Semver)' != ''">
+      <Version>$(_Km2Semver)</Version>
+      <AssemblyVersion>$(_Km2Semver).0</AssemblyVersion>
+      <FileVersion>$(_Km2Semver).0</FileVersion>
+      <InformationalVersion>$(_Km2Semver)</InformationalVersion>
+    </PropertyGroup>
+    <Message Condition="'$(_Km2GitExit)' == '0'" Importance="normal"
+             Text="KindleMate2 版本取自 git tag: $(_Km2Tag) -> $(_Km2Semver)" />
+  </Target>
 
 </Project>

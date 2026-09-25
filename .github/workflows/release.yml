@@ -96,10 +96,13 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
+      # 全历史:csproj 不再维护 <Version>,版本号回落到 git tag,需要 tag 才能解析。
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      # 输入经 env 传入,不直接插值进脚本 —— 否则手动 dispatch 的 version 里塞
+      # 输入经 env 传入,不插值进脚本 —— 否则手动 dispatch 的 version 里塞
       # `"; <payload>; #` 会被当 PowerShell 执行(命令注入)。
       - name: Resolve version
         id: ver
@@ -112,8 +115,9 @@ jobs:
           if ($env:REF_TYPE -eq 'tag') { $v = $env:REF_NAME }
           else { $v = $env:INPUT_VERSION }
           if ($v -eq '' -or $v -eq $null) {
-            $m = Select-String -Path 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj' -Pattern '<Version>([^<]+)</Version>'
-            $v = $m.Matches[0].Groups[1].Value
+            # csproj 不再维护 <Version> ⇒ 回落到最新的日期式 tag
+            $v = (git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | Select-Object -First 1)
+            if ($LASTEXITCODE -ne 0) { throw 'git tag 读取失败' }
           }
           if ($v -eq '') { throw '无法解析版本号:请显式传入 version,或检查 csproj 里的 <Version>' }
           # 只允许数字点分(可带预发布后缀):版本号随后要拼进 `-p:Version=` 与 tag,

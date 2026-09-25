@@ -215,6 +215,9 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
   Linux = `~/.local/share/KindleMate2/`；macOS = `~/Library/Application Support/KindleMate2/`。
   库文件与 `Backups`/`Imports`/`Temp`/`Exports` 都在这之下（由启动器切换工作目录实现，程序本身不改）。
   单文件打包（`PublishSingleFile`）仍未启用（未实机验证）。
+- **版本号来自 git tag**：`KindleMate2.Avalonia.csproj` 不再维护 `<Version>`；构建时由 MSBuild 目标
+  `Km2SetVersionFromGitTag` 取**最新的日期式 tag**（去前导零）作为程序集 / 文件 / 信息版本，发布时
+  `release.yml` 用 `-p:Version` 覆盖。因此**发版无需在 main 提交任何版本号**（main 有必需状态检查，直推会被拒）。
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
   `CS0103: InitializeComponent 不存在`。

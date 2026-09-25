@@ -13,8 +13,11 @@ jobs:
     runs-on: windows-latest
     steps:
       # 自 2026-09-13 起仓库不再有子模块(WinForms 壳与 DarkModeForms 子模块已退休)
+      # 全历史:应用版本号由 git tag 派生,浅克隆取不到 tag → 需要完整历史。
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # 必须 10.x,不能用 8.0.x —— 两条独立理由:
       #   ① Avalonia 12 的源生成器要求 Roslyn >= 4.14(SDK 8 是 4.8、SDK 9 是 4.12)。低版时
@@ -126,8 +129,11 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      # 全历史:应用版本号由 git tag 派生,浅克隆取不到 tag。
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # SDK 版本同 build-and-test:必须 10.x(Avalonia 源生成器要求 Roslyn >= 4.14)。
       - name: Setup .NET SDK
