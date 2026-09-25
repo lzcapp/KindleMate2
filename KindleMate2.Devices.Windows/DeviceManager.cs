@@ -193,6 +193,9 @@ public class DeviceManager : IDeviceManager {
                 return false;
             } finally {
                 try { device.Disconnect(); } catch { /* best effort */ }
+                // MediaDevice 构造即启动事件线程,只有 Dispose 才停 —— 只 Disconnect 会让线程 +
+                // WPD 会话在 8 秒一次的探测里持续堆积(写回路径 SyncFileToDevice 早有正解)。
+                device.Dispose();
             }
         } catch (Exception e) {
             AppLog.Write(e);
@@ -245,6 +248,8 @@ public class DeviceManager : IDeviceManager {
                         return true;
                     } finally {
                         try { device.Disconnect(); } catch { /* best effort */ }
+                        // 同 HandleMtpDevice:不 Dispose 每次导入都会漏掉一个事件线程。
+                        device.Dispose();
                     }
                 }
                 case Device.Type.Unknown:

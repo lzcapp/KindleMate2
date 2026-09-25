@@ -50,7 +50,13 @@ public static class UpdateInstaller {
         HttpClient? httpClient = null, CancellationToken cancellationToken = default) {
         var directory = Path.Combine(Path.GetTempPath(), "km2-update-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(directory);
-        var target = Path.Combine(directory, asset.Name);
+        // 资产名来自发布页 JSON:含路径分隔符/相对段时 Path.Combine 会把文件落到临时目录之外,
+        // 这里直接拒绝(正常资产名从不含分隔符;UpdateChecker 侧也有一道同样的闸)。
+        var fileName = Path.GetFileName(asset.Name);
+        if (!string.Equals(fileName, asset.Name, StringComparison.Ordinal)) {
+            throw new InvalidOperationException($"非法的资产名(含路径分隔符):{asset.Name}");
+        }
+        var target = Path.Combine(directory, fileName);
 
         using var owned = httpClient is null ? new HttpClient { Timeout = TimeSpan.FromMinutes(10) } : null;
         var client = httpClient ?? owned!;
@@ -78,21 +84,23 @@ public static class UpdateInstaller {
 
         AppLog.Write($"[UpdateInstaller] 已下载 {asset.Name}({written} 字节)");
 
-        // 下载完立刻校验完整性(有清单时)。放在解压/替换之前 —— 坏包不该走到"删旧包"那一步。
+        // 下载完立刻校验完整性(清单缺失/命中不到/哈希不一致一律中止)。放在解压/替换之前
+        // —— 坏包不该走到"删旧包"那一步。
         await VerifyChecksumAsync(asset, target, client, cancellationToken).ConfigureAwait(false);
 
         return target;
     }
 
     /// <summary>
-    /// 用发布页的 <c>SHA256SUMS</c> 校验下载文件。清单存在时必须命中且哈希一致,否则抛异常中止更新;
-    /// 清单缺失(旧发布没有该资产)时跳过并记日志 —— 兼容历史版本。
+    /// 用发布页的 <c>SHA256SUMS</c> 校验下载文件:清单缺失、命中不到、或哈希不一致,一律抛异常中止。
+    /// **失败关闭** —— 不存在"没清单就跳过"的路径(2026-09 全项目审查改:带 SHA256SUMS 的发布
+    /// 自 2026.09.24 起恒有该资产,正常更新永远拿得到清单;缺失即发布/页面异常,不该装)。
     /// </summary>
     private static async Task VerifyChecksumAsync(UpdateAsset asset, string filePath, HttpClient client,
         CancellationToken cancellationToken) {
         if (string.IsNullOrWhiteSpace(asset.ChecksumUrl)) {
-            AppLog.Write($"[UpdateInstaller] {asset.Name} 发布页无 SHA256SUMS,跳过完整性校验");
-            return;
+            throw new InvalidOperationException(
+                $"{asset.Name} 的发布页没有 SHA256SUMS,无法校验完整性,已中止更新");
         }
 
         string checksumText;

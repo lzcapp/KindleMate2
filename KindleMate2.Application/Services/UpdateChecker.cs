@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using KindleMate2.Shared.Diagnostics;
@@ -104,11 +105,18 @@ public static class UpdateChecker {
                 continue;
             }
 
+            // 资产名会直接参与本地路径拼接:含分隔符/相对段的一律不认(正常名从不含)。
+            if (!string.Equals(Path.GetFileName(name!), name!, StringComparison.Ordinal)) {
+                AppLog.Write($"[UpdateChecker] 跳过含路径分隔符的资产名:{name}");
+                continue;
+            }
+
             var size = asset.TryGetProperty("size", out var sizeElement) && sizeElement.TryGetInt64(out var value) ? value : 0;
             available.Add(new UpdateAsset(name!, url!, size));
         }
 
-        // SHA256SUMS 是发布流程附带生成的校验和清单(见 release.yml);旧发布没有该资产时为 null。
+        // SHA256SUMS 是发布流程附带生成的校验和清单(见 release.yml);旧发布没有该资产时为 null,
+        // 安装侧会因此**中止更新**(fail-closed,见 UpdateInstaller.VerifyChecksumAsync)。
         var checksumUrl = available
             .FirstOrDefault(a => string.Equals(a.Name, "SHA256SUMS", StringComparison.OrdinalIgnoreCase))
             ?.DownloadUrl;

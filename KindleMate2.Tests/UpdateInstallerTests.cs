@@ -197,15 +197,10 @@ public sealed class UpdateInstallerTests : IDisposable {
             new UpdateAsset("pkg.zip", url, payload.Length, sums),
             null, new HttpClient(new ChecksumHandler(payload, "deadbeef  other.zip\n"))));
 
-        // ④ 旧发布没有 SHA256SUMS 资产 → 跳过校验(兼容)
-        var legacy = await UpdateInstaller.DownloadAsync(
+        // ④ 发布页没有 SHA256SUMS 资产 → **失败关闭**:不装没校验过的字节
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
             new UpdateAsset("pkg.zip", url, payload.Length),
-            null, new HttpClient(new ChecksumHandler(payload, null)));
-        try {
-            Assert.Equal("hello world", File.ReadAllText(legacy));
-        } finally {
-            Cleanup(legacy);
-        }
+            null, new HttpClient(new ChecksumHandler(payload, null))));
     }
 
     private static void Cleanup(string file) {
