@@ -1,9 +1,13 @@
-# 一键发版准备:填版本号(或留空用当天日期)→ 自动 bump csproj <Version>、
-# 提交、打日期式 annotated tag、推送,并显式 dispatch release.yml 触发六变体
-# 构建 + GitHub Release。用法:仓库 Actions 页 → release-prep → Run workflow。
+# 一键发版:填版本号(或留空用当天日期)→ 在 main 上打日期式 annotated tag → 推送 →
+# 显式 dispatch release.yml 触发跨平台构建 + GitHub Release。
+# 用法:仓库 Actions 页 → release-prep → Run workflow。
 #
 # 注意:
-# - 提交/推送由 github-actions[bot] 完成(非本机 GPG 签名);仓库未开签名强制规则。
+# - **不向 main 提交任何东西**。main 开了必需状态检查(build-and-test + 两个 cross-platform),
+#   直推「版本号提交」会被保护规则拒掉(GH006),而 github-actions[bot] 没有 bypass 权限。
+#   版本号由 release.yml 用 `-p:Version` 注入构建,产物与「关于」页版本都由此决定;
+#   csproj `<Version>` 只在 dispatch 留空时作回落,不再随发版自动 bump。
+#   (若确实要在 main 留下版本提交:改用「开 PR 走检查」,或给该 bot 配置 bypass —— 都需额外授权。)
 # - 必须用 API dispatch(gh workflow run)触发 release.yml,而不是依赖 push tag 事件:
 #   GitHub 规定 GITHUB_TOKEN 推送的 tag/commit 不会创建新的 workflow run。
 # - 若远端已存在同名 tag 会中止,防止误覆盖已发布版本。
@@ -22,14 +26,14 @@ on:
         type: string
 
 permissions:
-  contents: write
-  actions: write
+  contents: write   # 推 tag
+  actions: write    # dispatch release.yml
 
 jobs:
-  bump-and-tag:
+  tag-and-release:
     runs-on: windows-latest
     steps:
-      - name: Checkout main
+      - name: Checkout main (full history)
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -66,40 +70,7 @@ jobs:
           if ($remote) { throw "远端已存在 tag '$v',请换版本号(该版本可能已发布过)" }
           Write-Output "version=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Bump csproj version
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.ver.outputs.version }}
-        run: |
-          $v = $env:VERSION
-          # 2026-09-13:发布目标已从 WinForms 壳改为 Avalonia 壳
-          $path = 'KindleMate2.Avalonia/KindleMate2.Avalonia.csproj'
-          $content = [System.IO.File]::ReadAllText($path)
-          $new = [regex]::Replace($content, '(<Version>)[^<]*(</Version>)', "`${1}$v`${2}")
-          if ($new -cne $content) {
-            # 无 BOM UTF-8 写回,保持原文件编码,仅改 Version 行
-            [System.IO.File]::WriteAllText($path, $new, (New-Object System.Text.UTF8Encoding($false)))
-          }
-
-      - name: Commit version bump
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.ver.outputs.version }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add KindleMate2.Avalonia/KindleMate2.Avalonia.csproj
-          # 注意:不能用 if (git diff --cached --quiet) —— pwsh 把原生命令的 stdout
-          # 当布尔值,--quiet 无输出恒为 false,会误走 else。必须显式看 $LASTEXITCODE。
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-            Write-Output 'csproj 已是目标版本,无需 bump 提交'
-          } else {
-            git commit -m "chore: 版本号升级至 $env:VERSION"
-            if ($LASTEXITCODE -ne 0) { throw '提交失败' }
-          }
-
-      - name: Tag, push and dispatch release
+      - name: Tag and dispatch release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -107,14 +78,13 @@ jobs:
         run: |
           $v = $env:VERSION
           # 每一步原生命令都显式查 $LASTEXITCODE:pwsh 只把**最后一条**原生命令的退出码
-          # 当作步骤结果,若不查,push 失败也会被后面成功的 gh 掩盖、照样触发发布。
+          # 当作步骤结果;若不查,push / dispatch 失败会被后续成功的命令掩盖。
           git tag -a $v -m "Release $v"
           if ($LASTEXITCODE -ne 0) { throw "git tag '$v' 失败" }
-          git push origin main
-          if ($LASTEXITCODE -ne 0) { throw 'git push origin main 失败' }
+          # 只推 tag,不推 main(见文件头:main 有必需状态检查,直推会被拒)
           git push origin $v
           if ($LASTEXITCODE -ne 0) { throw "git push origin $v 失败" }
           # GITHUB_TOKEN push 不触发 release.yml(平台防递归),改用 API dispatch
           gh workflow run release.yml --repo "$env:GITHUB_REPOSITORY" -f "version=$v"
           if ($LASTEXITCODE -ne 0) { throw 'dispatch release.yml 失败' }
-          Write-Output "已 dispatch release.yml (version=$v),构建请到 Actions 页查看"
+          Write-Output "已打 tag $v 并 dispatch release.yml,构建请到 Actions 页查看"
