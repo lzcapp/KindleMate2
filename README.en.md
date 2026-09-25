@@ -28,7 +28,7 @@ The runtime-dependent builds require the platform's [.NET 10 runtime](https://do
 
 Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .NET runtime needed); without that suffix = requires the runtime above.
 
-- **Windows**: unzip the `.zip` and run `KindleMate2.exe` (use `KindleMate2_x64[_runtime].zip` on 64-bit); the library lives next to the program (same as older versions)
+- **Windows**: unzip the `.zip` and run `KindleMate2.exe` (use `KindleMate2_win-x64[_runtime].zip` on 64-bit); the library lives next to the program (same as older versions)
 - **Linux**: extract, then run `./kindlemate2` — the launcher switches to the data directory for you, no manual `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2

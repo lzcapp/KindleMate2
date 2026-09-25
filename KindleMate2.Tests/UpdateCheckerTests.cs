@@ -25,12 +25,12 @@ public sealed class UpdateCheckerTests {
             { "name": "KindleMate2_linux-x64_runtime.tar.gz",    "browser_download_url": "https://example.test/linux-x64_runtime.tar.gz","size": 78000000 },
             { "name": "KindleMate2_linux-arm64.tar.gz",          "browser_download_url": "https://example.test/linux-arm64.tar.gz",      "size": 12000000 },
             { "name": "KindleMate2_linux-arm64_runtime.tar.gz",  "browser_download_url": "https://example.test/linux-arm64_runtime.tar.gz","size": 78000000 },
-            { "name": "KindleMate2_x64.zip",                     "browser_download_url": "https://example.test/x64.zip",                 "size": 888 },
-            { "name": "KindleMate2_x64_runtime.zip",             "browser_download_url": "https://example.test/x64_runtime.zip",         "size": 999 },
-            { "name": "KindleMate2_arm64.zip",                   "browser_download_url": "https://example.test/arm64.zip",               "size": 888 },
-            { "name": "KindleMate2_arm64_runtime.zip",           "browser_download_url": "https://example.test/arm64_runtime.zip",       "size": 999 },
-            { "name": "KindleMate2_x86.zip",                     "browser_download_url": "https://example.test/x86.zip",                 "size": 888 },
-            { "name": "KindleMate2_x86_runtime.zip",             "browser_download_url": "https://example.test/x86_runtime.zip",         "size": 999 }
+            { "name": "KindleMate2_win-x64.zip",                     "browser_download_url": "https://example.test/x64.zip",                 "size": 888 },
+            { "name": "KindleMate2_win-x64_runtime.zip",             "browser_download_url": "https://example.test/x64_runtime.zip",         "size": 999 },
+            { "name": "KindleMate2_win-arm64.zip",                   "browser_download_url": "https://example.test/arm64.zip",               "size": 888 },
+            { "name": "KindleMate2_win-arm64_runtime.zip",           "browser_download_url": "https://example.test/arm64_runtime.zip",       "size": 999 },
+            { "name": "KindleMate2_win-x86.zip",                     "browser_download_url": "https://example.test/x86.zip",                 "size": 888 },
+            { "name": "KindleMate2_win-x86_runtime.zip",             "browser_download_url": "https://example.test/x86_runtime.zip",         "size": 999 }
           ]
         }
         """;
@@ -80,7 +80,7 @@ public sealed class UpdateCheckerTests {
             {
               "tag_name": "2026.09.17",
               "assets": [
-                { "name": "KindleMate2_x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip", "size": 1 },
+                { "name": "KindleMate2_win-x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip", "size": 1 },
                 { "name": "SHA256SUMS", "browser_download_url": "https://example.test/SHA256SUMS", "size": 2 }
               ]
             }
@@ -113,9 +113,9 @@ public sealed class UpdateCheckerTests {
     [InlineData("osx-x64", "KindleMate2_macos-x64.dmg")]
     [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz")]
     [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz")]
-    [InlineData("win-x64", "KindleMate2_x64_runtime.zip")]
-    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip")]
-    [InlineData("win-x86", "KindleMate2_x86_runtime.zip")]
+    [InlineData("win-x64", "KindleMate2_win-x64_runtime.zip")]
+    [InlineData("win-arm64", "KindleMate2_win-arm64_runtime.zip")]
+    [InlineData("win-x86", "KindleMate2_win-x86_runtime.zip")]
     public void ParseRelease_SelectsTheRightAssetForEveryPlatform(string rid, string expectedName) {
         var info = UpdateChecker.ParseRelease(SampleRelease, "2026.9.16", rid);
 
@@ -136,9 +136,9 @@ public sealed class UpdateCheckerTests {
     [Theory]
     [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz")]
     [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz")]
-    [InlineData("win-x64", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip")]
-    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip")]
-    [InlineData("win-x86", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip")]
+    [InlineData("win-x64", "KindleMate2_win-x64_runtime.zip", "KindleMate2_win-x64.zip")]
+    [InlineData("win-arm64", "KindleMate2_win-arm64_runtime.zip", "KindleMate2_win-arm64.zip")]
+    [InlineData("win-x86", "KindleMate2_win-x86_runtime.zip", "KindleMate2_win-x86.zip")]
     public void ParseRelease_PrefersSelfContainedOverFrameworkDependent(string rid, string selfContained, string frameworkDependent) {
         var info = UpdateChecker.ParseRelease(SampleRelease, "2026.9.16", rid);
 
@@ -153,14 +153,47 @@ public sealed class UpdateCheckerTests {
     [Theory]
     [InlineData("linux-x64", "KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz")]
     [InlineData("linux-arm64", "KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz")]
-    [InlineData("win-x64", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip")]
-    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip")]
-    [InlineData("win-x86", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip")]
+    [InlineData("win-x64", "KindleMate2_win-x64_runtime.zip", "KindleMate2_win-x64.zip")]
+    [InlineData("win-arm64", "KindleMate2_win-arm64_runtime.zip", "KindleMate2_win-arm64.zip")]
+    [InlineData("win-x86", "KindleMate2_win-x86_runtime.zip", "KindleMate2_win-x86.zip")]
     public void AssetNameCandidates_ListBothVariantsWithSelfContainedFirst(string rid, string selfContained, string frameworkDependent) {
         var candidates = UpdateChecker.AssetNameCandidates(rid);
 
         Assert.Equal(selfContained, candidates[0]);
         Assert.Contains(frameworkDependent, candidates);
+    }
+
+    /// <summary>
+    /// Windows 资产自本版起加了 <c>win-</c> 前缀(与 linux-/macos- 对齐)。候选里必须**同时保留旧名**,
+    /// 否则新版本认不出「改名之前」发布的 Release 资产;反之旧版本认不出新名(退化为给发布页链接)。
+    /// </summary>
+    [Theory]
+    [InlineData("win-x64", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip")]
+    [InlineData("win-arm64", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip")]
+    [InlineData("win-x86", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip")]
+    public void AssetNameCandidates_KeepLegacyWindowsNamesAsFallback(string rid, string legacyRuntime, string legacyFramework) {
+        var candidates = UpdateChecker.AssetNameCandidates(rid);
+
+        Assert.StartsWith("KindleMate2_win-", candidates[0]);   // 新名优先
+        Assert.Contains(legacyRuntime, candidates);
+        Assert.Contains(legacyFramework, candidates);
+    }
+
+    [Fact]
+    public void ParseRelease_StillResolvesLegacyNamedWindowsAsset() {
+        // 改名之前发布的 Release 资产仍是旧名,新版本必须还能选中它。
+        const string legacyRelease = """
+            {
+              "tag_name": "2026.09.17",
+              "assets": [
+                { "name": "KindleMate2_x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip", "size": 1 }
+              ]
+            }
+            """;
+
+        var info = UpdateChecker.ParseRelease(legacyRelease, "2026.9.16", "win-x64");
+
+        Assert.Equal("KindleMate2_x64_runtime.zip", info!.Asset!.Name);
     }
 
     [Fact]

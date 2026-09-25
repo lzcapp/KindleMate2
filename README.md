@@ -28,7 +28,7 @@
 
 Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NET 运行时）；不带该后缀 = 需先安装上面的运行时。
 
-- **Windows**：解压 `.zip` 后运行 `KindleMate2.exe`（64 位系统取 `KindleMate2_x64[_runtime].zip`）；库文件建在程序所在目录（与旧版一致）
+- **Windows**：解压 `.zip` 后运行 `KindleMate2.exe`（64 位系统取 `KindleMate2_win-x64[_runtime].zip`）；库文件建在程序所在目录（与旧版一致）
 - **Linux**：解压后运行 `./kindlemate2` —— 启动器会自动切到数据目录再拉起程序，不必手动 `cd`
   ```bash
   mkdir -p ~/KindleMate2 && tar -xzf KindleMate2_linux-x64_runtime.tar.gz -C ~/KindleMate2

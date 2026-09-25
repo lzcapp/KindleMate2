@@ -3,7 +3,7 @@ name: release
 # 发布即自动化:push 日期式 tag(如 2026.09.13)或手动 dispatch 触发。
 #
 # 共 12 个资产(不带版本号):
-#   Windows(6 个 zip):KindleMate2_{arm64,x64,x86}[_runtime].zip
+#   Windows(6 个 zip):KindleMate2_win-{arm64,x64,x86}[_runtime].zip
 #   Linux(4 个 tar.gz):KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz
 #   macOS(2 个 dmg):KindleMate2_{macos-arm64,macos-x64}.dmg —— 内含 KindleMate2.app
 # 命名规则(2026-09-06 用户确认):**_runtime = 自包含(打包 .NET Runtime,免装)**;
@@ -135,12 +135,12 @@ jobs:
       # (命名规则用户确认 2026-09-06:与常规直觉相反,_runtime 表示免装)
       matrix:
         include:
-          - { rid: win-arm64, self: 'false', suffix: arm64 }
-          - { rid: win-arm64, self: 'true',  suffix: arm64_runtime }
-          - { rid: win-x64,   self: 'false', suffix: x64 }
-          - { rid: win-x64,   self: 'true',  suffix: x64_runtime }
-          - { rid: win-x86,   self: 'false', suffix: x86 }
-          - { rid: win-x86,   self: 'true',  suffix: x86_runtime }
+          - { rid: win-arm64, self: 'false', suffix: win-arm64 }
+          - { rid: win-arm64, self: 'true',  suffix: win-arm64_runtime }
+          - { rid: win-x64,   self: 'false', suffix: win-x64 }
+          - { rid: win-x64,   self: 'true',  suffix: win-x64_runtime }
+          - { rid: win-x86,   self: 'false', suffix: win-x86 }
+          - { rid: win-x86,   self: 'true',  suffix: win-x86_runtime }
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -610,7 +610,7 @@ jobs:
           $body = @('## Changes', '') + $log + @(
             '',
             '### 资产说明',
-            '- Windows:`KindleMate2_{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.exe`。',
+            '- Windows:`KindleMate2_win-{arm64,x64,x86}[_runtime].zip` —— 解压后运行 `KindleMate2.exe`。',
             '- Linux:`KindleMate2_{linux-x64,linux-arm64}[_runtime].tar.gz` —— `tar -xzf` 后运行 `./kindlemate2`(启动器会自动切到数据目录,不必手动 cd)。',
             '- macOS:`KindleMate2_{macos-arm64,macos-x64}.dmg` —— 打开后把 `KindleMate2.app` 拖进 Applications。',
             '- 带 `_runtime` = 自包含(免装 .NET 运行时);不带 = 需先安装对应平台的 .NET 10 运行时。macOS 只提供自包含包。',

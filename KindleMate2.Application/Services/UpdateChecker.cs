@@ -127,7 +127,7 @@ public static class UpdateChecker {
     /// 运行时标识 → 可能的资产名,按优先级排列。
     ///
     /// 产物命名见 release.yml:<c>KindleMate2_macos-arm64.dmg</c>、<c>KindleMate2_linux-x64[_runtime].tar.gz</c>、
-    /// <c>KindleMate2_x64[_runtime].zip</c>(Windows)。macOS 只发自包含包。
+    /// <c>KindleMate2_win-x64[_runtime].zip</c>(Windows)。macOS 只发自包含包。
     ///
     /// **凡是同时存在 <c>_runtime</c>(自包含)与无后缀(框架依赖)两种变体的平台,一律优先自包含。**
     /// 理由是两种选错的代价完全不对称:自包含包在任何机器上都能跑,而框架依赖包在没装对应 .NET
@@ -136,6 +136,10 @@ public static class UpdateChecker {
     ///
     /// (2026-09-21 修:Linux 分支原先只列了无后缀名,而线上确实发 <c>KindleMate2_linux-x64_runtime.tar.gz</c>
     /// / <c>linux-arm64_runtime.tar.gz</c> —— 于是从自包含包安装的 Linux 用户会被换成框架依赖包。)
+    ///
+    /// Windows 自本版起资产名加了 <c>win-</c> 前缀(与 <c>linux-</c>/<c>macos-</c> 对齐)。候选里**同时保留旧名**
+    /// (<c>KindleMate2_x64[_runtime].zip</c>):新版本能继续认领改名之前发布的资产。反过来,
+    /// 改名之前安装的旧版本认不出新名,会退化成"提示有新版本 + 给发布页链接"(仍可手动更新)。
     /// </summary>
     internal static IReadOnlyList<string> AssetNameCandidates(string runtimeIdentifier) =>
         NormalizeRuntimeIdentifier(runtimeIdentifier) switch {
@@ -143,9 +147,9 @@ public static class UpdateChecker {
             "osx-x64" => ["KindleMate2_macos-x64.dmg"],
             "linux-x64" => ["KindleMate2_linux-x64_runtime.tar.gz", "KindleMate2_linux-x64.tar.gz"],
             "linux-arm64" => ["KindleMate2_linux-arm64_runtime.tar.gz", "KindleMate2_linux-arm64.tar.gz"],
-            "win-x64" => ["KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip"],
-            "win-arm64" => ["KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip"],
-            "win-x86" => ["KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip"],
+            "win-x64" => ["KindleMate2_win-x64_runtime.zip", "KindleMate2_win-x64.zip", "KindleMate2_x64_runtime.zip", "KindleMate2_x64.zip"],
+            "win-arm64" => ["KindleMate2_win-arm64_runtime.zip", "KindleMate2_win-arm64.zip", "KindleMate2_arm64_runtime.zip", "KindleMate2_arm64.zip"],
+            "win-x86" => ["KindleMate2_win-x86_runtime.zip", "KindleMate2_win-x86.zip", "KindleMate2_x86_runtime.zip", "KindleMate2_x86.zip"],
             _ => [],
         };
 
