@@ -1,4 +1,5 @@
-﻿using KindleMate2.Application.Models;
+﻿using System.Globalization;
+using KindleMate2.Application.Models;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.KM2DB;
@@ -78,7 +79,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    // 持久化键:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域会给出
+                    // 非公历年,同一份数据在不同机器上算出不同的 (word_key, timestamp),判重与唯一约束都会错。
+                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
                     if (!existingVocabIds.Add(word + timestamp)) {
                         continue;
@@ -133,7 +136,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    // 持久化键:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域会给出
+                    // 非公历年,同一份数据在不同机器上算出不同的 (word_key, timestamp),判重与唯一约束都会错。
+                    var formattedDateTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
                     if (string.IsNullOrWhiteSpace(wordKey)) {
                         // Rows without a word key cannot be linked to vocabulary — skip.

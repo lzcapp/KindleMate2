@@ -468,7 +468,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                         skipCounts.DateFailed++;
                         continue;
                     }
-                    var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    // 持久化键的一部分:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域
+                    // 会给出非公历年,导致同一份 My Clippings.txt 在不同机器上生成不同的 key。
+                    var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
                     clipping.ClippingDate = clippingDate;
 
                     var key = clippingDate + "|" + clippingTypeLocation;
