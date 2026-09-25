@@ -70,6 +70,25 @@ public sealed class UpdateCheckerTests {
         Assert.Contains("releases/tag/2026.09.17", info.ReleaseUrl);
         Assert.Equal("KindleMate2_macos-arm64.dmg", info.Asset!.Name);
         Assert.Equal("https://example.test/macos-arm64.dmg", info.Asset.DownloadUrl);
+        // 本样本没有 SHA256SUMS 资产 → 校验和地址为 null(旧发布,更新时跳过校验)
+        Assert.Null(info.Asset.ChecksumUrl);
+    }
+
+    [Fact]
+    public void ParseRelease_AttachesSha256SumsUrlToTheChosenAsset() {
+        const string json = """
+            {
+              "tag_name": "2026.09.17",
+              "assets": [
+                { "name": "KindleMate2_x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip", "size": 1 },
+                { "name": "SHA256SUMS", "browser_download_url": "https://example.test/SHA256SUMS", "size": 2 }
+              ]
+            }
+            """;
+
+        var info = UpdateChecker.ParseRelease(json, "2026.9.16", "win-x64");
+
+        Assert.Equal("https://example.test/SHA256SUMS", info!.Asset!.ChecksumUrl);
     }
 
     [Fact]

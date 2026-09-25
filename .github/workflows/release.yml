@@ -453,6 +453,21 @@ jobs:
           }
           Get-ChildItem dist | Select-Object Name, Length | Format-Table
 
+      # 生成 SHA256SUMS 供应用内更新做完整性校验(见 UpdateInstaller.VerifyChecksumAsync)。
+      # 必须在所有资产都进入 dist 之后、创建 Release 之前 —— 校验和要覆盖最终交付的那份字节。
+      - name: Generate SHA256SUMS
+        shell: pwsh
+        run: |
+          $lines = Get-ChildItem dist -File |
+            Where-Object { $_.Name -ne 'SHA256SUMS' } |
+            Sort-Object Name |
+            ForEach-Object {
+              $h = (Get-FileHash -Algorithm SHA256 -Path $_.FullName).Hash.ToLowerInvariant()
+              "$h  $($_.Name)"
+            }
+          $lines | Out-File -FilePath dist/SHA256SUMS -Encoding ascii
+          Get-Content dist/SHA256SUMS
+
       - name: Build release notes (previous tag .. HEAD)
         shell: pwsh
         run: |
