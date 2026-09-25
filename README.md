@@ -43,7 +43,19 @@ Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NE
   ```bash
   xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
   ```
-  库文件固定在 `~/Library/Application Support/KindleMate2/`。
+   库文件固定在 `~/Library/Application Support/KindleMate2/`。
+
+### 验证下载
+
+每个 Release 都附 `SHA256SUMS`（SHA-256 清单）、`SHA256SUMS.asc`（维护者 GPG 签名）与公钥 `KindleMate2-release-key.asc`：
+
+```bash
+gpg --import KindleMate2-release-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS        # Windows 可用 Get-FileHash
+```
+
+应用内「检查更新」在下载安装包后，也会自动按 `SHA256SUMS` 校验 SHA-256。
 
 ### 从旧版升级
 

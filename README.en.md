@@ -45,6 +45,18 @@ Windows and Linux each ship two flavours: `_runtime` = **self-contained** (no .N
   ```
   The library lives in `~/Library/Application Support/KindleMate2/`.
 
+### Verifying downloads
+
+Every release ships `SHA256SUMS` (the SHA-256 manifest), `SHA256SUMS.asc` (the maintainer's GPG signature) and the public key `KindleMate2-release-key.asc`:
+
+```bash
+gpg --import KindleMate2-release-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS        # on Windows, use Get-FileHash
+```
+
+The in-app "Check for updates" also verifies the downloaded package against `SHA256SUMS` automatically.
+
 ### Upgrading from an older version
 
 The library (`KM2.dat`) lives next to the program, so **extracting the new build over your existing folder is all it takes** —
