@@ -439,6 +439,21 @@
         <a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" target="_blank" rel="noopener">.NET 10 runtime</a>
         (Desktop Runtime on Windows). macOS ships self-contained packages only.</p>
     </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>验证下载：</strong>每个 Release 都附 <code>SHA256SUMS</code>（SHA-256 清单）、
+        <code>SHA256SUMS.asc</code>（维护者 GPG 签名）与公钥 <code>KindleMate2-release-key.asc</code>：
+        <code>gpg --import KindleMate2-release-key.asc</code> →
+        <code>gpg --verify SHA256SUMS.asc SHA256SUMS</code> →
+        <code>sha256sum -c SHA256SUMS</code>（Windows 用 <code>Get-FileHash</code>）。
+        应用内「检查更新」也会自动按 <code>SHA256SUMS</code> 校验。</p>
+      <p class="t-en"><strong>Verifying downloads:</strong> every release ships <code>SHA256SUMS</code>,
+        <code>SHA256SUMS.asc</code> (maintainer GPG signature) and the public key <code>KindleMate2-release-key.asc</code>:
+        <code>gpg --import KindleMate2-release-key.asc</code> →
+        <code>gpg --verify SHA256SUMS.asc SHA256SUMS</code> →
+        <code>sha256sum -c SHA256SUMS</code> (use <code>Get-FileHash</code> on Windows).
+        The in-app &ldquo;Check for updates&rdquo; also verifies against <code>SHA256SUMS</code>.</p>
+    </div>
   </section>
 
   <!-- ================= 截图 ================= -->
