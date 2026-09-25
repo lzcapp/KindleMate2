@@ -467,6 +467,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>库内是否有标注数据 —— 清理/清空前是否需要提示或确认(对齐原版的 Count 判断)。</summary>
     public bool HasClippingData => _allClippings.Count > 0;
 
+    /// <summary>库内是否有生词数据(生词或查询任一有内容)。</summary>
+    public bool HasVocabularyData => _allLookups.Count > 0 || _allVocabs.Count > 0;
+
+    /// <summary>
+    /// 库内是否有任意数据(标注 ∪ 生词)。备份 / 统计 / 清空作用于**整库**,
+    /// 门禁必须用它 —— 只用标注判断会把「只导入了 vocab.db」的用户挡在门外。
+    /// </summary>
+    public bool HasAnyData => HasClippingData || HasVocabularyData;
+
     /// <summary>已删除 = 原始标注行 − 当前标注(与原版 GetStatusText 口径一致)。</summary>
     public int DeletedCount => Math.Max(0, _originLineCount - _allClippings.Count);
 
@@ -834,24 +843,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
+        if (!HasAnyData) {
+            return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.No_Data_To_Backup));
+        }
+        var hasClippings = HasClippingData;
         return Task.Run(() => {
             // 提示"打开文件夹"要指向**备份真正落地的那个目录**(session 的),而不是当前目录下的
             // Backups —— 用户从文件对话框打开了别处的库时,两者不是同一个地方。
             var backupPath = session.BackupDirectory;
             session.ExportManager.BackupDatabase();
 
-            if (_allClippings.Count == 0) {
-                return new OperationResult(false, Strings.Prompt, Strings.No_Data_To_Backup);
+            // 标注文本副本只在确有标注时产出;纯生词库也应能完成数据库备份(不再报「无数据可备份」)。
+            if (hasClippings && !session.ExportManager.BackupClippings(out var exception)) {
+                return new OperationResult(false, Strings.Error,
+                    MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception!));
             }
 
-            if (session.ExportManager.BackupClippings(out var exception)) {
-                return new OperationResult(true, Strings.Successful,
-                    Strings.Backup_Successful + Strings.Open_Folder,
-                    FeedbackKind.OpenFolderPrompt, backupPath);
-            }
-
-            return new OperationResult(false, Strings.Error,
-                MessageHelper.BuildMessage(Strings.Backup_Clippings_Failed, exception!));
+            return new OperationResult(true, Strings.Successful,
+                Strings.Backup_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, backupPath);
         });
     }
 
@@ -1039,7 +1049,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
-        if (_allClippings.Count <= 0) {
+        if (!HasAnyData) {
             return Task.FromResult(new OperationResult(false, Strings.Prompt, Strings.Database_Empty));
         }
         return RunOperationAsync(() => {

@@ -99,6 +99,8 @@ jobs:
           grep -q "context menu:.*result=OK" "$out"
           # 删除一行后列表不跳回顶部 —— 探针只钉得住"挑行判据"这条纯逻辑
           grep -q "row restore:.*result=OK" "$out"
+          # 「库内有任意数据」门禁:纯生词库不该被当成空库(备份/统计/清空因此不该被挡)
+          grep -q "data gate:.*result=OK" "$out"
           # 源码断言:上面那条判据要真被用上,靠的是两处接线,而这两处都是
           # "删掉不报错、单测也不红"的胶水(单测工程不引 Avalonia,够不着 VM)。
           # ① 行级删除把"原来那一行的位置"传下去(不传 ⇒ 功能静默失效);
@@ -209,6 +211,8 @@ jobs:
           grep -q "recycle bin view:.*result=OK" "$work/smoke.txt"
           grep -q "list meta row:.*result=OK" "$work/smoke.txt"
           grep -q "word sections:.*result=OK" "$work/smoke.txt"
+          # 「库内有任意数据」门禁:纯生词库不该被当成空库(备份/统计/清空因此不该被挡)
+          grep -q "data gate:.*result=OK" "$work/smoke.txt"
           # 生词域右栏详情里的生词高亮:与中栏那一行同源,正负例都验(正例读 Run 的粗体,
           # 负例拿书名当词 —— 少了域判据就会满屏加粗)。同样够不着单测:Avalonia 工程里的 VM。
           grep -q "detail emphasis:.*result=OK" "$work/smoke.txt"
