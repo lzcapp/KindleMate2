@@ -160,15 +160,15 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var sql = type switch {
-                AppEntities.SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' OR bookname LIKE '%' || @strSearch || '%' OR authorname LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.BookTitle => "WHERE bookname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Author => "WHERE authorname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Content => "WHERE content LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "WHERE content LIKE '%' || @strSearch || '%' ESCAPE '\\' OR bookname LIKE '%' || @strSearch || '%' ESCAPE '\\' OR authorname LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
             var query = "SELECT key, content, bookname, authorname, brieftype, clippingtypelocation, clippingdate, read, clipping_importdate, tag, sync, newbookname, colorRGB, pagenumber FROM clippings " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {

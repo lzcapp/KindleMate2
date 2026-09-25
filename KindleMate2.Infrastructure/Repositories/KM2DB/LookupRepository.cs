@@ -123,25 +123,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var sql = string.Empty;
             switch (type) {
                 case AppEntities.SearchType.BookTitle:
-                    sql = "WHERE title LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE title LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Author:
-                    sql = "WHERE authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Content:
-                    sql = "WHERE usage LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE usage LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Vocabulary:
                 case AppEntities.SearchType.Stem:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.All:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\' OR usage LIKE '%' || @strSearch || '%' ESCAPE '\\' OR title LIKE '%' || @strSearch || '%' ESCAPE '\\' OR authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
             }
             var query = "SELECT DISTINCT * FROM lookups " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {

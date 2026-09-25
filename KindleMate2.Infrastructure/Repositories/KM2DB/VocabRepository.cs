@@ -70,14 +70,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var sql = type switch {
-                AppEntities.SearchType.Vocabulary => "WHERE word LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Stem => "WHERE stem LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.All => "WHERE word LIKE '%' || @strSearch || '%' OR stem LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.Vocabulary => "WHERE word LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Stem => "WHERE stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "WHERE word LIKE '%' || @strSearch || '%' ESCAPE '\\' OR stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
             var query = "SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {

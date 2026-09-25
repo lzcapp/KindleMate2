@@ -605,6 +605,21 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// 用 <see cref="SqliteConnectionStringBuilder"/> 构造连接串 —— 不要用字符串插值拼
         /// <c>Data Source=…</c>:路径里含 <c>;</c>(Unix 与 Windows 都合法)会被解析成额外关键字而报错。
         /// </summary>
+        /// <summary>
+        /// 转义 LIKE 模式里的通配符(<c>%</c>、<c>_</c>)与转义符本身(<c>\</c>),让用户输入的
+        /// 搜索词按字面匹配。必须配合 SQL 里的 <c>ESCAPE '\'</c> 使用:否则搜 <c>a_b</c> 会命中
+        /// <c>aXb</c>,搜 <c>%</c>/<c>_</c> 会命中几乎全部。
+        /// </summary>
+        public static string EscapeLikePattern(string? value) {
+            if (string.IsNullOrEmpty(value)) {
+                return string.Empty;
+            }
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+        }
+
         public static string BuildConnectionString(string dbFile, SqliteOpenMode mode, bool sharedCache) {
             return new SqliteConnectionStringBuilder {
                 DataSource = dbFile,

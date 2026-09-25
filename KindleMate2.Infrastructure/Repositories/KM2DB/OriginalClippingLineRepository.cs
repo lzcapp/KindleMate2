@@ -79,14 +79,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var sql = type switch {
-                AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author => "WHERE line1 LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Content => "WHERE line4 LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.All => "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author => "WHERE line1 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Content => "WHERE line4 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "WHERE line1 LIKE '%' || @strSearch || '%' ESCAPE '\\' OR line4 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
             sql = "SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines " + sql;
             var cmd = new SqliteCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
