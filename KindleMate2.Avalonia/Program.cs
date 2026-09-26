@@ -399,12 +399,14 @@ internal static class Program {
                                       && staleRows == 0
                                       && aVocab is { Word: "wmB", WordKey: "en:wmB" }
                                       && bVocab is not null
+                                      && aVocab.Frequency == 3 && bVocab.Frequency == 3   // 并入后词频要跟着重算
                                       && wordNodesAfter == wordNodesBefore - 1        // wmA 那个节点消失了
                                       && plain.Ok && plain.Message == Strings.Word_Renamed
                                       && cVocab is { Word: "wmD", WordKey: null };
                         report.AppendLine($"word merge: 并入后 lookups=[{string.Join("/", keysAfter)}](期望 01-01/02/03)" +
                                           $" 旧键残留={staleRows}(期望 0)" +
                                           $" A 词条=[{aVocab?.Word}/{aVocab?.WordKey}](期望 wmB/en:wmB)" +
+                                          $" 词频=[{aVocab?.Frequency}/{bVocab?.Frequency}](期望 3/3)" +
                                           $" 左栏节点 {wordNodesBefore}→{wordNodesAfter}(期望少 1)" +
                                           $" 文案并入={merged.Message == Strings.Word_Merged}(期望 True)" +
                                           $" 改空位={plain.Message == Strings.Word_Renamed}/无键词条=[{cVocab?.Word}/{cVocab?.WordKey ?? "<null>"}](期望 wmD/null)" +

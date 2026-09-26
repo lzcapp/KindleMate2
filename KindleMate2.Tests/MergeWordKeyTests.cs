@@ -133,4 +133,59 @@ public sealed class MergeWordKeyTests : IDisposable {
         Assert.Equal(3, repo.GetAll().Count(l => l.WordKey == "en:target"));
         Assert.DoesNotContain(repo.GetAll(), l => l.WordKey == "en:source");
     }
+
+    /// <summary>
+    /// 源键**自己**就有同句同书同作者的重复(同一个词、同一句读过两次,时间戳不同),
+    /// 而目标键没有对应行 —— 并入后也不能留下两条肉眼相同的行,只留一条。
+    /// </summary>
+    [Fact]
+    public void MergeWordKey_SourceKeyInternalDuplicates_KeepOnlyOne() {
+        var repo = CreateRepo("source-internal-dup.db");
+        var service = new LookupService(repo);
+        const string sentence = "何美之叫浑家煮了一只母鸡，把火腿切了，酒舀出来烫着。";
+
+        // 目标键只有一条**别的句子** —— 内容规则不会拿它来删源行。
+        repo.Add(new Lookup { WordKey = "en:target", Usage = "another sentence", Title = "儒林外史", Authors = "吴敬梓",
+            Timestamp = "2025-09-12 15:00:00" });
+        // 源键自己两条同句(时间戳差 3 秒):应只留一条,另一条随并入丢弃。
+        repo.Add(new Lookup { WordKey = "en:source", Usage = sentence, Title = "儒林外史", Authors = "吴敬梓",
+            Timestamp = "2025-09-12 15:39:32" });
+        repo.Add(new Lookup { WordKey = "en:source", Usage = sentence, Title = "儒林外史", Authors = "吴敬梓",
+            Timestamp = "2025-09-12 15:39:35" });
+
+        Assert.Equal(1, service.MergeWordKey("en:source", "en:target"));
+
+        var targetRows = repo.GetAll().Where(l => l.WordKey == "en:target").ToList();
+        Assert.Equal(2, targetRows.Count);                       // 目标原有 1 条 + 源里保留 1 条
+        Assert.Single(targetRows, l => l.Usage == sentence);     // 同句只留一条
+        Assert.DoesNotContain(repo.GetAll(), l => l.WordKey == "en:source");
+        // 留的是 rowid 最小(最先写入)的那条,稳定可预期。
+        Assert.Equal("2025-09-12 15:39:32", targetRows.Single(l => l.Usage == sentence).Timestamp);
+    }
+
+    /// <summary>
+    /// 源键内部重复 + 其中最早那条恰好与目标行**同 timestamp**(会被 a 规则丢弃)时,
+    /// 次早的那条必须被保留 —— 不能因为"前面还有同句行"就跟着丢,否则整条阅读都没了。
+    /// </summary>
+    [Fact]
+    public void MergeWordKey_SourceInternalDuplicateWhoseEldestCollidesWithTarget_KeepsTheSurvivor() {
+        var repo = CreateRepo("source-internal-ts-collision.db");
+        var service = new LookupService(repo);
+        const string sentence = "same sentence";
+
+        // 目标键有一条别的句子,但其 timestamp 与源键 s1 相同 ⇒ s1 被 a 规则丢弃。
+        repo.Add(new Lookup { WordKey = "en:target", Usage = "other sentence", Title = "Book", Authors = "A",
+            Timestamp = "2026-01-01 10:00:00" });
+        repo.Add(new Lookup { WordKey = "en:source", Usage = sentence, Title = "Book", Authors = "A",
+            Timestamp = "2026-01-01 10:00:00" });
+        repo.Add(new Lookup { WordKey = "en:source", Usage = sentence, Title = "Book", Authors = "A",
+            Timestamp = "2026-01-01 10:00:03" });
+
+        Assert.Equal(1, service.MergeWordKey("en:source", "en:target"));
+
+        var targetRows = repo.GetAll().Where(l => l.WordKey == "en:target").ToList();
+        Assert.Equal(2, targetRows.Count);
+        // 同句那一条必须还在(来自 s2),不能整条丢光。
+        Assert.Equal("2026-01-01 10:00:03", targetRows.Single(l => l.Usage == sentence).Timestamp);
+    }
 }
