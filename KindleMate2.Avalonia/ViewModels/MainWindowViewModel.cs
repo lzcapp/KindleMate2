@@ -1441,8 +1441,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 .ToList();
             if (vocabs.Count == 0) return string.Empty;
 
-            // ① 查询行先并。与目标键重号的行会被丢掉 —— 它们跟目标那一条本就是同一次阅读事件
-            //    (见 MergeWordKey)。放最前面是因为它要动唯一约束:出事时一行都还没改过。
+            // ① 查询行先并。与目标行同 timestamp、或同句同书同作者(句子非空)的源行会被丢掉
+            //    —— 它们跟目标那一条本就是同一次阅读事件(见 MergeWordKey)。
+            //    放最前面是因为它要动唯一约束:出事时一行都还没改过。
             var oldKeys = vocabs
                 .Select(v => v.WordKey)
                 .Where(k => !string.IsNullOrEmpty(k))
@@ -1460,6 +1461,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 vocab.Word = newWord;
                 session.VocabService.UpdateVocab(vocab);
             }
+
+            // ③ 改名 / 并入都会改变各 word_key 下的查询条数 ⇒ 重算词频。frequency 是**落库值**
+            //    (只有 UpdateFrequency 会回写),不在这里重算的话,左栏显示的词频会停在旧值,
+            //    直到下次导入/重建才纠正。
+            session.Km2DatabaseService.UpdateFrequency();
+
             // 撞名时文案要说清"并进去了",否则用户发现少了一个词会以为出了错。
             return merging ? Strings.Word_Merged : Strings.Word_Renamed;
         }, true, Strings.Successful, Strings.Word_Renamed_Failed);
