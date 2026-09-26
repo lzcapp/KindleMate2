@@ -81,6 +81,7 @@
                         ToolTip.ShowOnDisabled="True" />
               <Separator />
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportMarkdown}" Click="OnMenuExportMarkdown" />
+              <MenuItem Header="{x:Static shared:Strings.Ui_Menu_ExportCsv}" Click="OnMenuExportCsv" />
               <!-- 2026-09-22 由「清理数据库」+「清洗标注文本」合并而来:两者本是同一条流水线
                    (导入路径已经在跑 清洗 → 清理),拆成两个只差一个字的菜单项反而让人分不清该点哪个。 -->
               <MenuItem Header="{x:Static shared:Strings.Ui_Menu_MaintainDatabase}" Click="OnMenuMaintainDatabase" />

@@ -498,6 +498,9 @@
   <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
     <value>Export as Markdown</value>
   </data>
+  <data name="Ui_Menu_ExportCsv" xml:space="preserve">
+    <value>Export as CSV</value>
+  </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>Rebuild database</value>
   </data>
