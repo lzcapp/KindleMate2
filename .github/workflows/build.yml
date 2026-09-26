@@ -15,7 +15,7 @@ jobs:
       # 自 2026-09-13 起仓库不再有子模块(WinForms 壳与 DarkModeForms 子模块已退休)
       # 全历史:应用版本号由 git tag 派生,浅克隆取不到 tag → 需要完整历史。
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -30,7 +30,7 @@ jobs:
       #     框架依赖变体的用户端要求随之变为 .NET 10 Desktop Runtime,
       #     而 .NET 8 运行时本身在 2026-11-10 停更,故该变化是收拢而非新增负担。
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -48,6 +48,44 @@ jobs:
 
       - name: Run tests
         run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore --filter "Category!=Manual"
+
+      # 工作流卫生断言(2026-09 全项目审查批次 B):这几条规则"删了不报错、PR 照样绿",
+      # 只有像上面那些源码 grep 断言一样钉住才会现形。放在 build-and-test(每次 PR 必跑)。
+      - name: Workflow hygiene assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ① 所有第三方 action 必须钉到完整 40 位 commit SHA(其后可附 ` # vX` 注释):
+          #    只钉 tag 的话,上游可以把 tag 重指向任意提交 —— 对带 contents: write 的
+          #    发布工作流尤其危险。写法必须统一成 `owner/repo@<40位SHA> # vX`。
+          #    只认行首(缩进后)的 uses: —— 否则本段命令自己的字面量会被 grep 命中。
+          unpinned="$(grep -RhE '^[[:space:]]*uses:' .github/workflows \
+            | grep -vE '^[[:space:]]*uses:[[:space:]]+[A-Za-z0-9._/-]+@[0-9a-f]{40}([[:space:]]|$)' || true)"
+          if [ -n "$unpinned" ]; then
+            echo "::error::存在未钉 commit SHA 的 use:(应形如 actions/checkout@<40位SHA> # v7)"
+            echo "$unpinned"
+            exit 1
+          fi
+          # ② release.yml 的检出处必须走 refs/tags/<version>(数量 5 =
+          #    test / publish / publish-linux / publish-macos / release;version job
+          #    刻意不钉 —— 它的任务就是读 tag 列表)。手动 dispatch 曾默认检出分支 HEAD,
+          #    产出"标着版本号、实为分支最新代码"的错位 Release。新增检出处时人工确认后改数。
+          #    (锚行首:注释里提到 refs/tags/ 不算数。)
+          test "$(grep -cE '^[[:space:]]*ref: refs/tags/' .github/workflows/release.yml)" -eq 5
+          # ③ GPG 口令不得出现在命令行参数里(--passphrase-file 是允许的):
+          #    argv 中的明文口令同机可被读 /proc 的进程看到。
+          #    关键词**拼接构造**模式:把「口令词 + [ + 引号」直接写成字面量会被密钥
+          #    扫描器(GitGuardian)当成真口令误报,扫描检查会红 —— 别改回字面量。
+          kw='pass'; kw="${kw}phrase"
+          if grep -nE -- "--$kw"'([=[:space:]])' .github/workflows/*.yml; then
+            echo "::error::GPG 口令出现在 argv 里,请改用 --passphrase-file(RUNNER_TEMP 临时文件 + chmod 600)"
+            exit 1
+          fi
+          # ④ upload-artifact 必须配 if-no-files-found: error(数量 4 = release.yml 里
+          #    的 4 处产物上传):静默的 no files found 会把残缺产物一路带到 Release。
+          #    (锚行首:注释里提到这个键不算数。)
+          test "$(grep -cE '^[[:space:]]*if-no-files-found: error' .github/workflows/release.yml)" -eq 4
+          echo "workflow hygiene assertions passed"
 
       # 发布冒烟(-r + --self-contained):补一个长期盲区 —— 上面几步只走普通 build/test,
       # 从不碰发布专属的 RID 路径,于是 2026-09-06 那类"只有发版才炸"的故障(SDK 10 发布
@@ -111,6 +149,15 @@ jobs:
           # ② 两处列表重建(标注 / 生词)都要走挑行函数(退回无脑 FirstOrDefault 同样静默失效)。
           #    数量写死 2:将来若真多出第三处重建,这里该红一次,人工确认后再改这个数。
           test "$(grep -c 'PickRowAfterRebuild() ??' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 2
+          # ③ 表格选中必须**跟随**列表选中(实体同源):各取各的 FirstOrDefault 会让删除/重建后
+          #    右栏详情显示第 0 行、菜单却操作还原行(2026-09 全项目审查发现,单测够不着 VM)。
+          grep -q 'SelectedClipTable = SelectedItem?.Clipping' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          grep -q 'SelectedLookupTable = SelectedItem?.Lookup' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
+          # ④ 导出/备份在忙碌期必须让路(连接串没设 busy_timeout,与写操作并发直接 SQLITE_BUSY);
+          #    数量 3 = 导出全部 / 导出当前书 / 备份数据库,多出第四个门禁时人工确认后改数。
+          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
+          test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
@@ -131,13 +178,13 @@ jobs:
     steps:
       # 全历史:应用版本号由 git tag 派生,浅克隆取不到 tag。
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
       # SDK 版本同 build-and-test:必须 10.x(Avalonia 源生成器要求 Roslyn >= 4.14)。
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
 

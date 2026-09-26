@@ -197,14 +197,44 @@ public sealed class UpdateInstallerTests : IDisposable {
             new UpdateAsset("pkg.zip", url, payload.Length, sums),
             null, new HttpClient(new ChecksumHandler(payload, "deadbeef  other.zip\n"))));
 
-        // ④ 旧发布没有 SHA256SUMS 资产 → 跳过校验(兼容)
-        var legacy = await UpdateInstaller.DownloadAsync(
+        // ④ 发布页没有 SHA256SUMS 资产 → **失败关闭**:不装没校验过的字节
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
             new UpdateAsset("pkg.zip", url, payload.Length),
-            null, new HttpClient(new ChecksumHandler(payload, null)));
+            null, new HttpClient(new ChecksumHandler(payload, null))));
+    }
+
+    /// <summary>非法资产名(分隔符/相对段)在**碰网络之前**就被拒,一个临时目录都不该落。</summary>
+    [Theory]
+    [InlineData("../evil.zip")]
+    [InlineData("sub/evil.zip")]
+    [InlineData("..")]
+    [InlineData(".")]
+    public async Task DownloadAsync_RejectsUnsafeAssetNames(string name) {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+            new UpdateAsset(name, "https://example.test/x", 1)));
+    }
+
+    /// <summary>
+    /// 失败关闭后会抛在校验一关;此时下载目录里只有半成品/未校验的包,**必须一并删掉**,
+    /// 否则每次失败的自动更新都会在临时目录留一份几十 MB 的残包。
+    /// </summary>
+    [Fact]
+    public async Task DownloadAsync_OnFailure_RemovesTheTempDirectory() {
+        var payload = Encoding.UTF8.GetBytes("hello world");
+        var root = Path.Combine(_work, "temp-root");
+        Directory.CreateDirectory(root);
+
+        var previous = UpdateInstaller.TempRoot;
+        UpdateInstaller.TempRoot = root;
         try {
-            Assert.Equal("hello world", File.ReadAllText(legacy));
+            // 没有 SHA256SUMS → 校验阶段抛异常
+            await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+                new UpdateAsset("pkg.zip", "https://example.test/pkg.zip", payload.Length),
+                null, new HttpClient(new ChecksumHandler(payload, null))));
+
+            Assert.Empty(Directory.GetDirectories(root));
         } finally {
-            Cleanup(legacy);
+            UpdateInstaller.TempRoot = previous;
         }
     }
 
