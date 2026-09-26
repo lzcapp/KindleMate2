@@ -417,6 +417,11 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ExportAllMarkdownAsync());
     }
 
+    private async void OnMenuExportCsv(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ExportAllCsvAsync());
+    }
+
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {

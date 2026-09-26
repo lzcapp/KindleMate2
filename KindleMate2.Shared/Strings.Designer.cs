@@ -1163,6 +1163,7 @@ namespace KindleMate2.Shared {
         public static string Ui_Menu_SyncToDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice", resourceCulture);
         public static string Ui_Menu_SyncToDevice_NeedsDevice => ResourceManager.GetString("Ui_Menu_SyncToDevice_NeedsDevice", resourceCulture);
         public static string Ui_Menu_ExportMarkdown => ResourceManager.GetString("Ui_Menu_ExportMarkdown", resourceCulture);
+        public static string Ui_Menu_ExportCsv => ResourceManager.GetString("Ui_Menu_ExportCsv", resourceCulture);
         public static string Ui_Menu_RebuildDatabase => ResourceManager.GetString("Ui_Menu_RebuildDatabase", resourceCulture);
         public static string Ui_Menu_ClearData => ResourceManager.GetString("Ui_Menu_ClearData", resourceCulture);
         public static string Ui_Menu_Github => ResourceManager.GetString("Ui_Menu_Github", resourceCulture);
