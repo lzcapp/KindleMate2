@@ -1,0 +1,43 @@
+name: verify-signing
+
+# 手动触发的**发布签名自检**:只验证签名所需的 secrets 配置正确
+# (GPG 私钥能导入、口令能完成签名),不构建、不发布任何东西。
+# 正式发布前跑一次,免得发布流程走到一半才发现 secret 不对。
+#
+# 用法:Actions → verify-signing → Run workflow(选 main 分支)。
+# 注意:workflow_dispatch 只有在工作流文件进入默认分支后才会出现在列表里。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-gpg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import GPG key and sign a dummy manifest
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::未配置 GPG_PRIVATE_KEY secret"; exit 1
+          fi
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          # 与 release.yml 的签名步骤同款:无人值守下靠 loopback 提供口令
+          echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "hello" > SHA256SUMS
+          # 口令走临时文件,不把明文塞进 gpg 的命令行参数(argv):同机能读 /proc 的进程
+          # 可以原样看到(与 release.yml / release-prep 同款写法)。
+          printf '%s' "$GPG_PASSPHRASE" > "$RUNNER_TEMP/gpg-pass"
+          chmod 600 "$RUNNER_TEMP/gpg-pass"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/gpg-pass" \
+              --detach-sign --armor --output SHA256SUMS.asc SHA256SUMS
+          rm -f "$RUNNER_TEMP/gpg-pass"
+          gpg --verify SHA256SUMS.asc SHA256SUMS
+          echo "GPG 发布签名凭据验证通过"
+          echo "指纹:$(gpg --with-colons --list-keys | awk -F: '/^fpr:/{print $10; exit}')"

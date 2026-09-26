@@ -1,6 +1,7 @@
 ﻿using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Diagnostics;
 using KindleMate2.Shared.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -123,25 +124,25 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             var sql = string.Empty;
             switch (type) {
                 case AppEntities.SearchType.BookTitle:
-                    sql = "WHERE title LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE title LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Author:
-                    sql = "WHERE authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Content:
-                    sql = "WHERE usage LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE usage LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.Vocabulary:
                 case AppEntities.SearchType.Stem:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
                 case AppEntities.SearchType.All:
-                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' OR usage LIKE '%' || @strSearch || '%' OR title LIKE '%' || @strSearch || '%' OR authors LIKE '%' || @strSearch || '%'";
+                    sql = "WHERE word_key LIKE '%' || @strSearch || '%' ESCAPE '\\' OR usage LIKE '%' || @strSearch || '%' ESCAPE '\\' OR title LIKE '%' || @strSearch || '%' ESCAPE '\\' OR authors LIKE '%' || @strSearch || '%' ESCAPE '\\'";
                     break;
             }
             var query = "SELECT DISTINCT * FROM lookups " + sql;
             var cmd = new SqliteCommand(query, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -232,7 +233,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key", connection);
+            // lookups 没有主键,身份是 (word_key, timestamp)(同一词可被查多次)。
+            // 之前只按 word_key 定位,会把同键**所有行**一并改写,并把它们的 timestamp
+            // 压成同一个值 —— 直接撞 UNIQUE(word_key, timestamp) 且误改无关行。
+            // 这里用 null 安全的 IS 对齐 Delete(wordKey, timestamp) 的定位口径。
+            var cmd = new SqliteCommand("UPDATE lookups SET usage = @usage, title = @title, authors = @authors, timestamp = @timestamp WHERE word_key = @word_key AND timestamp IS @timestamp", connection);
             cmd.Parameters.AddWithValue("@word_key", lookup.WordKey ?? throw new InvalidOperationException());
             cmd.Parameters.AddWithValue("@usage", lookup.Usage ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
@@ -284,18 +289,40 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
             using var transaction = connection.BeginTransaction();
 
-            // ① 先删"会撞唯一约束 (word_key, timestamp)"的那批:它们与目标键下同 timestamp 的行
-            //    本就是一回事(同一个词、同一次阅读),搬过去只会撞上。
-            //    这一步必须在 UPDATE 之前 —— 否则 UPDATE 会因约束失败而整条回滚,一条都搬不过去。
-            //    timestamp 为 NULL 的行不算冲突(与 SQLite 对 UNIQUE 中 NULL 的语义一致:彼此不相等),
-            //    所以它们不会被删,也不会让 UPDATE 失败。
+            // ① 删三类"搬过去就重复"的源行,必须在 UPDATE 之前 —— 否则 UPDATE 撞唯一约束
+            //    整条回滚,一条都搬不过去(空句、元数据对不上的行一律保留,合并不是清理):
+            //    a) 与目标行**同 timestamp**:撞唯一约束 (word_key, timestamp),搬必失败。
+            //       timestamp NULL 不算冲突(与 SQLite UNIQUE 对 NULL 的语义一致),不会被删;
+            //    b) 与目标行**同句 + 同书 + 同作者**(句子非空):两个同名词条把同一次阅读
+            //       各记了一条,timestamp 差几秒,并入后会在中栏显示成两条肉眼完全相同的行
+            //       (2026-09-25 用户报的"合并后有重复");
+            //    c) **源键自己**就有同句 + 同书 + 同作者的重复(同一个词、同一句读过两次):
+            //       只留 rowid 最小的一条,其余丢弃 —— 否则并入后中栏同样是两条相同的行。
+            //       "谁算更早"要排除**会被 a) 丢掉**的那些行:否则最早那条若恰好与目标同
+            //       timestamp(被 a 删)、次早的又会因"前面还有同句行"被 c 跟着删掉,整条阅读就没了。
+            //       句子为空(NULL/空串)时无从判断是不是同一条 —— 不参与 b/c 两类,
+            //       只可能被 a) 按 timestamp 删。
             var dropCmd = new SqliteCommand(
-                "DELETE FROM lookups WHERE word_key = @old_key " +
-                "AND EXISTS (SELECT 1 FROM lookups b WHERE b.word_key = @new_key AND b.timestamp = lookups.timestamp)",
+                "DELETE FROM lookups WHERE word_key = @old_key AND (" +
+                " EXISTS (SELECT 1 FROM lookups b WHERE b.word_key = @new_key AND b.timestamp = lookups.timestamp)" +
+                " OR (COALESCE(lookups.usage, '') <> '' AND (" +
+                "  EXISTS (SELECT 1 FROM lookups b WHERE b.word_key = @new_key" +
+                "   AND COALESCE(b.usage, '') = COALESCE(lookups.usage, '')" +
+                "   AND COALESCE(b.title, '') = COALESCE(lookups.title, '')" +
+                "   AND COALESCE(b.authors, '') = COALESCE(lookups.authors, ''))" +
+                "  OR EXISTS (SELECT 1 FROM lookups s WHERE s.word_key = @old_key AND s.rowid < lookups.rowid" +
+                "   AND COALESCE(s.usage, '') = COALESCE(lookups.usage, '')" +
+                "   AND COALESCE(s.title, '') = COALESCE(lookups.title, '')" +
+                "   AND COALESCE(s.authors, '') = COALESCE(lookups.authors, '')" +
+                "   AND NOT EXISTS (SELECT 1 FROM lookups c WHERE c.word_key = @new_key AND c.timestamp = s.timestamp)))))",
                 connection, transaction);
             dropCmd.Parameters.AddWithValue("@old_key", oldWordKey);
             dropCmd.Parameters.AddWithValue("@new_key", newWordKey);
-            dropCmd.ExecuteNonQuery();
+            var dropped = dropCmd.ExecuteNonQuery();
+            if (dropped > 0) {
+                // 静默删数据也留个痕:合并后行数对不上时,这是唯一能事后对账的线索。
+                AppLog.Write($"[LookupRepository.MergeWordKey] {oldWordKey} → {newWordKey}:丢弃 {dropped} 条重复查询行");
+            }
 
             // ② 剩下的整批搬过去。
             var moveCmd = new SqliteCommand(
@@ -314,7 +341,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("DELETE FROM lookups", connection);
-            return cmd.ExecuteNonQuery() > 0;
+            // 0 行受影响也是成功(空表):false 只应代表执行失败,而失败会抛异常由上层 catch。
+            cmd.ExecuteNonQuery();
+            return true;
         }
     }
 }

@@ -22,7 +22,7 @@ public interface ILookupService {
 
     /// <summary>
     /// 把某个词的**全部**查询行并到另一个键上(「重命名生词」撞名时用)——
-    /// 与目标键重号的行会被丢掉(它们本就是同一条记录)。
+    /// 与目标行同 timestamp、或同句同书同作者(句子非空)的源行会被丢掉(它们本就是同一条记录)。
     /// 详细语义见 <see cref="KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository.MergeWordKey"/>。
     /// </summary>
     /// <returns>被改写(搬走)的行数。</returns>

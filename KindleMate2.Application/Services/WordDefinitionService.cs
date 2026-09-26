@@ -128,7 +128,12 @@ public static class WordDefinitionService {
         foreach (var ch in value) {
             if ((ch >= '\u4e00' && ch <= '\u9fff')       // 中日韩统一表意文字
                 || (ch >= '\u3400' && ch <= '\u4dbf')    // 扩展 A
-                || (ch >= '\uf900' && ch <= '\ufaff')) { // 兼容表意文字
+                || (ch >= '\uf900' && ch <= '\ufaff')    // 兼容表意文字
+                || (ch >= '\u3040' && ch <= '\u30ff')    // 日文假名(平假名+片假名)
+                || (ch >= '\u31f0' && ch <= '\u31ff')    // 片假名语音扩展
+                || (ch >= '\uac00' && ch <= '\ud7af')    // 韩文谚文音节
+                || (ch >= '\u1100' && ch <= '\u11ff')    // 韩文谚文字母
+                || (ch >= '\u3130' && ch <= '\u318f')) { // 韩文兼容字母
                 return true;
             }
         }

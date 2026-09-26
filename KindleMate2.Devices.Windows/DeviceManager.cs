@@ -5,9 +5,9 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Entities;
-using KindleMate2.Infrastructure.Helpers;
 using MediaDevices;
 using KindleMate2.Shared.Diagnostics;
+using KindleMate2.Shared.Threading;
 
 namespace KindleMate2.Devices.Windows;
 
@@ -28,14 +28,22 @@ public class DeviceManager : IDeviceManager {
     private string _driveLetter = string.Empty;
     private readonly string _versionFilePath;
 
+    /// <summary>设备变化事件后的防抖上报器。WMI 事件可能在 <see cref="Dispose"/> 之后才到达,
+    /// 释放竞态统一由 <see cref="DebouncedAction"/> 处理,与 POSIX 实现共用同一份语义。</summary>
+    private readonly DebouncedAction _debounce;
+
     public Device.Type DeviceType => _deviceType;
     public string DriveLetter => _driveLetter;
     public bool IsConnected => !string.IsNullOrWhiteSpace(_driveLetter);
 
     public event Action<bool>? ConnectionChanged;
 
+    /// <summary>状态变化后的防抖时长,与 POSIX 实现取同一值。</summary>
+    private static readonly TimeSpan DebounceInterval = TimeSpan.FromMilliseconds(2500);
+
     public DeviceManager(string versionFilePath) {
         _versionFilePath = versionFilePath;
+        _debounce = new DebouncedAction(DebounceInterval, OnDebounceElapsed);
     }
 
     public void StartWatching() {
@@ -74,6 +82,7 @@ public class DeviceManager : IDeviceManager {
 
             if (!isConnected) {
                 _driveLetter = string.Empty;
+                _deviceType = Device.Type.Unknown;
             }
 
             return isConnected;
@@ -114,23 +123,14 @@ public class DeviceManager : IDeviceManager {
         DeviceEventHandler(sender);
     }
 
-    private System.Threading.Timer? _debounceTimer;
-
+    /// <summary>收到任一设备变化事件:重置防抖,静默后复检一次状态。释放后为空操作。</summary>
     private void DeviceEventHandler(object sender) {
-        if (_debounceTimer == null) {
-            _debounceTimer = new System.Threading.Timer(OnDebounceTimerElapsed, null, 2500, System.Threading.Timeout.Infinite);
-        } else {
-            _debounceTimer.Change(2500, System.Threading.Timeout.Infinite);
-        }
+        _debounce.Schedule();
     }
 
-    private void OnDebounceTimerElapsed(object? state) {
-        try {
-            IsKindleConnected();
-            ConnectionChanged?.Invoke(IsConnected);
-        } catch (Exception ex) {
-            AppLog.Write($"[HandleUsbDeviceEvent] {ex}");
-        }
+    private void OnDebounceElapsed() {
+        IsKindleConnected();
+        ConnectionChanged?.Invoke(IsConnected);
     }
 
     private bool HandleUsbDevice() {
@@ -193,6 +193,9 @@ public class DeviceManager : IDeviceManager {
                 return false;
             } finally {
                 try { device.Disconnect(); } catch { /* best effort */ }
+                // MediaDevice 构造即启动事件线程,只有 Dispose 才停 —— 只 Disconnect 会让线程 +
+                // WPD 会话在 8 秒一次的探测里持续堆积(写回路径 SyncFileToDevice 早有正解)。
+                device.Dispose();
             }
         } catch (Exception e) {
             AppLog.Write(e);
@@ -213,6 +216,11 @@ public class DeviceManager : IDeviceManager {
             var vocabularyPath = Path.Combine(_driveLetter, AppConstants.SystemPathName, AppConstants.VocabularyPathName);
             switch (_deviceType) {
                 case Device.Type.USB: {
+                    // 拔出后 _deviceType 若还停在 USB,Path.Combine("", "documents") 会退化成
+                    // 相对路径,误读/误写本机工作目录里的文件。这里用 IsConnected 兜底。
+                    if (!IsConnected) {
+                        throw new Exception(Strings.Kindle_Connect_Failed);
+                    }
                     progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
                     File.Copy(Path.Combine(documentPath, AppConstants.ClippingsFileName), backupClippingsPath);
                     progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
@@ -223,20 +231,25 @@ public class DeviceManager : IDeviceManager {
                 case Device.Type.MTP: {
                     var device = FindKindleDevice();
                     if (device == null) {
-                        return false;
+                        throw new Exception(Strings.Device_Mtp_Connect_Failed);
                     }
                     try {
                         device.Connect();
                         progress?.Report(new OperationProgress(OperationStage.ReadingFile, 0, DeviceFileCount));
-                        ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath);
+                        if (!ReadMtpFile(device, documentPath, AppConstants.ClippingsFileName, backupClippingsPath)) {
+                            throw new Exception(Strings.Device_Clippings_Not_Found);
+                        }
                         progress?.Report(new OperationProgress(OperationStage.ReadingFile, 1, DeviceFileCount));
-                        ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath);
+                        // vocab.db 尽力而为:没查过词/老固件没有这个库,不该让整个导入失败。
+                        if (!ReadMtpFile(device, vocabularyPath, AppConstants.VocabFileName, backupWordsPath)) {
+                            AppLog.Write("[DeviceManager] MTP: 设备上没有 vocab.db,跳过生词本");
+                        }
                         progress?.Report(new OperationProgress(OperationStage.ReadingFile, DeviceFileCount, DeviceFileCount));
                         return true;
-                    } catch {
-                        return false;
                     } finally {
                         try { device.Disconnect(); } catch { /* best effort */ }
+                        // 同 HandleMtpDevice:不 Dispose 每次导入都会漏掉一个事件线程。
+                        device.Dispose();
                     }
                 }
                 case Device.Type.Unknown:
@@ -270,9 +283,7 @@ public class DeviceManager : IDeviceManager {
                 try {
                     device.Connect();
                     var targetPath = Path.Combine(documentPath, targetFileName);
-                    try { device.DeleteFile(targetPath); } catch { /* file may not exist on first sync */ }
-                    using var fileStream = File.OpenRead(exportedFilePath);
-                    device.UploadFile(fileStream, targetPath);
+                    SyncFileToDeviceViaMtp(device, documentPath, targetFileName, targetPath, exportedFilePath);
                 } finally {
                     if (device is { IsConnected: true }) {
                         device.Disconnect();
@@ -295,26 +306,97 @@ public class DeviceManager : IDeviceManager {
                 d.Model?.Contains(AppConstants.Kindle, StringComparison.InvariantCultureIgnoreCase) == true);
     }
 
-    private static void ReadMtpFile(MediaDevice device, string path, string fileName, string filePath) {
-        MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(path);
-        IEnumerable<MediaFileInfo> files = systemDir.EnumerateFiles(fileName);
+    private static bool ReadMtpFile(MediaDevice device, string path, string fileName, string filePath) {
+        MediaDirectoryInfo? dir = device.GetDirectoryInfo(path);
+        if (dir == null) {
+            return false;
+        }
+        IEnumerable<MediaFileInfo> files = dir.EnumerateFiles(fileName);
         var fileInfos = files as MediaFileInfo[] ?? files.ToArray();
         if (fileInfos.Length == 0) {
-            return;
+            return false;
         }
         MediaFileInfo file = fileInfos[0];
         using var memoryStream = new MemoryStream();
         device.DownloadFile(file.FullName, memoryStream);
         memoryStream.Position = 0;
+        // 失败(传输中断/写盘失败)向上抛,由调用方记入 exception —— 不能再像以前那样
+        // 吞掉写盘异常,让「备份根本没写成」也返回成功。
+        File.WriteAllBytes(filePath, memoryStream.ToArray());
+        return true;
+    }
+
+    /// <summary>
+    /// 经 MTP 把文件写回设备(覆盖 <c>documents/</c> 下同名文件)。MTP 没有原子替换,
+    /// 「删旧 → 传新」中间有个窗口:删成功、传失败 → 设备上就没有该文件了,而应用重试
+    /// 第一步是「从设备导入」,缺文件即无法自愈。所以先下载现有文件当回滚点,传失败就恢复。
+    /// </summary>
+    private static void SyncFileToDeviceViaMtp(MediaDevice device, string documentPath,
+        string targetFileName, string targetPath, string exportedFilePath) {
+        var rollbackPath = Path.Combine(Path.GetTempPath(), "km2-mtp-rollback-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var hasRollback = TryDownloadRollback(device, documentPath, targetFileName, rollbackPath);
+
+        var keepRollback = false;
         try {
-            File.WriteAllBytes(filePath, memoryStream.ToArray());
+            try { device.DeleteFile(targetPath); } catch { /* 首次同步可能没有该文件 */ }
+
+            try {
+                using var fileStream = File.OpenRead(exportedFilePath);
+                device.UploadFile(fileStream, targetPath);
+            } catch {
+                // 上传失败:把设备上的原文件恢复回去。恢复也失败时,保留本地回滚副本。
+                if (hasRollback) {
+                    keepRollback = !RestoreRollback(device, rollbackPath, targetPath);
+                }
+                throw;
+            }
+        } finally {
+            if (!keepRollback) {
+                try { File.Delete(rollbackPath); } catch { /* 临时文件删不掉不影响结果 */ }
+            }
+        }
+    }
+
+    /// <summary>上传前把设备上现有文件下载到本地当回滚点。文件不存在返回 false(无需回滚);读不出来则抛出。</summary>
+    private static bool TryDownloadRollback(MediaDevice device, string documentPath, string fileName, string rollbackPath) {
+        try {
+            MediaDirectoryInfo? dir = device.GetDirectoryInfo(documentPath);
+            if (dir == null) {
+                return false;
+            }
+            IEnumerable<MediaFileInfo> files = dir.EnumerateFiles(fileName);
+            var fileInfos = files as MediaFileInfo[] ?? files.ToArray();
+            if (fileInfos.Length == 0) {
+                return false;
+            }
+            using var fs = File.Create(rollbackPath);
+            device.DownloadFile(fileInfos[0].FullName, fs);
+            return true;
         } catch (Exception ex) {
-            AppLog.Write(StringHelper.GetExceptionMessage(nameof(ReadMtpFile), ex));
+            // 连回滚点都拿不到就先别删 —— 宁可这次写回不成功,也不让设备处于删了却传不上的中间态。
+            AppLog.Write($"[DeviceManager] MTP: 无法为设备上现有文件创建回滚点,放弃本次写回:{ex}");
+            try { File.Delete(rollbackPath); } catch { /* best effort */ }
+            throw new Exception(Strings.Device_Mtp_Sync_Failed);
+        }
+    }
+
+    /// <summary>上传失败后把回滚点传回设备。true = 已恢复(可删本地副本);false = 恢复也失败(必须保留副本)。</summary>
+    private static bool RestoreRollback(MediaDevice device, string rollbackPath, string targetPath) {
+        try {
+            using var rollbackStream = File.OpenRead(rollbackPath);
+            device.UploadFile(rollbackStream, targetPath);
+            AppLog.Write("[DeviceManager] MTP: 上传失败,已把设备上的原文件恢复回去");
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[DeviceManager] MTP: 上传失败后恢复也失败,设备上可能已无该文件。原始副本保留在:{rollbackPath} ({ex})");
+            return false;
         }
     }
 
     public void Dispose() {
-        _debounceTimer?.Dispose();
+        // 幂等,并挡住 Dispose 之后才到达的 WMI 事件(可能与 Stop/Dispose watcher 并发)。
+        _debounce.Dispose();
+
         _usbDeviceArrivalWatcher?.Stop();
         _usbDeviceArrivalWatcher?.Dispose();
         _usbDeviceRemovalWatcher?.Stop();

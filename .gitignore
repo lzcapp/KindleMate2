@@ -548,3 +548,7 @@ vite.config.ts.timestamp-*
 .DS_Store
 /.workbuddy
 /.vscode
+
+# opencode (IDE) 本地配置 —— 由 IDE 自动生成,含本机绝对路径与临时端口,不该入库
+/opencode.json
+/.opencode/

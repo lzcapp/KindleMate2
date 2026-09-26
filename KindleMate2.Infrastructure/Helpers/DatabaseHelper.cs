@@ -56,7 +56,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     Directory.CreateDirectory(directory);
                 }
 
-                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWriteCreate;");
+                using var connection = new SqliteConnection(BuildConnectionString(filePath, SqliteOpenMode.ReadWriteCreate, sharedCache: true));
                 connection.Open();
 
                 foreach (var script in GetTableCreationScripts()) {
@@ -345,7 +345,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 // 独立连接:VACUUM 不能在调用方的事务里执行。这里也不带 Cache=Shared —— 
                 // 快照连接没有理由加入调用方的共享缓存。
-                using var connection = new SqliteConnection($"Data Source={fullSourcePath};Mode=ReadOnly;");
+                using var connection = new SqliteConnection(BuildConnectionString(fullSourcePath, SqliteOpenMode.ReadOnly, sharedCache: false));
                 connection.Open();
 
                 using (var busyCommand = connection.CreateCommand()) {
@@ -428,7 +428,7 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             try {
-                using var connection = new SqliteConnection($"Data Source={filePath};Cache=Shared;Mode=ReadWrite;");
+                using var connection = new SqliteConnection(BuildConnectionString(filePath, SqliteOpenMode.ReadWrite, sharedCache: true));
                 connection.Open();
                 using var command = new SqliteCommand("VACUUM;", connection);
                 command.ExecuteNonQuery();
@@ -574,6 +574,21 @@ namespace KindleMate2.Infrastructure.Helpers {
             return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
         }
 
+        /// <summary>
+        /// 批量插入「逐条降级」兜底时,判定某条失败是否可以安全跳过:
+        /// <list type="bullet">
+        ///   <item>SQLite 约束冲突(SQLITE_CONSTRAINT = 19):重复主键 key / 唯一约束撞车;</item>
+        ///   <item><see cref="InvalidOperationException"/>:数据非法(如 key 为空,InsertOne 里
+        ///       <c>?? throw</c> 抛出的)。</item>
+        /// </list>
+        /// 其余一律 <c>false</c> —— 磁盘满(SQLITE_FULL)、库被锁(SQLITE_BUSY)、I/O / 损坏等
+        /// 系统性问题必须向上抛,绝不能伪装成「导入成功、只是少了几条」。
+        /// </summary>
+        public static bool IsSkippableInsertFailure(Exception ex) {
+            return ex is InvalidOperationException ||
+                   ex is SqliteException { SqliteErrorCode: 19 };
+        }
+
         public static int? GetSafeInt(SqliteDataReader reader, int ordinal) {
             return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
         }
@@ -586,8 +601,35 @@ namespace KindleMate2.Infrastructure.Helpers {
             return reader.IsDBNull(ordinal) ? defaultValue : reader.GetInt32(ordinal);
         }
         
+        /// <summary>
+        /// 用 <see cref="SqliteConnectionStringBuilder"/> 构造连接串 —— 不要用字符串插值拼
+        /// <c>Data Source=…</c>:路径里含 <c>;</c>(Unix 与 Windows 都合法)会被解析成额外关键字而报错。
+        /// </summary>
+        /// <summary>
+        /// 转义 LIKE 模式里的通配符(<c>%</c>、<c>_</c>)与转义符本身(<c>\</c>),让用户输入的
+        /// 搜索词按字面匹配。必须配合 SQL 里的 <c>ESCAPE '\'</c> 使用:否则搜 <c>a_b</c> 会命中
+        /// <c>aXb</c>,搜 <c>%</c>/<c>_</c> 会命中几乎全部。
+        /// </summary>
+        public static string EscapeLikePattern(string? value) {
+            if (string.IsNullOrEmpty(value)) {
+                return string.Empty;
+            }
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+        }
+
+        public static string BuildConnectionString(string dbFile, SqliteOpenMode mode, bool sharedCache) {
+            return new SqliteConnectionStringBuilder {
+                DataSource = dbFile,
+                Mode = mode,
+                Cache = sharedCache ? SqliteCacheMode.Shared : SqliteCacheMode.Default
+            }.ToString();
+        }
+
         public static string GetConnectionString(string dbFile) {
-            return $"Data Source={dbFile};Cache=Shared;Mode=ReadWrite;";
+            return BuildConnectionString(dbFile, SqliteOpenMode.ReadWrite, sharedCache: true);
         }
     }
 }

@@ -10,8 +10,11 @@ public interface IKm2DatabaseService {
     bool RestoreFromOriginalLine(KindleMate2.Domain.Entities.KM2DB.OriginalClippingLine originalLine);
     int PurgeDeletedOriginalLines(IEnumerable<string> keys);
 
+    // crossBookDuplicates:判重是否跨书。默认 true(手动清理沿用原版语义,跨书同文一并删);
+    // 导入收尾传 false —— 跨书同文是各自独立的高亮,不能动用户库里已有的那条。
     bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result,
-        IProgress<KindleMate2.Application.Models.OperationProgress>? progress = null);
+        IProgress<KindleMate2.Application.Models.OperationProgress>? progress = null,
+        bool crossBookDuplicates = true);
 
     /// <summary>
     /// **只读**预览:算出清洗会改掉哪些条目,不写任何东西。确认框靠它拿到条数与样例。

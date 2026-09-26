@@ -70,6 +70,25 @@ public sealed class UpdateCheckerTests {
         Assert.Contains("releases/tag/2026.09.17", info.ReleaseUrl);
         Assert.Equal("KindleMate2_macos-arm64.dmg", info.Asset!.Name);
         Assert.Equal("https://example.test/macos-arm64.dmg", info.Asset.DownloadUrl);
+        // 本样本没有 SHA256SUMS 资产 → 校验和地址为 null(旧发布;安装侧 fail-closed,会中止更新)
+        Assert.Null(info.Asset.ChecksumUrl);
+    }
+
+    [Fact]
+    public void ParseRelease_AttachesSha256SumsUrlToTheChosenAsset() {
+        const string json = """
+            {
+              "tag_name": "2026.09.17",
+              "assets": [
+                { "name": "KindleMate2_x64_runtime.zip", "browser_download_url": "https://example.test/x64_runtime.zip", "size": 1 },
+                { "name": "SHA256SUMS", "browser_download_url": "https://example.test/SHA256SUMS", "size": 2 }
+              ]
+            }
+            """;
+
+        var info = UpdateChecker.ParseRelease(json, "2026.9.16", "win-x64");
+
+        Assert.Equal("https://example.test/SHA256SUMS", info!.Asset!.ChecksumUrl);
     }
 
     [Fact]
@@ -177,5 +196,42 @@ public sealed class UpdateCheckerTests {
 
         Assert.Equal("https://example.test/ok.dmg", asset!.DownloadUrl);
         Assert.Equal(42, asset.Size);
+    }
+
+    /// <summary>
+    /// 资产名会直接参与本地路径拼接,含分隔符/相对段的一律不能认(否则文件落到临时目录之外)。
+    /// <c>"."</c>/<c>".."</c> 是 <c>Path.GetFileName</c> 挡不住的漏网之鱼,故显式拒绝。
+    /// </summary>
+    [Theory]
+    [InlineData("KindleMate2_x64.zip", true)]
+    [InlineData("KindleMate2_linux-x64_runtime.tar.gz", true)]
+    [InlineData("../evil.zip", false)]
+    [InlineData("sub/evil.zip", false)]
+    [InlineData("..\\evil.zip", false)]
+    [InlineData("..", false)]
+    [InlineData(".", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    public void IsSafeName_RejectsAnythingThatCouldEscapeTheTempDirectory(string name, bool expected) {
+        Assert.Equal(expected, UpdateAsset.IsSafeName(name));
+    }
+
+    [Fact]
+    public void FindAsset_SkipsUnsafeAssetNamesAndFallsBackToTheSafeOne() {
+        const string json = """
+            {
+              "tag_name": "2026.09.17",
+              "assets": [
+                { "name": "../evil.zip",                     "browser_download_url": "https://example.test/evil.zip", "size": 1 },
+                { "name": "..",                              "browser_download_url": "https://example.test/dotdot",   "size": 2 },
+                { "name": "KindleMate2_x64_runtime.zip",     "browser_download_url": "https://example.test/ok.zip",   "size": 3 }
+              ]
+            }
+            """;
+
+        using var document = JsonDocument.Parse(json);
+        var asset = UpdateChecker.FindAsset(document.RootElement, "win-x64");
+
+        Assert.Equal("https://example.test/ok.zip", asset!.DownloadUrl);
     }
 }

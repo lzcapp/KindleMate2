@@ -1,7 +1,7 @@
 ﻿namespace KindleMate2.Domain.Entities.VocabDB {
     public class Word {
         private long? _category = 0;
-        private long? _timestamp = 0;
+        private long? _timestamp;
         public required string Id { get; set; } = null!;
         public string? WordText { get; set; }
         public string? Stem { get; set; }
@@ -14,7 +14,7 @@
 
         public long? Timestamp {
             get => _timestamp;
-            set => _timestamp = value ?? 0;
+            set => _timestamp = value;
         }
 
         public string? ProfileId { get; set; }

@@ -492,8 +492,9 @@ public partial class MainWindow : Window {
 
     private async void OnMenuStatistics(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
-        // 原版 MenuStatistic_Click:库为空时提示 Database_Empty 并拒绝打开统计窗
-        if (!vm.HasClippingData) {
+        // 库内没有任何数据(标注或生词)时提示 Database_Empty 并拒绝打开统计窗;
+        // 用 HasAnyData 而非 HasClippingData —— 只导生词库的用户也该能看统计(有生词页签)。
+        if (!vm.HasAnyData) {
             await AppDialog.AlertAsync(this, Strings.Prompt, Strings.Database_Empty);
             return;
         }

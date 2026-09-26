@@ -79,14 +79,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var sql = type switch {
-                AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author => "WHERE line1 LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.Content => "WHERE line4 LIKE '%' || @strSearch || '%'",
-                AppEntities.SearchType.All => "WHERE line1 LIKE '%' || @strSearch || '%' OR line4 LIKE '%' || @strSearch || '%'",
+                AppEntities.SearchType.BookTitle or AppEntities.SearchType.Author => "WHERE line1 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Content => "WHERE line4 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "WHERE line1 LIKE '%' || @strSearch || '%' ESCAPE '\\' OR line4 LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
             sql = "SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines " + sql;
             var cmd = new SqliteCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@strSearch", search);
+            cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -156,6 +156,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             }
 
             // ② 兜底:逐条插入,每条独立事务,单条失败只跳过该条
+            //    但**只跳过可跳过项**(重复 key / key 为空);磁盘满、库被锁等系统性问题向上抛。
             var inserted = 0;
             foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
                 using var rowTransaction = connection.BeginTransaction();
@@ -164,7 +165,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                         inserted++;
                     }
                     rowTransaction.Commit();
-                } catch {
+                } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
                     try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }
@@ -212,7 +213,9 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             connection.Open();
 
             var cmd = new SqliteCommand("DELETE FROM original_clipping_lines", connection);
-            return cmd.ExecuteNonQuery() > 0;
+            // 0 行受影响也是成功(空表):false 只应代表执行失败,而失败会抛异常由上层 catch。
+            cmd.ExecuteNonQuery();
+            return true;
         }
     }
 }

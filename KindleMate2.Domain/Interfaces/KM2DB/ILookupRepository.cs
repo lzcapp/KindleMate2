@@ -28,6 +28,13 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         int Add(List<Lookup> lookups);
 
+        /// <summary>
+        /// Updates the single lookup identified by (word_key, timestamp) — lookups have no primary
+        /// key and word_key alone is not unique, so (word_key, timestamp) is the row identity
+        /// (mirrors <see cref="Delete(string, string)"/>). <paramref name="lookup"/>.Timestamp is
+        /// therefore both the locator and the value written back (callers that rename books keep it
+        /// unchanged, so this is always the original timestamp).
+        /// </summary>
         bool Update(Lookup lookup);
 
         bool Delete(string wordKey);
@@ -46,9 +53,10 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
         ///
         /// 分两步:
         /// <list type="number">
-        /// <item>与目标键下**同 timestamp** 的行 —— 它们跟目标那一条本就是**同一次阅读事件**
-        ///   (同一个词、同一时间),搬过去必然撞唯一约束,所以**删掉**。
-        ///   这是"撞名静默解决"里"删除"的那一半;</item>
+        /// <item>删掉两类搬不过去(或搬过去就重复)的源行:
+        ///   与目标行**同 timestamp** 的(撞唯一约束,本就是同一次阅读事件);
+        ///   以及**同句 + 同书 + 同作者**(句子非空)的 —— 两个同名词条各记一条的同一次阅读,
+        ///   并入后会在中栏显示成两条肉眼完全相同的行。句子为空时无从判断,不删;</item>
         /// <item>其余的全部 UPDATE 到目标键。</item>
         /// </list>
         ///

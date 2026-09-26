@@ -114,12 +114,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                 UpdateFrequency();
 
                 result = new Dictionary<string, string> {
-                    { AppConstants.ParsedCount, originalClippingLines.Count.ToString() },
+                    // 解析条数取**过了空行过滤**的候选数:originalClippingLines 还含空白行,
+                    // 拿它当「解析 N 条」会虚报(与真正进入重建的条数对不上)。
+                    { AppConstants.ParsedCount, myClippings.Count.ToString() },
                     { AppConstants.InsertedCount, insertedCount.ToString() }
                 };
                 return true;
             } catch (Exception e) {
-                AppLog.Write(StringHelper.GetExceptionMessage(nameof(CleanDatabase), e));
+                AppLog.Write(StringHelper.GetExceptionMessage(nameof(RebuildDatabase), e));
                 result = new  Dictionary<string, string> {
                     { AppConstants.Exception, e.Message }
                 };
@@ -150,11 +152,12 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// 先按内容分组解决精确重复(O(n)),剩下的不同内容才做包含检查(带长度剪枝与提前退出)。
         /// </remarks>
         private static (List<Clipping> Empty, List<Clipping> Duplicated) ComputeDatabaseCleanPlan(
-            List<Clipping> clippings, IProgress<OperationProgress>? progress = null) {
+            List<Clipping> clippings, IProgress<OperationProgress>? progress = null,
+            bool crossBookDuplicates = true) {
             var empty = clippings
                 .Where(c => string.IsNullOrWhiteSpace(c.Content) || string.IsNullOrWhiteSpace(c.BookName))
                 .ToList();
-            var duplicated = FindDuplicatedClippings(clippings, progress);
+            var duplicated = FindDuplicatedClippings(clippings, progress, crossBookDuplicates);
             return (empty, duplicated);
         }
 
@@ -420,6 +423,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     if (indexOf >= 0) {
                         clippingTypeLocation = metadata[..(indexOf - 1)];
                     }
+                    // 真实页码:在**已去掉日期段**的 clippingTypeLocation 上再解析一次。
+                    // 直接在整行 metadata 上取 location.Page 不行 —— 位置型条目的 Location 段被移除后,
+                    // 正则会把日期里的日号("January 1, 2026" → 1)当成页码。去掉日期段后:
+                    //   "…page 5 | Location 100-101" → 5;"…Location 100-101" → 0(无页码,走下面兜底)。
+                    var realPage = MyClippingsHelper.ParseLocation(clippingTypeLocation).Page;
                     indexOf = clippingTypeLocation.LastIndexOf('|');
                     var pageStr = indexOf >= 0 ? clippingTypeLocation[(indexOf)..] : clippingTypeLocation;
                     var pageNumber = -1;
@@ -442,6 +450,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                         var strMatched = StringHelper.RomanToInteger(pageStr).ToString();
                         isPageParsed = int.TryParse(strMatched, out pageNumber);
                     }
+                    // 下面按 | 分段取数只用于**没有页码的位置型条目**兜底(位置末端,供同页笔记关联)。
+                    // 只要 realPage 解析出了真实页码,就用它覆盖 —— 否则 "page 5 | Location 100-101"
+                    // 的 PageNumber 会被 Location 末端 101 覆盖,真实页码 5 丢失。
+                    if (realPage > 0) {
+                        pageNumber = realPage;
+                        isPageParsed = true;
+                    }
                     if (!isPageParsed || pageNumber == -1 || pageNumber == 0) {
                         skipCounts.PageFailed++;
                         continue;
@@ -456,7 +471,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                         skipCounts.DateFailed++;
                         continue;
                     }
-                    var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    // 持久化键的一部分:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域
+                    // 会给出非公历年,导致同一份 My Clippings.txt 在不同机器上生成不同的 key。
+                    var clippingDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
                     clipping.ClippingDate = clippingDate;
 
                     var key = clippingDate + "|" + clippingTypeLocation;
@@ -632,7 +649,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         }
 
         public bool CleanDatabase(string databaseFilePath, out Dictionary<string, string> result,
-            IProgress<OperationProgress>? progress = null) {
+            IProgress<OperationProgress>? progress = null, bool crossBookDuplicates = true) {
             // 清理最耗时的是判重扫描与随后的 VACUUM,都在这两个阶段里上报
             progress?.Report(OperationProgress.At(OperationStage.Preparing));
             var clippings = clippingRepository.GetAll();
@@ -653,7 +670,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
                 
                 progress?.Report(OperationProgress.At(OperationStage.Writing));
-                var (emptyClippings, duplicatedClippings) = ComputeDatabaseCleanPlan(clippings, progress);
+                var (emptyClippings, duplicatedClippings) = ComputeDatabaseCleanPlan(clippings, progress, crossBookDuplicates);
                 var emptyCount = clippingRepository.Delete(emptyClippings);
                 var duplicatedCount = clippingRepository.Delete(duplicatedClippings);
 
@@ -702,7 +719,23 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// that are themselves never deleted).
         /// </summary>
         private static List<Clipping> FindDuplicatedClippings(List<Clipping> clippings,
-            IProgress<OperationProgress>? progress = null) {
+            IProgress<OperationProgress>? progress = null, bool crossBookDuplicates = true) {
+            if (!crossBookDuplicates) {
+                // 导入收尾的清理:判重只在**同一本书内**生效。跨书同文是两条各自独立的高亮 ——
+                // 两条导入链路都**有意保留**它:My Clippings.txt 走 HandleClippings 的
+                // key=日期|位置 判重(跨书 key 不同,两条都留);KM/km3 .dat 走 KmateDedup 的
+                // (书, 作者, 内容) 判重。跨书判重会把用户**库里已有**的那条一并删掉,
+                // 所以这里逐书递归,复用同一套判定(精确重复 + 包含检查都限本书内)。
+                //
+                // 分组键取 (书, 作者),与 KmateDedup 的作用域对齐 —— 只按书名分组会把
+                // 「同名、不同作者」的两本书并成一本,可能误删。
+                var perBook = new List<Clipping>();
+                foreach (var bookGroup in clippings.GroupBy(
+                    c => (Book: c.BookName ?? string.Empty, Author: c.AuthorName ?? string.Empty))) {
+                    perBook.AddRange(FindDuplicatedClippings(bookGroup.ToList(), progress));
+                }
+                return perBook;
+            }
             var candidates = clippings
                 .Where(c => !string.IsNullOrWhiteSpace(c.Key) && !string.IsNullOrWhiteSpace(c.Content))
                 .ToList();
@@ -780,23 +813,15 @@ namespace KindleMate2.Application.Services.KM2DB {
         
         public bool DeleteAllData() {
             try {
-                var table = new List<string>();
-                if (!clippingRepository.DeleteAll()) {
-                    table.Add("clippings");
-                }
-                if (!lookupRepository.DeleteAll()) {
-                    table.Add("lookups");
-                }
-                if (!originalClippingLineRepository.DeleteAll()) {
-                    table.Add("original_clipping_lines");
-                }
-                if (!settingRepository.DeleteAll()) {
-                    table.Add("settings");
-                }
-                if (!vocabRepository.DeleteAll()) {
-                    table.Add("vocab");
-                }
-                return table.Count == 0 ? true : throw new Exception($"Clear table [{string.Join(", ", table)}] failed.");
+                // 各仓库 DeleteAll 的返回值语义是「执行即成功」(空表 0 行也是成功,失败会抛异常):
+                // 此前 `> 0` 让"清空一个本就有空表的库"(如只有标注、从没导过生词)被误报成
+                // Clear_Failed —— 数据其实已经清光了。异常路径由这里统一转 false。
+                clippingRepository.DeleteAll();
+                lookupRepository.DeleteAll();
+                originalClippingLineRepository.DeleteAll();
+                settingRepository.DeleteAll();
+                vocabRepository.DeleteAll();
+                return true;
             } catch (Exception e) {
                 AppLog.Write(StringHelper.GetExceptionMessage(nameof(DeleteAllData), e));
                 return false;
