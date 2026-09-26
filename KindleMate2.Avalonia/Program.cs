@@ -144,6 +144,9 @@ internal static class Program {
             // 删除一行之后,列表不该跳回顶部(挑行规则)
             ProbeRowRestore(report);
 
+            // 「库内有任意数据」门禁:纯生词库不应被当成空库
+            ProbeDataGate(report);
+
             // 平台实现核对:Windows / macOS / Linux 各应为自己的 Devices.<平台>.DeviceManager,
             // 只有这三者之外的平台才落到 NullDeviceManager。
             // 走静态工厂断言,因此不依赖"库能打开"(CI 用空文件即可验证)。
@@ -396,12 +399,14 @@ internal static class Program {
                                       && staleRows == 0
                                       && aVocab is { Word: "wmB", WordKey: "en:wmB" }
                                       && bVocab is not null
+                                      && aVocab.Frequency == 3 && bVocab.Frequency == 3   // 并入后词频要跟着重算
                                       && wordNodesAfter == wordNodesBefore - 1        // wmA 那个节点消失了
                                       && plain.Ok && plain.Message == Strings.Word_Renamed
                                       && cVocab is { Word: "wmD", WordKey: null };
                         report.AppendLine($"word merge: 并入后 lookups=[{string.Join("/", keysAfter)}](期望 01-01/02/03)" +
                                           $" 旧键残留={staleRows}(期望 0)" +
                                           $" A 词条=[{aVocab?.Word}/{aVocab?.WordKey}](期望 wmB/en:wmB)" +
+                                          $" 词频=[{aVocab?.Frequency}/{bVocab?.Frequency}](期望 3/3)" +
                                           $" 左栏节点 {wordNodesBefore}→{wordNodesAfter}(期望少 1)" +
                                           $" 文案并入={merged.Message == Strings.Word_Merged}(期望 True)" +
                                           $" 改空位={plain.Message == Strings.Word_Renamed}/无键词条=[{cVocab?.Word}/{cVocab?.WordKey ?? "<null>"}](期望 wmD/null)" +
@@ -1163,10 +1168,50 @@ internal static class Program {
                           $" -> result={(ok ? "OK" : "失败!挑行规则不符合预期")}");
     }
 
+    /// <summary>
+    /// 「库内有任意数据」门禁探针:只导入了生词库(没有任何标注)时,备份/统计/清空不应被当成空库挡下;
+    /// 真空中(标注与生词都没有)才算空。VM 在 Avalonia 工程里、单测够不着,故在此钉。
+    /// </summary>
+    private static void ProbeDataGate(System.Text.StringBuilder report) {
+        var work = Path.Combine(Path.GetTempPath(), "km2-gate-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(work);
+        try {
+            // 纯生词库:只有 vocab + lookups,没有 clippings
+            var vocabOnlyDb = Path.Combine(work, "vocab-only.dat");
+            KindleMate2.Infrastructure.Helpers.DatabaseHelper.CreateDatabase(vocabOnlyDb, out _);
+            using (var conn = new Microsoft.Data.Sqlite.SqliteConnection(
+                       KindleMate2.Infrastructure.Helpers.DatabaseHelper.GetConnectionString(vocabOnlyDb))) {
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText =
+                    "INSERT INTO vocab (id, word_key, word, timestamp) VALUES ('w1', 'en:apple', 'apple', '2026-01-01 00:00:00');" +
+                    "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES ('en:apple', 'u', 'Book', 'A', '2026-01-01 00:00:00');";
+                cmd.ExecuteNonQuery();
+            }
+            var vocabVm = new MainWindowViewModel();
+            vocabVm.OpenDatabaseAsync(vocabOnlyDb).GetAwaiter().GetResult();
+
+            // 真空库:两者都没有
+            var emptyDb = Path.Combine(work, "empty.dat");
+            KindleMate2.Infrastructure.Helpers.DatabaseHelper.CreateDatabase(emptyDb, out _);
+            var emptyVm = new MainWindowViewModel();
+            emptyVm.OpenDatabaseAsync(emptyDb).GetAwaiter().GetResult();
+
+            var ok = !vocabVm.HasClippingData && vocabVm.HasVocabularyData && vocabVm.HasAnyData
+                     && !emptyVm.HasClippingData && !emptyVm.HasVocabularyData && !emptyVm.HasAnyData;
+
+            report.AppendLine($"data gate: vocab-only(clip={vocabVm.HasClippingData}" +
+                              $" word={vocabVm.HasVocabularyData} any={vocabVm.HasAnyData})" +
+                              $" empty-any={emptyVm.HasAnyData}" +
+                              $" -> result={(ok ? "OK" : "失败!纯生词库未被算作有数据")}");
+        } finally {
+            try { Directory.Delete(work, true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>普通记录行(SectionTitle 为空即非标题行 —— IsSectionHeader 是它派生出来的)。</summary>
     private static KindleMate2.Avalonia.Models.ListItem ProbeRow(string key) =>
         new() { Key = key };
-
     /// <summary>分组标题行:只设 SectionTitle,不挂 Clipping / Lookup。</summary>
     private static KindleMate2.Avalonia.Models.ListItem ProbeHeader(string title) =>
         new() { Key = title, SectionTitle = title };

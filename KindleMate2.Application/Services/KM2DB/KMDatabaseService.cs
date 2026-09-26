@@ -118,7 +118,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var kmLookups = _kmLookupRepository.GetAll();
                 var kmVocabs = _kmVocabRepository.GetAll();
                 if (kmLookups.Count > 0 || kmVocabs.Count > 0) {
-                    var targetLookupWordKeys = _lookupRepository.GetWordKeysList().ToHashSet();
+                    // lookups 的身份是 (word_key, timestamp)(同一词可查多次),判重必须按这对键 ——
+                    // 之前只按 word_key 判重,会把同词不同时间的查询记录**整批丢掉**。
+                    // 与 KMate 导入路径(KmateDatabaseService)口径一致。
+                    var targetLookupPairs = _lookupRepository.GetAll()
+                        .Where(l => l.WordKey != null)
+                        .Select(l => ComposeLookupPair(l.WordKey!, l.Timestamp))
+                        .ToHashSet();
                     var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
 
                     // 生词同样「先判重收集、再批量写」,与标注一致
@@ -132,10 +138,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                         }
                         vocabScanned++;
 
-                        if (!string.IsNullOrWhiteSpace(kmLookup.WordKey) &&
-                            !targetLookupWordKeys.Contains(kmLookup.WordKey)) {
+                        if (string.IsNullOrWhiteSpace(kmLookup.WordKey)) {
+                            continue;
+                        }
+                        var pair = ComposeLookupPair(kmLookup.WordKey, kmLookup.Timestamp);
+                        if (!targetLookupPairs.Contains(pair)) {
                             lookupsToAdd.Add(kmLookup);
-                            targetLookupWordKeys.Add(kmLookup.WordKey);
+                            targetLookupPairs.Add(pair);
                         }
                     }
 
@@ -185,6 +194,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                 AppLog.Write(StringHelper.GetExceptionMessage(nameof(ImportFromKmDatabase), e));
                 return false;
             }
+        }
+
+        /// <summary>lookups 的判重身份 (word_key, timestamp)。分隔符取不可能出现在 word_key 里的控制字符。</summary>
+        private static string ComposeLookupPair(string wordKey, string? timestamp) {
+            return wordKey + "\u0001" + (timestamp ?? string.Empty);
         }
     }
 }

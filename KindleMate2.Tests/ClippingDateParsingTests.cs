@@ -1,3 +1,4 @@
+using System.Globalization;
 using Xunit;
 using KindleMate2.Infrastructure.Helpers;
 
@@ -43,7 +44,7 @@ public sealed class ClippingDateParsingTests {
     [InlineData("хр. 2016年6月16日 22:20:31", "2016-06-16 22:20:31")]        // yyyy年m月d日
     public void TryParseClippingDate_ParsesRegionalDates(string raw, string expected) {
         Assert.True(MyClippingsHelper.TryParseClippingDate(raw, out var date), $"should parse: {raw}");
-        Assert.Equal(expected, date.ToString("yyyy-MM-dd HH:mm:ss"));
+        Assert.Equal(expected, date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
     }
 
     [Theory]

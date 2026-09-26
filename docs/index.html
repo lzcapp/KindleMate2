@@ -202,10 +202,13 @@
     <nav>
       <a href="#about"><span class="t-zh">简介</span><span class="t-en">About</span></a>
       <a href="#features"><span class="t-zh">特性</span><span class="t-en">Features</span></a>
+      <a href="#network"><span class="t-zh">联网</span><span class="t-en">Network</span></a>
       <a href="#download"><span class="t-zh">下载</span><span class="t-en">Download</span></a>
+      <a href="#upgrade"><span class="t-zh">升级</span><span class="t-en">Upgrade</span></a>
       <a href="#screens"><span class="t-zh">截图</span><span class="t-en">Screenshots</span></a>
       <a href="#build"><span class="t-zh">构建</span><span class="t-en">Build</span></a>
       <a href="#arch"><span class="t-zh">架构</span><span class="t-en">Architecture</span></a>
+      <a href="#thirdparty"><span class="t-zh">第三方</span><span class="t-en">Third-party</span></a>
       <a href="https://github.com/lzcapp/KindleMate2" target="_blank" rel="noopener">GitHub</a>
     </nav>
     <div class="tools">
@@ -242,8 +245,8 @@
     </p>
 
     <div class="badges">
-      <a href="https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file" target="_blank" rel="noopener">
-        <img src="https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge" alt="License: MIT">
+      <a href="https://github.com/lzcapp/KindleMate2/blob/main/LICENSE" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge" alt="License: GPL-3.0">
       </a>
       <a href="https://github.com/lzcapp/KindleMate2/releases/latest" target="_blank" rel="noopener">
         <img src="https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge" alt="Latest release">
@@ -364,10 +367,41 @@
     </div>
   </section>
 
+  <!-- ================= 联网行为 ================= -->
+  <section id="network">
+    <div class="sec-head">
+      <div class="num">02</div>
+      <div>
+        <h2><span class="t-zh">联网行为</span><span class="t-en">Network access</span></h2>
+        <p class="t-zh">默认只做两件需要联网的事，两件都不会发送你的书、你的标注或任何本机数据；其余功能全部离线可用。</p>
+        <p class="t-en">Only two things touch the network by default, and neither sends your books, clippings or any local data; everything else works fully offline.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>检查更新：</strong>启动时静默检查一次，也可从「帮助 → 检查更新」手动触发。
+        一个 HTTPS 请求到 GitHub Releases，只读取公开的版本信息；无开关。</p>
+      <p class="t-en"><strong>Update check:</strong> one silent check at startup (also via Help → Check for updates).
+        A single HTTPS request to GitHub Releases reading public version info only; no switch.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>在线释义：</strong>在生词本里选中一个词时（详情面板右侧），把<strong>该词本身</strong>发给有道词典的公开接口；
+        只在你浏览生词本并选中某个词时才会发生；无开关。</p>
+      <p class="t-en" style="margin-top:10px"><strong>Online definition:</strong> when you select a word in the vocabulary book (right-hand detail panel),
+        <strong>that word itself</strong> is sent to Youdao's public dictionary API; only happens while browsing and selecting a word; no switch.</p>
+    </div>
+
+    <div class="note">
+      <p class="t-zh">两者都拿不到结果时<strong>界面什么都不显示</strong>（不弹错误框、不报错）；在线释义的结果只在本次会话内缓存，<strong>不写入数据库</strong>。
+        两项都不可关闭 —— 若你需要<strong>完全离线</strong>的版本，可以自行编译并去掉这两处调用（本程序开源，GPL-3.0）。</p>
+      <p class="t-en">When either request fails, <strong>nothing is shown</strong> (no error dialogs); definition results are cached for the session only and
+        <strong>never written to the database</strong>. Neither can be switched off — if you need a <strong>fully offline</strong> build,
+        compile it yourself with those two calls removed (the app is open source under GPL-3.0).</p>
+    </div>
+  </section>
+
   <!-- ================= 下载 ================= -->
   <section id="download">
     <div class="sec-head">
-      <div class="num">02</div>
+      <div class="num">03</div>
       <div>
         <h2><span class="t-zh">下载与系统要求</span><span class="t-en">Download &amp; requirements</span></h2>
         <p class="t-zh">文件名带 <code>_runtime</code> 的是自包含包，无需预装 .NET 运行时。</p>
@@ -393,8 +427,8 @@
             <span class="t-zh">程序所在目录（同旧版）</span>
             <span class="t-en">Next to the executable (same as the legacy version)</span></li>
         </ul>
-        <p class="t-zh" style="font-size:13.5px;margin:0"><span class="tag">设备同步仅 Windows 可用</span></p>
-        <p class="t-en" style="font-size:13.5px;margin:0"><span class="tag">Kindle device sync is Windows-only</span></p>
+        <p class="t-zh" style="font-size:13.5px;margin:0"><span class="tag">设备同步：USB 大容量存储 + MTP（系统原生）</span></p>
+        <p class="t-en" style="font-size:13.5px;margin:0"><span class="tag">Device sync: USB mass storage + MTP (native)</span></p>
       </article>
 
       <article class="card">
@@ -413,6 +447,8 @@
         </ul>
         <p class="t-zh" style="font-size:13.5px;margin:0">产物未做公证（无 Apple 开发者账号），首次启动需清除隔离标记：<code>xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"</code></p>
         <p class="t-en" style="font-size:13.5px;margin:0">Builds are not notarized (no Apple Developer account). Clear the quarantine flag on first launch: <code>xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"</code></p>
+        <p class="t-zh" style="font-size:13.5px;margin:8px 0 0">设备同步：USB 大容量存储 + MTP（包内内嵌 libmtp，见下方「第三方组件」）。</p>
+        <p class="t-en" style="font-size:13.5px;margin:8px 0 0">Device sync: USB mass storage + MTP (libmtp is embedded — see Third-party components below).</p>
       </article>
 
       <article class="card">
@@ -428,6 +464,8 @@
         </ul>
         <p class="t-zh" style="font-size:13.5px;margin:0">归档已保留可执行位；若用图形化解压工具导致权限丢失，<code>chmod +x kindlemate2 KindleMate2</code> 即可。</p>
         <p class="t-en" style="font-size:13.5px;margin:0">The tarball keeps executable bits; if a GUI extractor drops them, run <code>chmod +x kindlemate2 KindleMate2</code>.</p>
+        <p class="t-zh" style="font-size:13.5px;margin:8px 0 0">设备同步：USB 大容量存储 + MTP（需系统安装 libmtp / libusb，见下方「第三方组件」）。</p>
+        <p class="t-en" style="font-size:13.5px;margin:8px 0 0">Device sync: USB mass storage + MTP (requires system libmtp / libusb — see Third-party components below).</p>
       </article>
     </div>
 
@@ -439,12 +477,58 @@
         <a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" target="_blank" rel="noopener">.NET 10 runtime</a>
         (Desktop Runtime on Windows). macOS ships self-contained packages only.</p>
     </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>验证下载：</strong>每个 Release 都附 <code>SHA256SUMS</code>（SHA-256 清单）、
+        <code>SHA256SUMS.asc</code>（维护者 GPG 签名）与公钥 <code>KindleMate2-release-key.asc</code>：
+        <code>gpg --import KindleMate2-release-key.asc</code> →
+        <code>gpg --verify SHA256SUMS.asc SHA256SUMS</code> →
+        <code>sha256sum -c SHA256SUMS</code>（Windows 用 <code>Get-FileHash</code>）。
+        应用内「检查更新」也会自动按 <code>SHA256SUMS</code> 校验。</p>
+      <p class="t-en"><strong>Verifying downloads:</strong> every release ships <code>SHA256SUMS</code>,
+        <code>SHA256SUMS.asc</code> (maintainer GPG signature) and the public key <code>KindleMate2-release-key.asc</code>:
+        <code>gpg --import KindleMate2-release-key.asc</code> →
+        <code>gpg --verify SHA256SUMS.asc SHA256SUMS</code> →
+        <code>sha256sum -c SHA256SUMS</code> (use <code>Get-FileHash</code> on Windows).
+        The in-app &ldquo;Check for updates&rdquo; also verifies against <code>SHA256SUMS</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================= 从旧版升级 ================= -->
+  <section id="upgrade">
+    <div class="sec-head">
+      <div class="num">04</div>
+      <div>
+        <h2><span class="t-zh">从旧版升级</span><span class="t-en">Upgrading from an older version</span></h2>
+        <p class="t-zh">库文件（<code>KM2.dat</code>）与程序同目录，把新包解压覆盖到原来的目录就行 —— 标注与生词本会自动沿用，既不需要导入，也不需要重新配置。</p>
+        <p class="t-en">The library (<code>KM2.dat</code>) lives next to the program: extract the new build over your existing folder — clippings and vocabulary carry over, with nothing to import or reconfigure.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>从 Windows Forms 版（≤ <code>2026.09.07</code>）升级：</strong>解压覆盖后，双击的仍是 <code>KindleMate2.exe</code>。
+        建议取 <code>_runtime</code> 自包含包（旧壳依赖 .NET 8 运行时，不带该后缀的新包要求 .NET 10）。
+        与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 <code>DarkModeForms.dll</code>）留着不影响使用，删掉也可以。</p>
+      <p class="t-en"><strong>From the Windows Forms build (≤ <code>2026.09.07</code>):</strong> you still double-click <code>KindleMate2.exe</code>.
+        Prefer the <code>_runtime</code> self-contained build (the old shell needed the .NET 8 runtime; builds without that suffix now require .NET 10).
+        Files sharing a name with the new build are overwritten; other leftovers from the old shell (e.g. <code>DarkModeForms.dll</code>) are harmless.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>装过 <code>2026.09.13</code>–<code>2026.09.22</code> 的版本：</strong>那一版的可执行文件名是
+        <code>KindleMate2.Avalonia.exe</code>，升级后请把残留的 <code>KindleMate2.Avalonia.exe</code> 与 <code>KindleMate2.Avalonia.dll</code> 删掉。</p>
+      <p class="t-en" style="margin-top:10px"><strong>From <code>2026.09.13</code>–<code>2026.09.22</code>:</strong> that build's executable was named
+        <code>KindleMate2.Avalonia.exe</code> — delete the leftover <code>KindleMate2.Avalonia.exe</code> and <code>KindleMate2.Avalonia.dll</code> after upgrading.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>从旧 Linux tar.gz 升级：</strong>库还在原来的解压目录，先搬一次：
+        <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>。</p>
+      <p class="t-en" style="margin-top:10px"><strong>From an older Linux tar.gz:</strong> your library is still in the old extracted folder — move it once:
+        <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>.</p>
+      <p class="t-zh" style="margin-top:10px">主题与语言<strong>不会</strong>随库迁移：升级后需要在设置里重新选一次。</p>
+      <p class="t-en" style="margin-top:10px">Theme and language do <strong>not</strong> travel with the library — pick them once more in settings.</p>
+    </div>
   </section>
 
   <!-- ================= 截图 ================= -->
   <section id="screens">
     <div class="sec-head">
-      <div class="num">03</div>
+      <div class="num">05</div>
       <div>
         <h2><span class="t-zh">界面截图</span><span class="t-en">Screenshots</span></h2>
         <p class="t-zh">点击任意图片可放大查看。</p>
@@ -464,7 +548,7 @@
   <!-- ================= 构建 ================= -->
   <section id="build">
     <div class="sec-head">
-      <div class="num">04</div>
+      <div class="num">06</div>
       <div>
         <h2><span class="t-zh">构建</span><span class="t-en">Build</span></h2>
         <p class="t-zh">需要 .NET SDK 10 或更高。</p>
@@ -482,14 +566,14 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
         <em>silently skipped</em> (only a CS9057 warning), which shows up as a wall of <code>CS0103: The name 'InitializeComponent' does not exist</code>.</p>
     </div>
 
-    <p class="t-zh" style="margin-top:20px">解决方案含 7 个工程；本仓库<strong>不含任何 git 子模块</strong>（随旧壳退役），克隆后无需 <code>submodule update</code>。</p>
-    <p class="t-en" style="margin-top:20px">The solution contains 7 projects; this repository has <strong>no git submodules</strong> (retired with the legacy shells), so no <code>submodule update</code> is needed.</p>
+    <p class="t-zh" style="margin-top:20px">解决方案含 10 个工程；本仓库<strong>不含任何 git 子模块</strong>（随旧壳退役），克隆后无需 <code>submodule update</code>。</p>
+    <p class="t-en" style="margin-top:20px">The solution contains 10 projects; this repository has <strong>no git submodules</strong> (retired with the legacy shells), so no <code>submodule update</code> is needed.</p>
   </section>
 
   <!-- ================= 架构 ================= -->
   <section id="arch">
     <div class="sec-head">
-      <div class="num">05</div>
+      <div class="num">07</div>
       <div>
         <h2><span class="t-zh">架构</span><span class="t-en">Architecture</span></h2>
         <p class="t-zh">分层组织，平台专有代码一律收敛到独立程序集。完整说明见 <a href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">arch.md</a>。</p>
@@ -535,7 +619,17 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
           <tr>
             <td><span class="t-zh">平台实现</span><span class="t-en">Platform</span></td>
             <td><code>KindleMate2.Devices.Windows</code></td>
-            <td class="soft"><span class="t-zh">Windows 专有设备实现（USB 盘符 + MTP + WMI）</span><span class="t-en">Windows-only device support (USB drive letters + MTP + WMI)</span></td>
+            <td class="soft"><span class="t-zh">Windows 专有设备实现（USB 盘符 + MTP + WMI）</span><span class="t-en">Windows-specific device implementation (USB drive letters + MTP + WMI)</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">平台实现</span><span class="t-en">Platform</span></td>
+            <td><code>KindleMate2.Devices.Posix</code></td>
+            <td class="soft"><span class="t-zh">macOS / Linux 共用的设备实现（libmtp P/Invoke + libusb 探测 + 卷扫描）</span><span class="t-en">Device implementation shared by macOS / Linux (libmtp P/Invoke + libusb probing + volume scanning)</span></td>
+          </tr>
+          <tr>
+            <td><span class="t-zh">平台实现</span><span class="t-en">Platform</span></td>
+            <td><code>KindleMate2.Devices.MacOS</code> / <code>KindleMate2.Devices.Linux</code></td>
+            <td class="soft"><span class="t-zh">Posix 实现的薄壳（候选挂载根不同）</span><span class="t-en">Thin shells over the Posix implementation (different candidate mount roots)</span></td>
           </tr>
           <tr>
             <td><span class="t-zh">测试</span><span class="t-en">Tests</span></td>
@@ -567,13 +661,19 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
 
       <article class="card">
         <h3><span class="t-zh">平台边界</span><span class="t-en">Platform boundary</span></h3>
-        <p class="t-zh">唯一平台专有程序集是 <code>KindleMate2.Devices.Windows</code>。应用层只定义跨平台接口
-          <code>IDeviceManager</code>，非 Windows 平台由 <code>NullDeviceManager</code> 兜底 —— 如实报告“未连接”，
-          同步操作抛异常而不是静默失败。因此 <code>KindleMate2.Devices.Windows.dll</code> 只出现在 Windows 输出目录中。</p>
-        <p class="t-en">The only platform-specific assembly is <code>KindleMate2.Devices.Windows</code>. The application layer defines
-          just the <code>IDeviceManager</code> interface; non-Windows falls back to <code>NullDeviceManager</code> — reporting
-          "not connected" honestly and throwing on sync instead of failing silently. That is why
-          <code>KindleMate2.Devices.Windows.dll</code> only appears in Windows output.</p>
+        <p class="t-zh">平台专有代码一律收敛到设备程序集：<code>KindleMate2.Devices.Windows</code>（Windows：USB 盘符 +
+          MTP(MediaDevices) + WMI）；macOS / Linux 共用纯 BCL 的 <code>KindleMate2.Devices.Posix</code>
+          （libmtp P/Invoke + libusb 探测 + 卷扫描），由 <code>Devices.MacOS</code> / <code>Devices.Linux</code>
+          两个薄壳注入各自候选挂载根。应用层只定义跨平台接口 <code>IDeviceManager</code>，三平台之外才落到
+          <code>NullDeviceManager</code> 兜底 —— 如实报告“未连接”，同步操作抛异常而不是静默失败。
+          因此 <code>KindleMate2.Devices.Windows.dll</code> 只出现在 Windows 输出目录中。</p>
+        <p class="t-en">Platform-specific code is confined to the device assemblies: <code>KindleMate2.Devices.Windows</code>
+          (Windows: USB drive letters + MTP(MediaDevices) + WMI); macOS / Linux share the pure-BCL
+          <code>KindleMate2.Devices.Posix</code> (libmtp P/Invoke + libusb probing + volume scanning), with
+          <code>Devices.MacOS</code> / <code>Devices.Linux</code> as thin shells injecting their own candidate mount roots.
+          The application layer defines only the cross-platform <code>IDeviceManager</code>; anything else falls back to
+          <code>NullDeviceManager</code> — reporting "not connected" honestly and throwing on sync instead of failing silently.
+          That is why <code>KindleMate2.Devices.Windows.dll</code> only appears in Windows output.</p>
       </article>
 
       <article class="card">
@@ -592,12 +692,73 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
 
       <article class="card win">
         <h3><span class="t-zh">已知边界</span><span class="t-en">Known limits</span></h3>
-        <p class="t-zh">非 Windows 的 Kindle 设备支持尚未实现（macOS / Linux 的挂载点与 libmtp 需各自实现），
-          故非 Windows 虽有发布包，<strong>设备同步仍不可用</strong>，其余功能完整；自动更新尚未迁移到 Avalonia 壳。</p>
-        <p class="t-en">Kindle device support on non-Windows is not implemented yet (macOS / Linux mount points and libmtp are
-          still to be built), so non-Windows packages ship <strong>without device sync</strong>; everything else is complete.
-          Auto-update has not been ported to the Avalonia shell.</p>
+        <p class="t-zh">macOS 产物未做 Apple 公证（无开发者账号），首次启动需清 quarantine（见上方下载卡片）；
+          应用内更新目前只按 <code>SHA256SUMS</code> 校验 SHA-256，暂不做 GPG 验签；
+          「检查更新」与「在线释义」两项联网行为暂无开关（见「联网行为」一节）。</p>
+        <p class="t-en">macOS builds are not Apple-notarized (no developer account) — clear quarantine on first launch (see the
+          download card above); the in-app updater verifies SHA-256 against <code>SHA256SUMS</code> only (no GPG verification
+          inside the app yet); the update check and online definition have no switches (see Network access).</p>
       </article>
+    </div>
+  </section>
+
+  <!-- ================= 第三方组件 ================= -->
+  <section id="thirdparty">
+    <div class="sec-head">
+      <div class="num">08</div>
+      <div>
+        <h2><span class="t-zh">第三方组件</span><span class="t-en">Third-party components</span></h2>
+        <p class="t-zh">macOS 发布包内嵌以下两个库（均未经修改，以动态链接方式使用），用于访问 MTP 模式的 Kindle。</p>
+        <p class="t-en">The macOS build embeds the two libraries below (unmodified, dynamically linked) to talk to MTP-mode Kindles.</p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><span class="t-zh">库</span><span class="t-en">Library</span></th>
+            <th><span class="t-zh">版本</span><span class="t-en">Version</span></th>
+            <th><span class="t-zh">许可证</span><span class="t-en">License</span></th>
+            <th><span class="t-zh">用途</span><span class="t-en">Purpose</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://libmtp.sourceforge.io/" target="_blank" rel="noopener"><code>libmtp</code></a></td>
+            <td><code>1.1.23</code></td>
+            <td>LGPL-2.1-or-later</td>
+            <td class="soft"><span class="t-zh">MTP 协议实现</span><span class="t-en">MTP protocol implementation</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://libusb.info/" target="_blank" rel="noopener"><code>libusb</code></a></td>
+            <td><code>1.0.30</code></td>
+            <td>LGPL-2.1-or-later</td>
+            <td class="soft"><span class="t-zh">libmtp 的 USB 传输后端</span><span class="t-en">USB transfer backend for libmtp</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p class="t-zh"><strong>LGPL 义务：</strong>许可证全文随包放在 <code>KindleMate2.app/Contents/Resources/licenses/</code>；
+        两个库的对应源码随同一发布页提供（<code>libmtp-1.1.23.tar.gz</code>、<code>libusb-1.0.30.tar.bz2</code>）。
+        依 LGPL-2.1 第 6b 条，你可以用自行编译的兼容版本替换 <code>Contents/Frameworks</code> 下的同名动态库
+        （替换后需重新签名，ad-hoc 即可：<code>codesign --force --deep --sign - "…"</code>）。</p>
+      <p class="t-en"><strong>LGPL compliance:</strong> license texts ship in <code>KindleMate2.app/Contents/Resources/licenses/</code>;
+        the matching sources are attached to the same release page (<code>libmtp-1.1.23.tar.gz</code>, <code>libusb-1.0.30.tar.bz2</code>).
+        Under clause 6b you may replace them with your own compatible builds
+        (re-sign afterwards; ad-hoc is enough: <code>codesign --force --deep --sign - "…"</code>).</p>
+      <p class="t-zh" style="margin-top:10px"><strong>Linux 不内嵌这两个库</strong>：按发行版安装即可，例如
+        <code>sudo apt install libmtp9 libusb-1.0-0</code>（Debian / Ubuntu）、
+        <code>sudo dnf install libmtp libusb1</code>（Fedora / RHEL）、
+        <code>sudo pacman -S libmtp libusb</code>（Arch）。
+        缺失时 USB 大容量存储（2024 年以前机型）照常工作，只有 MTP 机型会读不到设备，日志里会说明原因。</p>
+      <p class="t-en" style="margin-top:10px"><strong>Linux does not embed these libraries</strong> — install them from your distribution, e.g.
+        <code>sudo apt install libmtp9 libusb-1.0-0</code> (Debian / Ubuntu),
+        <code>sudo dnf install libmtp libusb1</code> (Fedora / RHEL),
+        <code>sudo pacman -S libmtp libusb</code> (Arch).
+        Without them, USB mass storage (pre-2024 models) keeps working; only MTP models are affected, and the log says why.</p>
     </div>
   </section>
 </main>
@@ -610,7 +771,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
       <a href="https://github.com/lzcapp/KindleMate2/blob/main/README.md" target="_blank" rel="noopener">README（中文）</a>
       <a href="https://github.com/lzcapp/KindleMate2/blob/main/README.en.md" target="_blank" rel="noopener">README (English)</a>
       <a href="https://github.com/lzcapp/KindleMate2/blob/main/arch.md" target="_blank" rel="noopener">arch.md</a>
-      <a href="https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file" target="_blank" rel="noopener">MIT License</a>
+      <a href="https://github.com/lzcapp/KindleMate2/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0 License</a>
       <a href="https://github.com/lzcapp/KindleMate2/issues" target="_blank" rel="noopener"><span class="t-zh">问题反馈</span><span class="t-en">Issues</span></a>
     </div>
 
@@ -624,9 +785,9 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
     </div>
 
     <div class="foot-meta" style="margin-top:24px">
-      <span>Kindle Mate 2 · MIT License</span>
-      <span class="t-zh">本页最后更新：2026-09-14</span>
-      <span class="t-en">Page last updated: 2026-09-14</span>
+      <span>Kindle Mate 2 · GPL-3.0 License</span>
+      <span class="t-zh">本页最后更新：2026-09-25</span>
+      <span class="t-en">Page last updated: 2026-09-25</span>
       <a href="https://github.com/lzcapp/KindleMate2/edit/main/README.md" target="_blank" rel="noopener">
         <span class="t-zh">改进本页</span><span class="t-en">Improve this page</span>
       </a>

@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 using KindleMate2.Application.Services;
 
@@ -154,6 +157,103 @@ public sealed class UpdateInstallerTests : IDisposable {
             Thread.Sleep(50);
         }
         Assert.True(File.Exists(marker), "脚本应当以重启结尾(标记文件未出现)");
+    }
+
+    // ————————————————————— 下载 + SHA-256 校验 —————————————————————
+
+    [Theory]
+    [InlineData("abc123  pkg.zip\n", "pkg.zip", "abc123")]
+    [InlineData("abc123 *pkg.zip\n", "pkg.zip", "abc123")]                 // GNU 文本模式的 * 前缀
+    [InlineData("aaa  other.zip\nbbb  pkg.zip\n", "pkg.zip", "bbb")]
+    [InlineData("aaa  pkg.tar.gz\n", "pkg.zip", null)]                     // 清单里没有该文件
+    public void ParseExpectedHash_ReadsSha256SumLines(string text, string name, string? expected) {
+        Assert.Equal(expected, UpdateInstaller.ParseExpectedHash(text, name));
+    }
+
+    [Fact]
+    public async Task DownloadAsync_VerifiesSha256_AndAbortsOnMismatchOrMissingEntry() {
+        var payload = Encoding.UTF8.GetBytes("hello world");
+        var goodHash = Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant();
+        const string url = "https://example.test/pkg.zip";
+        const string sums = "https://example.test/SHA256SUMS";
+
+        // ① 哈希匹配 → 通过
+        var ok = await UpdateInstaller.DownloadAsync(
+            new UpdateAsset("pkg.zip", url, payload.Length, sums),
+            null, new HttpClient(new ChecksumHandler(payload, $"{goodHash}  pkg.zip\n")));
+        try {
+            Assert.Equal("hello world", File.ReadAllText(ok));
+        } finally {
+            Cleanup(ok);
+        }
+
+        // ② 哈希不匹配(包被篡改)→ 中止
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+            new UpdateAsset("pkg.zip", url, payload.Length, sums),
+            null, new HttpClient(new ChecksumHandler(payload, "deadbeef  pkg.zip\n"))));
+
+        // ③ 清单里没有该文件 → 中止(不静默放行)
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+            new UpdateAsset("pkg.zip", url, payload.Length, sums),
+            null, new HttpClient(new ChecksumHandler(payload, "deadbeef  other.zip\n"))));
+
+        // ④ 发布页没有 SHA256SUMS 资产 → **失败关闭**:不装没校验过的字节
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+            new UpdateAsset("pkg.zip", url, payload.Length),
+            null, new HttpClient(new ChecksumHandler(payload, null))));
+    }
+
+    /// <summary>非法资产名(分隔符/相对段)在**碰网络之前**就被拒,一个临时目录都不该落。</summary>
+    [Theory]
+    [InlineData("../evil.zip")]
+    [InlineData("sub/evil.zip")]
+    [InlineData("..")]
+    [InlineData(".")]
+    public async Task DownloadAsync_RejectsUnsafeAssetNames(string name) {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+            new UpdateAsset(name, "https://example.test/x", 1)));
+    }
+
+    /// <summary>
+    /// 失败关闭后会抛在校验一关;此时下载目录里只有半成品/未校验的包,**必须一并删掉**,
+    /// 否则每次失败的自动更新都会在临时目录留一份几十 MB 的残包。
+    /// </summary>
+    [Fact]
+    public async Task DownloadAsync_OnFailure_RemovesTheTempDirectory() {
+        var payload = Encoding.UTF8.GetBytes("hello world");
+        var root = Path.Combine(_work, "temp-root");
+        Directory.CreateDirectory(root);
+
+        var previous = UpdateInstaller.TempRoot;
+        UpdateInstaller.TempRoot = root;
+        try {
+            // 没有 SHA256SUMS → 校验阶段抛异常
+            await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
+                new UpdateAsset("pkg.zip", "https://example.test/pkg.zip", payload.Length),
+                null, new HttpClient(new ChecksumHandler(payload, null))));
+
+            Assert.Empty(Directory.GetDirectories(root));
+        } finally {
+            UpdateInstaller.TempRoot = previous;
+        }
+    }
+
+    private static void Cleanup(string file) {
+        try { Directory.Delete(Path.GetDirectoryName(file)!, true); } catch { /* best effort */ }
+    }
+
+    /// <summary>按 URI 分发:含 SHA256SUMS 的返回清单正文,其余返回资产字节。</summary>
+    private sealed class ChecksumHandler(byte[] payload, string? checksum) : HttpMessageHandler {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            if (request.RequestUri!.AbsoluteUri.EndsWith("SHA256SUMS", StringComparison.Ordinal)) {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                    Content = new StringContent(checksum ?? string.Empty)
+                });
+            }
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) };
+            response.Content.Headers.ContentLength = payload.Length;
+            return Task.FromResult(response);
+        }
     }
 
     // ————————————————————— 反推 .app 路径 —————————————————————

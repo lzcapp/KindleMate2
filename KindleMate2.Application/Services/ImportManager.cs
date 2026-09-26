@@ -138,7 +138,9 @@ public class ImportManager : IImportManager {
 
         // 收尾的清理与词频刷新同样在导入链路上(判重扫描 + 批量回写),不报进度末尾会留一段空白。
         // 清理结果此前被丢弃(out _),正是弹窗口径说不清的根源 —— 现在收下来单独展示。
-        _km2DatabaseService.CleanDatabase(string.Empty, out var cleanResult, progress);
+        // 收尾清理只判**同书内**重复(crossBookDuplicates: false):跨书同文是两条独立高亮,
+        // 跨书判重会把库里已有的那条一并删掉 —— 详见 FindDuplicatedClippings 的导入分支。
+        _km2DatabaseService.CleanDatabase(string.Empty, out var cleanResult, progress, crossBookDuplicates: false);
         _km2DatabaseService.UpdateFrequency(progress);
 
         return ComposeImportMessage(importedClippings, importedVocabs, cleanResult);
@@ -188,7 +190,9 @@ public class ImportManager : IImportManager {
         var importedClippings = _clippingService.GetCount() - clippingsCount;
         var importedVocabs = _vocabService.GetCount() - vocabCount;
 
-        _km2DatabaseService.CleanDatabase(string.Empty, out var cleanResult, progress);
+        // 收尾清理只判**同书内**重复(crossBookDuplicates: false):跨书同文是两条独立高亮,
+        // 跨书判重会把库里已有的那条一并删掉 —— 详见 FindDuplicatedClippings 的导入分支。
+        _km2DatabaseService.CleanDatabase(string.Empty, out var cleanResult, progress, crossBookDuplicates: false);
         _km2DatabaseService.UpdateFrequency(progress);
 
         return ComposeImportMessage(importedClippings, importedVocabs, cleanResult);

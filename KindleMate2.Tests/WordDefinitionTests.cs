@@ -224,9 +224,29 @@ public sealed class WordDefinitionTests {
         Assert.Equal("/ˈæp(ə)l/", definition.Phonetic);
     }
 
+    [Theory]
+    [InlineData("안녕하세요")] // 韩文谚文音节
+    [InlineData("ひらがな")]   // 平假名
+    [InlineData("カタカナ")]   // 片假名
+    public void Parse_TreatsHangulAndKanaAsCjk(string word) {
+        // ContainsCjk 之前只认表意汉字,纯韩文/纯假名的词会被误判成英文、走 ec 优先的源序。
+        // 这里钉住:谚文与假名也要按「中日韩」路由(newhh → baike → …)。
+        var sample = $$"""
+            { "input": "{{word}}",
+              "newhh": { "source": { "name": "《现代汉语规范词典》" },
+                         "dataList": [ { "sense": [ { "def": ["词典释义"] } ] } ] },
+              "ec": { "source": { "name": "有道词典" },
+                      "word": [ { "trs": [ { "tr": [ { "l": { "i": ["english gloss"] } } ] } ] } ] } }
+            """;
+
+        var definition = WordDefinitionService.Parse(sample);
+
+        Assert.NotNull(definition);
+        Assert.Equal("《现代汉语规范词典》", definition!.Source);
+    }
+
     [Fact]
-    public void Parse_ReturnsNullWhenOnlyPinyinIsAvailable() {
-        // 只有拼音、没有任何释义 ⇒ 不显示(对中文母语者,中文词的拼音几乎没有信息量)。
+    public void Parse_ReturnsNullWhenOnlyPinyinIsAvailable() {        // 只有拼音、没有任何释义 ⇒ 不显示(对中文母语者,中文词的拼音几乎没有信息量)。
         // ⚠️ 这条**不是**"中文词查不到释义"——那是我 2026-09-23 之前的错误结论(只读了 ec 段);
         //    中文词的释义在 newhh / baike 段里,见上面两条用例。
         Assert.Null(WordDefinitionService.Parse(PinyinOnlySample));

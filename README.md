@@ -1,9 +1,9 @@
 # Kindle Mate `2`
 
-![](Screenshots/banner.png#gh-light-mode-only)
-![](Screenshots/banner_dark.png#gh-dark-mode-only)
+![](docs/images/banner.png#gh-light-mode-only)
+![](docs/images/banner_dark.png#gh-dark-mode-only)
 
-[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2?tab=MIT-1-ov-file) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
+[![GitHub License](https://img.shields.io/github/license/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/blob/main/LICENSE) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?style=for-the-badge)](https://github.com/lzcapp/KindleMate2/releases/latest) &ensp; [![GitHub Release](https://img.shields.io/github/v/release/lzcapp/KindleMate2?include_prereleases&style=for-the-badge)
 ](https://github.com/lzcapp/KindleMate2/releases)
 
 **Kindle Mate 2** 是一款Kindle标注/笔记、Kindle生词本内容管理程序，旨在在 [Kindle Mate](https://web.archive.org/web/20231205072358/https://kmate.me/) 停止更新后提供替代的解决方案。
@@ -43,7 +43,19 @@ Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NE
   ```bash
   xattr -dr com.apple.quarantine "/Applications/KindleMate2.app"
   ```
-  库文件固定在 `~/Library/Application Support/KindleMate2/`。
+   库文件固定在 `~/Library/Application Support/KindleMate2/`。
+
+### 验证下载
+
+每个 Release 都附 `SHA256SUMS`（SHA-256 清单）、`SHA256SUMS.asc`（维护者 GPG 签名）与公钥 `KindleMate2-release-key.asc`：
+
+```bash
+gpg --import KindleMate2-release-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS        # Windows 可用 Get-FileHash
+```
+
+应用内「检查更新」在下载安装包后，也会自动按 `SHA256SUMS` 校验 SHA-256。
 
 ### 从旧版升级
 
@@ -53,7 +65,7 @@ Windows / Linux 各提供两种包：带 `_runtime` = **自包含**（免装 .NE
 - **从 Windows Forms 版（≤ `2026.09.07`）升级**：解压覆盖到原目录后，双击的仍是 `KindleMate2.exe`（可执行文件名与旧版一致）。
   建议取 `_runtime` 自包含包 —— 旧壳依赖的是 .NET 8 运行时，而不带该后缀的新包要求 .NET 10。
   与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 `DarkModeForms.dll`、`ReaLTaiizor.dll`）留着不影响使用，删掉也可以。
-  若你装过 `2026.09.13`–`2026.09.23` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
+  若你装过 `2026.09.13`–`2026.09.22` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
   升级后请把残留的 `KindleMate2.Avalonia.exe` 与 `KindleMate2.Avalonia.dll` 删掉。
 - **从旧 Linux tar.gz 升级**：库还在原来的解压目录，先搬一次（见上方 Linux 一节）。
 - **想把程序换到新目录**：新目录首次运行会新建一个空库；把旧的 `KM2.dat` 拷进新目录即可，
@@ -76,8 +88,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 ### 项目
 
-解决方案含 8 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
-`Devices.Windows` / `Devices.MacOS` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
+解决方案含 10 个工程：`Shared` / `Domain` / `Infrastructure` / `Application` /
+`Devices.Windows` / `Devices.Posix` / `Devices.MacOS` / `Devices.Linux` / `Avalonia`（**唯一桌面 UI**）/ `Tests`。分层与依赖关系见 [`arch.md`](arch.md)；
 壳自身的构建、运行与无头自检见 [`KindleMate2.Avalonia/README.md`](KindleMate2.Avalonia/README.md)。
 
 > 早期基于 Windows Forms / WPF 的两个壳已退役。需要对照旧版行为时，可用只读 tag **`winforms-final`**
@@ -123,7 +135,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 
 其余功能全部离线可用：数据是本地 SQLite 文件（`KM2.dat`），设备读写走 USB，都不出网。
 
-以上两项都不可关闭。若你需要**完全离线**的版本，可以自行编译并去掉这两处调用（本程序是开源的，MIT 许可）。
+以上两项都不可关闭。若你需要**完全离线**的版本，可以自行编译并去掉这两处调用（本程序是开源的，GPL-3.0 许可）。
 
 ## 截图
 
