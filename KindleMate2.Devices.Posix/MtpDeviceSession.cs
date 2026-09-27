@@ -152,8 +152,12 @@ internal sealed class MtpDeviceSession : IDisposable {
         try {
             var rc = MtpInterop.LIBMTP_Get_Storage(device, MtpInterop.StorageSort.NotSorted);
             if (rc != 0) {
-                // 失败时 device->storage 可能是空链表或上一次的旧值 —— 直接按"拿不到"收场,不冒险读。
-                AppLog.Write($"[MtpDeviceSession] LIBMTP_Get_Storage 失败(rc={rc}),容量不可得");
+                // 返回值语义见 libmtp.c 的 LIBMTP_Get_Storage 文档注释:
+                //   0 = 成功;1 = "成功但只拿到 storage id" —— 属性没取到,MaxCapacity/FreeSpace
+                //       被填成 (uint64_t)-1 哨兵值(读了会显示成 16EB 的垃圾容量,这才是不判
+                //       返回值时真正会出的 bug);-1 = 失败(链表已被 free_storage_list 置 NULL)。
+                // 两种非 0 都直接按"拿不到"收场,不读链表。
+                AppLog.Write($"[MtpDeviceSession] LIBMTP_Get_Storage 返回 {rc}(非 0),容量不可得");
                 return (null, null);
             }
             var head = Marshal.ReadIntPtr(device,
