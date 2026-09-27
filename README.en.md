@@ -124,20 +124,22 @@ and the headless self-checks.
 
 ## Network access
 
-There are **only two things that need the network**, and neither sends your books, your highlights, or any local data:
+There are **only two things that need the network by default**, and neither sends your books, your highlights, or any local data.
+A third action — **"Export as CSV (with definitions)"** — reaches the network only when you explicitly pick it and confirm.
 
 | Action | When | What is sent | How to turn it off |
 |---|---|---|---|
 | Update check | **Silently once at startup**, or manually via Help → Check for Updates | One HTTPS request to GitHub Releases; only public release metadata is read | No switch |
 | Online definitions | When you select a word in the **vocabulary list** (right-hand detail panel) | **The word itself**, to Youdao Dictionary's public endpoint | No switch (it only happens when you browse the vocabulary list and select a word) |
+| Export as CSV (with definitions) | When you click "Export as CSV (with definitions)" and confirm | **Every word in your vocabulary list**, to Youdao Dictionary's public endpoint, to fill the Definition column | **Off by default**: skip this menu item and nothing is sent; plain "Export as CSV" is fully offline |
 
-When either one fails, **nothing is shown** in the UI (no error dialog, no error message). Definitions are cached
+When a request fails, **nothing is shown** in the UI (no error dialog, no error message). Definitions are cached
 for the current session only and are **never written to the database**.
 
 Everything else works fully offline: your data is a local SQLite file (`KM2.dat`) and device access goes over USB.
 
-Neither of the two can be turned off. If you need a **fully offline** build, compile it yourself with those two calls
-removed — the project is open source (GPL-3.0).
+The first two cannot be turned off; the definition export is off by default and only happens if you pick it. If you need a
+**fully offline** build, compile it yourself with these calls removed — the project is open source (GPL-3.0).
 
 ## Screenshots
 
