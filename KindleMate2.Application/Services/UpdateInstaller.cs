@@ -238,6 +238,11 @@ public static class UpdateInstaller {
     /// <summary>
     /// macOS:等进程退出 → 挂载 dmg → **整包替换** → 去隔离标记 → 卸下并重启。
     /// 整包替换是 macOS 的标准做法(<c>.app</c> 自带全部内容),顺序必须是先移除旧包再拷新的。
+    ///
+    /// <c>hdiutil attach</c> 偶发 <c>Resource temporarily unavailable</c>(CI 与真机都见过)。
+    /// 这段脚本是在**旧进程已经退出之后**才跑的 —— 一旦挂载失败就 <c>exit 1</c>,用户会看到
+    /// 「点了更新并重启,应用却消失了」,只能自己重新打开。故重试 3 次、间隔 3 秒;
+    /// 每次重试前先 detach 清残留,保证幂等;3 次都失败才放弃。
     /// </summary>
     internal static string BuildMacOsScript(string dmgPath, string appPath, int processId) => $"""
         #!/bin/bash
@@ -245,7 +250,16 @@ public static class UpdateInstaller {
         while kill -0 {processId} 2>/dev/null; do sleep 0.3; done
 
         mount="$(mktemp -d)"
-        hdiutil attach "{dmgPath}" -nobrowse -readonly -mountpoint "$mount" >/dev/null || exit 1
+        attached=0
+        for i in 1 2 3; do
+          if hdiutil attach "{dmgPath}" -nobrowse -readonly -mountpoint "$mount" >/dev/null; then
+            attached=1
+            break
+          fi
+          hdiutil detach "$mount" >/dev/null 2>&1 || true
+          if [ "$i" -lt 3 ]; then sleep 3; fi
+        done
+        [ "$attached" -eq 1 ] || exit 1
 
         rm -rf "{appPath}"
         cp -R "$mount/KindleMate2.app" "{appPath}" || exit 1
