@@ -32,6 +32,8 @@ public sealed class NullDeviceManager : IDeviceManager {
 
     public string GetKindleVersionText() => string.Empty;
 
+    public DeviceSummary? GetDeviceInfo() => null;
+
     public bool ImportFilesFromDevice(string backupClippingsPath, string backupWordsPath, out Exception? exception,
         IProgress<OperationProgress>? progress = null) {
         exception = new PlatformNotSupportedException(Strings.Device_Platform_Not_Supported);

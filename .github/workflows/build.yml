@@ -161,6 +161,8 @@ jobs:
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
+          # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)
+          grep -q "about device:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -302,6 +304,7 @@ jobs:
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"
+          grep -q "about device:.*result=OK" "$work/smoke.txt"
           # 表格模式:选中哪一行,动作就必须作用在那一行。
           # 这条探针**端到端**(建临时库 → 切表格模式 → 选中某行 → 真删 → 回查库里少了谁),
           # 不是只比属性 —— "同步写对了、但删除仍读旧源"那种半吊子修法会被它抓住。

@@ -879,6 +879,30 @@
   <data name="Ui_About_DataPath" xml:space="preserve">
     <value>Data Path</value>
   </data>
+  <data name="Ui_About_Device" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="Ui_About_DeviceConnection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Ui_About_DevicePath" xml:space="preserve">
+    <value>Volume Path</value>
+  </data>
+  <data name="Ui_About_DeviceFirmware" xml:space="preserve">
+    <value>Firmware</value>
+  </data>
+  <data name="Ui_About_DeviceStorage" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+  <data name="Ui_About_DeviceConnectionUsb" xml:space="preserve">
+    <value>USB file volume</value>
+  </data>
+  <data name="Ui_About_DeviceConnectionMtp" xml:space="preserve">
+    <value>MTP</value>
+  </data>
+  <data name="Ui_About_DeviceStorageFormat" xml:space="preserve">
+    <value>{0} free / {1} total</value>
+  </data>
   <data name="Ui_Progress_Starting" xml:space="preserve">
     <value>Working…</value>
   </data>

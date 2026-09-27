@@ -111,6 +111,29 @@ public class DeviceManager : IDeviceManager {
         return versionText;
     }
 
+    /// <summary>
+    /// 关于窗口「设备」段的数据源(见 <see cref="IDeviceManager.GetDeviceInfo"/>)。
+    /// 与 POSIX 实现同一铁律:不开会话、不现拉 WPD,只用卷路径/DriveInfo/既有状态。
+    /// Windows 的 MTP 分支拿不到固件与容量(<c>_driveLetter</c> 是 <c>\Internal Storage\</c>
+    /// 这种非文件系统占位,不是盘符)——字段留 null,UI 隐藏对应行,只显示连接方式一行。
+    /// </summary>
+    public DeviceSummary? GetDeviceInfo() {
+        if (!IsKindleConnected()) {
+            return null;
+        }
+
+        if (_deviceType == Device.Type.MTP) {
+            return new DeviceSummary(Device.Type.MTP, DrivePath: null, Firmware: null,
+                TotalBytes: null, FreeBytes: null);
+        }
+
+        if (_deviceType == Device.Type.USB && !string.IsNullOrWhiteSpace(_driveLetter)) {
+            return DeviceSummary.FromUsb(_driveLetter, GetKindleVersionText());
+        }
+
+        return null;
+    }
+
     private void UsbDeviceEventHandler(object sender, EventArrivedEventArgs e) {
         DeviceEventHandler(sender);
     }

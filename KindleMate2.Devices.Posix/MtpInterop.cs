@@ -329,6 +329,45 @@ internal static class MtpInterop {
     }
 
     /// <summary>
+    /// <c>struct LIBMTP_devicestorage_struct</c>(libmtp.h:790-802)—— 64 位下 72 字节。
+    /// 存储区容量就在这里的 <c>MaxCapacity</c> / <c>FreeSpaceInBytes</c>;头文件明写
+    /// 「beware that this list may be rebuilt at any time」——表内指针(**含两个字符串成员)
+    /// 归设备对象所有,读完即可、**不要释放**。字段顺序/宽度错位不会报错,只会读到垃圾值,
+    /// 故有单测按 ABI 断言尺寸与偏移。
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MtpDeviceStorage {
+        public uint Id;                   // uint32_t id(libmtp.h:791)
+        public ushort StorageType;        // uint16_t StorageType(:792)
+        public ushort FilesystemType;     // uint16_t FilesystemType(:793)
+        public ushort AccessCapability;   // uint16_t AccessCapability(:794)
+        // 此处编译器补 6 字节对齐到 8 —— C 与 C# Sequential 布局一致(单测钉死)。
+        public ulong MaxCapacity;         // uint64_t MaxCapacity(:795)
+        public ulong FreeSpaceInBytes;    // uint64_t FreeSpaceInBytes(:796)
+        public ulong FreeSpaceInObjects;  // uint64_t FreeSpaceInObjects(:797)
+        public IntPtr StorageDescription; // char* StorageDescription(:798)
+        public IntPtr VolumeIdentifier;   // char* VolumeIdentifier(:799)
+        public IntPtr Next;               // LIBMTP_devicestorage_t* next(:800)
+        public IntPtr Prev;               // LIBMTP_devicestorage_t* prev(:801)
+    }
+
+    /// <summary>
+    /// <c>struct LIBMTP_mtpdevice_struct</c>(libmtp.h:635)的**前缀** —— 只为拿到
+    /// <c>storage</c> 字段的偏移:该结构体公开在头文件里,前四个成员依次是
+    /// <c>uint8_t object_bitsize</c>(:639)、<c>void *params</c>(:644)、
+    /// <c>void *usbinfo</c>(:649)、<c>LIBMTP_devicestorage_t *storage</c>(:656)。
+    /// 不整只声明是因为后面还有几十个成员(且随版本变动),声明全量等于把 ABI 押在记忆上;
+    /// 前缀四成员稳定,偏移由 <see cref="Marshal.OffsetOf{T}(string)"/> 计算并有单测钉住。
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MtpDeviceHeader {
+        public byte ObjectBitsize;  // uint8_t object_bitsize
+        public IntPtr Params;       // void* params(8 字节对齐,前有 7 字节填充)
+        public IntPtr UsbInfo;      // void* usbinfo
+        public IntPtr Storage;      // LIBMTP_devicestorage_t* storage
+    }
+
+    /// <summary>
     /// <c>LIBMTP_progressfunc_t</c>(libmtp.h:483)。注意参数是 <c>uint64_t</c> —— 老版本曾是 uint32_t,
     /// 宽度写错会让回调读到垃圾值。返回值非 0 会中断传输。
     /// </summary>

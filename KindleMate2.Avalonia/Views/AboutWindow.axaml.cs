@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
@@ -19,6 +21,60 @@ public partial class AboutWindow : Window {
 
     public AboutWindow(AboutViewModel vm) : this() {
         DataContext = vm;
+        BuildDeviceRows(vm);
+    }
+
+    /// <summary>
+    /// 「设备」段按数据**现场生成行**:VM 里为 null 的字段(拔线竞态、Windows MTP 拿不到固件/容量、
+    /// 版本文件没读到…)对应行根本不生成 —— 这就是"不用 — 占位、拿不到整行隐藏"的落地方式。
+    ///
+    /// 为什么不用 Grid.RowSpacing + IsVisible:Avalonia 的 RowSpacing 按 RowDefinitions 数量
+    /// **固定计入**(源码 <c>RowSpacing * (DefinitionsV.Count - 1)</c>),隐藏行高度归零也照扣间距,
+    /// 中间藏一行就留个 18px 空洞。行容器 StackPanel 虽会跳过不可见子项,但每行各自一个 Grid 时
+    /// Auto 标签列宽不一、值列对不齐。而"一个共享标签列的 Grid、只装真实存在的行"两者兼得:
+    /// 行数=真实行数 → 间距无残留;共用列 → 标签天然对齐。
+    /// </summary>
+    private void BuildDeviceRows(AboutViewModel vm) {
+        if (!vm.IsDevicePresent) {
+            return;
+        }
+
+        var grid = new Grid {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            ColumnSpacing = 14,   // 与上面信息区一致
+            RowSpacing = 9,
+        };
+        var row = 0;
+
+        void AddRow(string? label, string? value) {
+            if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(value)) {
+                return;
+            }
+            var labelBlock = new TextBlock {
+                Classes = { "tt" },
+                Text = label,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            var valueBlock = new TextBlock {
+                FontSize = 12,
+                Text = value,
+                TextWrapping = TextWrapping.Wrap,   // 卷路径可能很长,窗口 SizeToContent 自己撑高
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetRow(labelBlock, row);
+            Grid.SetColumn(labelBlock, 0);
+            Grid.SetRow(valueBlock, row);
+            Grid.SetColumn(valueBlock, 1);
+            grid.Children.Add(labelBlock);
+            grid.Children.Add(valueBlock);
+            row++;
+        }
+
+        AddRow(Strings.Ui_About_DeviceConnection, vm.DeviceConnection);
+        AddRow(Strings.Ui_About_DevicePath, vm.DevicePath);
+        AddRow(Strings.Ui_About_DeviceFirmware, vm.DeviceFirmware);
+        AddRow(Strings.Ui_About_DeviceStorage, vm.DeviceStorage);
+        DeviceRows.Children.Add(grid);
     }
 
     /// <summary>

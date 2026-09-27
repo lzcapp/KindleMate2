@@ -60,6 +60,17 @@
               Content="{Binding RepoUrl}" Click="OnOpenRepo" />
     </Grid>
 
+    <!-- 「设备」段:连接着 Kindle 时才出现。分隔线与段容器都绑段级开关 —— 容器必须一起隐藏:
+         空的可见 StackPanel 仍会被外层 Spacing=16 计入,主信息区与「确定」之间就会多出 32px。
+         行在 code-behind 里按数据**现场生成**(见 AboutWindow.BuildDeviceRows)—— 拿不到的字段
+         行根本不生成,这样既满足"不用 — 占位、整行隐藏"的约定,又避开 Grid.RowSpacing 的固定
+         计数残留(Avalonia 按 RowDefinitions 数量扣间距,行高 0 也照扣)与独立行标签列对不齐的问题。 -->
+    <Rectangle Height="1" Fill="{DynamicResource KmBorderBrush}" IsVisible="{Binding IsDevicePresent}" />
+    <StackPanel Spacing="9" IsVisible="{Binding IsDevicePresent}">
+      <TextBlock Classes="ts" FontWeight="SemiBold" Text="{x:Static shared:Strings.Ui_About_Device}" />
+      <StackPanel x:Name="DeviceRows" Spacing="9" />
+    </StackPanel>
+
     <!-- 底部原来还挂着一行「完整库文件路径」(MaxWidth=260、不可点、tt 色),内容和上面「数据路径」只差一个 /KM2.dat
          —— 已删:路径信息统一由「程序路径 / 数据路径」两行可点链接承担。
          列定义仍保留 "*,Auto",让确定按钮继续右对齐。 -->

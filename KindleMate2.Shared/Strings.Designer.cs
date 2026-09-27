@@ -1322,5 +1322,13 @@ namespace KindleMate2.Shared {
         public static string Ui_About_NoDatabase => ResourceManager.GetString("Ui_About_NoDatabase", resourceCulture);
         public static string Ui_About_RuntimeFormat => ResourceManager.GetString("Ui_About_RuntimeFormat", resourceCulture);
         public static string Ui_About_DataPath => ResourceManager.GetString("Ui_About_DataPath", resourceCulture);
+        public static string Ui_About_Device => ResourceManager.GetString("Ui_About_Device", resourceCulture);
+        public static string Ui_About_DeviceConnection => ResourceManager.GetString("Ui_About_DeviceConnection", resourceCulture);
+        public static string Ui_About_DevicePath => ResourceManager.GetString("Ui_About_DevicePath", resourceCulture);
+        public static string Ui_About_DeviceFirmware => ResourceManager.GetString("Ui_About_DeviceFirmware", resourceCulture);
+        public static string Ui_About_DeviceStorage => ResourceManager.GetString("Ui_About_DeviceStorage", resourceCulture);
+        public static string Ui_About_DeviceConnectionUsb => ResourceManager.GetString("Ui_About_DeviceConnectionUsb", resourceCulture);
+        public static string Ui_About_DeviceConnectionMtp => ResourceManager.GetString("Ui_About_DeviceConnectionMtp", resourceCulture);
+        public static string Ui_About_DeviceStorageFormat => ResourceManager.GetString("Ui_About_DeviceStorageFormat", resourceCulture);
     }
 }
