@@ -108,6 +108,77 @@ public sealed class UpdateInstallerTests : IDisposable {
         Assert.Contains("xattr -dr com.apple.quarantine", script);   // 不清隔离标记会被 Gatekeeper 拦
         Assert.Contains("hdiutil detach", script);
         Assert.Contains("open \"/Applications/Kindle Mate 2.app\"", script);
+        // 挂载抖动要重试:结构上钉住「3 次循环 + 全失败才退出」
+        Assert.Contains("for i in 1 2 3", script);
+        Assert.Contains("attached=1", script);
+        Assert.Contains("[ \"$attached\" -eq 1 ] || exit 1", script);
+    }
+
+    /// <summary>
+    /// 真跑一次 macOS 脚本:用 mock 的 <c>hdiutil</c> / <c>open</c> / <c>sleep</c> 走一遍
+    /// 「前两次 attach 报 Resource temporarily unavailable、第 3 次成功」——本次改动的核心回归。
+    /// 旧脚本第一次失败就 <c>exit 1</c>:应用已退出却没换上新包、也没重启。
+    /// 纯 bash + mock,不依赖真实 hdiutil,故 macOS 与 Linux 都能跑。
+    /// </summary>
+    [Fact]
+    public void MacOsScript_RetriesAttachThenInstallsAndReopens() {
+        if (OperatingSystem.IsWindows()) {
+            return;   // 这一段只验 POSIX 脚本
+        }
+
+        var bin = Path.Combine(_work, "bin");
+        Directory.CreateDirectory(bin);
+        var attachCount = Path.Combine(_work, "attach.count");
+        var openMarker = Path.Combine(_work, "opened.marker");
+
+        // mock hdiutil:前两次 attach 返回失败,第三次才真正"挂载"(造出 KindleMate2.app)。
+        var fakeHdiutil = Path.Combine(bin, "hdiutil");
+        File.WriteAllText(fakeHdiutil, $"""
+            #!/bin/bash
+            if [ "$1" != "attach" ]; then exit 0; fi
+            n=$(cat "{attachCount}" 2>/dev/null || echo 0)
+            n=$((n + 1))
+            echo "$n" > "{attachCount}"
+            [ "$n" -lt 3 ] && exit 1
+            mnt=""; prev=""
+            for arg in "$@"; do
+              if [ "$prev" = "-mountpoint" ]; then mnt="$arg"; fi
+              prev="$arg"
+            done
+            mkdir -p "$mnt/KindleMate2.app/Contents"
+            echo installed > "$mnt/KindleMate2.app/Contents/marker"
+            exit 0
+            """);
+        var fakeOpen = Path.Combine(bin, "open");
+        File.WriteAllText(fakeOpen, $"#!/bin/bash\ntouch \"{openMarker}\"\n");
+        var fakeSleep = Path.Combine(bin, "sleep");   // 让重试的 sleep 3 立即返回,测试不必真等 6 秒
+        File.WriteAllText(fakeSleep, "#!/bin/bash\nexit 0\n");
+        foreach (var tool in new[] { fakeHdiutil, fakeOpen, fakeSleep }) {
+            File.SetUnixFileMode(tool, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        var appPath = Path.Combine(_work, "Applications", "Kindle Mate 2.app");
+        Directory.CreateDirectory(appPath);
+        File.WriteAllText(Path.Combine(appPath, "old-file"), "old");
+
+        var scriptPath = Path.Combine(_work, "apply-macos.sh");
+        // 用一个一定不存在的 PID:kill -0 立即失败,不必等进程退出
+        File.WriteAllText(scriptPath, UpdateInstaller.BuildMacOsScript(Path.Combine(_work, "x.dmg"), appPath, 999_999));
+
+        var psi = new ProcessStartInfo {
+            FileName = "/bin/bash",
+            Arguments = $"\"{scriptPath}\"",
+            UseShellExecute = false,
+        };
+        psi.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+        using var process = Process.Start(psi)!;
+        process.WaitForExit(20_000);
+
+        Assert.Equal(0, process.ExitCode);
+        Assert.Equal("3", File.ReadAllText(attachCount).Trim());   // 前两次失败、第三次成功
+        Assert.True(File.Exists(Path.Combine(appPath, "Contents", "marker")));   // 新包被装上
+        Assert.False(File.Exists(Path.Combine(appPath, "old-file")));            // 旧包被移除
+        Assert.True(File.Exists(openMarker));                                    // 最后重启了
     }
 
     // ————————————————————— 真跑一次脚本 —————————————————————
