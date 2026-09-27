@@ -109,6 +109,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 导入 KMate 数据库（`km3.dat`）
 - [x] 从已连接的 Kindle 设备导入（标注 + 生词本）
 - [x] 同步到已连接的 Kindle 设备
+- [x] 关于窗口显示已连接设备概览（连接方式 / 卷路径 / 固件 / 存储）
 - [x] 编辑标注
 - [x] 编辑生词本
 - [x] 删除（单条 / 整本书 / 某个词）与**回收站**（删除可恢复）
