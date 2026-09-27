@@ -1,4 +1,7 @@
+using System.Globalization;
+using System.Text;
 using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
@@ -12,6 +15,7 @@ namespace KindleMate2.Application.Services;
 public class ExportManager : IExportManager {
     private readonly IClippingService _clippingService;
     private readonly ILookupService _lookupService;
+    private readonly IVocabService _vocabService;
     private readonly IOriginalClippingLineService _originalClippingLineService;
     private readonly IDeviceManager _deviceManager;
     private readonly string _programPath;
@@ -19,10 +23,11 @@ public class ExportManager : IExportManager {
     private readonly string _tempPath;
 
     public ExportManager(IClippingService clippingService, ILookupService lookupService,
-        IOriginalClippingLineService originalClippingLineService, IDeviceManager deviceManager,
-        string programPath, string backupPath, string tempPath) {
+        IVocabService vocabService, IOriginalClippingLineService originalClippingLineService,
+        IDeviceManager deviceManager, string programPath, string backupPath, string tempPath) {
         _clippingService = clippingService;
         _lookupService = lookupService;
+        _vocabService = vocabService;
         _originalClippingLineService = originalClippingLineService;
         _deviceManager = deviceManager;
         _programPath = programPath;
@@ -52,6 +57,155 @@ public class ExportManager : IExportManager {
             AppLog.Write($"[VocabsToMarkdown] {ex}");
             return false;
         }
+    }
+
+    /// <summary>导出标注为 CSV(Anki 可导入)。</summary>
+    public bool ExportClippingsToCsv() {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            Directory.CreateDirectory(dir);
+            WriteClippingsCsv(_clippingService.GetAllClippings(), Path.Combine(dir, "Clippings.csv"));
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[ClippingsToCsv] {ex}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 导出生词 CSV。<paramref name="includeDefinitions"/> 为 true 时**联网**按词查释义(有道),
+    /// 查不到则 Definition 留空;为 false 时完全离线,Definition 列留空。
+    /// 联网会**把全部生词发给第三方**,故默认关,由调用方按用户选择显式打开。
+    /// </summary>
+    public async Task<bool> ExportVocabsToCsvAsync(bool includeDefinitions,
+        CancellationToken cancellationToken = default) {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            Directory.CreateDirectory(dir);
+
+            var stemByKey = _vocabService.GetAllVocabs()
+                .Where(v => !string.IsNullOrEmpty(v.WordKey))
+                .GroupBy(v => v.WordKey!, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First().Stem ?? string.Empty, StringComparer.Ordinal);
+
+            var lookups = _lookupService.GetAllLookups();
+            foreach (var lookup in lookups) {
+                if (lookup.WordKey != null && stemByKey.TryGetValue(lookup.WordKey, out var stem)) {
+                    lookup.Stem = stem;
+                }
+            }
+
+            var definitions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (includeDefinitions) {
+                var words = lookups
+                    .Select(l => l.Word)
+                    .Where(w => !string.IsNullOrWhiteSpace(w))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                definitions = await LookupDefinitionsAsync(words, cancellationToken).ConfigureAwait(false);
+            }
+
+            WriteLookupsCsv(lookups, Path.Combine(dir, "Vocabs.csv"), definitions);
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[VocabsToCsv] {ex}");
+            return false;
+        }
+    }
+
+    private static async Task<Dictionary<string, string>> LookupDefinitionsAsync(
+        IReadOnlyList<string> words, CancellationToken cancellationToken) {
+        var result = new Dictionary<string, string>(words.Count, StringComparer.OrdinalIgnoreCase);
+        if (words.Count == 0) {
+            return result;
+        }
+
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("KindleMate2-Dictionary");
+        using var gate = new SemaphoreSlim(4);
+        var tasks = words.Select(async word => {
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try {
+                var def = await WordDefinitionService.LookupAsync(word, http, cancellationToken)
+                    .ConfigureAwait(false);
+                return (word, text: def?.ToDisplayText() ?? string.Empty);
+            } finally {
+                gate.Release();
+            }
+        });
+
+        foreach (var (word, text) in await Task.WhenAll(tasks).ConfigureAwait(false)) {
+            if (text.Length > 0) {
+                result[word] = text;
+            }
+        }
+        return result;
+    }
+
+    /// <summary>写标注 CSV。<c>internal</c> 供单测(纯函数,不碰库)。</summary>
+    internal static void WriteClippingsCsv(IEnumerable<Clipping> clippings, string filePath) {
+        using var writer = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        writer.WriteLine("Content,Type,Book,Author,Page,Location,Date");
+        foreach (var clipping in clippings) {
+            if (string.IsNullOrWhiteSpace(clipping.Content)) {
+                continue;
+            }
+            var type = clipping.BriefType is { } brief && Enum.IsDefined(typeof(BriefType), (int)brief)
+                ? ((BriefType)brief).ToString()
+                : string.Empty;
+            writer.WriteLine(string.Join(',',
+                EscapeCsv(clipping.Content),
+                EscapeCsv(type),
+                EscapeCsv(clipping.BookName ?? string.Empty),
+                EscapeCsv(clipping.AuthorName ?? string.Empty),
+                EscapeCsv(clipping.PageNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                EscapeCsv(clipping.ClippingTypeLocation ?? string.Empty),
+                EscapeCsv(clipping.ClippingDate ?? string.Empty)));
+        }
+    }
+
+    /// <summary>写生词 CSV。<c>internal</c> 供单测(纯函数,不碰库)。</summary>
+    internal static void WriteLookupsCsv(
+        IEnumerable<Lookup> lookups,
+        string filePath,
+        IReadOnlyDictionary<string, string> definitionsByWord) {
+        using var writer = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        writer.WriteLine("Word,Stem,Definition,Usage,Book,Author,Language,Timestamp");
+        foreach (var lookup in lookups) {
+            var word = lookup.Word;
+            if (string.IsNullOrWhiteSpace(word)) {
+                continue;
+            }
+            var usage = (lookup.Usage ?? string.Empty)
+                .Replace(AppConstants.SpaceForNewLine, Environment.NewLine, StringComparison.Ordinal);
+            definitionsByWord.TryGetValue(word, out var definition);
+            writer.WriteLine(string.Join(',',
+                EscapeCsv(word),
+                EscapeCsv(lookup.Stem ?? string.Empty),
+                EscapeCsv(definition ?? string.Empty),
+                EscapeCsv(usage),
+                EscapeCsv(lookup.Title ?? string.Empty),
+                EscapeCsv(lookup.Authors ?? string.Empty),
+                EscapeCsv(LanguageOfWordKey(lookup.WordKey)),
+                EscapeCsv(lookup.Timestamp ?? string.Empty)));
+        }
+    }
+
+    /// <summary>从 <c>word_key</c> 取语言前缀(<c>en:word</c> → <c>en</c>);无前缀返回空。</summary>
+    internal static string LanguageOfWordKey(string? wordKey) {
+        if (string.IsNullOrEmpty(wordKey)) {
+            return string.Empty;
+        }
+        var index = wordKey.IndexOf(':');
+        return index > 0 ? wordKey[..index] : string.Empty;
+    }
+
+    /// <summary>按 RFC4180 转义:含 <c>,</c> <c>"</c> CR LF 时整体加引号并把 <c>"</c> 加倍。</summary>
+    internal static string EscapeCsv(string value) {
+        if (value.IndexOfAny([',', '"', '\r', '\n']) < 0) {
+            return value;
+        }
+        return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
     }
 
     /// <summary>

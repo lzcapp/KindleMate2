@@ -498,6 +498,15 @@
   <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
     <value>Export as Markdown</value>
   </data>
+  <data name="Ui_Menu_ExportCsv" xml:space="preserve">
+    <value>Export as CSV</value>
+  </data>
+  <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
+    <value>Export as CSV (with definitions)</value>
+  </data>
+  <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
+    <value>Definitions are looked up online: every word in your vocabulary list will be sent to Youdao Dictionary. Continue?</value>
+  </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>Rebuild database</value>
   </data>

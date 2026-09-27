@@ -417,6 +417,23 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ExportAllMarkdownAsync());
     }
 
+    private async void OnMenuExportCsv(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        // 默认离线:不联网,Definition 列留空。
+        await ShowResultAsync(await vm.ExportAllCsvAsync());
+    }
+
+    /// <summary>
+    /// 「导出为 CSV(含释义)」—— 会**联网**把全部生词发给有道词典。菜单文案已点明,这里再确认一次。
+    /// </summary>
+    private async void OnMenuExportCsvWithDefinitions(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        var ok = await AppDialog.ConfirmAsync(this, Strings.Confirm,
+            Strings.Confirm_ExportCsv_Definitions, Strings.Ui_Action_Ok);
+        if (!ok) return;
+        await ShowResultAsync(await vm.ExportAllCsvAsync(includeDefinitions: true));
+    }
+
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {

@@ -111,7 +111,7 @@ public sealed class DatabaseSession : IDisposable {
             VocabDatabaseServiceFactory, KmDatabaseServiceFactory, KmateDatabaseServiceFactory, ImportDirectory);
 
         ExportManager = new ExportManager(
-            ClippingService, LookupService, OriginalClippingLineService, DeviceManager,
+            ClippingService, LookupService, VocabService, OriginalClippingLineService, DeviceManager,
             WorkDirectory, BackupDirectory, TempDirectory);
     }
 

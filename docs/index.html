@@ -336,9 +336,9 @@
       </article>
 
       <article class="card">
-        <h3><span class="t-zh">导出 Markdown</span><span class="t-en">Export to Markdown</span></h3>
-        <p class="t-zh">按书导出为 Markdown，便于接入笔记软件与静态站点。</p>
-        <p class="t-en">Export per book to Markdown, ready for note apps and static sites.</p>
+        <h3><span class="t-zh">导出 Markdown / CSV</span><span class="t-en">Export to Markdown / CSV</span></h3>
+        <p class="t-zh">按书导出为 Markdown，便于接入笔记软件与静态站点；也可导出 CSV，直接导入 Anki。</p>
+        <p class="t-en">Export per book to Markdown, ready for note apps and static sites — or export CSV to import straight into Anki.</p>
       </article>
 
       <article class="card">
@@ -373,8 +373,8 @@
       <div class="num">02</div>
       <div>
         <h2><span class="t-zh">联网行为</span><span class="t-en">Network access</span></h2>
-        <p class="t-zh">默认只做两件需要联网的事，两件都不会发送你的书、你的标注或任何本机数据；其余功能全部离线可用。</p>
-        <p class="t-en">Only two things touch the network by default, and neither sends your books, clippings or any local data; everything else works fully offline.</p>
+        <p class="t-zh">默认只做两件需要联网的事，两件都不会发送你的书、你的标注或任何本机数据；另有一项「导出 CSV（含释义）」需你手动选择并确认才会联网，默认不触发。</p>
+        <p class="t-en">Only two things touch the network by default, and neither sends your books, clippings or any local data. A third action — "Export as CSV (with definitions)" — reaches the network only when you explicitly pick it and confirm.</p>
       </div>
     </div>
 
@@ -387,14 +387,19 @@
         只在你浏览生词本并选中某个词时才会发生；无开关。</p>
       <p class="t-en" style="margin-top:10px"><strong>Online definition:</strong> when you select a word in the vocabulary book (right-hand detail panel),
         <strong>that word itself</strong> is sent to Youdao's public dictionary API; only happens while browsing and selecting a word; no switch.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>导出 CSV（含释义）：</strong>点「导出为 CSV（含释义）」并确认时，把<strong>生词本里的全部生词</strong>发给有道词典的公开接口，用于填 Definition 列；
+        <strong>默认不触发</strong> —— 不点这个菜单项就完全不联网，「导出为 CSV」（不带释义）是纯离线的。</p>
+      <p class="t-en" style="margin-top:10px"><strong>Export as CSV (with definitions):</strong> when you click "Export as CSV (with definitions)" and confirm,
+        <strong>every word in your vocabulary list</strong> is sent to Youdao's public dictionary API to fill the Definition column;
+        <strong>off by default</strong> — skip this menu item and nothing is sent, and plain "Export as CSV" is fully offline.</p>
     </div>
 
     <div class="note">
-      <p class="t-zh">两者都拿不到结果时<strong>界面什么都不显示</strong>（不弹错误框、不报错）；在线释义的结果只在本次会话内缓存，<strong>不写入数据库</strong>。
-        两项都不可关闭 —— 若你需要<strong>完全离线</strong>的版本，可以自行编译并去掉这两处调用（本程序开源，GPL-3.0）。</p>
-      <p class="t-en">When either request fails, <strong>nothing is shown</strong> (no error dialogs); definition results are cached for the session only and
-        <strong>never written to the database</strong>. Neither can be switched off — if you need a <strong>fully offline</strong> build,
-        compile it yourself with those two calls removed (the app is open source under GPL-3.0).</p>
+      <p class="t-zh">拿不到结果时<strong>界面什么都不显示</strong>（不弹错误框、不报错）；在线释义的结果只在本次会话内缓存，<strong>不写入数据库</strong>。
+        前两项不可关闭；「导出 CSV（含释义）」默认关，不主动点选就不会发生 —— 若你需要<strong>完全离线</strong>的版本，可以自行编译并去掉这些调用（本程序开源，GPL-3.0）。</p>
+      <p class="t-en">When a request fails, <strong>nothing is shown</strong> (no error dialogs); definition results are cached for the session only and
+        <strong>never written to the database</strong>. The first two cannot be switched off; the definition export is off by default and only happens if you pick it —
+        if you need a <strong>fully offline</strong> build, compile it yourself with these calls removed (the app is open source under GPL-3.0).</p>
     </div>
   </section>
 

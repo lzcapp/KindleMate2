@@ -817,6 +817,32 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
+    /// <summary>
+    /// 导出标注 + 生词本为 CSV(Anki 可直接导入,#8)。
+    /// <paramref name="includeDefinitions"/> 为 true 时生词会**联网**查释义(把生词发给有道),词多时稍慢;
+    /// 为 false(默认)时完全离线,Definition 列留空。
+    /// </summary>
+    public Task<OperationResult> ExportAllCsvAsync(bool includeDefinitions = false) {
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
+        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var exportDir = session.ExportDirectory;
+        return Task.Run(async () => {
+            var clippingsOk = session.ExportManager.ExportClippingsToCsv();
+            var vocabsOk = await session.ExportManager.ExportVocabsToCsvAsync(includeDefinitions)
+                .ConfigureAwait(false);
+            if (!clippingsOk || !vocabsOk) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
+    }
+
     /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
         // 忙碌期与写操作互斥,理由见 ExportAllMarkdownAsync。
