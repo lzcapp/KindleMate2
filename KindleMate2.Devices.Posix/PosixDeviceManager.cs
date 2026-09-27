@@ -64,11 +64,15 @@ public class PosixDeviceManager : IDeviceManager {
 
     /// <summary>
     /// MTP 机型最近一次会话读到的存储容量(字节),与 <see cref="_mtpVersionText"/> 同一思路:
-    /// 打开会话时顺手读、之后只读缓存 —— 关于窗口的 getter 不开会话。
+    /// 打开会话时顺手读、之后只读缓存 —— 关于窗口的 getter 不额外开会话。
     /// 未导入过/设备没报容量时为 null:关于窗口隐藏容量行,不摆「—」。
+    ///
+    /// 用**单个不可变引用**装一对值(而非两个 <c>ulong?</c>):引用赋值是原子的,读到的
+    /// Total/Free 必然成对一致,不会出现"一个新一个旧"的撕裂值;跨线程读写经 <see cref="Volatile"/>。
     /// </summary>
-    private ulong? _mtpTotalBytes;
-    private ulong? _mtpFreeBytes;
+    private MtpStorage? _mtpStorage;
+
+    private sealed record MtpStorage(long Total, long Free);
 
     private CancellationTokenSource? _pollCts;
     private Task? _pollTask;
@@ -238,8 +242,9 @@ public class PosixDeviceManager : IDeviceManager {
 
     /// <summary>
     /// 关于窗口「设备」段的数据源(见 <see cref="IDeviceManager.GetDeviceInfo"/>)。
-    /// 铁律:这里**不开会话** —— 连接与否现场复检(与状态栏同一条 <see cref="IsKindleConnected"/>),
-    /// 字段只取卷文件读取与既有缓存;拿不到的字段留 null,由 UI 隐藏对应行。
+    /// 不**额外**开新会话:连接与否现场复检(与状态栏同一条 <see cref="IsKindleConnected"/>;
+    /// POSIX 上这条探测只读 USB,本就不开 MTP 会话),字段只取卷文件读取与既有缓存;
+    /// 拿不到的字段留 null,由 UI 隐藏对应行。
     /// </summary>
     public DeviceSummary? GetDeviceInfo() {
         if (!IsKindleConnected()) {
@@ -254,13 +259,15 @@ public class PosixDeviceManager : IDeviceManager {
         }
 
         switch (type) {
-            case Device.Type.MTP:
+            case Device.Type.MTP: {
+                var storage = Volatile.Read(ref _mtpStorage);
                 return new DeviceSummary(Device.Type.MTP,
                     DrivePath: null,
                     // 与 USB 分支同一口径:version.txt 只取首行非空行
                     Firmware: DeviceSummary.SingleLine(_mtpVersionText),
-                    TotalBytes: ToLong(_mtpTotalBytes),
-                    FreeBytes: ToLong(_mtpFreeBytes));
+                    TotalBytes: storage?.Total,
+                    FreeBytes: storage?.Free);
+            }
             case Device.Type.USB when drive.Length > 0:
                 return DeviceSummary.FromUsb(drive, GetKindleVersionText());
             default:
@@ -268,16 +275,16 @@ public class PosixDeviceManager : IDeviceManager {
         }
     }
 
-    /// <summary>容量换算:libmtp 的 <c>uint64_t</c> 落进 <c>long?</c>,越界按"拿不到"处理(实际不可能)。</summary>
+    /// <summary>容量换算:libmtp 的 <c>uint64_t</c> 落进 <c>long</c>,越界按"拿不到"处理(实际不可能)。</summary>
     private static long? ToLong(ulong? value) =>
         value is { } bytes && bytes <= long.MaxValue ? (long)bytes : null;
 
     /// <summary>导入会话打开时顺手把容量收进缓存;拿不到就保持原值。
+    /// 一对值整体原子写入(见 <see cref="_mtpStorage"/>),不会读到半新半旧。
     /// (写回路径的会话方法是静态的、为测试而拆,刻意不接缓存 —— 容量以「从设备导入」为准。)</summary>
     private void CacheMtpStorage(MtpDeviceSession session) {
-        if (session.StorageTotalBytes is { } total) {
-            _mtpTotalBytes = total;
-            _mtpFreeBytes = session.StorageFreeBytes;
+        if (ToLong(session.StorageTotalBytes) is { } total && ToLong(session.StorageFreeBytes) is { } free) {
+            Volatile.Write(ref _mtpStorage, new MtpStorage(total, free));
         }
     }
 

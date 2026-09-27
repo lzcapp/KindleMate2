@@ -91,7 +91,7 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
     }
 
     // ————————————————————————— 设备概览(关于窗口「设备」段) —————————————————————————
-    // 与 GetKindleVersionText 同一铁律:GetDeviceInfo 绝不开会话,字段全来自卷文件与 DriveInfo。
+    // GetDeviceInfo 不额外开会话,字段全来自卷文件与 DriveInfo。
 
     [Fact]
     public void GetDeviceInfo_WhenNotConnected_ReturnsNull() {

@@ -125,7 +125,7 @@ internal sealed class MtpDeviceSession : IDisposable {
                 var rootEntries = ListLevel(device, MtpInterop.FilesAndFoldersRoot, MtpInterop.FilesAndFoldersRoot);
                 var storageId = rootEntries.Count > 0 ? rootEntries[0].StorageId : 0;
 
-                // 容量在打开时顺手读一次:关于窗口的「设备」段要用,且 getter 侧的铁律是不开会话
+                // 容量在打开时顺手读一次:关于窗口的「设备」段要用,且 getter 侧不额外开会话
                 // (见 IDeviceManager.GetDeviceInfo)—— 只能在这里,与版本文件同一个思路。
                 var (storageTotal, storageFree) = ReadStorageCapacity(device);
 
@@ -150,7 +150,12 @@ internal sealed class MtpDeviceSession : IDisposable {
     /// </summary>
     private static (ulong? Total, ulong? Free) ReadStorageCapacity(IntPtr device) {
         try {
-            MtpInterop.LIBMTP_Get_Storage(device, MtpInterop.StorageSort.NotSorted);
+            var rc = MtpInterop.LIBMTP_Get_Storage(device, MtpInterop.StorageSort.NotSorted);
+            if (rc != 0) {
+                // 失败时 device->storage 可能是空链表或上一次的旧值 —— 直接按"拿不到"收场,不冒险读。
+                AppLog.Write($"[MtpDeviceSession] LIBMTP_Get_Storage 失败(rc={rc}),容量不可得");
+                return (null, null);
+            }
             var head = Marshal.ReadIntPtr(device,
                 Marshal.OffsetOf<MtpInterop.MtpDeviceHeader>(nameof(MtpInterop.MtpDeviceHeader.Storage)).ToInt32());
             for (var cursor = head; cursor != IntPtr.Zero;) {

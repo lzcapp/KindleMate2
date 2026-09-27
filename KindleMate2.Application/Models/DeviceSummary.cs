@@ -9,9 +9,8 @@ namespace KindleMate2.Application.Models;
 /// 两条铁律:
 /// ① **逐项可空**:字段拿不到就留 null(拔线竞态、MTP 未导入过、平台不支持…),
 ///    UI 侧按"非空才显示该行"渲染,不摆「—」占位。
-/// ② **绝不开会话**:所有取值只能来自卷文件读取、<c>DriveInfo</c> 与既有缓存 ——
-///    这条继承自 <c>PosixDeviceManager.GetKindleVersionText</c> 的注释:
-///    getter 可能在任意时机被界面调用,而每次 MTP 会话都要重新打开设备。
+/// ② **不额外开新会话**:取值来自卷文件读取、<c>DriveInfo</c> 与既有缓存;连接与否复用既有探测
+///    (与状态栏同源;Windows 上该探测对 MTP 机型本就会连一次),不为取概览单独开会话。
 /// </summary>
 public sealed record DeviceSummary(
     Device.Type Type,

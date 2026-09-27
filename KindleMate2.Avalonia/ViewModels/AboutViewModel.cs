@@ -108,7 +108,7 @@ public sealed class AboutViewModel {
     }
 
     /// <summary>
-    /// 取设备概览:没打开库 → null;实现侧承诺"未连接返回 null、取不到的字段留空、不开会话",
+    /// 取设备概览:没打开库 → null;实现侧承诺"未连接返回 null、取不到的字段留空、不额外开会话",
     /// 这里再兜一层异常 —— 关于窗口只是展示,任何读取失败都以"整段隐藏"收场,绝不打断。
     /// </summary>
     private static DeviceSummary? GetDeviceSummary(DatabaseSession? session) {
