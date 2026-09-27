@@ -479,7 +479,21 @@ jobs:
           dmg="KindleMate2_${{ matrix.suffix }}.dmg"
           mnt="$(mktemp -d)"
           trap 'hdiutil detach "$mnt" >/dev/null 2>&1 || true' EXIT
-          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt"
+          # hdiutil attach 偶发 "Resource temporarily unavailable" —— GitHub macOS runner 上的已知抖动
+          # (2026-09-27 的 2026.09.26 发版即因此红过一次,重跑即过)。重试 3 次、间隔 3 秒;
+          # 万一上次是"挂上了却报错",先 detach 清干净再试,保证每次都是幂等的;3 次都失败才红灯。
+          for i in 1 2 3; do
+            if hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt"; then
+              break
+            fi
+            if [ "$i" -eq 3 ]; then
+              echo "错误:hdiutil attach 连续 3 次失败" >&2
+              exit 1
+            fi
+            echo "hdiutil attach 第 $i 次失败,3 秒后重试" >&2
+            hdiutil detach "$mnt" >/dev/null 2>&1 || true
+            sleep 3
+          done
           ls -la "$mnt"
           codesign --verify --verbose=2 "$mnt/KindleMate2.app"
 
