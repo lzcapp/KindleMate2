@@ -498,6 +498,9 @@
   <data name="Ui_Menu_ExportMarkdown" xml:space="preserve">
     <value>导出为 Markdown</value>
   </data>
+  <data name="Ui_Menu_ExportCsv" xml:space="preserve">
+    <value>导出为 CSV</value>
+  </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>重建数据库</value>
   </data>

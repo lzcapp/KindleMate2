@@ -154,8 +154,9 @@ jobs:
           grep -q 'SelectedClipTable = SelectedItem?.Clipping' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           grep -q 'SelectedLookupTable = SelectedItem?.Lookup' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           # ④ 导出/备份在忙碌期必须让路(连接串没设 busy_timeout,与写操作并发直接 SQLITE_BUSY);
-          #    数量 3 = 导出全部 / 导出当前书 / 备份数据库,多出第四个门禁时人工确认后改数。
-          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          #    数量 4 = 导出全部(Markdown)/ 导出全部(CSV)/ 导出当前书 / 备份数据库,
+          #    多出第五个门禁时人工确认后改数。
+          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 4
           # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）

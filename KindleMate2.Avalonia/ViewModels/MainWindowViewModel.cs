@@ -819,6 +819,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>导出标注 + 生词本为 CSV(Anki 可直接导入,#8)。生词会联网查释义,词多时稍慢。</summary>
     public Task<OperationResult> ExportAllCsvAsync() {
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
+        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
         }
