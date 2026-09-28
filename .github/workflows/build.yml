@@ -301,6 +301,9 @@ jobs:
           # 断言专门找 CheckForUpdatesQuietlyAsync 这个**独立名字**:若图省事复用菜单的
           # CheckForUpdatesAsync,菜单那处调用会让这条断言恒真(项目踩过"空断言")。
           grep -q 'CheckForUpdatesQuietlyAsync();' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 「检查更新」弹窗内的「更新」按钮:查到可安装更新时当场给入口,点了就走更新流程。
+          # 视图层接线,编译期/单测都钉不住 —— 删掉不报错,只是用户还得回状态栏找按钮。
+          grep -q 'Strings.Ui_Update_Apply' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"

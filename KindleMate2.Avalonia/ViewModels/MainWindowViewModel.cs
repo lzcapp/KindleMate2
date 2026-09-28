@@ -1542,6 +1542,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>是否有可用更新 —— 主界面那个「更新」按钮的显隐依据。</summary>
     public bool IsUpdateAvailable => _availableUpdate is not null;
 
+    /// <summary>
+    /// 可用更新里有**本平台可安装的资产** —— 「检查更新」弹窗要不要给「更新」按钮的依据。
+    /// 发布页没发本平台资产时仍算"有新版本"(该告知的要告知),但没有一键安装的入口,
+    /// 只能退回带发布页链接的提示 —— 给按钮点了也是空转。
+    /// </summary>
+    public bool CanApplyUpdate => _availableUpdate?.Asset is not null;
+
     /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
     public string UpdateButtonText => _availableUpdate is null
         ? string.Empty

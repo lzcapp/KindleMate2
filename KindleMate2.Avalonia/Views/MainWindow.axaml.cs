@@ -835,20 +835,36 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
-    /// 「帮助 → 检查更新」。有更新时同时点亮主界面状态栏的「更新」按钮;
-    /// 无更新或检查失败都只弹一句"已是最新" —— 检查更新的失败不该打断使用。
+    /// 「帮助 → 检查更新」。查到**本平台可安装**的更新时,这个弹窗直接带「更新」按钮 ——
+    /// 点了就开始下载安装,不必关掉弹窗再回状态栏找按钮;检查结果照旧点亮状态栏的
+    /// 「更新」按钮。已是最新 / 本平台没发资产 / 检查失败都只弹一句提示 ——
+    /// 那些情形没有可执行的更新入口,给按钮点了也是空转,检查更新的失败也不该打断使用。
     /// </summary>
     private async void OnMenuCheckUpdates(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var message = await vm.CheckForUpdatesAsync();
+
+        if (vm.CanApplyUpdate) {
+            if (await AppDialog.ConfirmAsync(this, Strings.Successful, message, Strings.Ui_Update_Apply)) {
+                await RunUpdateAsync();
+            }
+            return;
+        }
         await AppDialog.AlertAsync(this, Strings.Successful, message);
     }
 
     /// <summary>
-    /// 状态栏「更新」按钮:下载 → 交给替换脚本 → **退出本进程**。
-    /// 退出是必须的:脚本正 `kill -0` 等我们死掉,之后它才会替换文件并重新启动应用。
+    /// 状态栏「更新」按钮:下载 → 交给替换脚本 → 退出。
+    /// 共用流程在 <see cref="RunUpdateAsync"/>(「检查更新」弹窗的「更新」按钮也走它)。
     /// </summary>
-    private async void OnUpdateClick(object? sender, RoutedEventArgs e) {
+    private async void OnUpdateClick(object? sender, RoutedEventArgs e) => await RunUpdateAsync();
+
+    /// <summary>
+    /// 下载更新并交给替换脚本 → **退出本进程**。
+    /// 退出是必须的:脚本正 `kill -0` 等我们死掉,之后它才会替换文件并重新启动应用。
+    /// 两个入口(状态栏按钮 / 「检查更新」弹窗)共用这一段,避免"改一处漏一处"。
+    /// </summary>
+    private async Task RunUpdateAsync() {
         if (Vm is not { } vm) return;
 
         var (restart, message) = await vm.DownloadAndApplyUpdateAsync();
