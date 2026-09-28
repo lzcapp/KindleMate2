@@ -450,6 +450,9 @@
   <data name="Ui_Update_Downloading" xml:space="preserve">
   	<value>正在下載更新:{0}%</value>
   </data>
+  <data name="Ui_Update_Skip" xml:space="preserve">
+  	<value>跳過此版本</value>
+  </data>
   <data name="Ui_Update_Apply" xml:space="preserve">
   	<value>更新</value>
   </data>

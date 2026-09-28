@@ -18,6 +18,12 @@ public sealed class AppSettings {
     [JsonPropertyName("theme")] public string Theme { get; set; } = "system";
     [JsonPropertyName("language")] public string Language { get; set; } = "auto";
 
+    /// <summary>
+    /// 用户点过「跳过此版本」的那个版本号(空 = 没跳过)。
+    /// 只抑制**启动**自动弹窗;手动「检查更新」照常提示(那是用户的明确动作)。
+    /// </summary>
+    [JsonPropertyName("skippedUpdateVersion")] public string SkippedUpdateVersion { get; set; } = string.Empty;
+
     [JsonIgnore] public string FilePath { get; private set; } = string.Empty;
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };

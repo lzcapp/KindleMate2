@@ -1549,6 +1549,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </summary>
     public bool CanApplyUpdate => _availableUpdate?.Asset is not null;
 
+    /// <summary>可用更新的版本号(tag 形式);没有更新时为 null。用于「跳过此版本」。</summary>
+    public string? AvailableUpdateVersion => _availableUpdate?.Version;
+
+    /// <summary>
+    /// 启动自动检查是否该为这个版本闭嘴 —— 用户点过「跳过此版本」。
+    /// 只抑制**启动**自动弹窗;手动「检查更新」照常提示(那是用户的明确动作)。
+    /// </summary>
+    public bool IsUpdateVersionSkipped =>
+        _availableUpdate is { } update
+        && Settings is { } settings
+        && !string.IsNullOrEmpty(settings.SkippedUpdateVersion)
+        && string.Equals(settings.SkippedUpdateVersion, update.Version, StringComparison.Ordinal);
+
+    /// <summary>记录「跳过此版本」:以后启动自动检查不再为它弹窗(更新的版本仍会提示)。</summary>
+    public void SkipUpdateVersion(string version) {
+        if (Settings is not { } settings || string.IsNullOrWhiteSpace(version)) return;
+        settings.SkippedUpdateVersion = version;
+        settings.Save();
+    }
+
     /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
     public string UpdateButtonText => _availableUpdate is null
         ? string.Empty

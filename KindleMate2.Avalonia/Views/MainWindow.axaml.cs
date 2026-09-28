@@ -174,7 +174,8 @@ public partial class MainWindow : Window {
         try {
             await vm.CheckForUpdatesQuietlyAsync();
             // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
-            if (IsVisible) {
+            // 用户点过「跳过此版本」的,启动不再为该版本弹窗(徽标照旧;手动检查仍会提示)。
+            if (IsVisible && !vm.IsUpdateVersionSkipped) {
                 await PromptUpdateAsync(vm);
             }
         } catch (Exception ex) {
@@ -193,8 +194,13 @@ public partial class MainWindow : Window {
         if (!vm.CanApplyUpdate || !IsVisible || _updatePromptBusy) return false;
         _updatePromptBusy = true;
         try {
-            if (await AppDialog.ConfirmAsync(this, Strings.Ui_Update_Check, vm.UpdateButtonText, Strings.Ui_Update_Apply)) {
+            var (apply, skip) = await AppDialog.ConfirmWithOptionAsync(this, Strings.Ui_Update_Check,
+                vm.UpdateButtonText, Strings.Ui_Update_Skip, Strings.Ui_Update_Apply);
+            if (apply) {
                 await RunUpdateAsync();
+            } else if (skip && vm.AvailableUpdateVersion is { } version) {
+                // 勾了「跳过此版本」再取消:记住这个版本,启动自动检查不再为它弹(手动检查仍是用户说了算)。
+                vm.SkipUpdateVersion(version);
             }
             return true;
         } finally {
