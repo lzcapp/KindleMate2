@@ -1562,10 +1562,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         && !string.IsNullOrEmpty(settings.SkippedUpdateVersion)
         && string.Equals(settings.SkippedUpdateVersion, update.Version, StringComparison.Ordinal);
 
-    /// <summary>记录「跳过此版本」:以后启动自动检查不再为它弹窗(更新的版本仍会提示)。</summary>
-    public void SkipUpdateVersion(string version) {
+    /// <summary>
+    /// 落盘「跳过此版本」的勾选状态:<paramref name="skipped"/> 为 true 记住该版本,
+    /// 为 false **清除**(恢复自动提示)—— 勾选状态与持久化状态必须始终一致,
+    /// 否则用户取消勾选后库里的旧跳过值还压着启动弹窗,看起来就是"取消不生效"。
+    /// 只影响**启动**自动弹窗;手动「检查更新」照常提示(那是用户的明确动作)。
+    /// </summary>
+    public void SetUpdateVersionSkipped(string version, bool skipped) {
         if (Settings is not { } settings || string.IsNullOrWhiteSpace(version)) return;
-        settings.SkippedUpdateVersion = version;
+        settings.SkippedUpdateVersion = skipped ? version : string.Empty;
         settings.Save();
     }
 

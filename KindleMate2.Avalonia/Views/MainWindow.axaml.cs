@@ -31,6 +31,14 @@ public partial class MainWindow : Window {
     /// </summary>
     private bool _updatePromptBusy;
 
+    /// <summary>
+    /// 本**进程**(会话)内更新弹窗是否已经展示过 —— **静态**:语言切换会重建主窗口、
+    /// <c>OnOpened</c> 整段重跑,实例字段活不过重建,没有这道闸同一个版本会在一次
+    /// 会话里弹两次(2026-09-28 review 备注 2)。只**闸启动路径**;菜单「检查更新」
+    /// 是用户的明确动作,不看它。徽标不受影响 —— 每次重建仍会重查点亮。
+    /// </summary>
+    private static bool _updatePromptShownThisSession;
+
     public MainWindow() {
         InitializeComponent();
         // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
@@ -174,8 +182,9 @@ public partial class MainWindow : Window {
         try {
             await vm.CheckForUpdatesQuietlyAsync();
             // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
-            // 用户点过「跳过此版本」的,启动不再为该版本弹窗(徽标照旧;手动检查仍会提示)。
-            if (IsVisible && !vm.IsUpdateVersionSkipped) {
+            // 用户点过「跳过此版本」的,启动不再为该版本弹窗(徽标照旧;手动检查仍会提示);
+            // 同会话已弹过的也不再弹 —— 挡语言切换重建窗口后 OnOpened 重跑的二次提示。
+            if (IsVisible && !_updatePromptShownThisSession && !vm.IsUpdateVersionSkipped) {
                 await PromptUpdateAsync(vm);
             }
         } catch (Exception ex) {
@@ -195,12 +204,18 @@ public partial class MainWindow : Window {
         _updatePromptBusy = true;
         try {
             var (apply, skip) = await AppDialog.ConfirmWithOptionAsync(this, Strings.Ui_Update_Check,
-                vm.UpdateButtonText, Strings.Ui_Update_Skip, Strings.Ui_Update_Apply);
+                vm.UpdateButtonText, Strings.Ui_Update_Skip, Strings.Ui_Update_Apply,
+                initialChecked: vm.IsUpdateVersionSkipped);
+            _updatePromptShownThisSession = true;
+
+            // 勾选状态**双向**落到 settings:勾着 = 记住该版本,取消勾 = 恢复自动提示 ——
+            // 预勾的是库里的既有值,不同步回写就成了"取消不生效"。确定/取消都算数。
+            // 必须在 RunUpdateAsync **之前**:更新成功路径会 Environment.Exit,后面的代码不执行。
+            if (vm.AvailableUpdateVersion is { } version) {
+                vm.SetUpdateVersionSkipped(version, skip);
+            }
             if (apply) {
                 await RunUpdateAsync();
-            } else if (skip && vm.AvailableUpdateVersion is { } version) {
-                // 勾了「跳过此版本」再取消:记住这个版本,启动自动检查不再为它弹(手动检查仍是用户说了算)。
-                vm.SkipUpdateVersion(version);
             }
             return true;
         } finally {
