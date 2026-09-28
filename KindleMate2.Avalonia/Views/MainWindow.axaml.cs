@@ -148,10 +148,42 @@ public partial class MainWindow : Window {
         StartDevicePolling();
         _ = RefreshDeviceStatusAsync();
 
-        // 启动时静默查一次更新(用户 2026-09-23 定的档位:**只自动查、点亮徽标**,
-        // 下载与安装仍由他点)。放在启动流程的末尾:不与建库 / 备份确认抢 IO;
-        // 它是异步的,不会阻塞界面;失败静默(UpdateChecker 自己只写日志)。
-        if (Vm is { } updateVm) _ = updateVm.CheckForUpdatesQuietlyAsync();
+        // 启动时自动查一次更新(2026-09-28 用户改档:**查到本平台可安装的更新就直接弹
+        // 「取消 / 更新」**,不再只是点亮徽标;无更新 / 检查失败 / 本平台没发资产仍静默)。
+        // 放在启动流程的末尾:不与建库 / 备份确认抢 IO;它不阻塞界面 —— 弹窗要等检查
+        // 完成(通常不到 1 秒)才可能出现;失败静默(UpdateChecker 自己只写日志)。
+        _ = CheckUpdatesOnStartupAsync();
+    }
+
+    /// <summary>
+    /// 启动时的自动检查:只查一次,查到**本平台可安装**的更新就交给
+    /// <see cref="PromptUpdateAsync"/> 弹「取消 / 更新」;其余情形(无更新 / 检查失败 /
+    /// 本平台没发资产)一律**静默**,徽标照旧由 <c>CheckForUpdatesAsync</c> 点亮。
+    ///
+    /// 不在 <c>OnOpened</c> 里直接 await:检查是网络请求(超时上限 20 秒),
+    /// await 会把窗口收尾拖住 —— 这里不等待地发起,弹窗在检查完成后自己出现。
+    /// </summary>
+    private async Task CheckUpdatesOnStartupAsync() {
+        if (Vm is not { } vm) return;
+        await vm.CheckForUpdatesQuietlyAsync();
+        // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
+        if (IsVisible) {
+            await PromptUpdateAsync(vm);
+        }
+    }
+
+    /// <summary>
+    /// 有**可安装**的更新时弹「取消 / 更新」,点了就走更新流程;返回这次是否弹过。
+    /// 「帮助 → 检查更新」与启动自动检查共用这一段 —— 两个入口对"要不要弹、弹什么"
+    /// 必须同口径,否则同一个更新菜单里能弹、启动时就弹不出来。
+    /// 无更新 / 无资产时什么都不弹(调用方各自决定要不要给"已是最新"这类提示)。
+    /// </summary>
+    private async Task<bool> PromptUpdateAsync(MainWindowViewModel vm) {
+        if (!vm.CanApplyUpdate) return false;
+        if (await AppDialog.ConfirmAsync(this, Strings.Ui_Update_Check, vm.UpdateButtonText, Strings.Ui_Update_Apply)) {
+            await RunUpdateAsync();
+        }
+        return true;
     }
 
     /// <summary>
@@ -835,21 +867,17 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
-    /// 「帮助 → 检查更新」。查到**本平台可安装**的更新时,这个弹窗直接带「更新」按钮 ——
+    /// 「帮助 → 检查更新」。查到**本平台可安装**的更新时,弹「取消 / 更新」——
     /// 点了就开始下载安装,不必关掉弹窗再回状态栏找按钮;检查结果照旧点亮状态栏的
     /// 「更新」按钮。已是最新 / 本平台没发资产 / 检查失败都只弹一句提示 ——
     /// 那些情形没有可执行的更新入口,给按钮点了也是空转,检查更新的失败也不该打断使用。
+    /// 弹不弹由 <see cref="PromptUpdateAsync"/> 定(与启动自动检查同一口径)。
     /// </summary>
     private async void OnMenuCheckUpdates(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var message = await vm.CheckForUpdatesAsync();
 
-        if (vm.CanApplyUpdate) {
-            if (await AppDialog.ConfirmAsync(this, Strings.Successful, message, Strings.Ui_Update_Apply)) {
-                await RunUpdateAsync();
-            }
-            return;
-        }
+        if (await PromptUpdateAsync(vm)) return;
         await AppDialog.AlertAsync(this, Strings.Successful, message);
     }
 

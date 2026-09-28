@@ -130,7 +130,7 @@ A third action — **"Export as CSV (with definitions)"** — reaches the networ
 
 | Action | When | What is sent | How to turn it off |
 |---|---|---|---|
-| Update check | **Silently once at startup**, or manually via Help → Check for Updates | One HTTPS request to GitHub Releases; only public release metadata is read | No switch |
+| Update check | **Checked once at startup** (prompts with an Update button when a new version exists; silent when there is none or the check fails), or manually via Help → Check for Updates | One HTTPS request to GitHub Releases; only public release metadata is read | No switch |
 | Online definitions | When you select a word in the **vocabulary list** (right-hand detail panel) | **The word itself**, to Youdao Dictionary's public endpoint | No switch (it only happens when you browse the vocabulary list and select a word) |
 | Export as CSV (with definitions) | When you click "Export as CSV (with definitions)" and confirm | **Every word in your vocabulary list**, to Youdao Dictionary's public endpoint, to fill the Definition column | **Off by default**: skip this menu item and nothing is sent; plain "Export as CSV" is fully offline |
 

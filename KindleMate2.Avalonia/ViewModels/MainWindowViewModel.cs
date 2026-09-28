@@ -1581,8 +1581,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     /// <summary>
-    /// **启动时的静默检查**:查到就点亮状态栏的「更新」按钮,**不弹窗、不打断**
-    /// (没更新 / 连不上都当没这回事,与菜单那条共用同一套口径与同一条实现)。
+    /// **启动时的自动检查**:只查并点亮状态栏的「更新」按钮 —— **弹不弹窗由视图层按
+    /// <see cref="CanApplyUpdate"/> 决定**(2026-09-28 起启动路径查到可安装更新会直接弹
+    /// 「取消 / 更新」,见 <c>MainWindow.CheckUpdatesOnStartupAsync</c>)。
+    /// 没更新 / 连不上都当没这回事,与菜单那条共用同一套口径与同一条实现。
     /// 下载与安装仍由用户点「更新」触发 —— 本方法只负责"让他知道"。
     ///
     /// 为什么与 <see cref="CheckForUpdatesAsync"/> 分开命名而不是直接复用:

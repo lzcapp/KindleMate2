@@ -192,7 +192,8 @@
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="14,0,0,0">
           <!--
-            有可用更新时才出现(检查更新由「帮助 → 检查更新」触发)。
+            有可用更新时才出现 —— 启动自动检查与「帮助 → 检查更新」都会点亮它
+            (启动路径查到可安装更新还会直接弹「更新」,徽标是弹窗被取消后的退路)。
             点击后下载、交给替换脚本并自动重启 —— 见 MainWindowViewModel.DownloadAndApplyUpdateAsync。
           -->
           <Button Classes="ghost" Content="{Binding UpdateButtonText}" Click="OnUpdateClick"
