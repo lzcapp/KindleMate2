@@ -25,6 +25,12 @@ namespace KindleMate2.Avalonia.Views;
 public partial class MainWindow : Window {
     private DispatcherTimer? _deviceTimer;
 
+    /// <summary>
+    /// 「检查更新」弹窗是否已在处理中 —— 启动自动检查与「帮助 → 检查更新」可能并发,
+    /// 用一个标志避免叠出两个模态。只在 UI 线程读写。
+    /// </summary>
+    private bool _updatePromptBusy;
+
     public MainWindow() {
         InitializeComponent();
         // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
@@ -165,10 +171,15 @@ public partial class MainWindow : Window {
     /// </summary>
     private async Task CheckUpdatesOnStartupAsync() {
         if (Vm is not { } vm) return;
-        await vm.CheckForUpdatesQuietlyAsync();
-        // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
-        if (IsVisible) {
-            await PromptUpdateAsync(vm);
+        try {
+            await vm.CheckForUpdatesQuietlyAsync();
+            // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
+            if (IsVisible) {
+                await PromptUpdateAsync(vm);
+            }
+        } catch (Exception ex) {
+            // fire-and-forget 的 Task 没人观察异常 —— 记下来,别静默吞掉(ShowDialog 失败等)。
+            KindleMate2.Shared.Diagnostics.AppLog.Write($"[Update] 启动检查/弹窗失败:{ex}");
         }
     }
 
@@ -176,14 +187,19 @@ public partial class MainWindow : Window {
     /// 有**可安装**的更新时弹「取消 / 更新」,点了就走更新流程;返回这次是否弹过。
     /// 「帮助 → 检查更新」与启动自动检查共用这一段 —— 两个入口对"要不要弹、弹什么"
     /// 必须同口径,否则同一个更新菜单里能弹、启动时就弹不出来。
-    /// 无更新 / 无资产时什么都不弹(调用方各自决定要不要给"已是最新"这类提示)。
+    /// 无更新 / 无资产 / 窗口已关 / 已有弹窗在处理时都不弹(调用方各自决定要不要给"已是最新"这类提示)。
     /// </summary>
     private async Task<bool> PromptUpdateAsync(MainWindowViewModel vm) {
-        if (!vm.CanApplyUpdate) return false;
-        if (await AppDialog.ConfirmAsync(this, Strings.Ui_Update_Check, vm.UpdateButtonText, Strings.Ui_Update_Apply)) {
-            await RunUpdateAsync();
+        if (!vm.CanApplyUpdate || !IsVisible || _updatePromptBusy) return false;
+        _updatePromptBusy = true;
+        try {
+            if (await AppDialog.ConfirmAsync(this, Strings.Ui_Update_Check, vm.UpdateButtonText, Strings.Ui_Update_Apply)) {
+                await RunUpdateAsync();
+            }
+            return true;
+        } finally {
+            _updatePromptBusy = false;
         }
-        return true;
     }
 
     /// <summary>
@@ -878,7 +894,10 @@ public partial class MainWindow : Window {
         var message = await vm.CheckForUpdatesAsync();
 
         if (await PromptUpdateAsync(vm)) return;
-        await AppDialog.AlertAsync(this, Strings.Successful, message);
+        // 弹窗若正被另一条路(启动自动检查)占着,别再叠一个「已是最新 / 有新版本」的提示。
+        if (!_updatePromptBusy) {
+            await AppDialog.AlertAsync(this, Strings.Successful, message);
+        }
     }
 
     /// <summary>
