@@ -117,6 +117,22 @@ internal static class Program {
                               $" showsOs={runtimeShowsOs} showsRid={runtimeShowsRid}" +
                               $" -> result={(runtimeOk ? "OK" : "失败!运行环境分不出平台")}");
 
+            // 「设备」段的可见性 ⇔ 数据一致性(视图层行为,单测够不着,只能在这里钉):
+            //   段显示 ⇒ 连接方式必有(实现侧只在拿到 USB/MTP 概览时才置 present);
+            //   段隐藏 ⇒ 四个字段必须全空(否则就是"数据在、行没了"或反过来的脱节)。
+            // 两种状态各自成立、互不干扰 —— CI 无真 Kindle 走隐藏支,开发机插着 Kindle 走显示支,
+            // 断言在两边都稳(这也正是"grep 一个 ASCII 前缀 + result=OK"形状的好处)。
+            var deviceCoherent = about.IsDevicePresent
+                ? about.DeviceConnection != null
+                : about.DeviceConnection == null && about.DevicePath == null
+                  && about.DeviceFirmware == null && about.DeviceStorage == null;
+            report.AppendLine($"about device: present={about.IsDevicePresent}" +
+                              $" connection={about.DeviceConnection ?? "-"}" +
+                              $" path={about.DevicePath ?? "-"}" +
+                              $" firmware={about.DeviceFirmware ?? "-"}" +
+                              $" storage={about.DeviceStorage ?? "-"}" +
+                              $" -> result={(deviceCoherent ? "OK" : "失败!设备段可见性与数据不一致")}");
+
             // 清洗预览的**视图层数据**。VM 在 Avalonia 工程里,单测项目不引用 Avalonia ⇒ 只能在这里钉。
             // 钉的是上一版真正翻车的那一点:被清洗掉的标点必须**单独**暴露给视图(视图靠它加删除线),
             // 而且不能被正文的中间省略吃掉 —— 否则「改前 / 改后」在预览里会一模一样,预览等于白做。

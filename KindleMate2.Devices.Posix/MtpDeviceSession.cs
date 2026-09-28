@@ -22,16 +22,24 @@ internal sealed class MtpDeviceSession : IDisposable {
     private bool _disposed;
 
     private MtpDeviceSession(IntPtr device, uint storageId, IReadOnlyList<MtpEntry> rootEntries,
-        string model, string friendlyName) {
+        string model, string friendlyName, ulong? storageTotalBytes, ulong? storageFreeBytes) {
         _device = device;
         StorageId = storageId;
         RootEntries = rootEntries;
         Model = model;
         FriendlyName = friendlyName;
+        StorageTotalBytes = storageTotalBytes;
+        StorageFreeBytes = storageFreeBytes;
     }
 
     internal string Model { get; }
     internal string FriendlyName { get; }
+
+    /// <summary>存储区总容量(字节)。拿不到(查询失败/设备没报)为 null —— 上层据此隐藏容量行。</summary>
+    internal ulong? StorageTotalBytes { get; }
+
+    /// <summary>存储区剩余(字节);与 <see cref="StorageTotalBytes"/> 同生共死(一起空或一起有)。</summary>
+    internal ulong? StorageFreeBytes { get; }
 
     /// <summary>
     /// 真实存储区 id(本机 Kindle 上是 65537)。**列子目录必须用它** ——
@@ -117,15 +125,54 @@ internal sealed class MtpDeviceSession : IDisposable {
                 var rootEntries = ListLevel(device, MtpInterop.FilesAndFoldersRoot, MtpInterop.FilesAndFoldersRoot);
                 var storageId = rootEntries.Count > 0 ? rootEntries[0].StorageId : 0;
 
+                // 容量在打开时顺手读一次:关于窗口的「设备」段要用,且 getter 侧不额外开会话
+                // (见 IDeviceManager.GetDeviceInfo)—— 只能在这里,与版本文件同一个思路。
+                var (storageTotal, storageFree) = ReadStorageCapacity(device);
+
                 return new MtpDeviceSession(
                     device, storageId, rootEntries,
                     MtpInterop.ReadUtf8(MtpInterop.LIBMTP_Get_Modelname(device)),
-                    MtpInterop.ReadUtf8(MtpInterop.LIBMTP_Get_Friendlyname(device)));
+                    MtpInterop.ReadUtf8(MtpInterop.LIBMTP_Get_Friendlyname(device)),
+                    storageTotal, storageFree);
             }
 
             return null;
         } finally {
             MtpInterop.LIBMTP_FreeMemory(rawDevices);
+        }
+    }
+
+    /// <summary>
+    /// 读存储区容量(关于窗口「设备」段用)。两步:① <c>LIBMTP_Get_Storage</c> 让 libmtp 填充
+    /// 设备内部的存储链表(头文件明写不调用它链表是空的);② 从 <c>device-&gt;storage</c> 表头
+    /// 沿 <c>next</c> 走,取第一个 <c>MaxCapacity &gt; 0</c> 的存储区(Kindle 只有一块内部存储)。
+    /// 链表归设备对象所有,**不释放**;任何一步失败都按"拿不到"返回 null,由 UI 隐藏容量行。
+    /// </summary>
+    private static (ulong? Total, ulong? Free) ReadStorageCapacity(IntPtr device) {
+        try {
+            var rc = MtpInterop.LIBMTP_Get_Storage(device, MtpInterop.StorageSort.NotSorted);
+            if (rc != 0) {
+                // 返回值语义见 libmtp.c 的 LIBMTP_Get_Storage 文档注释:
+                //   0 = 成功;1 = "成功但只拿到 storage id" —— 属性没取到,MaxCapacity/FreeSpace
+                //       被填成 (uint64_t)-1 哨兵值(读了会显示成 16EB 的垃圾容量,这才是不判
+                //       返回值时真正会出的 bug);-1 = 失败(链表已被 free_storage_list 置 NULL)。
+                // 两种非 0 都直接按"拿不到"收场,不读链表。
+                AppLog.Write($"[MtpDeviceSession] LIBMTP_Get_Storage 返回 {rc}(非 0),容量不可得");
+                return (null, null);
+            }
+            var head = Marshal.ReadIntPtr(device,
+                Marshal.OffsetOf<MtpInterop.MtpDeviceHeader>(nameof(MtpInterop.MtpDeviceHeader.Storage)).ToInt32());
+            for (var cursor = head; cursor != IntPtr.Zero;) {
+                var entry = Marshal.PtrToStructure<MtpInterop.MtpDeviceStorage>(cursor);
+                if (entry.MaxCapacity > 0) {
+                    return (entry.MaxCapacity, entry.FreeSpaceInBytes);
+                }
+                cursor = entry.Next;
+            }
+            return (null, null);
+        } catch (Exception ex) {
+            AppLog.Write($"[MtpDeviceSession] 读存储容量失败:{ex.Message}");
+            return (null, null);
         }
     }
 

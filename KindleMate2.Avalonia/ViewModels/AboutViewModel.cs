@@ -3,9 +3,12 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using KindleMate2.Application.Models;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Avalonia.ViewModels;
 
@@ -26,6 +29,23 @@ public sealed class AboutViewModel {
     public string DatabaseSize { get; private init; } = string.Empty;
     public string RepoUrl { get; private init; } = AppConstants.RepoUrl;
     public string Runtime { get; private init; } = string.Empty;
+
+    // ———— 「设备」段:连着 Kindle 时才出现,未连接整段(含分隔线)不显示。 ————
+
+    /// <summary>设备是否在线并拿到了概览 —— 段级可见性开关。</summary>
+    public bool IsDevicePresent { get; private init; }
+
+    /// <summary>连接方式(USB 文件卷 / MTP);来自资源,非 null。</summary>
+    public string? DeviceConnection { get; private init; }
+
+    /// <summary>卷路径(仅 USB 机型);拿不到为 null,行隐藏。</summary>
+    public string? DevicePath { get; private init; }
+
+    /// <summary>固件(version.txt 第一行非空行);拿不到为 null,行隐藏。</summary>
+    public string? DeviceFirmware { get; private init; }
+
+    /// <summary>存储(「可用 x / 共 y」);拿不到为 null,行隐藏。</summary>
+    public string? DeviceStorage { get; private init; }
 
     /// <summary>「版本 2026.9.13.0」——文案走资源,便于多语言。</summary>
     public string VersionLabel => string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_Version, Version);
@@ -52,6 +72,9 @@ public sealed class AboutViewModel {
             ? workDirectory
             : AppPaths.DataDirectory;
 
+        // 「设备」段:未连接 / 没打开库 → 整段隐藏;任何异常也只隐藏不打断关于窗口。
+        var device = GetDeviceSummary(session);
+
         return new AboutViewModel {
             Product = product,
             Version = version,
@@ -61,6 +84,15 @@ public sealed class AboutViewModel {
             DataPath = Path.TrimEndingDirectorySeparator(dataPath),
             DatabaseName = dbName,
             DatabaseSize = dbSize,
+            IsDevicePresent = device != null,
+            DeviceConnection = device switch {
+                { Type: Device.Type.USB } => Strings.Ui_About_DeviceConnectionUsb,
+                { Type: Device.Type.MTP } => Strings.Ui_About_DeviceConnectionMtp,
+                _ => null
+            },
+            DevicePath = device?.DrivePath,
+            DeviceFirmware = device?.Firmware,
+            DeviceStorage = FormatStorage(device),
             // 平台那一半原来用 Environment.OSVersion.Platform —— 它在 macOS 与 Linux 上**都**返回
             // "Unix"(本机实测),于是这一行**分不出**用户装的是哪个平台的包;Windows 上则是原始枚举名
             // "Win32NT"。而这一行的用途恰恰是排查平台问题(例如"macOS 包里有没有 Devices.MacOS.dll"),
@@ -74,6 +106,26 @@ public sealed class AboutViewModel {
                 RuntimeInformation.FrameworkDescription)
         };
     }
+
+    /// <summary>
+    /// 取设备概览:没打开库 → null;实现侧承诺"未连接返回 null、取不到的字段留空、不额外开会话",
+    /// 这里再兜一层异常 —— 关于窗口只是展示,任何读取失败都以"整段隐藏"收场,绝不打断。
+    /// </summary>
+    private static DeviceSummary? GetDeviceSummary(DatabaseSession? session) {
+        try {
+            return session?.DeviceManager?.GetDeviceInfo();
+        } catch (Exception ex) {
+            AppLog.Write($"[About] 读取设备信息失败:{ex}");
+            return null;
+        }
+    }
+
+    /// <summary>「存储」行文案:总容量/可用量都拿得到才显示,否则 null(行隐藏)。</summary>
+    private static string? FormatStorage(DeviceSummary? device) =>
+        device is { TotalBytes: { } total, FreeBytes: { } free }
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_About_DeviceStorageFormat,
+                FormatSize(free), FormatSize(total))
+            : null;
 
     private static T? GetAttribute<T>(Assembly assembly) where T : Attribute =>
         assembly.GetCustomAttributes(typeof(T), false) is { Length: > 0 } attributes

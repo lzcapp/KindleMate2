@@ -110,6 +110,7 @@ and the headless self-checks.
 - [x] Import KMate Database (`km3.dat`)
 - [x] Import from a connected Kindle device (highlights + vocabulary)
 - [x] Sync to a connected Kindle device
+- [x] About window shows connected-device info (connection / volume path / firmware / storage)
 - [x] Edit Highlights
 - [x] Edit Vocabulary List
 - [x] Delete (single / whole book / single word) and **recycle bin** (deletions are restorable)

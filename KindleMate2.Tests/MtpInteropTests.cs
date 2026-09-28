@@ -53,6 +53,32 @@ public sealed class MtpInteropTests {
         Assert.Equal(32, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpFile>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpFile.ModificationDate)).ToInt32());
         Assert.Equal(40, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpFile>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpFile.FileType)).ToInt32());
         Assert.Equal(48, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpFile>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpFile.Next)).ToInt32());
+
+        // LIBMTP_devicestorage_t = 72: id@0 storagetype@4 filesystemtype@6 accesscapability@8
+        //   (此处 C 编译器补 6 字节到 8 对齐) maxcapacity@16 freespaceinbytes@24
+        //   freespaceinobjects@32 storage_desc@40 vol_ident@48 next@56 prev@64
+        // 容量读取(MTP 存储行)靠 MaxCapacity/FreeSpaceInBytes 的位置 —— 错位不抛异常,只显示垃圾数字。
+        Assert.Equal(72, Marshal.SizeOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>());
+        Assert.Equal(0, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.Id)).ToInt32());
+        Assert.Equal(4, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.StorageType)).ToInt32());
+        Assert.Equal(6, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.FilesystemType)).ToInt32());
+        Assert.Equal(8, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.AccessCapability)).ToInt32());
+        Assert.Equal(16, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.MaxCapacity)).ToInt32());
+        Assert.Equal(24, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.FreeSpaceInBytes)).ToInt32());
+        Assert.Equal(32, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.FreeSpaceInObjects)).ToInt32());
+        Assert.Equal(40, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.StorageDescription)).ToInt32());
+        Assert.Equal(48, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.VolumeIdentifier)).ToInt32());
+        Assert.Equal(56, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.Next)).ToInt32());
+        Assert.Equal(64, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceStorage.Prev)).ToInt32());
+
+        // LIBMTP_mtpdevice_t 的**前缀**只为 storage 字段:object_bitsize@0(u8 后补 7)
+        //   params@8 usbinfo@16 storage@24 —— MtpDeviceSession 就按这个偏移取存储链表头。
+        // 只钉前四成员:结构体全量 112 字节且随版本变动,前缀才是这里依赖的部分。
+        Assert.Equal(32, Marshal.SizeOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader>());
+        Assert.Equal(0, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader.ObjectBitsize)).ToInt32());
+        Assert.Equal(8, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader.Params)).ToInt32());
+        Assert.Equal(16, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader.UsbInfo)).ToInt32());
+        Assert.Equal(24, Marshal.OffsetOf<KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader>(nameof(KindleMate2.Devices.Posix.MtpInterop.MtpDeviceHeader.Storage)).ToInt32());
     }
 
     [Fact]

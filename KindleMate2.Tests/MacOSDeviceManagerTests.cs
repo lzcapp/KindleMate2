@@ -90,6 +90,50 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
         Assert.StartsWith("Kindle 5.16.2", manager.GetKindleVersionText());
     }
 
+    // ————————————————————————— 设备概览(关于窗口「设备」段) —————————————————————————
+    // GetDeviceInfo 不额外开会话,字段全来自卷文件与 DriveInfo。
+
+    [Fact]
+    public void GetDeviceInfo_WhenNotConnected_ReturnsNull() {
+        using var manager = CreateManager();
+
+        Assert.Null(manager.GetDeviceInfo());
+    }
+
+    [Fact]
+    public void GetDeviceInfo_UsbConnected_ReportsTypePathFirmwareFirstLineAndCapacity() {
+        MountKindleVolume();
+        using var manager = CreateManager();
+        Assert.True(manager.IsKindleConnected());
+
+        var info = manager.GetDeviceInfo();
+
+        Assert.NotNull(info);
+        Assert.Equal(Device.Type.USB, info!.Type);
+        Assert.Equal(KindleVolume, info.DrivePath);
+        // version.txt 只取首行非空行 —— 即便文件写成多行也只显示一行
+        Assert.Equal("Kindle 5.16.2", info.Firmware);
+        // 容量来自 DriveInfo(假卷落在本机 temp 盘上)—— 只钉"拿得到且自洽",不钉具体数字
+        Assert.NotNull(info.TotalBytes);
+        Assert.NotNull(info.FreeBytes);
+        Assert.True(info.TotalBytes > 0);
+        Assert.InRange(info.FreeBytes!.Value, 0, info.TotalBytes!.Value);
+    }
+
+    [Fact]
+    public void GetDeviceInfo_VersionFileWithMultipleLines_TakesFirstNonEmptyLine() {
+        MountKindleVolume();
+        File.WriteAllText(
+            Path.Combine(KindleVolume, AppConstants.SystemPathName, AppConstants.VersionFileName),
+            "\n\nKindle 5.16.2\n515102000\ndevice details\n");
+        using var manager = CreateManager();
+
+        var info = manager.GetDeviceInfo();
+
+        Assert.NotNull(info);
+        Assert.Equal("Kindle 5.16.2", info!.Firmware);
+    }
+
     // ————————————————————————— 文件传输 —————————————————————————
 
     [Fact]

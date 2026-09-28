@@ -879,6 +879,30 @@
   <data name="Ui_About_DataPath" xml:space="preserve">
     <value>数据路径</value>
   </data>
+  <data name="Ui_About_Device" xml:space="preserve">
+    <value>设备</value>
+  </data>
+  <data name="Ui_About_DeviceConnection" xml:space="preserve">
+    <value>连接方式</value>
+  </data>
+  <data name="Ui_About_DevicePath" xml:space="preserve">
+    <value>卷路径</value>
+  </data>
+  <data name="Ui_About_DeviceFirmware" xml:space="preserve">
+    <value>固件</value>
+  </data>
+  <data name="Ui_About_DeviceStorage" xml:space="preserve">
+    <value>存储</value>
+  </data>
+  <data name="Ui_About_DeviceConnectionUsb" xml:space="preserve">
+    <value>USB 文件卷</value>
+  </data>
+  <data name="Ui_About_DeviceConnectionMtp" xml:space="preserve">
+    <value>MTP</value>
+  </data>
+  <data name="Ui_About_DeviceStorageFormat" xml:space="preserve">
+    <value>可用 {0} / 共 {1}</value>
+  </data>
   <data name="Ui_Progress_Starting" xml:space="preserve">
     <value>正在处理…</value>
   </data>
