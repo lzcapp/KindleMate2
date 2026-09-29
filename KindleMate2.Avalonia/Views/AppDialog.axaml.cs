@@ -28,6 +28,23 @@ public partial class AppDialog : Window {
     }
 
     /// <summary>
+    /// 带一个可选项(复选框)的确认对话框:返回 <c>(确定, 复选是否勾选)</c>。
+    /// 用于「确定」之外还附带一个选择的场景(如更新弹窗的「跳过此版本」)。
+    /// <paramref name="initialChecked"/> 让调用方把**已持久化的状态**预勾上 ——
+    /// 否则"已跳过"的版本在手动弹窗里显示未勾,用户无从知道也改不掉。
+    /// </summary>
+    public static async Task<(bool Ok, bool Option)> ConfirmWithOptionAsync(Window owner,
+        string title, string message, string optionText, string okText = "", bool initialChecked = false) {
+        var dialog = new AppDialog();
+        dialog.Configure(title, message, okText, false, null);
+        dialog.OptionCheckBox.Content = optionText;
+        dialog.OptionCheckBox.IsChecked = initialChecked;
+        dialog.OptionCheckBox.IsVisible = true;
+        var ok = await dialog.ShowDialog<bool>(owner);
+        return (ok, dialog.OptionCheckBox.IsChecked == true);
+    }
+
+    /// <summary>
     /// 提示对话框(只有「确定」,没有取消)—— 对应原版 WinForms 的 MessageBox(..., OK)。
     /// 用于错误 / 成功 / 警告这类单按钮反馈,保持与原版一致的交互。
     /// </summary>

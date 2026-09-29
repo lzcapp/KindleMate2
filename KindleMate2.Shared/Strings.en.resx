@@ -450,6 +450,9 @@
   <data name="Ui_Update_Downloading" xml:space="preserve">
   	<value>Downloading update: {0}%</value>
   </data>
+  <data name="Ui_Update_Skip" xml:space="preserve">
+  	<value>Skip this version</value>
+  </data>
   <data name="Ui_Update_Apply" xml:space="preserve">
   	<value>Update</value>
   </data>

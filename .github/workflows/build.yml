@@ -301,6 +301,20 @@ jobs:
           # 断言专门找 CheckForUpdatesQuietlyAsync 这个**独立名字**:若图省事复用菜单的
           # CheckForUpdatesAsync,菜单那处调用会让这条断言恒真(项目踩过"空断言")。
           grep -q 'CheckForUpdatesQuietlyAsync();' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 启动检查的弹窗接线(2026-09-28 改档:查到可安装更新直接弹「取消 / 更新」,
+          # 不再只点亮徽标)。删掉这一行不报错 —— 只是启动永远不提示,用户无从发觉。
+          grep -q '_ = CheckUpdatesOnStartupAsync();' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 「检查更新」弹窗内的「更新」按钮:查到可安装更新时当场给入口,点了就走更新流程。
+          # 视图层接线,编译期/单测都钉不住 —— 删掉不报错,只是用户还得回状态栏找按钮。
+          grep -q 'Strings.Ui_Update_Apply' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 「跳过此版本」接线(弹窗勾选项):视图层行为,删掉不报错,只是跳不了。
+          grep -q 'Strings.Ui_Update_Skip' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 跳过勾选的**双向落盘**:勾选状态必须写回 settings(勾=记住,取消勾=恢复自动提示)。
+          # 只钉 VM 定义处没用 —— 删掉 axaml.cs 里这一处调用,勾选就成了"取消不生效"的死控件。
+          grep -q 'SetUpdateVersionSkipped' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
+          # 同会话只弹一次的闸(挡语言切换重建窗口后 OnOpened 重跑的二次提示)。
+          # 找带 `!` 的**条件使用**,字段声明本身不算 —— 防"只留声明、闸没了"的空断言。
+          grep -q '!_updatePromptShownThisSession' KindleMate2.Avalonia/Views/MainWindow.axaml.cs
           grep -q "share card:.*result=OK" "$work/smoke.txt"
           grep -q "context menu:.*result=OK" "$work/smoke.txt"
           grep -q "about runtime:.*result=OK" "$work/smoke.txt"

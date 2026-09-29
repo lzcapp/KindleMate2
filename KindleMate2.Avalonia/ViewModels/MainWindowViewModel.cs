@@ -1542,6 +1542,38 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <summary>是否有可用更新 —— 主界面那个「更新」按钮的显隐依据。</summary>
     public bool IsUpdateAvailable => _availableUpdate is not null;
 
+    /// <summary>
+    /// 可用更新里有**本平台可安装的资产** —— 「检查更新」弹窗要不要给「更新」按钮的依据。
+    /// 发布页没发本平台资产时仍算"有新版本"(该告知的要告知),但没有一键安装的入口,
+    /// 只能退回带发布页链接的提示 —— 给按钮点了也是空转。
+    /// </summary>
+    public bool CanApplyUpdate => _availableUpdate?.Asset is not null;
+
+    /// <summary>可用更新的版本号(tag 形式);没有更新时为 null。用于「跳过此版本」。</summary>
+    public string? AvailableUpdateVersion => _availableUpdate?.Version;
+
+    /// <summary>
+    /// 启动自动检查是否该为这个版本闭嘴 —— 用户点过「跳过此版本」。
+    /// 只抑制**启动**自动弹窗;手动「检查更新」照常提示(那是用户的明确动作)。
+    /// </summary>
+    public bool IsUpdateVersionSkipped =>
+        _availableUpdate is { } update
+        && Settings is { } settings
+        && !string.IsNullOrEmpty(settings.SkippedUpdateVersion)
+        && string.Equals(settings.SkippedUpdateVersion, update.Version, StringComparison.Ordinal);
+
+    /// <summary>
+    /// 落盘「跳过此版本」的勾选状态:<paramref name="skipped"/> 为 true 记住该版本,
+    /// 为 false **清除**(恢复自动提示)—— 勾选状态与持久化状态必须始终一致,
+    /// 否则用户取消勾选后库里的旧跳过值还压着启动弹窗,看起来就是"取消不生效"。
+    /// 只影响**启动**自动弹窗;手动「检查更新」照常提示(那是用户的明确动作)。
+    /// </summary>
+    public void SetUpdateVersionSkipped(string version, bool skipped) {
+        if (Settings is not { } settings || string.IsNullOrWhiteSpace(version)) return;
+        settings.SkippedUpdateVersion = skipped ? version : string.Empty;
+        settings.Save();
+    }
+
     /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
     public string UpdateButtonText => _availableUpdate is null
         ? string.Empty
@@ -1574,8 +1606,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     }
 
     /// <summary>
-    /// **启动时的静默检查**:查到就点亮状态栏的「更新」按钮,**不弹窗、不打断**
-    /// (没更新 / 连不上都当没这回事,与菜单那条共用同一套口径与同一条实现)。
+    /// **启动时的自动检查**:只查并点亮状态栏的「更新」按钮 —— **弹不弹窗由视图层按
+    /// <see cref="CanApplyUpdate"/> 决定**(2026-09-28 起启动路径查到可安装更新会直接弹
+    /// 「取消 / 更新」,见 <c>MainWindow.CheckUpdatesOnStartupAsync</c>)。
+    /// 没更新 / 连不上都当没这回事,与菜单那条共用同一套口径与同一条实现。
     /// 下载与安装仍由用户点「更新」触发 —— 本方法只负责"让他知道"。
     ///
     /// 为什么与 <see cref="CheckForUpdatesAsync"/> 分开命名而不是直接复用:

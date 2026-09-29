@@ -25,6 +25,20 @@ namespace KindleMate2.Avalonia.Views;
 public partial class MainWindow : Window {
     private DispatcherTimer? _deviceTimer;
 
+    /// <summary>
+    /// 「检查更新」弹窗是否已在处理中 —— 启动自动检查与「帮助 → 检查更新」可能并发,
+    /// 用一个标志避免叠出两个模态。只在 UI 线程读写。
+    /// </summary>
+    private bool _updatePromptBusy;
+
+    /// <summary>
+    /// 本**进程**(会话)内更新弹窗是否已经展示过 —— **静态**:语言切换会重建主窗口、
+    /// <c>OnOpened</c> 整段重跑,实例字段活不过重建,没有这道闸同一个版本会在一次
+    /// 会话里弹两次(2026-09-28 review 备注 2)。只**闸启动路径**;菜单「检查更新」
+    /// 是用户的明确动作,不看它。徽标不受影响 —— 每次重建仍会重查点亮。
+    /// </summary>
+    private static bool _updatePromptShownThisSession;
+
     public MainWindow() {
         InitializeComponent();
         // 尽早夹取,避免窗口先按 XAML 的 1200x780 显示再跳变;Opened 里再兜底一次(幂等)。
@@ -148,10 +162,65 @@ public partial class MainWindow : Window {
         StartDevicePolling();
         _ = RefreshDeviceStatusAsync();
 
-        // 启动时静默查一次更新(用户 2026-09-23 定的档位:**只自动查、点亮徽标**,
-        // 下载与安装仍由他点)。放在启动流程的末尾:不与建库 / 备份确认抢 IO;
-        // 它是异步的,不会阻塞界面;失败静默(UpdateChecker 自己只写日志)。
-        if (Vm is { } updateVm) _ = updateVm.CheckForUpdatesQuietlyAsync();
+        // 启动时自动查一次更新(2026-09-28 用户改档:**查到本平台可安装的更新就直接弹
+        // 「取消 / 更新」**,不再只是点亮徽标;无更新 / 检查失败 / 本平台没发资产仍静默)。
+        // 放在启动流程的末尾:不与建库 / 备份确认抢 IO;它不阻塞界面 —— 弹窗要等检查
+        // 完成(通常不到 1 秒)才可能出现;失败静默(UpdateChecker 自己只写日志)。
+        _ = CheckUpdatesOnStartupAsync();
+    }
+
+    /// <summary>
+    /// 启动时的自动检查:只查一次,查到**本平台可安装**的更新就交给
+    /// <see cref="PromptUpdateAsync"/> 弹「取消 / 更新」;其余情形(无更新 / 检查失败 /
+    /// 本平台没发资产)一律**静默**,徽标照旧由 <c>CheckForUpdatesAsync</c> 点亮。
+    ///
+    /// 不在 <c>OnOpened</c> 里直接 await:检查是网络请求(超时上限 20 秒),
+    /// await 会把窗口收尾拖住 —— 这里不等待地发起,弹窗在检查完成后自己出现。
+    /// </summary>
+    private async Task CheckUpdatesOnStartupAsync() {
+        if (Vm is not { } vm) return;
+        try {
+            await vm.CheckForUpdatesQuietlyAsync();
+            // 窗口可能已被关闭(启动检查期间退出)—— 对着关闭的宿主 ShowDialog 会抛。
+            // 用户点过「跳过此版本」的,启动不再为该版本弹窗(徽标照旧;手动检查仍会提示);
+            // 同会话已弹过的也不再弹 —— 挡语言切换重建窗口后 OnOpened 重跑的二次提示。
+            if (IsVisible && !_updatePromptShownThisSession && !vm.IsUpdateVersionSkipped) {
+                await PromptUpdateAsync(vm);
+            }
+        } catch (Exception ex) {
+            // fire-and-forget 的 Task 没人观察异常 —— 记下来,别静默吞掉(ShowDialog 失败等)。
+            KindleMate2.Shared.Diagnostics.AppLog.Write($"[Update] 启动检查/弹窗失败:{ex}");
+        }
+    }
+
+    /// <summary>
+    /// 有**可安装**的更新时弹「取消 / 更新」,点了就走更新流程;返回这次是否弹过。
+    /// 「帮助 → 检查更新」与启动自动检查共用这一段 —— 两个入口对"要不要弹、弹什么"
+    /// 必须同口径,否则同一个更新菜单里能弹、启动时就弹不出来。
+    /// 无更新 / 无资产 / 窗口已关 / 已有弹窗在处理时都不弹(调用方各自决定要不要给"已是最新"这类提示)。
+    /// </summary>
+    private async Task<bool> PromptUpdateAsync(MainWindowViewModel vm) {
+        if (!vm.CanApplyUpdate || !IsVisible || _updatePromptBusy) return false;
+        _updatePromptBusy = true;
+        try {
+            var (apply, skip) = await AppDialog.ConfirmWithOptionAsync(this, Strings.Ui_Update_Check,
+                vm.UpdateButtonText, Strings.Ui_Update_Skip, Strings.Ui_Update_Apply,
+                initialChecked: vm.IsUpdateVersionSkipped);
+            _updatePromptShownThisSession = true;
+
+            // 勾选状态**双向**落到 settings:勾着 = 记住该版本,取消勾 = 恢复自动提示 ——
+            // 预勾的是库里的既有值,不同步回写就成了"取消不生效"。确定/取消都算数。
+            // 必须在 RunUpdateAsync **之前**:更新成功路径会 Environment.Exit,后面的代码不执行。
+            if (vm.AvailableUpdateVersion is { } version) {
+                vm.SetUpdateVersionSkipped(version, skip);
+            }
+            if (apply) {
+                await RunUpdateAsync();
+            }
+            return true;
+        } finally {
+            _updatePromptBusy = false;
+        }
     }
 
     /// <summary>
@@ -835,20 +904,35 @@ public partial class MainWindow : Window {
     }
 
     /// <summary>
-    /// 「帮助 → 检查更新」。有更新时同时点亮主界面状态栏的「更新」按钮;
-    /// 无更新或检查失败都只弹一句"已是最新" —— 检查更新的失败不该打断使用。
+    /// 「帮助 → 检查更新」。查到**本平台可安装**的更新时,弹「取消 / 更新」——
+    /// 点了就开始下载安装,不必关掉弹窗再回状态栏找按钮;检查结果照旧点亮状态栏的
+    /// 「更新」按钮。已是最新 / 本平台没发资产 / 检查失败都只弹一句提示 ——
+    /// 那些情形没有可执行的更新入口,给按钮点了也是空转,检查更新的失败也不该打断使用。
+    /// 弹不弹由 <see cref="PromptUpdateAsync"/> 定(与启动自动检查同一口径)。
     /// </summary>
     private async void OnMenuCheckUpdates(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
         var message = await vm.CheckForUpdatesAsync();
-        await AppDialog.AlertAsync(this, Strings.Successful, message);
+
+        if (await PromptUpdateAsync(vm)) return;
+        // 弹窗若正被另一条路(启动自动检查)占着,别再叠一个「已是最新 / 有新版本」的提示。
+        if (!_updatePromptBusy) {
+            await AppDialog.AlertAsync(this, Strings.Successful, message);
+        }
     }
 
     /// <summary>
-    /// 状态栏「更新」按钮:下载 → 交给替换脚本 → **退出本进程**。
-    /// 退出是必须的:脚本正 `kill -0` 等我们死掉,之后它才会替换文件并重新启动应用。
+    /// 状态栏「更新」按钮:下载 → 交给替换脚本 → 退出。
+    /// 共用流程在 <see cref="RunUpdateAsync"/>(「检查更新」弹窗的「更新」按钮也走它)。
     /// </summary>
-    private async void OnUpdateClick(object? sender, RoutedEventArgs e) {
+    private async void OnUpdateClick(object? sender, RoutedEventArgs e) => await RunUpdateAsync();
+
+    /// <summary>
+    /// 下载更新并交给替换脚本 → **退出本进程**。
+    /// 退出是必须的:脚本正 `kill -0` 等我们死掉,之后它才会替换文件并重新启动应用。
+    /// 两个入口(状态栏按钮 / 「检查更新」弹窗)共用这一段,避免"改一处漏一处"。
+    /// </summary>
+    private async Task RunUpdateAsync() {
         if (Vm is not { } vm) return;
 
         var (restart, message) = await vm.DownloadAndApplyUpdateAsync();

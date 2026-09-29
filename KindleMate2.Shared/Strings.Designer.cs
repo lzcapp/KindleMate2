@@ -699,6 +699,15 @@ namespace KindleMate2.Shared {
         }
         
         /// <summary>
+        ///   查找类似 跳过此版本 的本地化字符串。
+        /// </summary>
+        public static string Ui_Update_Skip {
+            get {
+                return ResourceManager.GetString("Ui_Update_Skip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 更新 的本地化字符串。
         /// </summary>
         public static string Ui_Update_Apply {
