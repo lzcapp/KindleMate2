@@ -41,8 +41,8 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Domain` | `net10.0` | 纯跨平台 |
 | `KindleMate2.Infrastructure` | `net10.0` | 纯跨平台 |
 | `KindleMate2.Application` | `net10.0` | 纯跨平台 |
-| `KindleMate2.Avalonia` | `net10.0-windows;net10.0` | Windows 用 `WinExe`，其他平台用 `Exe` |
-| `KindleMate2.Devices.Windows` | `net10.0-windows` | 仅被 Avalonia 的 Windows TFM 引用 |
+| `KindleMate2.Avalonia` | **按宿主 OS 条件化**：非 Windows 宿主上 `net10.0`；Windows 宿主上 `net10.0-windows;net10.0` | Windows 用 `WinExe`，其他平台用 `Exe`。条件化是为了让 IDE 在 macOS/Linux 上没有选中 `net10.0-windows` 的余地（那个 TFM 会走 Windows 专有实现，见 §3 末尾） |
+| `KindleMate2.Devices.Windows` | `net10.0-windows` | 仅被 Avalonia 的 Windows TFM 引用；该 TFM 只在 Windows 宿主上构建 |
 | `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
 | `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
 | `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
@@ -52,7 +52,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 
 ```mermaid
 graph TD
-    UI["KindleMate2.Avalonia<br/>net10.0-windows;net10.0"] --> APP["KindleMate2.Application<br/>net10.0"]
+    UI["KindleMate2.Avalonia<br/>net10.0（Windows 宿主另加 net10.0-windows）"] --> APP["KindleMate2.Application<br/>net10.0"]
     UI --> INF["KindleMate2.Infrastructure<br/>net10.0"]
     UI --> DOM["KindleMate2.Domain<br/>net10.0"]
     UI --> SH["KindleMate2.Shared<br/>net10.0"]
@@ -94,7 +94,7 @@ graph TD
 - macOS / Linux 的设备实现是纯 BCL 的 `KindleMate2.Devices.Posix`（`net10.0`：libmtp 的 P/Invoke 绑定、libusb 只读 USB 探测、卷扫描），由两个薄壳 `Devices.MacOS` / `Devices.Linux` 注入各自的候选挂载根；因此这两个程序集可在**任意平台**编译与单测（用例把卷根指到临时目录）。
 - `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
 - **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
-- Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。
+- Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
 
 ---
 

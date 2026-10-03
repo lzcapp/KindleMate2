@@ -169,8 +169,13 @@ jobs:
   # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),
   # 因此这里能构建**整个解决方案**并跨平台跑单测,而不只是壳的 net10.0 子集。
   #
-  # 说明:Devices.Windows 与 Avalonia 的 net10.0-windows TFM 在 Linux/macOS 上可以还原与编译
-  # (Windows 引用包可由 NuGet 还原),只是不能运行;net10.0 变体才是运行时目标。
+  # 说明:2026-10-03 起 Avalonia 的 TargetFrameworks **按宿主 OS 条件化** ——
+  # 非 Windows 宿主上只有 net10.0,不再构建 net10.0-windows(见 csproj 里该属性的注释:
+  # net10.0-windows 自带 WINDOWS 常量,会让 CreateDeviceManager 选中依赖 Windows COM 的
+  # Devices.Windows,在 macOS/Linux 上必然抛异常、设备永远显示"未连接")。
+  # 因此下面这个"整个解决方案"在 ubuntu/macos 上实际不含 Avalonia 的 windows 变体。
+  # Devices.Windows 项目本身仍会被构建(它是 net10.0-windows 单目标,Windows 引用包可由
+  # NuGet 还原),只是不能运行 —— 与本次改动前一致。
   cross-platform-build:
     name: cross-platform (${{ matrix.os }})
     strategy:
