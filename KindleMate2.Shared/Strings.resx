@@ -394,7 +394,7 @@
     <value>重建数据库</value>
   </data>
   <data name="Confirm_Rebuild_Database" xml:space="preserve">
-    <value>确认要重建数据库吗?</value>
+    <value>确认要重建数据库吗？重建会从原始记录重新生成全部标注，回收站里已删除的标注也会一并恢复。</value>
   </data>
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>创建数据库失败</value>
