@@ -352,17 +352,20 @@ jobs:
           echo "签名身份:$IDENTITY"
           echo "IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
-      # 图标:仓库里最大的图标源是 Assets/bookmark.png(256×256),512/1024 两档只能插值放大。
-      - name: Build .icns from bookmark.png
+      # 图标:用 **bookmark-dock.png**(内容占画布 80.5% 的 macOS 口径版本,256×256),
+      # 512/1024 两档仍是插值放大。
+      # 为什么不用 bookmark.png:那是 Windows 口径(内容 95%×100%,几乎填满画布),
+      # 做成 .icns 后 Dock 里的图标会明显比旁边的应用大一圈(macOS 规范要求图形约占画布 80%)。
+      - name: Build .icns from bookmark-dock.png
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build/icon.iconset
           for s in 16 32 128 256 512; do
-            sips -z "$s" "$s" KindleMate2.Avalonia/Assets/bookmark.png \
+            sips -z "$s" "$s" KindleMate2.Avalonia/Assets/bookmark-dock.png \
                  --out "build/icon.iconset/icon_${s}x${s}.png" >/dev/null
             d=$((s * 2))
-            sips -z "$d" "$d" KindleMate2.Avalonia/Assets/bookmark.png \
+            sips -z "$d" "$d" KindleMate2.Avalonia/Assets/bookmark-dock.png \
                  --out "build/icon.iconset/icon_${s}x${s}@2x.png" >/dev/null
           done
           iconutil -c icns build/icon.iconset -o build/KindleMate2.icns
