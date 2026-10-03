@@ -503,6 +503,14 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ExportAllCsvAsync(includeDefinitions: true));
     }
 
+    /// <summary>
+    /// 「导出为 JSON」—— 与 CSV 并列的独立入口:一次导出「标注 + 生词」两份 JSON,全程离线。
+    /// </summary>
+    private async void OnMenuExportJson(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ExportAllJsonAsync());
+    }
+
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {

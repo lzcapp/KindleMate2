@@ -844,6 +844,35 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
+    /// <summary>
+    /// 导出标注 + 生词本为 JSON。
+    /// </summary>
+    /// <remarks>
+    /// 为什么不塞进现有菜单:CSV 面向 Anki 这类"表格导入",JSON 面向脚本 / Obsidian 之类
+    /// 的下游消费(后续 PR 会基于同一套中间模型再出 Markdown frontmatter),两者用途不重叠;
+    /// 合并成一项只会把"我要哪种"变成一次额外的选择,且导出产物格式会变得不由文件名说了算。
+    /// 两份文件共用上游中间模型,所以口径(跳过什么、省略什么)与 CSV 一致。
+    /// </remarks>
+    public Task<OperationResult> ExportAllJsonAsync() {
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
+        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var exportDir = session.ExportDirectory;
+        return Task.Run(() => {
+            var clippingsOk = session.ExportManager.ExportClippingsToJson();
+            var vocabsOk = session.ExportManager.ExportVocabsToJson();
+            if (!clippingsOk || !vocabsOk) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
+    }
+
     /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
         // 忙碌期与写操作互斥,理由见 ExportAllMarkdownAsync。
