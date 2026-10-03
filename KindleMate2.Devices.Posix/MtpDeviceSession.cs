@@ -18,6 +18,12 @@ namespace KindleMate2.Devices.Posix;
 /// </list>
 /// </summary>
 internal sealed class MtpDeviceSession : IDisposable {
+    /// <summary>打开设备的最大尝试次数。</summary>
+    private const int OpenAttempts = 3;
+
+    /// <summary>两次尝试之间的等待(毫秒)。</summary>
+    private const int OpenRetryDelayMs = 300;
+
     private IntPtr _device;
     private bool _disposed;
 
@@ -113,11 +119,29 @@ internal sealed class MtpDeviceSession : IDisposable {
                 // 那条用例会红,届时再考虑把这行去掉。
                 rawDevice.DeviceEntry.DeviceFlags &= ~MtpInterop.DeviceFlagForceResetOnClose;
 
-                var device = MtpInterop.LIBMTP_Open_Raw_Device_Uncached(ref rawDevice);
+                // 打不开最常见的原因是被别的 MTP 客户端占着 —— macOS 上就是系统的
+                // ptpcamerad(相机服务,把 Kindle 当 PTP 相机)。它的 LaunchAgent 声明是
+                // RunAtLoad=false + EnablePressuredExit=true + 按需 MachService,也就是**空闲即退出**,
+                // 占用窗口可能只有几百毫秒 —— 所以短重试是有意义的。
+                //
+                // 刻意**不主动 kill 它**:那要动用户的系统服务,还会让"图像捕捉"连真相机时也失效 ——
+                // 越界且副作用不可控。重试仍失败就写清原因,让用户拔插一次。
+                var device = IntPtr.Zero;
+                for (var attempt = 0; attempt < OpenAttempts; attempt++) {
+                    device = MtpInterop.LIBMTP_Open_Raw_Device_Uncached(ref rawDevice);
+                    if (device != IntPtr.Zero) {
+                        break;
+                    }
+                    if (attempt < OpenAttempts - 1) {
+                        Thread.Sleep(OpenRetryDelayMs);
+                    }
+                }
+
                 if (device == IntPtr.Zero) {
-                    // 打不开通常是被别的 MTP 客户端占着,或设备处于锁屏/忙碌态 —— 试下一个
-                    AppLog.Write($"[MtpDeviceSession] 第 {i} 个设备打开失败" +
-                                 $"(VID=0x{rawDevice.DeviceEntry.VendorId:x4} PID=0x{rawDevice.DeviceEntry.ProductId:x4})");
+                    // 仍打不开:多为设备被别的 MTP 客户端占用、屏幕锁定或正处于忙碌态 —— 试下一个设备
+                    AppLog.Write($"[MtpDeviceSession] 第 {i} 个设备连续 {OpenAttempts} 次打开失败" +
+                                 $"(VID=0x{rawDevice.DeviceEntry.VendorId:x4} PID=0x{rawDevice.DeviceEntry.ProductId:x4})。" +
+                                 "常见原因:被系统相机服务(ptpcamerad)或另一个 MTP 客户端占用、屏幕未解锁。拔插一次通常即可。");
                     continue;
                 }
 
