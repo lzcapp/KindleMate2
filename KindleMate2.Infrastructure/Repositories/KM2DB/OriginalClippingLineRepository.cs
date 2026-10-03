@@ -27,13 +27,22 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return null;
         }
 
+        /// <summary>
+        /// 取全部原始标注行,**按插入顺序**(= 原始文件里的追加顺序)。
+        /// </summary>
+        /// <remarks>
+        /// 显式的 <c>ORDER BY rowid</c> 是**契约**,不是装饰:<c>OriginalClippingLineService.Export</c>
+        /// 按这里的顺序逐条写出,写回设备后设备上的条目次序就等于库里的次序。此前没有 ORDER BY,
+        /// 靠的是"全表扫描天然按 rowid 走"这一实现细节 —— 一旦将来 schema 变动(例如重建该表、
+        /// 或某个覆盖索引令查询改走索引),写回顺序会被静默重排。这里把它钉死。
+        /// </remarks>
         public List<OriginalClippingLine> GetAll() {
             var results = new List<OriginalClippingLine>();
 
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines", connection);
+            var cmd = new SqliteCommand("SELECT key, line1, line2, line3, line4, line5 FROM original_clipping_lines ORDER BY rowid", connection);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
