@@ -26,11 +26,30 @@ namespace KindleMate2.Infrastructure.Helpers {
         private const string BackupFileNameInfix = "_backup_";
 
         /// <summary>
-        /// <c>[clippings]</c> 的查询索引。建库脚本与老库迁移共用这一条,避免两处 SQL 漂移。
-        /// 详见 <see cref="EnsureIndexesIfNeeded"/>。
+        /// <c>[clippings]</c> 的查询索引。建库脚本与老库迁移共用 <see cref="GetIndexScripts"/>,
+        /// 避免两处 SQL 漂移。详见 <see cref="EnsureIndexesIfNeeded"/>。
         /// </summary>
         private const string ClippingsBookIndexScript =
             "CREATE INDEX IF NOT EXISTS [ix_clippings_book_page_date] ON [clippings]([bookname], [pagenumber], [clippingdate]);";
+
+        /// <summary>
+        /// <c>[vocab]</c> 的 <c>word_key</c> 索引。
+        /// </summary>
+        /// <remarks>
+        /// 收益是**数量级**的,不是锦上添花:词频重算会按 <c>word_key</c> 逐行回写 <c>vocab</c>,
+        /// 没有索引时每条 <c>UPDATE … WHERE word_key = ?</c> 都要全表扫一遍 vocab,整体退化成
+        /// O(vocab²)。实测(20000 lookups / 5000 vocab,同一事务内):
+        /// 无索引 576ms → 有索引 5ms。
+        /// 它同时服务 <c>GetByWordKey</c> / <c>DeleteByWordKey</c> / <c>UpdateFrequencyByWordKey</c>。
+        ///
+        /// **不要再给 <c>[lookups].[word_key]</c> 加索引。** 现有
+        /// <c>UNIQUE([word_key], [timestamp])</c> 会自动建出 <c>sqlite_autoindex_lookups_1</c>,
+        /// 其最左前缀已经覆盖 <c>WHERE word_key = ?</c> —— 已用 <c>EXPLAIN QUERY PLAN</c> 实测:
+        /// 等值查询、<c>DELETE … WHERE word_key = ?</c>、<c>DISTINCT word_key ORDER BY word_key</c>
+        /// 全部命中它。再加一条只会白付写入与磁盘开销。
+        /// </remarks>
+        private const string VocabWordKeyIndexScript =
+            "CREATE INDEX IF NOT EXISTS [ix_vocab_word_key] ON [vocab]([word_key]);";
 
         /// <summary>
         /// Creates a new SQLite database with required tables.
@@ -132,9 +151,19 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [colorRGB] INTEGER DEFAULT(-1)
                 );",
 
-                // [clippings] 的查询索引:新建的库在这里直接带上,老库由 EnsureIndexesIfNeeded 补。
-                ClippingsBookIndexScript
+                // 查询索引:新建的库在这里直接带上,老库由 EnsureIndexesIfNeeded 补。
+                // 两处共用 GetIndexScripts(),只维护一份 SQL。
+                .. GetIndexScripts()
             ];
+        }
+
+        /// <summary>
+        /// 全部查询索引脚本的唯一来源 —— 建库脚本与老库迁移都从这里取,避免两处 SQL 漂移
+        /// (漂移的后果是"新建的库有索引、老库永远没有",而且不会有任何报错)。
+        /// </summary>
+        private static IEnumerable<string> GetIndexScripts() {
+            yield return ClippingsBookIndexScript;
+            yield return VocabWordKeyIndexScript;
         }
 
         /// <summary>
@@ -438,15 +467,20 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
-        /// 确保 <c>[clippings]</c> 的查询索引存在。幂等(<c>CREATE INDEX IF NOT EXISTS</c>),
-        /// 每次启动调用都无副作用。
+        /// 确保全部查询索引(<see cref="GetIndexScripts"/>)存在。幂等
+        /// (<c>CREATE INDEX IF NOT EXISTS</c>),每次启动调用都无副作用。
         /// </summary>
         /// <remarks>
-        /// <c>[clippings]</c> 原本只有 <c>[key]</c> 主键,而按书名取书摘(<c>WHERE bookname = @bookname</c>,
-        /// 仓储里有 6 处)与主列表排序(<c>ORDER BY bookname, pagenumber, clippingdate</c>)都命中不了索引 ——
-        /// 几万条的库上就是全表扫描加临时排序。这里建一个覆盖这三列的复合索引:
-        /// 前缀等值查询与按序扫描都能用上它。
+        /// <list type="number">
+        /// <item><c>[clippings]</c> 原本只有 <c>[key]</c> 主键,而按书名取书摘
+        /// (<c>WHERE bookname = @bookname</c>,仓储里有 6 处)与主列表排序
+        /// (<c>ORDER BY bookname, pagenumber, clippingdate</c>)都命中不了索引 —— 几万条的库上
+        /// 就是全表扫描加临时排序。这里建一个覆盖这三列的复合索引:前缀等值查询与按序扫描都能用上它。</item>
+        /// <item><c>[vocab].[word_key]</c> —— 见 <see cref="VocabWordKeyIndexScript"/>,
+        /// 它是词频重算从 O(vocab²) 降到 O(vocab·log) 的关键。</item>
+        /// </list>
         /// 老库靠本方法补齐;新建的库由 <see cref="GetTableCreationScripts"/> 直接带上。
+        /// **两条路径必须始终取同一份脚本**,否则会出现"新库有索引、老库没有"这种静默的错配。
         /// </remarks>
         /// <param name="filePath">Path to the SQLite database file</param>
         /// <exception cref="InvalidOperationException">建索引失败</exception>
@@ -458,8 +492,10 @@ namespace KindleMate2.Infrastructure.Helpers {
             try {
                 using var connection = new SqliteConnection(GetConnectionString(filePath));
                 connection.Open();
-                using var command = new SqliteCommand(ClippingsBookIndexScript, connection);
-                command.ExecuteNonQuery();
+                foreach (var script in GetIndexScripts()) {
+                    using var command = new SqliteCommand(script, connection);
+                    command.ExecuteNonQuery();
+                }
             } catch (Exception e) {
                 throw new InvalidOperationException($"Failed to ensure indexes in '{filePath}': {e.Message}", e);
             }
