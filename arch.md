@@ -8,6 +8,9 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 `My Clippings.txt` 与 `vocab.db`，统一落在本地 SQLite 库中，供检索、编辑、
 统计与导出（Markdown）。
 
+> 两个源文件的**结构与字段语义**（含若干极易误解的字段，例如 `LOOKUPS.pos` 其实是
+> 书中位置而非词性）单独记在 [`formats.md`](formats.md)。
+
 当前形态：**Avalonia 是唯一的桌面 UI**，架构按分层组织，并已做到
 **库层与设备层均跨平台**（Windows / macOS / Linux 均可构建，三平台设备同步均支持）。
 
