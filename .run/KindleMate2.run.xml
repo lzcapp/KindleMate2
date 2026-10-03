@@ -1,18 +1,24 @@
 ﻿<component name="ProjectRunConfigurationManager">
   <configuration default="false" name="KindleMate2" type="DotNetProject" factoryName=".NET Project">
-    <option name="EXE_PATH" value="$PROJECT_DIR$/KindleMate2.Avalonia/bin/Debug/net10.0-windows/KindleMate2.exe" />
+    <option name="EXE_PATH" value="$PROJECT_DIR$/KindleMate2.Avalonia/bin/Debug/net10.0/KindleMate2" />
     <option name="PROGRAM_PARAMETERS" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/KindleMate2.Avalonia/bin/Debug/net10.0-windows" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/KindleMate2.Avalonia/bin/Debug/net10.0" />
     <option name="PASS_PARENT_ENVS" value="1" />
-    <option name="USE_EXTERNAL_CONSOLE" value="0" />
+    <option name="ENV_FILE_PATHS" value="" />
+    <option name="REDIRECT_INPUT_PATH" value="" />
+    <option name="MIXED_MODE_DEBUG" value="0" />
     <option name="USE_MONO" value="0" />
     <option name="RUNTIME_ARGUMENTS" value="" />
+    <option name="AUTO_ATTACH_CHILDREN" value="0" />
     <option name="PROJECT_PATH" value="$PROJECT_DIR$/KindleMate2.Avalonia/KindleMate2.Avalonia.csproj" />
     <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
     <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
     <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
     <option name="PROJECT_KIND" value="DotNetCore" />
-    <option name="PROJECT_TFM" value="net10.0-windows" />
+    <!-- 刻意**不写** PROJECT_TFM:写死会让另一个平台拿到错误的 TFM。
+         macOS 上写 net10.0-windows ⇒ 走 Devices.Windows ⇒ Windows COM 失败 ⇒ 设备永远"未连接"
+         (实测踩过,见 csproj 里 TargetFrameworks 的注释);Windows 上写 net10.0 ⇒ 落到 NullDeviceManager
+         ⇒ 同样没有设备支持。留空由 IDE 选当前工程唯一/首个可用的 TFM 才是两边都对的做法。 -->
     <method v="2">
       <option name="Build" />
     </method>

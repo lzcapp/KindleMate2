@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0-windows;net10.0</TargetFrameworks>
+    <!-- 只在 Windows 宿主上构建 net10.0-windows。两个理由:
+         ① net10.0-windows 自带 WINDOWS 常量 ⇒ CreateDeviceManager 会选 Devices.Windows,
+            而它依赖 MediaDevices(Windows COM/MTA),在 macOS/Linux 上**必然抛异常**
+            (`Failed to set MTA apartment state`)⇒ 设备永远显示"未连接"。
+            实测踩过:在 macOS 上用 Rider 跑(默认选第一个 TFM)就是这个症状,而发布包构建的是
+            net10.0 所以没事 —— 同一份代码两种行为,极难排查。
+         ② 非 Windows 宿主上多一个 TFM 只是白白多一份产物,还给"选错 TFM"留了余地。
+         条件化后 macOS/Linux 上只剩 net10.0,IDE 没有选错的可能。 -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net10.0-windows;net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFrameworks>
     <!-- Windows 上用 WinExe(不弹控制台);其他平台用普通 Exe -->
     <OutputType Condition="'$(TargetFramework)' == 'net10.0-windows'">WinExe</OutputType>
     <OutputType Condition="'$(TargetFramework)' != 'net10.0-windows'">Exe</OutputType>
