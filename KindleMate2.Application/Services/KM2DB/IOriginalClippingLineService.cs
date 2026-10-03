@@ -14,7 +14,9 @@ public interface IOriginalClippingLineService {
     void DeleteAllOriginalClippingLines();
 
     /// <summary>
-    /// 把原始标注行逐条写出(用于写回设备与备份),格式与设备上的 <c>My Clippings.txt</c> 一致。
+    /// 把原始标注行逐条写出(用于写回设备与备份)。条目结构见 <c>formats.md</c> §1.2
+    /// (书名 + 元数据 + 空行 + 正文 + <c>==========</c> 分隔),行尾固定 CRLF ——
+    /// 理由见实现上的说明(未对设备端的行尾偏好作实测断言)。
     /// </summary>
     /// <param name="filePath">目标目录,不存在时会创建。</param>
     /// <param name="fileName">文件名。</param>

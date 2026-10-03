@@ -178,8 +178,10 @@ public sealed class SyncExportTests : IDisposable {
     // ————————————————————— 换行与编码 —————————————————————
 
     /// <summary>
-    /// 产物必须是 **CRLF** 分隔、且**不带 BOM** —— 与设备上的 <c>My Clippings.txt</c> 一致
-    /// (formats.md §1.1)。修复前在 Linux / macOS 上会产出 LF-only 的文件。
+    /// 产物必须是 **CRLF** 分隔、且**不带 BOM**。修复前用 <c>Environment.NewLine</c>,
+    /// 于是同一份代码在 Windows / Linux / macOS 上产出不同字节(Windows CRLF、类 Unix LF);
+    /// 固定 CRLF 既消除这种跨平台差异,也对齐只在 Windows 上运行的原 WinForms 版行为。
+    /// (设备端偏好哪种行尾**未实测**,见 formats.md §1.1。)
     /// </summary>
     [Fact]
     public void Export_UsesCrlfAndNoBom() {

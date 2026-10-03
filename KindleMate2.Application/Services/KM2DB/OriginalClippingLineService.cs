@@ -52,9 +52,18 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// 无从判断哪些原始行属于回收站。
         /// </para>
         /// <para>
-        /// 换行显式写成 <c>\r\n</c>:设备上的原文件是 CRLF,而 <see cref="StreamWriter"/>
-        /// 默认用 <see cref="Environment.NewLine"/>,在 Linux / macOS 上会产出 LF-only 的文件,
-        /// 与设备格式不一致。编码沿用 UTF-8 **无 BOM**(与设备原文件一致)。
+        /// 换行固定写成 <c>\r\n</c>。理由与「设备端偏好哪种行尾」**无关** —— 那种偏好本项目
+        /// **未在真机样本上实测**,不作为依据。取舍依据是这两条:
+        /// </para>
+        /// <list type="number">
+        /// <item><see cref="StreamWriter"/> 默认用 <see cref="Environment.NewLine"/>,会让同一份
+        /// 代码在 Windows / Linux / macOS 上产出**不同字节**(Windows CRLF、类 Unix LF)。
+        /// 同一输入给出不同输出本身就是缺陷,固定为 CRLF 即消除这种跨平台差异。</item>
+        /// <item>对齐已退役、**只在 Windows 上运行**的原 WinForms 版行为(该版写出的即 CRLF),
+        /// 见 <c>arch.md</c> 的「行为对齐原则」:功能与行为须与原 WinForms 版一致。</item>
+        /// </list>
+        /// <para>
+        /// 编码为 UTF-8 **无 BOM** —— 这本就是 <see cref="StreamWriter"/> 的默认,未作改动。
         /// </para>
         /// </remarks>
         public bool Export(string filePath, string fileName, out Exception? exception,
