@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
@@ -50,6 +51,12 @@ public partial class AboutWindow : Window {
             if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(value)) {
                 return;
             }
+            // 每加一行补一个 Auto 行定义 —— 与 ColumnDefinitions 同构。
+            // **漏了这一步所有行会叠在一起**:Grid 没有 RowDefinitions 时只存在 Row 0,
+            // 而下面 Grid.SetRow 会设到 1/2/3 —— 真机实测「连接方式 / 容量」两行直接重叠(2026-10-03)。
+            // 行定义数 = 真实行数,于是 RowSpacing 的 `RowSpacing * (Count - 1)` 正好是
+            // (行数 - 1) 个间距,不会留空洞 —— 本方法要的就是这个。
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
             var labelBlock = new TextBlock {
                 Classes = { "tt" },
                 Text = label,
