@@ -198,5 +198,79 @@ LOOKUPS.dict_key  →  DICT_INFO.id
 | 位置 | 页码 + 位置区间 | 单点位置（`pos`） |
 | 删除记录 | 无 | 无 |
 
-**两边没有共同的书标识**，只能靠书名 + 作者做启发式对齐 —— 这是设计上的硬约束，
-不是可以绕开的实现细节。
+**两边没有共同的书标识**，只能靠书名 + 作者做启发式对齐。设备上的 `.sdr` 目录名提供了
+一条**部分可用**的桥接（见 §5.3），但它依赖目录名里带 ASIN 后缀、且 `My Clippings` 那一侧
+仍需模糊匹配 —— 这是一条**不完整的**桥，不等于"硬约束已被解除"。
+
+---
+
+## 五、设备上的其他数据源（存在，但本项目未使用）
+
+实测（2026-10-03，一台 Paperwhite Signature Edition）确认了以下库/目录的存在与用途，
+**本项目均未读取**。记在这里是为了避免重复调研。
+
+一台设备上共有 **21 个 `.db` 文件**（`mtp-filetree` 实测）。
+
+### 5.1 `system/ksdk/.annotations/<账号ID>/ksdk_annotation_v1.db` —— **是空的**
+
+Amazon 的标注同步框架，9 张表：`book_state` / `delta_sync_tokens` / `key_value_storage` /
+`legacy_delta_sync_tokens` / `local_edit` / `migration_states` / `nonsyncable_annotations` /
+`server_view` / `staging_server_view`。
+
+**实测该设备上所有业务表都是 0 行**，只有 `key_value_storage` 有一行
+（`ANNOTATION_RECOVERY_STATUS = SUCCESS`）。
+
+→ **不能当作 `My Clippings.txt` 之外的第二个标注源。**
+
+### 5.2 `documents/<书名>.sdr/*.cache.db` —— 阅读速度缓存
+
+表 `per_book_speed_cache(profile_digest, average_wpm, total_words_read, total_time_read,
+sample_count, running_sum, …)`。
+
+**文件名里的那串哈希是用户 profile digest，不是书标识。**
+
+→ 与"书"无关，**不能用来做书的对齐**。
+
+### 5.3 `documents/<书名>.sdr/` 的目录名 —— **可以桥接到 `BOOK_INFO.asin`** ⭐
+
+本次调研最有价值的发现。
+
+部分 `.sdr` 目录名带 `_<ASIN 或 UUID>` 后缀，**该后缀就是 `vocab.db` 的 `BOOK_INFO.asin`**：
+
+```
+documents/儒林外史_178948b5-d70f-4b2b-8342-b1e86cba058c.sdr
+                          ↓ 提取后缀
+vocab.db  BOOK_INFO.asin = 178948b5-d70f-4b2b-8342-b1e86cba058c
+          BOOK_INFO.id   = Ru_Lin_Wai_Shi_(Quan_Ben_Wei_Sh:3F565F6A   ← 即 book_key
+```
+
+**覆盖率**（实测）：56 个 `.sdr` 里 13 个带可识别后缀，覆盖了 `BOOK_INFO` 的 **9/10**。
+
+**后缀的两种形态**：
+
+| 形态 | 正则 | 说明 |
+|---|---|---|
+| UUID | `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}` | sideload 的书 |
+| ASIN | `[A-Z0-9]{10}` | ⚠️ **不限于 `B0` 前缀** —— 实测存在 `B161300234` |
+
+**两个限制**：
+
+1. **只有带后缀的 `.sdr` 能用**（实测 13/56）。无后缀的多是 sideload 的书。
+2. **`My Clippings.txt` 的书名 ↔ `.sdr` 目录名这一段只能靠字符串匹配，而目录名有长度截断** ——
+   实测一个长书名在目录名里被截断，**精确匹配会失败，必须前缀/模糊匹配**。
+
+**结论**：`.sdr` ↔ `vocab.db` 这一段是**精确**的（靠 ASIN）；`My Clippings` ↔ `.sdr`
+那一段是**模糊**的。两个源之间因此存在一条**部分可用**的对齐路径。
+
+### 5.4 `.sdr` 目录里的其他文件（未深入）
+
+实测扩展名分布：`.apnx`(33) / `.azw3r`(18) / `.azw3f`(18) / `.db`(12) / `.bad_file`(9) /
+`.mbp1`(5) / `.mbs`(2) / `.lua`(2) / `.png`(1)。
+
+其中 `.apnx` 是页码索引、`.mbp1` 是旧式标注文件 —— **均未调研**。
+
+### 5.5 其他未调研的库
+
+`system/readingstreams/readingstreams.db`、`system/freetime/freetime.db`、
+`system/fmcache/fmcache.db`、`kmc/kpm/kpm.db`、`audible/default.hushpuppy.db` ——
+存在，用途未知。
