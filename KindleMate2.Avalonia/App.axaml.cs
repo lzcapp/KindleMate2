@@ -78,6 +78,15 @@ public partial class App : global::Avalonia.Application {
     /// </summary>
     private static void ApplyDockIcon() {
         try {
+            // 已经在 .app bundle 里跑 ⇒ Dock 图标由 bundle 的 CFBundleIconFile 提供(发布流程里
+            // 由 sips/iconutil 从**同一张** bookmark.png 生成),不必再覆盖 —— 让发布版的图标
+            // 来源保持为系统的 bundle 机制这一条单一来源。
+            // 反过来,开发/调试跑的是裸 dll(没有 bundle),macOS 只能拿可执行文件的图标(显示为
+            // "exec"),这才是本方法要修的场景。
+            if (AppContext.BaseDirectory.Contains(".app/Contents/", StringComparison.Ordinal)) {
+                return;
+            }
+
             var uri = new Uri("avares://KindleMate2/Assets/bookmark.png");
             if (!AssetLoader.Exists(uri)) {
                 // **不要静默返回** —— 这个分支若因 URI 写错而命中,表现就是"图标没变、
