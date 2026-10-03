@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using KindleMate2.Avalonia.Services;
@@ -58,8 +59,42 @@ public partial class App : global::Avalonia.Application {
         // 只在 App 层注册一次(主窗口在切换语言时会被重建,放在窗口里会重复注册导致多次备份)。
         AppDomain.CurrentDomain.ProcessExit += (_, _) => BackupOnExit(viewModel);
 
+#if MACOS
+        // 开发/调试时跑的是**裸 dll**,没有 .app bundle ⇒ Dock 会显示 dotnet 的图标(像命令行程序)。
+        // 显式设一次,让调试时的 Dock 图标也是应用自己的。发布版由 bundle 的 CFBundleIconFile 提供,
+        // 这里再设一次是幂等的。放在此处是因为 NSApplication 到这一步才存在。
+        ApplyDockIcon();
+#endif
+
         base.OnFrameworkInitializationCompleted();
     }
+
+#if MACOS
+    /// <summary>
+    /// 把 macOS 的 Dock 图标设成应用自己的。
+    ///
+    /// 资源是 <c>AvaloniaResource</c>(嵌在程序集里),而 NSImage 只能从**文件**加载 ——
+    /// 所以先把它落到临时文件。失败只写日志:外观问题绝不该影响启动。
+    /// </summary>
+    private static void ApplyDockIcon() {
+        try {
+            var uri = new Uri("avares://KindleMate2/Assets/bookmark.png");
+            if (!AssetLoader.Exists(uri)) {
+                return;
+            }
+
+            using var stream = AssetLoader.Open(uri);
+            var tempPath = Path.Combine(Path.GetTempPath(), "KindleMate2-dock-icon.png");
+            using (var file = File.Create(tempPath)) {
+                stream.CopyTo(file);
+            }
+
+            MacOsDockIcon.Apply(tempPath);
+        } catch (Exception ex) {
+            AppLog.Write($"[App] 设置 Dock 图标失败:{ex.Message}");
+        }
+    }
+#endif
 
     /// <summary>
     /// 进程退出时自动备份**用户实际在编辑的那个库**。
