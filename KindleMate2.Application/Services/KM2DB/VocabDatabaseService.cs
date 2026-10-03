@@ -74,7 +74,11 @@ namespace KindleMate2.Application.Services.KM2DB {
                     var category = item.Category;
                     var timestamp = item.Timestamp;
 
-                    if (timestamp == null || word == null) {
+                    // 时间戳无效即跳过。注意**不能只判 null**:源库 schema 里
+                    // WORDS.timestamp 是 INTEGER DEFAULT 0,所以"没有时间"的行读出来是 0 而不是 NULL,
+                    // 只判 null 会把它们按 1970-01-01 导进来。0 与负数一并视为无效
+                    // (unix 毫秒里负数不可能是合法的阅读时间)。
+                    if (timestamp is null or <= 0 || word == null) {
                         continue;
                     }
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
@@ -131,7 +135,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                         authors = bookInfo.Authors;
                     }
 
-                    if (timestamp == null) {
+                    // 同 WORDS:LOOKUPS.timestamp 也是 INTEGER DEFAULT 0,只判 null 会把
+                    // 默认值当成 1970-01-01。
+                    if (timestamp is null or <= 0) {
                         continue;
                     }
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
