@@ -37,6 +37,13 @@
     <!-- 关于窗口的图标位需要 IImage,而 WindowIcon 不能直接给 Image 用,
          故另附一份从 .ico 的 256×256 PNG 帧抽出的 PNG(自带透明通道)。 -->
     <AvaloniaResource Include="Assets/bookmark.png" />
+    <!-- macOS 专用的**带边距**版本:同一张图,但内容缩到画布的 80.5% 并居中。
+         用途有二:① 开发/调试时由 MacOsDockIcon 设为 Dock 图标;② release.yml 用它生成 .icns。
+         为什么要另存一份:macOS 的图标规范要求图形只占画布约 80%(Apple 模板 1024 画布 / 824 内容),
+         留出四周透明边距,Dock 里各应用的视觉尺寸才一致。bookmark.png 是 Windows 口径(内容占
+         95%×100%,几乎填满),直接拿去当 Dock 图标会**明显比旁边的图标大一圈**(真机实测)。
+         bookmark.png 本身不动 —— 它还用于关于窗口内嵌的 40×40 图标与 Windows 的 .ico。 -->
+    <AvaloniaResource Include="Assets/bookmark-dock.png" />
     <!-- 菜单栏「Kindle设备已连接」按钮的图标,取自原版 WinForms 的 Resources
          (带 tRNS 透明背景,深浅主题下都能用)。 -->
     <AvaloniaResource Include="Assets/mobile-phone-with-arrow.png" />
