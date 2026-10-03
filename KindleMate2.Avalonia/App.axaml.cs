@@ -80,6 +80,9 @@ public partial class App : global::Avalonia.Application {
         try {
             var uri = new Uri("avares://KindleMate2/Assets/bookmark.png");
             if (!AssetLoader.Exists(uri)) {
+                // **不要静默返回** —— 这个分支若因 URI 写错而命中,表现就是"图标没变、
+                // 日志里什么都没有",最难排查。写日志才有线索。
+                AppLog.Write($"[App] Dock 图标资源不存在:{uri}(图标保持系统默认)");
                 return;
             }
 
@@ -91,7 +94,7 @@ public partial class App : global::Avalonia.Application {
 
             MacOsDockIcon.Apply(tempPath);
         } catch (Exception ex) {
-            AppLog.Write($"[App] 设置 Dock 图标失败:{ex.Message}");
+            AppLog.Write($"[App] 设置 Dock 图标失败:{ex}");
         }
     }
 #endif

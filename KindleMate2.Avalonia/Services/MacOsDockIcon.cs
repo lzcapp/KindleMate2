@@ -65,6 +65,7 @@ internal static class MacOsDockIcon {
             }
 
             MsgSend1(sharedApp, SelRegisterName("setApplicationIconImage:"), image);
+            AppLog.Write($"[MacOsDockIcon] 已设置 Dock 图标:{pngPath}");
         } catch (Exception ex) {
             // Dock 图标只是外观:失败绝不能影响启动
             AppLog.Write($"[MacOsDockIcon] 设置 Dock 图标失败:{ex.Message}");
