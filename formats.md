@@ -199,7 +199,7 @@ LOOKUPS.dict_key  →  DICT_INFO.id
 | 删除记录 | 无 | 无 |
 
 **两边没有共同的书标识**，只能靠书名 + 作者做启发式对齐。设备上的 `.sdr` 目录名提供了
-一条**部分可用**的桥接（见 §5.3），但它依赖目录名里带 ASIN 后缀、且 `My Clippings` 那一侧
+一条**部分可用**的桥接（见 5.3），但它依赖目录名里带 ASIN 后缀、且 `My Clippings` 那一侧
 仍需模糊匹配 —— 这是一条**不完整的**桥，不等于"硬约束已被解除"。
 
 ---
@@ -238,10 +238,10 @@ sample_count, running_sum, …)`。
 部分 `.sdr` 目录名带 `_<ASIN 或 UUID>` 后缀，**该后缀就是 `vocab.db` 的 `BOOK_INFO.asin`**：
 
 ```
-documents/儒林外史_178948b5-d70f-4b2b-8342-b1e86cba058c.sdr
+documents/Some_Book_Title_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d.sdr
                           ↓ 提取后缀
-vocab.db  BOOK_INFO.asin = 178948b5-d70f-4b2b-8342-b1e86cba058c
-          BOOK_INFO.id   = Ru_Lin_Wai_Shi_(Quan_Ben_Wei_Sh:3F565F6A   ← 即 book_key
+vocab.db  BOOK_INFO.asin = 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+          BOOK_INFO.id   = Some_Book_Title:0A1B2C3D   ← 即 book_key
 ```
 
 **覆盖率**（实测）：56 个 `.sdr` 里 13 个带可识别后缀（**13/56 ≈ 23%**）；
@@ -256,7 +256,7 @@ vocab.db  BOOK_INFO.asin = 178948b5-d70f-4b2b-8342-b1e86cba058c
 | 形态 | 正则 | 说明 |
 |---|---|---|
 | UUID | `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}` | sideload 的书 |
-| ASIN | `[A-Z0-9]{10}` | ⚠️ **不限于 `B0` 前缀** —— 实测存在 `B161300234` |
+| ASIN | `[A-Z0-9]{10}` | ⚠️ **不限于 `B0` 前缀** —— 实测存在 `B1` 开头的形态 |
 
 **两个限制**：
 
