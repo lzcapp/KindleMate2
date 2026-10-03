@@ -288,6 +288,8 @@ jobs:
           # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
           grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 「导出为 JSON」菜单接线:入口从 axaml 删掉不报错(VM 命令还在,探针也不红),源码上钉一句。
+          grep -q 'Click="OnMenuExportJson"' KindleMate2.Avalonia/Views/MainWindow.axaml
           # 「重命名生词」共三处入口(左栏词节点 / 中栏列表行 / 详情面板),对齐「重命名书籍」。
           # 左栏这条与上面的 CanRenameCurrentBook **互斥**:丢了 IsVisible 的话,
           # 生词域的右键里会同时冒出「重命名书籍」和「重命名生词」两条。
