@@ -10,9 +10,16 @@ using VocabLookupRepository = KindleMate2.Infrastructure.Repositories.VocabDB.Lo
 namespace KindleMate2.Tests;
 
 /// <summary>
-/// 回归:导入 vocab.db 时,时间戳为 NULL 的生词/查询记录应当**跳过**。
-/// 之前 <c>Word.Timestamp</c>/<c>Lookup.Timestamp</c> 的 setter 把 null 强转成 0,
-/// 于是 `if (timestamp == null) continue` 永远不触发,NULL 行被当成 1970-01-01 导进来。
+/// 回归:导入 vocab.db 时,时间戳**无效**的生词/查询记录应当**跳过**。
+///
+/// 两档都覆盖:
+/// <list type="number">
+/// <item><b>NULL</b> —— 之前 <c>Word.Timestamp</c>/<c>Lookup.Timestamp</c> 的 setter 把 null
+/// 强转成 0,于是 `if (timestamp == null) continue` 永远不触发,NULL 行被当成 1970-01-01 导进来。</item>
+/// <item><b>0</b> —— 源库 schema 里 <c>timestamp</c> 是 <c>INTEGER DEFAULT 0</c>(不是 NULL),
+/// 所以"没有时间"的行读出来是 0。只判 null 同样会把它们按 1970-01-01 导入。
+/// 这一档在真机上未观察到(实测最小值是 2025-08),属防御性覆盖。</item>
+/// </list>
 /// </summary>
 public sealed class VocabTimestampNullTests : IDisposable {
     private readonly string _dir;
@@ -27,7 +34,7 @@ public sealed class VocabTimestampNullTests : IDisposable {
     }
 
     [Fact]
-    public void ImportWords_NullTimestampRows_AreSkippedInsteadOfBecoming1970() {
+    public void ImportWords_InvalidTimestampRows_AreSkippedInsteadOfBecoming1970() {
         var targetDb = Path.Combine(_dir, "target.db");
         Assert.True(DatabaseHelper.CreateDatabase(targetDb, out var ex), ex.Message);
         var targetCs = DatabaseHelper.GetConnectionString(targetDb);
@@ -43,10 +50,12 @@ public sealed class VocabTimestampNullTests : IDisposable {
                 CREATE TABLE BOOK_INFO (id TEXT, asin TEXT, guid TEXT, lang TEXT, title TEXT, authors TEXT);
                 INSERT INTO WORDS (id, word, timestamp) VALUES
                     ('w1', 'apple', NULL),
-                    ('w2', 'banana', 1735689600000);
+                    ('w2', 'banana', 1735689600000),
+                    ('w3', 'cherry', 0);
                 INSERT INTO LOOKUPS (id, word_key, usage, timestamp) VALUES
                     ('l1', 'en:apple', 'u', NULL),
-                    ('l2', 'en:banana', 'u', 1735689600000);
+                    ('l2', 'en:banana', 'u', 1735689600000),
+                    ('l3', 'en:cherry', 'u', 0);
                 """;
             cmd.ExecuteNonQuery();
         }
@@ -60,7 +69,8 @@ public sealed class VocabTimestampNullTests : IDisposable {
 
         Assert.True(service.ImportKindleWords(sourceDb, out _));
 
-        // 只有带有效时间戳的 banana 被导入;NULL 时间戳的 apple 不出现(尤其不是 1970)。
+        // 只有带有效时间戳的 banana 被导入;apple(NULL)与 cherry(0)都不出现(尤其不是 1970)。
+        // Assert.Single 同时钉住两档 —— 多出任何一条都会失败。
         var vocabs = new Km2VocabRepository(targetCs).GetAll();
         var vocab = Assert.Single(vocabs);
         Assert.Equal("banana", vocab.Word);
