@@ -490,7 +490,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <list type="number">
     ///   <item>库路径固定为 <c>&lt;当前目录&gt;/KM2.dat</c>(原版即如此,没有库选择器);</item>
     ///   <item>文件不存在则用 <c>DatabaseHelper.CreateDatabase</c> 自动建库,失败则报错并退出;</item>
-    ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断)。</item>
+    ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断);</item>
+    ///   <item>执行一次幂等的 <c>EnsureIndexesIfNeeded</c>,给老库补上查询索引(失败仅告警)。</item>
     /// </list>
     /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
     /// </summary>
@@ -509,7 +510,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
         try {
             DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
-            // 老库补建 [clippings] 的查询索引(幂等;新建的库已由建库脚本带上)。
+            // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
             DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
         } catch (Exception ex) {
             // 原版此处只弹一个警告框,不阻断启动

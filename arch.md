@@ -1,6 +1,6 @@
 # KindleMate2 架构文档
 
-> 最后更新：2026-09-25
+> 最后更新：2026-10-03
 
 ## 项目概述
 
@@ -131,7 +131,9 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 **库路径固定为 `<当前目录>/KM2.dat`**（与原 WinForms 版一致，没有库选择器）：
 
 1. 文件不存在 → `DatabaseHelper.CreateDatabase()` 自动建库；失败 → 错误框 + 退出。
-2. `DatabaseHelper.MigrateLookupsSchemaIfNeeded()` 一次性幂等 schema 迁移，失败仅告警。
+2. `DatabaseHelper.MigrateLookupsSchemaIfNeeded()` 一次性幂等 schema 迁移，失败仅告警；
+   `DatabaseHelper.EnsureIndexesIfNeeded()` 幂等补齐查询索引（`clippings` 复合索引、
+   `vocab.word_key`），失败同样仅告警。两条路径的索引 SQL 同源于 `GetIndexScripts()`。
 3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份到
    `Backups/OnExit/`，随后 `DatabaseHelper.PruneBackups()` 只保留最新 3 份。
 
