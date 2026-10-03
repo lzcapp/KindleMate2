@@ -851,7 +851,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 为什么不塞进现有菜单:CSV 面向 Anki 这类"表格导入",JSON 面向脚本 / Obsidian 之类
     /// 的下游消费(后续 PR 会基于同一套中间模型再出 Markdown frontmatter),两者用途不重叠;
     /// 合并成一项只会把"我要哪种"变成一次额外的选择,且导出产物格式会变得不由文件名说了算。
-    /// 两份文件共用上游中间模型,所以口径(跳过什么、省略什么)与 CSV 一致。
+    /// 两份文件共用上游中间模型,所以跳过 / 省略的口径与 CSV **大体**一致;唯一**刻意差异**是
+    /// <c>page</c> 键 —— CSV 列结构固定,<c>PageNumber = 0</c> 只能写 <c>"0"</c>;JSON 键可省,
+    /// <c>&lt;= 0</c> 时整个省略(下游不会把 <c>"0"</c> 误当成「第 0 页」)。
+    /// 别据此认为两格式逐字段可对齐,<c>stem</c> 的补齐口径目前也不一致(见 ExportManager.FillStemsFromVocabs)。
     /// </remarks>
     public Task<OperationResult> ExportAllJsonAsync() {
         // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
