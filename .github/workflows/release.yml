@@ -13,7 +13,11 @@ name: release
 #
 # 2026-09-13 变更 A:WinForms 壳与 DarkModeForms 子模块退休,发布目标改为 Avalonia 壳
 #   (KindleMate2.Avalonia)。本流程不再需要 checkout 子模块;需显式指定目标框架 ——
-#   Windows 用 -f net10.0-windows,非 Windows 用 -f net10.0(该工程多目标 net10.0-windows;net10.0)。
+#   Windows 用 -f net10.0-windows,非 Windows 用 -f net10.0。
+#   (2026-10-03 起该工程的 TargetFrameworks **按宿主 OS 条件化**:Windows 宿主上为
+#    net10.0-windows;net10.0,其他宿主上只有 net10.0 —— 因为 net10.0-windows 自带 WINDOWS
+#    常量会让 CreateDeviceManager 选中依赖 Windows COM 的 Devices.Windows,在 macOS/Linux 上
+#    必然抛异常、设备永远显示"未连接"。各发布作业的宿主与目标平台天然一致,故 -f 照旧成立。)
 #   同时移除 PublishSingleFile(单文件打包未实机验证,先用普通目录式 publish)。
 #
 # 2026-09-13 变更 B:Linux 产物。**必须在 Unix runner 上发布并打包** —— zip/tar 从 NTFS
