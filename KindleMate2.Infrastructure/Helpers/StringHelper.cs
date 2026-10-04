@@ -180,8 +180,14 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// surrogate(UTF-16)组成 —— 若按 <c>char</c> 截断,极易把一对 surrogate 劈成两半,写出一个
         /// 非法 UTF-8 的文件名。孤立 surrogate(数据损坏时可能出现)按编码器会替换成的 U+FFFD 记 3 字节,
         /// 与 <see cref="Encoding.UTF8"/> 的 <c>GetByteCount</c> 口径一致。
+        ///
+        /// <para>
+        /// 设为 <c>public</c>:文件名长度控制不止 <see cref="SanitizeFilename"/> 一处需要它 ——
+        /// 分享图文件名要"按重要性分配预算"地分段截断(<see cref="ComposeTruncatedFileName"/>),
+        /// 共用这一份实现,避免"同一判定两份实现"再次漂移。
+        /// </para>
         /// </remarks>
-        private static string TruncateToUtf8Bytes(string value, int maxUtf8Bytes) {
+        public static string TruncateToUtf8Bytes(string value, int maxUtf8Bytes) {
             if (maxUtf8Bytes <= 0) {
                 return string.Empty;
             }
@@ -219,6 +225,86 @@ namespace KindleMate2.Infrastructure.Helpers {
                 length += charCount;
             }
             return value[..length];
+        }
+
+        /// <summary>
+        /// 把 <paramref name="head"/> 与 <paramref name="tail"/> 各段用 '_' 拼接,并按**重要性分配预算**
+        /// 截断,使整个结果(含 <paramref name="extension"/>)不超过 <paramref name="maxTotalUtf8Bytes"/> 字节。
+        /// </summary>
+        /// <param name="head">可截断的主段(分享图里是书名);为空则不参与拼接(不留前导下划线)。</param>
+        /// <param name="tail">必须**完整保留**的尾段(分享图里是位置 + 时间),按序用 '_' 拼接;空段跳过。</param>
+        /// <param name="extension">扩展名(含前导点,如 <c>.png</c>)。</param>
+        /// <param name="maxTotalUtf8Bytes">整个文件名(含扩展名)的 UTF-8 字节上限。</param>
+        /// <remarks>
+        /// <para>
+        /// **为什么不从右往左砍**:分享图文件名是 <c>&lt;书名&gt;_&lt;位置&gt;_&lt;时间&gt;.png</c>,
+        /// 位置与时间短,却是区分「同一本书同一天不同标注」的**唯一**来源;书名可长。若按字符从尾部
+        /// 截断,书名一长就把位置与时间整段砍掉 ⇒ 同书同日的两条标注会得到同一个建议名,连存两张就
+        /// 互相覆盖 —— 与文件名带这两段的理由直接冲突。故这里先算出尾段(含它与书名之间那一个 '_')
+        /// 的字节数整段保留,把**剩余预算**留给主段。
+        /// </para>
+        /// <para>
+        /// 截断走 <see cref="TruncateToUtf8Bytes"/>:按 UTF-8 字节在字符边界收尾 —— 全 emoji 的书名
+        /// 每个码点 4 字节,按 <c>char</c> 截断既会低估长度(80 码点 = 320 字节,早超 255),又会劈开
+        /// 代理对产出非法 UTF-8。故上限按**字节**算。
+        /// </para>
+        /// <para>
+        /// 尾段由标注主键派生、天然很短(位置是区间、时间是固定格式时间戳),整段保留后仍远低于上限,
+        /// 因此"保留尾段"与"总长 ≤ 上限"两个要求可同时成立。
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">任一参数为 null 时抛出。</exception>
+        public static string ComposeTruncatedFileName(
+            string head,
+            IReadOnlyList<string> tail,
+            string extension,
+            int maxTotalUtf8Bytes) {
+            ArgumentNullException.ThrowIfNull(head);
+            ArgumentNullException.ThrowIfNull(tail);
+            ArgumentNullException.ThrowIfNull(extension);
+
+            // 各段先净化,但**关掉截断**(int.MaxValue)—— 否则 SanitizeFilename 会先把书名截到默认
+            // 上限,后面的"按重要性分配预算"就无从谈起。净化保留非法字符替换、去尾点、保留名兜底。
+            var headPart = head.Length > 0 ? SanitizeFilename(head, int.MaxValue) : string.Empty;
+            var tailParts = new List<string>(tail.Count);
+            foreach (var segment in tail) {
+                if (segment.Length == 0) {
+                    continue; // 空段跳过 —— 不留连续下划线
+                }
+                var sanitized = SanitizeFilename(segment, int.MaxValue);
+                if (sanitized.Length > 0) {
+                    tailParts.Add(sanitized);
+                }
+            }
+            var tailJoined = string.Join("_", tailParts);
+
+            // 主干(不含扩展名)的预算 = 整个文件名上限 − 扩展名占用的字节。
+            var stemBudget = maxTotalUtf8Bytes - Encoding.UTF8.GetByteCount(extension);
+
+            string stem;
+            if (headPart.Length == 0) {
+                // 没有主段:主干就是尾段(位置 / 时间)。
+                stem = tailJoined;
+            } else if (tailJoined.Length == 0) {
+                // 没有尾段:主段是唯一内容,直接按预算截断。
+                stem = TruncateToUtf8Bytes(headPart, stemBudget);
+            } else {
+                // 尾段(含其前导那一个 '_')整段保留,剩余预算才给主段。
+                var reserved = Encoding.UTF8.GetByteCount(tailJoined) + 1;
+                var headBudget = Math.Max(0, stemBudget - reserved);
+                var headTruncated = TruncateToUtf8Bytes(headPart, headBudget);
+                // 主段被截到空时连分隔符一起省掉,避免留下前导下划线。
+                stem = headTruncated.Length > 0 ? headTruncated + "_" + tailJoined : tailJoined;
+            }
+
+            // 截断可能恰好以点 / 空格结尾(Windows 上文件名不能以点或空格结尾)。
+            // 整串都是点时保持原样:修成空名只会让调用方产出一个隐藏文件。
+            var trimmed = stem.TrimEnd(' ', '.');
+            if (trimmed.Length > 0) {
+                stem = trimmed;
+            }
+
+            return stem + extension;
         }
 
         /// <summary>
