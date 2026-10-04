@@ -427,13 +427,13 @@
   	<value>未能读取 Kindle。请确认：① 已用 USB 数据线连接；② 系统弹出「允许配件连接？」时点了「允许」；③ 没有其他 MTP 程序(Amazon USB File Manager、OpenMTP、Calibre)正在占用设备。</value>
   </data>
   <data name="Device_Clippings_Not_Found" xml:space="preserve">
-  	<value>已连上设备,但没找到 My Clippings.txt(应在 documents/My Clippings.txt)。</value>
+  	<value>已连上设备，但没找到 My Clippings.txt（应在 documents/My Clippings.txt）。</value>
   </data>
   <data name="Device_Clippings_Read_Failed" xml:space="preserve">
-  	<value>从设备读取 {0} 失败(传输中断,请重新插拔设备后重试)。</value>
+  	<value>从设备读取 {0} 失败（传输中断，请重新插拔设备后重试）。</value>
   </data>
   <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
-  	<value>写回设备失败。若设备上的 My Clippings.txt 已被删除,可用本机备份目录中的文件恢复。</value>
+  	<value>写回设备失败。若设备上的 My Clippings.txt 已被删除，可用本机备份目录中的文件恢复。</value>
   </data>
   <data name="Ui_Update_Check" xml:space="preserve">
   	<value>检查更新</value>
@@ -445,7 +445,7 @@
   	<value>已是最新版本</value>
   </data>
   <data name="Ui_Update_CheckFailed" xml:space="preserve">
-  	<value>检查更新失败,请稍后再试</value>
+  	<value>检查更新失败，请稍后再试</value>
   </data>
   <data name="Ui_Update_Downloading" xml:space="preserve">
   	<value>正在下载更新:{0}%</value>
@@ -460,7 +460,7 @@
   	<value>更新失败:{0}</value>
   </data>
   <data name="Ui_Update_Restarting" xml:space="preserve">
-  	<value>更新已就绪,即将重启以完成安装</value>
+  	<value>更新已就绪，即将重启以完成安装</value>
   </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>文件(_F)</value>
@@ -505,7 +505,7 @@
     <value>导出为 CSV</value>
   </data>
   <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
-    <value>导出为 CSV(含释义)</value>
+    <value>导出为 CSV（含释义）</value>
   </data>
   <data name="Ui_Menu_ExportJson" xml:space="preserve">
     <value>导出为 JSON</value>
@@ -781,7 +781,7 @@
     <value>维护数据库</value>
   </data>
   <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
-    <value>将清洗 {0} 条标注的首尾标点(共扫描 {1} 条)，并删除空条目 {2} 条、重复项 {3} 条；不会改动其他记录，操作前会自动备份数据库。</value>
+    <value>将清洗 {0} 条标注的首尾标点（共扫描 {1} 条），并删除空条目 {2} 条、重复项 {3} 条；不会改动其他记录，操作前会自动备份数据库。</value>
   </data>
   <data name="Ui_Maintenance_Result_Cleaned_Format" xml:space="preserve">
     <value>已清洗 {0} 条标注的首尾标点（共扫描 {1} 条）</value>
@@ -811,10 +811,10 @@
     <value>带删除线的标点是本次会被清洗掉的字符。</value>
   </data>
   <data name="Ui_Dlg_ClippingClean_More_Format" xml:space="preserve">
-    <value>另有 {0} 条改动未在此列出,清洗后会全部写入改动清单。</value>
+    <value>另有 {0} 条改动未在此列出，清洗后会全部写入改动清单。</value>
   </data>
   <data name="Ui_ClippingClean_Skipped_Format" xml:space="preserve">
-    <value>另有 {0} 条整条皆为标点,已跳过。</value>
+    <value>另有 {0} 条整条皆为标点，已跳过。</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>按日期</value>
