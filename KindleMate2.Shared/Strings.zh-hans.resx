@@ -382,7 +382,7 @@
     <value>检测到新版本：</value>
   </data>
   <data name="Confirm_Delete_Backup" xml:space="preserve">
-    <value>确认要删除备份文件吗?</value>
+    <value>确认要删除备份文件吗？</value>
   </data>
   <data name="Notes" xml:space="preserve">
     <value>笔记</value>
@@ -511,7 +511,7 @@
     <value>导出为 JSON</value>
   </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
-    <value>将联网查询生词释义:全部生词会被发送到有道词典。是否继续?</value>
+    <value>将联网查询生词释义：全部生词会被发送到有道词典。是否继续？</value>
   </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>重建数据库</value>
