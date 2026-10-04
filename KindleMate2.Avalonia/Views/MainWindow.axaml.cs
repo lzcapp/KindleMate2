@@ -511,6 +511,15 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ExportAllJsonAsync());
     }
 
+    /// <summary>
+    /// 「导出为 Obsidian 库」—— 与前三项并列的独立入口:产出一套可直接丢进 Obsidian vault 的目录
+    /// (<c>Exports/Obsidian/</c>,含索引 + 双链 + frontmatter),全程离线。
+    /// </summary>
+    private async void OnMenuExportObsidian(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ExportObsidianAsync());
+    }
+
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {

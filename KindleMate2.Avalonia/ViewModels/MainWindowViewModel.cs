@@ -876,6 +876,32 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
+    /// <summary>
+    /// 导出标注 + 生词为一份**可直接放进 Obsidian vault** 的目录(<c>Exports/Obsidian/</c>)。
+    /// </summary>
+    /// <remarks>
+    /// 与 CSV / JSON 并列的独立入口:Obsidian 要的是一套"双链 + frontmatter"的目录结构,而不是
+    /// 单份扁平文件,消费方式与另外三者都不同,合并只会让产物形态不由菜单项说得清。
+    /// 拼装全部基于同一份中间模型(见 <c>ExportManager.ExportObsidianVault</c>),故分组 / 省略口径与 JSON 一致。
+    /// </remarks>
+    public Task<OperationResult> ExportObsidianAsync() {
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
+        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var exportDir = session.ExportDirectory;
+        return Task.Run(() => {
+            if (!session.ExportManager.ExportObsidianVault()) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
+    }
+
     /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
         // 忙碌期与写操作互斥,理由见 ExportAllMarkdownAsync。
