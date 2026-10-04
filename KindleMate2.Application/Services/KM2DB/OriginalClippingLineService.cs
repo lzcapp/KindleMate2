@@ -67,7 +67,7 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// </para>
         /// </remarks>
         public bool Export(string filePath, string fileName, out Exception? exception,
-            IReadOnlySet<string>? liveKeys = null) {
+            IReadOnlySet<string>? liveKeys) {
             try {
                 var originalClippingLines = GetAllOriginalClippingLines();
 

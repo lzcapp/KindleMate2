@@ -180,6 +180,12 @@ public sealed class DetailModel {
 }
 
 /// <summary>标注类型文本与分组映射(与 Domain 的 BriefType 对齐;文案取自 Shared.Strings)。</summary>
+/// <remarks>
+/// ⚠️ 本映射**刻意不**与导出侧的 <c>ExportModelBuilder.BriefTypeText</c>(CSV / JSON 共用)
+/// 合并:这里输出的是**本地化文案**(中文「划线」/ 英文 "Highlight")并附带分组用的
+/// <see cref="TypeKind"/>;导出那边必须写**与界面语言无关的枚举名**(始终 "Highlight"),
+/// 否则下游脚本 / Anki 的字段值会随用户切换语言而变化。两处用途不同,改一处不必改另一处。
+/// </remarks>
 public static class TypeTextMap {
     public static (string Text, TypeKind Kind) Of(long? briefType) => briefType switch {
         (long)BriefType.Highlight => (Strings.Ui_Type_Highlight, TypeKind.Highlight),
