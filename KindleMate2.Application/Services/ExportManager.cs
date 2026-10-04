@@ -204,6 +204,11 @@ public class ExportManager : IExportManager {
     }
 
     /// <summary>WORDS 表里「<c>WordKey</c> → stem」的映射(同 key 多行时取首行的值)。</summary>
+    /// <remarks>
+    /// **刻意不缓存**:每次导出本来就要全量读一遍 clippings / lookups,这里再全表读一次 WORDS 是
+    /// **同量级**开销;而加缓存就得处理"库被导入 / 清洗 / 重命名后缓存何时失效",风险大于那点收益。
+    /// 现状是 CSV / JSON / Obsidian 三个导出入口各扫一次,这是**有意**的,不是遗漏。
+    /// </remarks>
     private Dictionary<string, string> VocabStemsByKey() {
         return _vocabService.GetAllVocabs()
             .Where(v => !string.IsNullOrEmpty(v.WordKey))

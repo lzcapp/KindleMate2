@@ -1,4 +1,5 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+﻿using KindleMate2.Application.Services;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Constants;
@@ -125,9 +126,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                     markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
                 }
             } else {
-                filename = StringHelper.SanitizeFilename(word);
-
                 var lookups = listLookups.Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
+
+                // 与 clippings 侧同一套消歧:看目标目录判断已有同名文件是不是同一个词(生词没有作者,
+                // 故只有「净化(词) →  (2)(3)…」这一条候选序)。详见 ExportFileNameAllocator。
+                filename = ExportFileNameAllocator.AssignSingleFileName(filePath, word);
+
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 

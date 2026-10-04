@@ -98,7 +98,23 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
-        /// Sanitizes a filename by replacing invalid characters with underscores.
+        /// <see cref="SanitizeFilename"/> 默认的 UTF-8 字节上限:240。
+        /// </summary>
+        /// <remarks>
+        /// 多数文件系统的单段文件名上限是 **255 字节**(Linux / macOS 按字节;Windows 按 UTF-16 码元,
+        /// 但中文按字节更严),这里预留 15 字节给调用方后续拼接的部分:
+        /// <list type="bullet">
+        /// <item>扩展名最长 <c>.html</c> = 5 字节(本 helper 各调用点里最长的那个);</item>
+        /// <item>撞名消歧后缀 <c> (NN)</c> 至多 6 字节(<c> (100)</c> 起即 6 字节,千级足够);</item>
+        /// <item>Windows 保留名兜底前缀 <c>_</c> = 1 字节。</item>
+        /// </list>
+        /// 240 + 5 + 6 + 1 = 252 ≤ 255,尚余 3 字节。正常长度的名字远达不到这个上限,故行为与改动前逐字相同。
+        /// </remarks>
+        public const int DefaultMaxUtf8Bytes = 240;
+
+        /// <summary>
+        /// Sanitizes a filename by replacing invalid characters with underscores, and capping its UTF-8
+        /// length at <paramref name="maxUtf8Bytes"/>.
         ///
         /// <para>
         /// 非法字符集是**固定**的,不取 <see cref="Path.GetInvalidFileNameChars"/> —— 后者给的是
@@ -111,9 +127,13 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </para>
         /// </summary>
         /// <param name="filename">The filename to sanitize</param>
+        /// <param name="maxUtf8Bytes">
+        /// 结果串允许的最大 **UTF-8 字节数**(默认 <see cref="DefaultMaxUtf8Bytes"/>);按字符边界截断,
+        /// 绝不切出半个字符。传 <see cref="int.MaxValue"/> 可关闭截断(仅供测试对照)。
+        /// </param>
         /// <returns>A sanitized filename safe for file system use</returns>
         /// <exception cref="ArgumentNullException">Thrown when filename is null</exception>
-        public static string SanitizeFilename(string filename) {
+        public static string SanitizeFilename(string filename, int maxUtf8Bytes = DefaultMaxUtf8Bytes) {
             ArgumentNullException.ThrowIfNull(filename);
 
             if (string.IsNullOrEmpty(filename)) {
@@ -128,6 +148,10 @@ namespace KindleMate2.Infrastructure.Helpers {
 
             sanitized = sanitized.Trim();
 
+            // 截断:按 UTF-8 字节在字符边界截断。**必须插在"去尾点"之前** —— 截断后可能正好以点结尾,
+            // 那要交给下一步去掉;若顺序反过来(先去尾点再截断),这个由截断**新产生**的尾点就漏掉了。
+            sanitized = TruncateToUtf8Bytes(sanitized, maxUtf8Bytes);
+
             // 末尾的点在 Windows 上非法(结尾空格已由上一行的 Trim 处理)。
             // 整串都是点则保持原样:修成空名只会让调用方产出一个隐藏文件。
             var withoutTrailingDots = sanitized.TrimEnd('.');
@@ -137,15 +161,64 @@ namespace KindleMate2.Infrastructure.Helpers {
 
             // Windows 保留设备名在任意目录下都不能当文件名,且与扩展名无关 —— 故按"去掉扩展名后"判断。
             //
-            // 必须放在 Trim / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为"非保留名",
-            // 修剪之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上一直如此,
-            // 2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
+            // 必须放在 Trim / 截断 / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为
+            // "非保留名",修剪 / 截断之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上
+            // 一直如此,2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
             var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
             if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
                 sanitized = "_" + sanitized;
             }
 
             return sanitized;
+        }
+
+        /// <summary>
+        /// 把 <paramref name="value"/> 按 UTF-8 字节截断到至多 <paramref name="maxUtf8Bytes"/> 字节。
+        /// </summary>
+        /// <remarks>
+        /// 逐**码点**累计字节数、在码点边界收尾:中文是 3 字节,emoji 等补充平面字符是 4 字节且由一对
+        /// surrogate(UTF-16)组成 —— 若按 <c>char</c> 截断,极易把一对 surrogate 劈成两半,写出一个
+        /// 非法 UTF-8 的文件名。孤立 surrogate(数据损坏时可能出现)按编码器会替换成的 U+FFFD 记 3 字节,
+        /// 与 <see cref="Encoding.UTF8"/> 的 <c>GetByteCount</c> 口径一致。
+        /// </remarks>
+        private static string TruncateToUtf8Bytes(string value, int maxUtf8Bytes) {
+            if (maxUtf8Bytes <= 0) {
+                return string.Empty;
+            }
+            if (Encoding.UTF8.GetByteCount(value) <= maxUtf8Bytes) {
+                return value;
+            }
+
+            var bytes = 0;
+            var length = 0;
+            while (length < value.Length) {
+                var c = value[length];
+                int charCount;
+                int byteCount;
+                if (char.IsHighSurrogate(c) && length + 1 < value.Length && char.IsLowSurrogate(value[length + 1])) {
+                    charCount = 2;
+                    byteCount = 4;
+                } else if (char.IsSurrogate(c)) {
+                    charCount = 1;
+                    byteCount = 3;
+                } else if (c < 0x80) {
+                    charCount = 1;
+                    byteCount = 1;
+                } else if (c < 0x800) {
+                    charCount = 1;
+                    byteCount = 2;
+                } else {
+                    charCount = 1;
+                    byteCount = 3;
+                }
+
+                if (bytes + byteCount > maxUtf8Bytes) {
+                    break;
+                }
+                bytes += byteCount;
+                length += charCount;
+            }
+            return value[..length];
         }
 
         /// <summary>
