@@ -510,6 +510,9 @@
   <data name="Ui_Menu_ExportJson" xml:space="preserve">
     <value>Export as JSON</value>
   </data>
+  <data name="Ui_Menu_ExportObsidian" xml:space="preserve">
+    <value>Export as Obsidian Vault</value>
+  </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>Definitions are looked up online: every word in your vocabulary list will be sent to Youdao Dictionary. Continue?</value>
   </data>

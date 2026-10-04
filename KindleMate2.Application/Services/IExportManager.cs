@@ -10,6 +10,8 @@ public interface IExportManager {
     bool ExportClippingsToJson();
     /// <summary>导出生词为 JSON,离线(不查释义)。</summary>
     bool ExportVocabsToJson();
+    /// <summary>导出标注 + 生词为可直接放进 Obsidian vault 的目录(<c>Exports/Obsidian/</c>),离线。</summary>
+    bool ExportObsidianVault();
     /// <summary>
     /// 备份标注为可直接放回 Kindle 的 <c>MyClippings_&lt;时间戳&gt;.txt</c>。
     /// 内容 = **库里仍然存在的标注**,不含回收站里已删除的条目。

@@ -149,6 +149,40 @@ public class ExportManager : IExportManager {
     }
 
     /// <summary>
+    /// 导出标注 + 生词为一份**可直接放进 Obsidian vault** 的目录(<c>Exports/Obsidian/</c>)。
+    /// </summary>
+    /// <remarks>
+    /// 与 Markdown / CSV / JSON 并列的第四个导出入口,拼装全部复用
+    /// <see cref="ExportModelBuilder"/> 的中间模型(见 <see cref="WriteObsidianVault"/>)——
+    /// 所以「空白正文跳过 / 无书名归 Unknown Book / 无页码省略」这些口径与 JSON 导出逐字一致,
+    /// 这里**不重新遍历实体**。落盘形态与命名消歧在 <see cref="ObsidianExportWriter"/>。
+    /// </remarks>
+    public bool ExportObsidianVault() {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            var lookups = _lookupService.GetAllLookups();
+            // 与 CSV / JSON 共用同一个补齐口径(见 FillStemsFromVocabs),否则同一份库导出的 stem 会分叉。
+            FillStemsFromVocabs(lookups);
+            WriteObsidianVault(_clippingService.GetAllClippings(), lookups, dir);
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[ObsidianExport] {ex}");
+            return false;
+        }
+    }
+
+    /// <summary>写 Obsidian vault。<c>internal</c> 供单测(纯函数,不碰库)。</summary>
+    /// <param name="exportsDirectory">Exports 根目录;vault 建在其下的 <c>Obsidian/</c>。</param>
+    /// <param name="exportedAt">导出时刻;不传则取当前时间(仅单测需要显式固定它)。</param>
+    internal static void WriteObsidianVault(IEnumerable<Clipping> clippings, IEnumerable<Lookup> lookups,
+        string exportsDirectory, DateTimeOffset? exportedAt = null) {
+        ObsidianExportWriter.WriteVault(
+            ExportModelBuilder.BuildClippingsDocument(clippings, exportedAt),
+            ExportModelBuilder.BuildVocabsDocument(lookups, exportedAt),
+            exportsDirectory);
+    }
+
+    /// <summary>
     /// 用 Vocab 表(<c>vocab.db</c> 的 WORDS)里的 stem 补齐 lookups 缺失的词形。
     /// </summary>
     /// <remarks>

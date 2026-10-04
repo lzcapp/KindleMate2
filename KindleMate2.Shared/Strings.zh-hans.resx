@@ -510,6 +510,9 @@
   <data name="Ui_Menu_ExportJson" xml:space="preserve">
     <value>导出为 JSON</value>
   </data>
+  <data name="Ui_Menu_ExportObsidian" xml:space="preserve">
+    <value>导出为 Obsidian 库</value>
+  </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>将联网查询生词释义：全部生词会被发送到有道词典。是否继续？</value>
   </data>
