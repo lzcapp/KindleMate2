@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -113,6 +115,77 @@ public class ExportManager : IExportManager {
         }
     }
 
+    /// <summary>
+    /// 导出标注为 JSON(<c>Clippings.json</c>,按书名分组)。
+    /// </summary>
+    /// <remarks>
+    /// 与 CSV 并列存在而不是替换它:CSV 是给 Anki 这类"表格导入"用的,JSON 是给脚本 /
+    /// Obsidian / 将来的服务集成用的,两者消费方式不同,共享的只是上游那份中间模型。
+    /// </remarks>
+    public bool ExportClippingsToJson() {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            Directory.CreateDirectory(dir);
+            WriteClippingsJson(_clippingService.GetAllClippings(),
+                Path.Combine(dir, "Clippings" + FileExtension.JSON));
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[ClippingsToJson] {ex}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 导出生词为 JSON(<c>Vocabs.json</c>)。完全**离线**:不像 CSV 那条路径提供联网查释义,
+    /// 释义既不在 schema 里、也没有可靠的离线词源,宁可不给,也不给一份来源不明的。
+    /// </summary>
+    public bool ExportVocabsToJson() {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            Directory.CreateDirectory(dir);
+
+            var lookups = _lookupService.GetAllLookups();
+            FillStemsFromVocabs(lookups);
+            WriteLookupsJson(lookups, Path.Combine(dir, "Vocabs" + FileExtension.JSON));
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[VocabsToJson] {ex}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 用 Vocab 表(<c>vocab.db</c> 的 WORDS)里的 stem 补齐 lookups 缺失的词形。
+    /// </summary>
+    /// <remarks>
+    /// <c>LOOKUPS</c> 表多数行的 stem 是空的,词形只存在于 WORDS 表;CSV 导出
+    /// (<see cref="ExportVocabsToCsvAsync"/>)就是这么取的,JSON 对同一份库不该给出另一个答案,
+    /// 故沿用同一口径。
+    /// <para>
+    /// 两处**刻意**的差异,说明如下:一是这里只在 <c>lookup.Stem</c> 为空时才补 —— CSV 那边是
+    /// 无条件覆盖(既有行为,本次不改动),于是 WORDS 里 stem 为空时会把 LOOKUPS 自带的非空
+    /// stem 抹掉;二是 CSV 那段代码没有被抽出来共用,因为那属于既有导出路径,本次不碰它。
+    /// </para>
+    /// </remarks>
+    private void FillStemsFromVocabs(IEnumerable<Lookup> lookups) {
+        var stemByKey = _vocabService.GetAllVocabs()
+            .Where(v => !string.IsNullOrEmpty(v.WordKey))
+            .GroupBy(v => v.WordKey!, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().Stem ?? string.Empty, StringComparer.Ordinal);
+
+        foreach (var lookup in lookups) {
+            if (lookup.WordKey == null) {
+                continue;
+            }
+            if (!string.IsNullOrEmpty(lookup.Stem)) {
+                continue;
+            }
+            if (stemByKey.TryGetValue(lookup.WordKey, out var stem)) {
+                lookup.Stem = stem;
+            }
+        }
+    }
+
     private static async Task<Dictionary<string, string>> LookupDefinitionsAsync(
         IReadOnlyList<string> words, CancellationToken cancellationToken) {
         var result = new Dictionary<string, string>(words.Count, StringComparer.OrdinalIgnoreCase);
@@ -206,6 +279,51 @@ public class ExportManager : IExportManager {
             return value;
         }
         return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+    }
+
+    /// <summary>
+    /// JSON 序列化选项(UTF-8、缩进、宽松转义)。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 刻意**不设** <c>PropertyNamingPolicy</c>:属性名由 DTO 上的 <c>[JsonPropertyName]</c>
+    /// 逐个显式给出。全局命名策略会波及项目里其他走 <see cref="JsonSerializer"/> 的调用点
+    /// (那些地方用的是另一套契约),改动面比它省下的几行代码大得多。
+    /// </para>
+    /// <para>
+    /// <c>Encoder</c> 用放宽的那一个:默认编码器会把中文、以及 <c>&lt; &gt; &amp;</c> 一类的
+    /// 非 ASCII 字符统统写成 <c>\uXXXX</c>,而本程序导出的主体就是中文标注 —— 那样出来的文件
+    /// 是一整片转义序列,人眼没法看,diff 也全无意义。"Unsafe" 说的是**嵌进 HTML** 时的注入
+    /// 风险;这里的目标是本地磁盘上的数据文件、由 JSON 解析器读取,不在 HTML 上下文里,故可放宽。
+    /// </para>
+    /// </remarks>
+    private static readonly JsonSerializerOptions JsonOptions = new() {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>
+    /// 把任意导出中间模型写成 JSON 文件(UTF-8 **无 BOM**)。
+    /// </summary>
+    /// <remarks>
+    /// 走 <see cref="JsonSerializer.SerializeToUtf8Bytes"/> 而不是
+    /// <c>new StreamWriter(path, false, new UTF8Encoding(true))</c>:后者是我们 CSV 导出的写法
+    /// (带 BOM 是为了让 Excel 认出 UTF-8),但 JSON 解析器读到开头的 BOM 会直接报
+    /// "unexpected character"。字节数组直写则天然没有 BOM 这一回事。
+    /// </remarks>
+    internal static void WriteJson<TDocument>(TDocument document, string filePath) {
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(document, JsonOptions);
+        File.WriteAllBytes(filePath, bytes);
+    }
+
+    /// <summary>写标注 JSON。<c>internal</c> 供单测(纯函数,不碰库)。</summary>
+    internal static void WriteClippingsJson(IEnumerable<Clipping> clippings, string filePath) {
+        WriteJson(ExportModelBuilder.BuildClippingsDocument(clippings), filePath);
+    }
+
+    /// <summary>写生词 JSON。<c>internal</c> 供单测(纯函数,不碰库)。</summary>
+    internal static void WriteLookupsJson(IEnumerable<Lookup> lookups, string filePath) {
+        WriteJson(ExportModelBuilder.BuildVocabsDocument(lookups), filePath);
     }
 
     /// <summary>
