@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using KindleMate2.Avalonia.Models;
 using KindleMate2.Infrastructure.Helpers;
@@ -55,21 +54,29 @@ public sealed class ShareCardModel {
     /// <c>标注日期|位置</c> 且**唯一**,从它拆出来的这两段拼进文件名,天然不会重复。
     /// 位置比"第 N 页"更精确(它是位置区间),所以用位置而不是页数。
     ///
+    /// **为什么截断按"重要性"而不是从右往左砍**:位置与时间短,却是上面那条"天然不会重复"的
+    /// 全部依据;书名可长。若按字符从尾部截断,书名一长就会把位置与时间**整段砍掉** —— 同书同日
+    /// 的两条标注又退回同一个名字,连存两张就互相覆盖,与该方法存在的理由直接冲突。故截断
+    /// **先整段保留位置与时间,再拿剩余预算截书名**(见 <see cref="StringHelper.ComposeTruncatedFileName"/>)。
+    ///
+    /// **上限按 UTF-8 字节而非字符**:全 emoji 的书名 80 个码点 = 320 字节,早已越过 255;
+    /// 且按 <c>char</c> 截断会劈开代理对、产出非法 UTF-8。算式:主干 251 + <c>.png</c>(4) = 255 ≤ 255。
+    ///
     /// 缺段时逐段跳过(而不是留出连续下划线);全空时退回调用方给的兜底前缀。
     /// </summary>
     public string SuggestedFileName(string fallbackPrefix) {
-        var parts = new List<string>(3);
         var book = BookName.Length > 0 ? BookName : fallbackPrefix;
-        if (book.Length > 0) parts.Add(StringHelper.SanitizeFilename(book));
-        if (Location.Length > 0) parts.Add(StringHelper.SanitizeFilename(Location));
         // 时间那一段同样过清洗:键里的时间是 2017-06-11 06:57:28,冒号在 Windows 上非法。
-        parts.Add(ClippingTime.Length > 0
-            ? StringHelper.SanitizeFilename(ClippingTime)
-            : DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture));
+        var time = ClippingTime.Length > 0
+            ? ClippingTime
+            : DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
 
-        var joined = string.Join("_", parts);
-        // 上限只为别撑爆文件名;80 字在三大平台都远低于上限。
-        if (joined.Length > 80) joined = joined[..80];
-        return joined + ".png";
+        // 位置 + 时间是"必须保留"的尾段;书名是唯一可截断的主段。截断与字节上限都在 helper 里,
+        // 与 SanitizeFilename 共用同一份"按 UTF-8 字节在字符边界截断"的实现。
+        return StringHelper.ComposeTruncatedFileName(
+            head: book,
+            tail: new[] { Location, time },
+            extension: ".png",
+            maxTotalUtf8Bytes: 255);
     }
 }
