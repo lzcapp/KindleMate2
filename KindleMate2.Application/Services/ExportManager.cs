@@ -243,7 +243,7 @@ public class ExportManager : IExportManager {
             // 类型文本复用 ExportModelBuilder 的单一实现(此前这里是逐字重复的内联版本)。
             // 注意:UI 侧的 TypeTextMap.Of **刻意不共用** —— 它输出本地化文案(如「划线」)并附带
             // 分组用的 TypeKind,而导出必须写**与语言无关的枚举名**(Highlight),否则下游脚本 /
-            // Anki 的字段值会随界面语言变化。改口径时 CSV / JSON 两处一起改即可,UI 那处不受影响。
+            // Anki 的字段值会随界面语言变化。改口径只需改 BriefTypeText 一处,CSV 与 JSON 同步生效。
             var type = ExportModelBuilder.BriefTypeText(clipping.BriefType);
             writer.WriteLine(string.Join(',',
                 EscapeCsv(clipping.Content),
