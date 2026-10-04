@@ -405,6 +405,63 @@ public class ExportManager : IExportManager {
     }
 
     /// <summary>
+    /// 导出生词为一份 **Anki 可直接导入的 <c>.apkg</c> 牌组**(<c>Vocabs.apkg</c>)。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 与 CSV 那条路径**同构**:<paramref name="includeDefinitions"/> 为 true 时**联网**按词查释义
+    /// (有道),查不到则 Definition 留空;为 false(默认)时完全离线,Definition 字段留空。
+    /// 联网会**把全部生词发给第三方**,故默认关,由调用方按用户选择显式打开。
+    /// </para>
+    /// <para>
+    /// stem 补齐同样走 <see cref="FillStemsFromVocabs"/>,与 CSV / JSON / Obsidian 同一口径 ——
+    /// 同一份库导出成不同格式却给出不同的 stem,是最难排查的那类不一致。
+    /// </para>
+    /// <para>
+    /// 落盘形态(SQLite + ZIP、确定性 guid、note type / 牌组定义)见 <see cref="AnkiApkgWriter"/>。
+    /// </para>
+    /// </remarks>
+    public async Task<bool> ExportVocabsToAnkiDeckAsync(bool includeDefinitions,
+        CancellationToken cancellationToken = default) {
+        try {
+            var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
+            Directory.CreateDirectory(dir);
+
+            var lookups = _lookupService.GetAllLookups();
+            // 与 CSV / JSON / Obsidian 共用同一个补齐口径(见 FillStemsFromVocabs)。
+            FillStemsFromVocabs(lookups);
+
+            var definitions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (includeDefinitions) {
+                var words = lookups
+                    .Select(l => l.Word)
+                    .Where(w => !string.IsNullOrWhiteSpace(w))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                definitions = await LookupDefinitionsAsync(words, cancellationToken).ConfigureAwait(false);
+            }
+
+            WriteAnkiDeck(lookups, Path.Combine(dir, AnkiApkgWriter.AnkiDeckFileName), definitions);
+            return true;
+        } catch (Exception ex) {
+            AppLog.Write($"[VocabsToAnkiDeck] {ex}");
+            return false;
+        }
+    }
+
+    /// <summary>写 Anki 牌组。<c>internal</c> 供单测(纯函数,不碰库、不联网)。</summary>
+    /// <param name="definitionsByWord">「词 → 释义」;离线导出时传空字典。</param>
+    /// <param name="exportedAt">导出时刻;不传则取当前时间(仅单测需要显式固定它)。</param>
+    internal static void WriteAnkiDeck(IEnumerable<Lookup> lookups, string filePath,
+        IReadOnlyDictionary<string, string> definitionsByWord, DateTimeOffset? exportedAt = null) {
+        AnkiApkgWriter.WriteApkg(
+            ExportModelBuilder.BuildVocabsDocument(lookups, exportedAt),
+            definitionsByWord,
+            filePath,
+            exportedAt);
+    }
+
+    /// <summary>
     /// 把原始标注行导出到 Backups 目录，作为数据库备份之外的一份可读副本。
     /// </summary>
     /// <remarks>

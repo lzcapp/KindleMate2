@@ -39,7 +39,8 @@ internal static class TestTempCleanup {
         "km2-clipclean-tests-", "km2-maintenance-tests-", "km2-index-tests-",
         "km2-tests-", "km2-snapshot-tests-", "kmate-import-tests-",
         "km2-linux-roots-", "km2-volumes-", "km2-export-tests-",
-        "km2-mtp-import-", "km2-mtp-writeback-", "km2-update-tests-"
+        "km2-mtp-import-", "km2-mtp-writeback-", "km2-update-tests-",
+        "km2-anki-"
     };
 
     [ModuleInitializer]

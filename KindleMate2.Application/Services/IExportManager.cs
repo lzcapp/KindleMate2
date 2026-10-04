@@ -13,6 +13,12 @@ public interface IExportManager {
     /// <summary>导出标注 + 生词为可直接放进 Obsidian vault 的目录(<c>Exports/Obsidian/</c>),离线。</summary>
     bool ExportObsidianVault();
     /// <summary>
+    /// 导出生词为可直接导入 Anki 的 <c>.apkg</c> 牌组(<c>Vocabs.apkg</c>)。
+    /// <paramref name="includeDefinitions"/> 为 true 时会**联网**查释义(把生词发给有道);
+    /// 默认 false,完全离线,释义字段留空由用户自己填。
+    /// </summary>
+    Task<bool> ExportVocabsToAnkiDeckAsync(bool includeDefinitions, CancellationToken cancellationToken = default);
+    /// <summary>
     /// 备份标注为可直接放回 Kindle 的 <c>MyClippings_&lt;时间戳&gt;.txt</c>。
     /// 内容 = **库里仍然存在的标注**,不含回收站里已删除的条目。
     /// </summary>

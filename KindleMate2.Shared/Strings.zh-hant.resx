@@ -513,6 +513,9 @@
   <data name="Ui_Menu_ExportObsidian" xml:space="preserve">
     <value>匯出為 Obsidian 庫</value>
   </data>
+  <data name="Ui_Menu_ExportAnki" xml:space="preserve">
+    <value>匯出為 Anki 牌組</value>
+  </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>將連線查詢生詞釋義：全部生詞會被傳送到有道詞典。是否繼續？</value>
   </data>

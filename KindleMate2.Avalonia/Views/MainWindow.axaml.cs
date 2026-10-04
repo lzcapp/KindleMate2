@@ -520,6 +520,15 @@ public partial class MainWindow : Window {
         await ShowResultAsync(await vm.ExportObsidianAsync());
     }
 
+    /// <summary>
+    /// 「导出为 Anki 牌组」—— 与上面四项并列的独立入口:产出一份可直接导入 Anki 的
+    /// <c>Vocabs.apkg</c>(内含 SQLite 牌组),默认离线(释义留空由用户自填)。
+    /// </summary>
+    private async void OnMenuExportAnki(object? sender, RoutedEventArgs e) {
+        if (Vm is not { } vm) return;
+        await ShowResultAsync(await vm.ExportAnkiDeckAsync());
+    }
+
     // —— 维护 ——
 
     private async void OnMenuBackup(object? sender, RoutedEventArgs e) {
