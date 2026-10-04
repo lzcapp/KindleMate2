@@ -28,13 +28,24 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         /// <summary>
-        /// 取全部原始标注行,**按插入顺序**(= 原始文件里的追加顺序)。
+        /// 取全部原始标注行,**按库内存储顺序**(正常情形 = 原始文件里的追加顺序)。
         /// </summary>
         /// <remarks>
-        /// 显式的 <c>ORDER BY rowid</c> 是**契约**,不是装饰:<c>OriginalClippingLineService.Export</c>
-        /// 按这里的顺序逐条写出,写回设备后设备上的条目次序就等于库里的次序。此前没有 ORDER BY,
-        /// 靠的是"全表扫描天然按 rowid 走"这一实现细节 —— 一旦将来 schema 变动(例如重建该表、
-        /// 或某个覆盖索引令查询改走索引),写回顺序会被静默重排。这里把它钉死。
+        /// 显式的 <c>ORDER BY rowid</c> 让「导出顺序」不再依赖实现细节:此前没有 ORDER BY,
+        /// 靠的是"全表扫描天然按 rowid 走" —— 一旦将来 schema 变动(例如重建该表、或某个覆盖
+        /// 索引令查询改走索引),写回顺序会被静默重排。这里把它钉死。
+        /// <para>
+        /// 但**别把它读成"严格等于插入顺序"**:<c>rowid</c> 只复用「当时最大 +1」的那个槽位,
+        /// 所以「回收站彻底删除某行(见 <c>KM2DatabaseService.PurgeDeletedOriginalLines</c>) →
+        /// 该条目被重新导入」时,它会拿到**新的、更大的** rowid ⇒ 排到**末尾**,而不是它原先的位置。
+        /// 实测该 schema(<c>key TEXT PRIMARY KEY</c>):<c>a b c d e</c> 删掉 <c>e</c> 与 <c>c</c>
+        /// 后重新导入 <c>c</c>,顺序变为 <c>a b d c</c>。
+        /// </para>
+        /// <para>
+        /// 影响面:只影响**写回设备时的条目次序**(内容不丢、不重),且需要「彻底删除 + 重新导入」
+        /// 同时发生才触发 —— 正常阅读导入的库不会碰到。要严格按插入序,得再加一列显式序号,
+        /// 那属于 schema 改动,不在当前范围。
+        /// </para>
         /// </remarks>
         public List<OriginalClippingLine> GetAll() {
             var results = new List<OriginalClippingLine>();

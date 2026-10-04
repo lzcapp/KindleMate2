@@ -190,8 +190,13 @@ public sealed class SyncExportTests : IDisposable {
 
     /// <summary>
     /// 导出顺序 = 插入顺序(插入顺序 = 原始文件里的追加顺序),写回设备后设备上的条目次序
-    /// 就等于库里的次序。仓库层的 <c>ORDER BY rowid</c> 把这件事从"实现细节"变成**契约**。
+    /// 就等于库里的次序。仓库层的 <c>ORDER BY rowid</c> 让这件事**不再依赖全表扫描的实现细节**。
     /// </summary>
+    /// <remarks>
+    /// 注意本用例的场景(**从未彻底删除过任何行**)下 rowid 序 = 插入序,所以这两者在此等价;
+    /// 但「彻底删除(清理回收站)后重新导入」的行会拿到更大的 rowid 而排到末尾 —— 那条边界
+    /// 见 <c>OriginalClippingLineRepository.GetAll</c> 的注释,本用例**不覆盖**。
+    /// </remarks>
     [Fact]
     public void Export_WritesEntriesInInsertionOrder() {
         ImportClippings("内容一", "内容二", "内容三");
