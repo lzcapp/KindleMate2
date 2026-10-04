@@ -113,11 +113,12 @@ internal static class ExportModelBuilder {
     }
 
     /// <summary>
-    /// <c>BriefType</c> → 类型文本的判定,与 <c>ExportManager.WriteClippingsCsv</c> 里的写法逐字相同。
+    /// <c>BriefType</c> → 类型文本的判定,供 **CSV 与 JSON 两个导出 writer 共用**。
     /// </summary>
     /// <remarks>
-    /// 这里**刻意没有**改成让 CSV 也来调本方法:CSV 属于既有导出路径,本次改动不碰它
-    /// (见 PR 约定)。代价是同一判定有两份实现,故在此注明:改口径时两处要一起改。
+    /// 输出的是**与界面语言无关的枚举名**(<c>Highlight</c> / <c>Note</c> / …),而不是本地化文案 ——
+    /// 下游脚本 / Anki 按字段值解析,值随界面语言变化会直接破坏它们。UI 侧的
+    /// <c>TypeTextMap.Of</c> 输出本地化文案并附带分组用的 <c>TypeKind</c>,**刻意不共用本方法**。
     /// </remarks>
     internal static string BriefTypeText(long? briefType) {
         return briefType is { } brief && Enum.IsDefined(typeof(BriefType), (int)brief)
