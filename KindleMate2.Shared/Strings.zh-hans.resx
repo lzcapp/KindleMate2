@@ -424,7 +424,7 @@
 	  <value>Kindle设备连接失败</value>
   </data>
   <data name="Device_Mtp_Connect_Failed" xml:space="preserve">
-  	<value>未能读取 Kindle。请确认:① 已用 USB 数据线连接;② 系统弹出「允许配件连接?」时点了「允许」;③ 没有其他 MTP 程序(Amazon USB File Manager、OpenMTP、Calibre)正在占用设备。</value>
+  	<value>未能读取 Kindle。请确认：① 已用 USB 数据线连接；② 系统弹出「允许配件连接？」时点了「允许」；③ 没有其他 MTP 程序(Amazon USB File Manager、OpenMTP、Calibre)正在占用设备。</value>
   </data>
   <data name="Device_Clippings_Not_Found" xml:space="preserve">
   	<value>已连上设备,但没找到 My Clippings.txt(应在 documents/My Clippings.txt)。</value>
