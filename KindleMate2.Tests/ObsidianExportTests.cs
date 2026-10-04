@@ -105,6 +105,9 @@ public sealed class ObsidianExportTests : IDisposable {
         ExportManager.WriteObsidianVault(clippings, new List<Lookup>(), _dir, FixedAt);
 
         var md = File.ReadAllText(Directory.GetFiles(BooksDir, "*.md").Single());
+        // 先做**结构合法性**检查:标量本身必须是合法 YAML(见该 helper 的 remarks ——
+        // 只靠下面的回读断言挡不住"少转义一个引号")。
+        AssertValidYamlDoubleQuoted(ReadFrontmatterLine(md, "title"));
         // 书名经中间模型 Trim 后才写 frontmatter,故期望值同样 Trim;其余转义必须逐字还原。
         Assert.Equal(title.Trim(), ReadQuotedFrontmatterValue(md, "title"));
     }
@@ -117,7 +120,42 @@ public sealed class ObsidianExportTests : IDisposable {
         ExportManager.WriteObsidianVault(clippings, new List<Lookup>(), _dir, FixedAt);
 
         var md = File.ReadAllText(Directory.GetFiles(BooksDir, "*.md").Single());
+        AssertValidYamlDoubleQuoted(ReadFrontmatterLine(md, "author"));
         Assert.Equal("  刘慈欣  ", ReadQuotedFrontmatterValue(md, "author"));
+    }
+
+    /// <summary>
+    /// 断言一个 YAML 双引号标量**自身合法**:整体被双引号包住,内部每个 <c>"</c> 都被转义,
+    /// 每个 <c>\</c> 都起一个合法转义序列(<c>\\</c> / <c>\"</c> / <c>\n</c> / <c>\r</c> / <c>\t</c>)。
+    /// </summary>
+    /// <remarks>
+    /// 为什么不能只靠 <see cref="UnquoteYamlDoubleQuoted"/> 回读:那个反转义器对未转义的 <c>"</c>
+    /// 是**宽容**的(掐头去尾取 body,内层引号原样留下),于是 writer 少转义一个引号时回读结果
+    /// 照样正确 —— 2026-10-04 变异验证实测:把 <c>'"'</c> 的转义去掉,回读断言全绿、只有本检查
+    /// 能抓住。故这里独立做一次**结构合法性**校验,不依赖 writer 的转义实现。
+    /// <para>
+    /// 刻意不引入真正的 YAML 解析器(如 YamlDotNet):为一条断言给测试工程加依赖不划算,
+    /// 而这个结构检查足以覆盖"引号/反斜杠没转义"这一类缺陷。真要做严格 YAML 往返,
+    /// 属于另一个量级的改动。
+    /// </para>
+    /// </remarks>
+    private static void AssertValidYamlDoubleQuoted(string scalar) {
+        Assert.StartsWith("\"", scalar, StringComparison.Ordinal);
+        Assert.EndsWith("\"", scalar, StringComparison.Ordinal);
+        Assert.True(scalar.Length >= 2, $"标量短于一对引号:{scalar}");
+
+        var body = scalar[1..^1];
+        for (var i = 0; i < body.Length; i++) {
+            var c = body[i];
+            Assert.True(c != '"', $"双引号标量里出现**未转义**的 '\"'(位置 {i}):{scalar}");
+            if (c != '\\') {
+                continue;
+            }
+            i++;
+            Assert.True(i < body.Length, $"标量以孤立的反斜杠结尾:{scalar}");
+            Assert.True(body[i] is '\\' or '"' or 'n' or 'r' or 't',
+                $"非法转义序列 '\\{body[i]}':{scalar}");
+        }
     }
 
     // ————————————————————————— 正文形态 —————————————————————————
