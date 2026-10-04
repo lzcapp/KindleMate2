@@ -424,16 +424,16 @@
 	  <value>Kindle裝置連線失敗</value>
   </data>
   <data name="Device_Mtp_Connect_Failed" xml:space="preserve">
-  	<value>未能讀取 Kindle。請確認:① 已用 USB 傳輸線連接;② 系統彈出「允許配件連接?」時按了「允許」;③ 沒有其他 MTP 程式(Amazon USB File Manager、OpenMTP、Calibre)正在佔用裝置。</value>
+  	<value>未能讀取 Kindle。請確認：① 已用 USB 傳輸線連接；② 系統彈出「允許配件連接？」時按了「允許」；③ 沒有其他 MTP 程式(Amazon USB File Manager、OpenMTP、Calibre)正在佔用裝置。</value>
   </data>
   <data name="Device_Clippings_Not_Found" xml:space="preserve">
-  	<value>已連上裝置,但找不到 My Clippings.txt(應在 documents/My Clippings.txt)。</value>
+  	<value>已連上裝置，但找不到 My Clippings.txt（應在 documents/My Clippings.txt）。</value>
   </data>
   <data name="Device_Clippings_Read_Failed" xml:space="preserve">
-  	<value>從裝置讀取 {0} 失敗(傳輸中斷,請重新插拔裝置後重試)。</value>
+  	<value>從裝置讀取 {0} 失敗（傳輸中斷，請重新插拔裝置後重試）。</value>
   </data>
   <data name="Device_Mtp_Sync_Failed" xml:space="preserve">
-  	<value>寫回裝置失敗。若裝置上的 My Clippings.txt 已被刪除,可用本機備份目錄中的檔案還原。</value>
+  	<value>寫回裝置失敗。若裝置上的 My Clippings.txt 已被刪除，可用本機備份目錄中的檔案還原。</value>
   </data>
   <data name="Ui_Update_Check" xml:space="preserve">
   	<value>檢查更新</value>
@@ -445,7 +445,7 @@
   	<value>已是最新版本</value>
   </data>
   <data name="Ui_Update_CheckFailed" xml:space="preserve">
-  	<value>檢查更新失敗,請稍後再試</value>
+  	<value>檢查更新失敗，請稍後再試</value>
   </data>
   <data name="Ui_Update_Downloading" xml:space="preserve">
   	<value>正在下載更新:{0}%</value>
@@ -460,7 +460,7 @@
   	<value>更新失敗:{0}</value>
   </data>
   <data name="Ui_Update_Restarting" xml:space="preserve">
-  	<value>更新已就緒,即將重啟以完成安裝</value>
+  	<value>更新已就緒，即將重啟以完成安裝</value>
   </data>
   <data name="Ui_Menu_File" xml:space="preserve">
     <value>檔案(_F)</value>
@@ -505,13 +505,13 @@
     <value>匯出為 CSV</value>
   </data>
   <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
-    <value>匯出為 CSV(含釋義)</value>
+    <value>匯出為 CSV（含釋義）</value>
   </data>
   <data name="Ui_Menu_ExportJson" xml:space="preserve">
     <value>匯出為 JSON</value>
   </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
-    <value>將連線查詢生詞釋義:全部生詞會被傳送到有道詞典。是否繼續?</value>
+    <value>將連線查詢生詞釋義：全部生詞會被傳送到有道詞典。是否繼續？</value>
   </data>
   <data name="Ui_Menu_RebuildDatabase" xml:space="preserve">
     <value>重建資料庫</value>
@@ -781,7 +781,7 @@
     <value>維護資料庫</value>
   </data>
   <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
-    <value>將清洗 {0} 條標註的首尾標點(共掃描 {1} 條),並刪除空條目 {2} 條、重複項 {3} 條;不會改動其他記錄,操作前會自動備份資料庫。</value>
+    <value>將清洗 {0} 條標註的首尾標點（共掃描 {1} 條），並刪除空條目 {2} 條、重複項 {3} 條；不會改動其他記錄，操作前會自動備份資料庫。</value>
   </data>
   <data name="Ui_Maintenance_Result_Cleaned_Format" xml:space="preserve">
     <value>已清洗 {0} 條標注的首尾標點（共掃描 {1} 條）</value>
@@ -811,10 +811,10 @@
     <value>帶刪除線的標點是本次會被清洗掉的字元。</value>
   </data>
   <data name="Ui_Dlg_ClippingClean_More_Format" xml:space="preserve">
-    <value>另有 {0} 條改動未在此列出,清洗後會全部寫入改動清單。</value>
+    <value>另有 {0} 條改動未在此列出，清洗後會全部寫入改動清單。</value>
   </data>
   <data name="Ui_ClippingClean_Skipped_Format" xml:space="preserve">
-    <value>另有 {0} 條整條皆為標點,已略過。</value>
+    <value>另有 {0} 條整條皆為標點，已略過。</value>
   </data>
   <data name="Ui_Stats_ByDate" xml:space="preserve">
     <value>按日期</value>

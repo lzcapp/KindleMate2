@@ -60,7 +60,7 @@ public sealed class DeviceStringsTests {
         var zh = Strings.ResourceManager.GetString("Device_Mtp_Connect_Failed", new CultureInfo("zh-Hans"))!;
 
         Assert.Contains("数据线", zh);
-        Assert.Contains("允许", zh);          // macOS 的「允许配件连接?」
+        Assert.Contains("允许", zh);          // macOS 的「允许配件连接？」
         Assert.Contains("MTP", zh);           // 被别的 MTP 客户端占用的可能
 
         var en = Strings.ResourceManager.GetString("Device_Mtp_Connect_Failed", new CultureInfo("en"))!;
