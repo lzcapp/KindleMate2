@@ -189,6 +189,59 @@ public sealed class MarkdownExportTests : IDisposable {
         Assert.NotEmpty(mdFiles);
     }
 
+    // ————————————————————————— 撞名消歧(PR-A) —————————————————————————
+
+    [Fact]
+    public void ClippingsToMarkdown_CollidingBookNames_BothSurvive_FirstNotOverwritten() {
+        // 「A/B」与「A:B」净化后同为 A_B;此前第二次会**静默覆盖**第一次(.md 与 .html 一起丢)。
+        SeedClipping("k1", "甲的内容", book: "A/B");
+        SeedClipping("k2", "乙的内容", book: "A:B");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, "A/B"));
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, "A:B"));
+
+        var mdFiles = Directory.GetFiles(outDir, "*.md");
+        Assert.Equal(2, mdFiles.Length);
+        var all = string.Concat(mdFiles.Select(File.ReadAllText));
+        // 第一本的内容必须仍在(没被第二本覆盖)。
+        Assert.Contains("甲的内容", all);
+        Assert.Contains("乙的内容", all);
+        // .html 与 .md 同基名,故也应各有一份。
+        Assert.Equal(2, Directory.GetFiles(outDir, "*.html").Length);
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_SameBookTwice_ReusesFile_NoNumberedSuffix() {
+        SeedClipping("k1", "内容一", book: "深度工作");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, "深度工作"));
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, "深度工作"));
+
+        // 重复导出同一本书 → 幂等覆盖,不堆出 (2)。
+        var mdFiles = Directory.GetFiles(outDir, "*.md");
+        Assert.Single(mdFiles);
+        Assert.DoesNotContain("(", Path.GetFileNameWithoutExtension(mdFiles[0]));
+    }
+
+    [Fact]
+    public void LookupsToMarkdown_CollidingWords_BothSurvive_FirstNotOverwritten() {
+        // 生词侧同一问题:Word 由 WordKey 去掉语言前缀得到,「A/B」与「A:B」净化后同为 A_B。
+        SeedLookup("en:A/B", "AAA");   // Lookup.Word = "A/B"
+        SeedLookup("en:A:B", "BBB");   // Lookup.Word = "A:B"
+        var outDir = Path.Combine(_dir, "vocab-out");
+
+        Assert.True(_lookupService.LookupsToMarkdown(outDir, "A/B"));
+        Assert.True(_lookupService.LookupsToMarkdown(outDir, "A:B"));
+
+        var mdFiles = Directory.GetFiles(outDir, "*.md");
+        Assert.Equal(2, mdFiles.Length);
+        var all = string.Concat(mdFiles.Select(File.ReadAllText));
+        Assert.Contains("usage of AAA", all);
+        Assert.Contains("usage of BBB", all);
+    }
+
     // ————————————————————————— helpers —————————————————————————
 
     private void SeedClipping(string key, string content, string book = "Book", string author = "Author") {
