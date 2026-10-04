@@ -22,16 +22,19 @@ public interface IOriginalClippingLineService {
     /// <param name="fileName">文件名。</param>
     /// <param name="exception">失败时的异常;成功为 <c>null</c>。</param>
     /// <param name="liveKeys">
-    /// 「**库里仍然存在**」的标注 key 集合(即 <c>clippings</c> 表里的 key)。
+    /// 「**库里仍然存在**」的标注 key 集合(即 <c>clippings</c> 表里的 key)。**必填** ——
+    /// 没有默认值,是为了让「新增导出路径时忘了过滤」变成**编译错误**而不是静默退回旧行为
+    /// (旧行为正是「连回收站一起导出」,会让已删除的条目在设备上复活)。
     /// <para>
-    /// 传 <c>null</c> 表示不过滤 —— 全部原始行都写出(仅供确实需要整表快照的场合)。
-    /// </para>
-    /// <para>
-    /// 传非空集合时,**只**写出 key 落在集合内的原始行。这是写回设备/备份的**必需**语义:
+    /// 传入集合时,**只**写出 key 落在集合内的原始行。这是写回设备/备份的**必需**语义:
     /// <c>original_clipping_lines</c> 同时充当回收站(「原始行仍在、但 <c>clippings</c> 里已无该
     /// key」= 已删除),若不过滤,已删除的标注会被一并导出、再覆盖回设备 → 条目复活。
     /// </para>
+    /// <para>
+    /// 显式传 <c>null</c> 表示不过滤(写出全部原始行)。目前**没有任何调用者**这么做,
+    /// 保留该分支只为「确实需要整表快照」的场合;真要这么用,请在调用点写明理由。
+    /// </para>
     /// </param>
     bool Export(string filePath, string fileName, out Exception? exception,
-        IReadOnlySet<string>? liveKeys = null);
+        IReadOnlySet<string>? liveKeys);
 }

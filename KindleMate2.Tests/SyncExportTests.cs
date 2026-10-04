@@ -116,24 +116,12 @@ public sealed class SyncExportTests : IDisposable {
         Assert.Equal(1, CountEntries(written));
     }
 
-    /// <summary>「导出原始标注到指定路径」走的是同一个 <c>Export</c>,语义必须一致。</summary>
-    [Fact]
-    public void ExportOriginalClippings_DoesNotWriteBackDeletedClipping() {
-        ImportClippings("保留的内容", "被删除的内容");
-        Assert.True(_clippingService.DeleteClipping(KeyOfContent("被删除的内容")));
-
-        var written = ExportToTempDir();
-        Assert.Contains("保留的内容", written);
-        Assert.DoesNotContain("被删除的内容", written);
-        Assert.Equal(1, CountEntries(written));
-    }
-
     /// <summary>
     /// 被「清理数据库」(清重复 / 清空条目)删掉的条目同样不该被导出 —— 它们与「删除标注」共用
     /// 同一个判据(原始行在、clippings 里没有)。
     /// </summary>
     [Fact]
-    public void ExportOriginalClippings_DoesNotWriteBackClippingsRemovedByClean() {
+    public void BackupClippings_DoesNotWriteClippingsRemovedByClean() {
         // 同书同文两条 → 精确重复,「清理」会把它们**都**删掉(与 CleanDatabase 既有语义一致);
         // 再加一条唯一的,用来证明清理没把不该删的删掉。
         ImportClippings("重复的内容", "重复的内容", "唯一的内容");
@@ -143,7 +131,7 @@ public sealed class SyncExportTests : IDisposable {
         Assert.Equal("唯一的内容", Assert.Single(_clippingRepo.GetAll()).Content);
         Assert.Equal(2, _km2.GetDeletedOriginalLines().Count);   // 回收站里躺着那两条被清理掉的
 
-        var written = ExportToTempDir();
+        var written = ExportTextViaBackup();
         Assert.Contains("唯一的内容", written);
         Assert.DoesNotContain("重复的内容", written);
         // 产物条数 = 存活条数(1),而不是原始行数(3) —— 回收站里的两条一条都不许出现
@@ -158,7 +146,7 @@ public sealed class SyncExportTests : IDisposable {
         ImportClippings("内容一", "内容二", "内容三");
         Assert.Equal(3, _originalRepo.GetAll().Count);
 
-        var written = ExportToTempDir();
+        var written = ExportTextViaBackup();
         Assert.Contains("内容一", written);
         Assert.Contains("内容二", written);
         Assert.Contains("内容三", written);
@@ -169,10 +157,7 @@ public sealed class SyncExportTests : IDisposable {
     /// <summary>库整体为空(没有任何原始行)时导出不该抛异常,产出的是空文件。</summary>
     [Fact]
     public void Export_OnEmptyDatabase_SucceedsAndWritesEmptyFile() {
-        var outDir = Path.Combine(_dir, "out");
-        Assert.True(_export.ExportOriginalClippings(outDir, ClippingsFileName, out var exception));
-        Assert.Null(exception);
-        Assert.Equal(string.Empty, File.ReadAllText(Path.Combine(outDir, ClippingsFileName)));
+        Assert.Equal(string.Empty, ExportTextViaBackup());
     }
 
     // ————————————————————— 换行与编码 —————————————————————
@@ -187,9 +172,7 @@ public sealed class SyncExportTests : IDisposable {
     public void Export_UsesCrlfAndNoBom() {
         ImportClippings("内容一");
 
-        var outDir = Path.Combine(_dir, "out");
-        Assert.True(_export.ExportOriginalClippings(outDir, ClippingsFileName, out _));
-        var bytes = File.ReadAllBytes(Path.Combine(outDir, ClippingsFileName));
+        var bytes = ExportBytesViaBackup();
 
         // 无 BOM(.NET 的 StreamWriter 默认就是无 BOM 的 UTF-8,这里把它钉死免得被改回去)
         Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
@@ -207,8 +190,13 @@ public sealed class SyncExportTests : IDisposable {
 
     /// <summary>
     /// 导出顺序 = 插入顺序(插入顺序 = 原始文件里的追加顺序),写回设备后设备上的条目次序
-    /// 就等于库里的次序。仓库层的 <c>ORDER BY rowid</c> 把这件事从"实现细节"变成**契约**。
+    /// 就等于库里的次序。仓库层的 <c>ORDER BY rowid</c> 让这件事**不再依赖全表扫描的实现细节**。
     /// </summary>
+    /// <remarks>
+    /// 注意本用例的场景(**从未彻底删除过任何行**)下 rowid 序 = 插入序,所以这两者在此等价;
+    /// 但「彻底删除(清理回收站)后重新导入」的行会拿到更大的 rowid 而排到末尾 —— 那条边界
+    /// 见 <c>OriginalClippingLineRepository.GetAll</c> 的注释,本用例**不覆盖**。
+    /// </remarks>
     [Fact]
     public void Export_WritesEntriesInInsertionOrder() {
         ImportClippings("内容一", "内容二", "内容三");
@@ -218,7 +206,7 @@ public sealed class SyncExportTests : IDisposable {
         Assert.Equal(new[] { "内容一", "内容二", "内容三" }, line4s);
 
         // ② 产物里的次序与之一致
-        var written = ExportToTempDir();
+        var written = ExportTextViaBackup();
         var i1 = written.IndexOf("内容一", StringComparison.Ordinal);
         var i2 = written.IndexOf("内容二", StringComparison.Ordinal);
         var i3 = written.IndexOf("内容三", StringComparison.Ordinal);
@@ -252,13 +240,26 @@ public sealed class SyncExportTests : IDisposable {
     private string KeyOfContent(string content) =>
         _clippingRepo.GetAll().Single(c => c.Content == content).Key;
 
-    /// <summary>导出到临时输出目录并返回产物文本。</summary>
-    private string ExportToTempDir() {
-        var outDir = Path.Combine(_dir, "out-" + Guid.NewGuid().ToString("N")[..6]);
-        Assert.True(_export.ExportOriginalClippings(outDir, ClippingsFileName, out var exception));
+    /// <summary>
+    /// 走「备份标注」出口产出一份 <c>Backups/MyClippings_&lt;时间戳&gt;.txt</c>,返回其绝对路径。
+    /// </summary>
+    /// <remarks>
+    /// 此前这里用的是 <c>ExportManager.ExportOriginalClippings</c>(导出到任意路径)。那个入口
+    /// **全仓无生产调用者、UI 也没有对应菜单**(移植遗留),已按 review 结论删除。它与备份出口
+    /// 走的是同一个 <c>OriginalClippingLineService.Export</c>(同样传存活 key 白名单),
+    /// 所以换到备份出口后覆盖等价 —— 反而只剩**真实存在**的两条出口被测。
+    /// </remarks>
+    private string ExportViaBackup() {
+        Assert.True(_export.BackupClippings(out var exception), "备份失败");
         Assert.Null(exception);
-        return File.ReadAllText(Path.Combine(outDir, ClippingsFileName));
+        return Directory.GetFiles(Path.Combine(_dir, "Backups"), "MyClippings_*.txt").Single();
     }
+
+    /// <summary>同 <see cref="ExportViaBackup"/> ,但返回文本。</summary>
+    private string ExportTextViaBackup() => File.ReadAllText(ExportViaBackup());
+
+    /// <summary>同 <see cref="ExportViaBackup"/> ,但返回原始字节(用于断言行尾与 BOM)。</summary>
+    private byte[] ExportBytesViaBackup() => File.ReadAllBytes(ExportViaBackup());
 
     /// <summary>数产物里有几条标注 —— 每条以一行 <c>==========</c> 收尾。</summary>
     private static int CountEntries(string text) {

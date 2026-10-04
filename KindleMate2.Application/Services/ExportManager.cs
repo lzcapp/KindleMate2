@@ -85,17 +85,11 @@ public class ExportManager : IExportManager {
             var dir = Path.Combine(_programPath, AppConstants.ExportsPathName);
             Directory.CreateDirectory(dir);
 
-            var stemByKey = _vocabService.GetAllVocabs()
-                .Where(v => !string.IsNullOrEmpty(v.WordKey))
-                .GroupBy(v => v.WordKey!, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.First().Stem ?? string.Empty, StringComparer.Ordinal);
-
             var lookups = _lookupService.GetAllLookups();
-            foreach (var lookup in lookups) {
-                if (lookup.WordKey != null && stemByKey.TryGetValue(lookup.WordKey, out var stem)) {
-                    lookup.Stem = stem;
-                }
-            }
+            // 与 JSON 导出**共用同一个补齐口径**(见 FillStemsFromVocabs)。此前这里是内联的
+            // 「无条件覆盖」版本,与 JSON 的「仅空才补」不一致 —— 现状下两条路输出相同
+            // (lookups 表没有 stem 列,读出来必为空),但口径分叉本身是个未来的坑。
+            FillStemsFromVocabs(lookups);
 
             var definitions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (includeDefinitions) {
@@ -158,21 +152,44 @@ public class ExportManager : IExportManager {
     /// 用 Vocab 表(<c>vocab.db</c> 的 WORDS)里的 stem 补齐 lookups 缺失的词形。
     /// </summary>
     /// <remarks>
-    /// <c>LOOKUPS</c> 表多数行的 stem 是空的,词形只存在于 WORDS 表;CSV 导出
-    /// (<see cref="ExportVocabsToCsvAsync"/>)就是这么取的,JSON 对同一份库不该给出另一个答案,
-    /// 故沿用同一口径。
+    /// <c>LOOKUPS</c> 表多数行的 stem 是空的,词形只存在于 WORDS 表,故导出时按
+    /// <c>WordKey</c> 从 WORDS 补齐。CSV 与 JSON **共用本方法**,以保证同一份库导出成两种
+    /// 格式时 stem 一致。
     /// <para>
-    /// 两处**刻意**的差异,说明如下:一是这里只在 <c>lookup.Stem</c> 为空时才补 —— CSV 那边是
-    /// 无条件覆盖(既有行为,本次不改动),于是 WORDS 里 stem 为空时会把 LOOKUPS 自带的非空
-    /// stem 抹掉;二是 CSV 那段代码没有被抽出来共用,因为那属于既有导出路径,本次不碰它。
+    /// 采用**保守**语义:仅在 <c>lookup.Stem</c> 为空时才补,不覆盖已有非空值。
+    /// 此前 CSV 是内联的「无条件覆盖」写法,两处口径分叉;现统一到本方法(见 commit 说明)。
+    /// </para>
+    /// <para>
+    /// 注意 <c>lookups</c> 表**没有 stem 列**(建表见 <c>DatabaseHelper</c>),<c>Lookup.Stem</c>
+    /// 只是一个**不落库的瞬时字段** —— 从仓储读出来必为 <c>null</c>。所以当前这个「仅空才补」
+    /// 的判据恒成立、两条路输出本来就相同;保留判据是为了在将来真把 stem 落库时不至于静默覆盖。
     /// </para>
     /// </remarks>
     private void FillStemsFromVocabs(IEnumerable<Lookup> lookups) {
-        var stemByKey = _vocabService.GetAllVocabs()
+        FillStems(lookups, VocabStemsByKey());
+    }
+
+    /// <summary>WORDS 表里「<c>WordKey</c> → stem」的映射(同 key 多行时取首行的值)。</summary>
+    private Dictionary<string, string> VocabStemsByKey() {
+        return _vocabService.GetAllVocabs()
             .Where(v => !string.IsNullOrEmpty(v.WordKey))
             .GroupBy(v => v.WordKey!, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.First().Stem ?? string.Empty, StringComparer.Ordinal);
+    }
 
+    /// <summary>
+    /// 按 <paramref name="stemByKey"/> 补齐 <paramref name="lookups"/> 里缺失的 stem。
+    /// <c>internal</c> 供单测(纯函数,不碰库)。
+    /// </summary>
+    /// <remarks>
+    /// 保守语义:**仅在 <c>lookup.Stem</c> 为空时才补**,不覆盖已有非空值 ——「导出不该抹掉
+    /// 库里已有的信息」。
+    /// <para>
+    /// CSV 与 JSON 两个调用点**必须都走本方法**,否则同一份库导出成两种格式会给出不同的 stem。
+    /// 这条不变式由 <c>VocabStemExportTests</c> 固化。
+    /// </para>
+    /// </remarks>
+    internal static void FillStems(IEnumerable<Lookup> lookups, IReadOnlyDictionary<string, string> stemByKey) {
         foreach (var lookup in lookups) {
             if (lookup.WordKey == null) {
                 continue;
@@ -223,9 +240,11 @@ public class ExportManager : IExportManager {
             if (string.IsNullOrWhiteSpace(clipping.Content)) {
                 continue;
             }
-            var type = clipping.BriefType is { } brief && Enum.IsDefined(typeof(BriefType), (int)brief)
-                ? ((BriefType)brief).ToString()
-                : string.Empty;
+            // 类型文本复用 ExportModelBuilder 的单一实现(此前这里是逐字重复的内联版本)。
+            // 注意:UI 侧的 TypeTextMap.Of **刻意不共用** —— 它输出本地化文案(如「划线」)并附带
+            // 分组用的 TypeKind,而导出必须写**与语言无关的枚举名**(Highlight),否则下游脚本 /
+            // Anki 的字段值会随界面语言变化。改口径只需改 BriefTypeText 一处,CSV 与 JSON 同步生效。
+            var type = ExportModelBuilder.BriefTypeText(clipping.BriefType);
             writer.WriteLine(string.Join(',',
                 EscapeCsv(clipping.Content),
                 EscapeCsv(type),
@@ -370,17 +389,6 @@ public class ExportManager : IExportManager {
     public bool BackupClippings(out Exception? exception) {
         var fileName = "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT;
         return _originalClippingLineService.Export(_backupPath, fileName, out exception, GetLiveClippingKeys());
-    }
-
-    /// <summary>
-    /// Exports original clippings to a specific path.
-    /// </summary>
-    /// <remarks>
-    /// 与 <see cref="BackupClippings"/> 同一语义:只导出**库里仍然存在的标注**,
-    /// 不含已删除(回收站)的条目。
-    /// </remarks>
-    public bool ExportOriginalClippings(string path, string fileName, out Exception? exception) {
-        return _originalClippingLineService.Export(path, fileName, out exception, GetLiveClippingKeys());
     }
 
     /// <summary>
