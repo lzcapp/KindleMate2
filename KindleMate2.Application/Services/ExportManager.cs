@@ -282,6 +282,31 @@ public class ExportManager : IExportManager {
     }
 
     /// <summary>
+    /// 取出「**库里仍然存在**」的标注 key 集合,供写回设备/备份时过滤掉回收站条目。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>original_clipping_lines</c> 同时充当回收站:「原始行仍在、但 <c>clippings</c> 里已无该
+    /// key」= 已删除(<c>KM2DatabaseService.GetDeletedOriginalLines</c> 用的是同一判据)。
+    /// 若导出不过滤这些行,则「删除标注 → 同步到设备」会把它**重新写回设备**,条目复活;
+    /// 备份出来的 <c>MyClippings_&lt;时间戳&gt;.txt</c> 里同样会混入已删除的条目。
+    /// </para>
+    /// <para>
+    /// 用「存活 key 白名单」而不是「排除回收站」的写法:前者是**正面**表述,天然也覆盖
+    /// 「清理重复 / 清理空条目」删掉的那些行(它们同样是原始行在、clippings 里没有)。
+    /// </para>
+    /// <para>
+    /// 比较器用 <see cref="StringComparer.Ordinal"/> —— 与 <c>KM2DatabaseService</c> 里回收站
+    /// 的判据保持同一口径,避免两处对同一个 key 得出不同结论。
+    /// </para>
+    /// </remarks>
+    private HashSet<string> GetLiveClippingKeys() {
+        return _clippingService.GetAllClippings()
+            .Select(c => c.Key)
+            .ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// JSON 序列化选项(UTF-8、缩进、宽松转义)。
     /// </summary>
     /// <remarks>
@@ -337,22 +362,34 @@ public class ExportManager : IExportManager {
     /// 备份都覆盖上一份。
     /// 现改为与 <see cref="SyncToKindle"/> 一致的命名：MyClippings_&lt;时间戳&gt;.txt，
     /// 既表明这是标注文本而非数据库，也不再互相覆盖。
+    /// <para>
+    /// 导出内容 = **库里仍然存在的标注**(<see cref="GetLiveClippingKeys"/>),不含回收站里
+    /// 那些已删除的条目 —— 备份不该把用户删掉的东西又带回来。
+    /// </para>
     /// </remarks>
     public bool BackupClippings(out Exception? exception) {
         var fileName = "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT;
-        return _originalClippingLineService.Export(_backupPath, fileName, out exception);
+        return _originalClippingLineService.Export(_backupPath, fileName, out exception, GetLiveClippingKeys());
     }
 
     /// <summary>
     /// Exports original clippings to a specific path.
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="BackupClippings"/> 同一语义:只导出**库里仍然存在的标注**,
+    /// 不含已删除(回收站)的条目。
+    /// </remarks>
     public bool ExportOriginalClippings(string path, string fileName, out Exception? exception) {
-        return _originalClippingLineService.Export(path, fileName, out exception);
+        return _originalClippingLineService.Export(path, fileName, out exception, GetLiveClippingKeys());
     }
 
     /// <summary>
     /// Syncs clippings back to the connected Kindle device.
     /// </summary>
+    /// <remarks>
+    /// 写回的必须是**库里仍然存在的标注**:这里传 <see cref="GetLiveClippingKeys"/> 过滤,
+    /// 否则已删除的条目会被写回设备、在设备上"复活"。
+    /// </remarks>
     public void SyncToKindle() {
         var backupClippingsPath = Path.Combine(_backupPath, "MyClippings_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.TXT);
         var backupWordsPath = Path.Combine(_backupPath, "vocab_" + DateTimeHelper.GetCurrentTimestamp() + FileExtension.DB);
@@ -362,7 +399,7 @@ public class ExportManager : IExportManager {
         }
 
         if (!_deviceManager.ImportFilesFromDevice(backupClippingsPath, backupWordsPath, out Exception? exception) ||
-            !_originalClippingLineService.Export(_tempPath, AppConstants.ClippingsFileName, out exception)) {
+            !_originalClippingLineService.Export(_tempPath, AppConstants.ClippingsFileName, out exception, GetLiveClippingKeys())) {
             throw exception!;
         }
 
