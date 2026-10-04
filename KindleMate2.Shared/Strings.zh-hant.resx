@@ -781,7 +781,7 @@
     <value>維護資料庫</value>
   </data>
   <data name="Ui_Maintenance_Message_Format" xml:space="preserve">
-    <value>將清洗 {0} 條標註的首尾標點(共掃描 {1} 條),並刪除空條目 {2} 條、重複項 {3} 條;不會改動其他記錄,操作前會自動備份資料庫。</value>
+    <value>將清洗 {0} 條標註的首尾標點(共掃描 {1} 條)，並刪除空條目 {2} 條、重複項 {3} 條；不會改動其他記錄，操作前會自動備份資料庫。</value>
   </data>
   <data name="Ui_Maintenance_Result_Cleaned_Format" xml:space="preserve">
     <value>已清洗 {0} 條標注的首尾標點（共掃描 {1} 條）</value>
