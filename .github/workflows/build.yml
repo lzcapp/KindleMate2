@@ -338,6 +338,11 @@ jobs:
           # 重命名生词撞名时**静默并入**(不再弹「已存在同名生词」把操作拦下)——
           # 同样是端到端:真库、真改名、真回查 lookups 有没有搬对、重号行有没有丢掉。
           grep -q "word merge:.*result=OK" "$work/smoke.txt"
+          # 端到端导出:真实会话里的 ExportManager 把 JSON / Obsidian 产物落到真实磁盘。
+          # axaml 的 grep 只证明"菜单入口还在"、单测只证明"手工组装 ExportManager 能导" ——
+          # 中间那段(真实会话 + 真实磁盘)只有这里能钉。与 table selection / word merge 同属
+          # "需要会话"的探针,故同样只在本作业断言,不在 Windows 作业重复钉。
+          grep -q "export:.*result=OK" "$work/smoke.txt"
           echo "cross-platform boot check passed on ${{ matrix.os }} (device: $expect)"
 
       # 防回归:scripts/bundle-libmtp.sh 曾经只接受绝对路径,而 release.yml 传进去的是

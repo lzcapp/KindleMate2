@@ -100,6 +100,27 @@ public sealed class VocabStemExportTests : IDisposable {
         Assert.Null(notInVocab.Stem);
     }
 
+    /// <summary>
+    /// WORDS 里**根本没有**该 key 时,lookup 自己已有的 stem 必须原样保留 —— 补齐逻辑不该
+    /// 因为"没找到"就把它抹成空(那等于把库里已有的信息丢掉)。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="FillStems_LeavesUnmatchedRowsEmpty"/> 互补:那条覆盖"本来就没值 → 保持没值",
+    /// 这条覆盖"本来有值 → 保持原值"。二者合起来才说明 FillStems 对"查不到 key"是**完全不动**。
+    /// <para>
+    /// 这条刻意是**直接**调 <c>FillStems</c> 而不是走导出端到端:lookups 表没有 stem 列,从库里读出来的
+    /// <c>Lookup.Stem</c> 恒为 null,"不被抹成空"在端到端上没有可观测差异 —— 那样写出来是条**空断言**。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void FillStems_KeepsExistingStem_WhenKeyAbsentFromVocabs() {
+        var lookup = new Lookup { WordKey = "en:banana", Stem = "库里已有的值" };
+
+        ExportManager.FillStems(new[] { lookup }, StemsByKey(("en:apple", "appl")));
+
+        Assert.Equal("库里已有的值", lookup.Stem);
+    }
+
     // ————————————————— 端到端:两种格式必须给出同一个 stem —————————————————
 
     /// <summary>WORDS 里有 stem 时,CSV 与 JSON 都要带上,且**两者相同**。</summary>
@@ -128,6 +149,36 @@ public sealed class VocabStemExportTests : IDisposable {
         var jsonStem = ReadJsonStem();
         Assert.Equal(string.Empty, csvStem);
         Assert.Equal(csvStem, jsonStem);
+    }
+
+    /// <summary>
+    /// 同一个 <c>word_key</c> 在 WORDS 里有多行时取**首行**的 stem —— 与
+    /// <c>VocabStemsByKey</c> 里 <c>GroupBy(...).First()</c> 的既有口径一致。
+    /// </summary>
+    /// <remarks>
+    /// WORDS 的主键是 <c>id</c> 而非 <c>word_key</c>,同一个词确实可能有多行(重复导入 / 词库合并)。
+    /// 这条把"取首行"钉死:改成 <c>Last()</c> / 任意行 / 把多行拼起来,导出结果都会随行序漂移,
+    /// 而 CSV 与 JSON 还可能各取一行、彼此分叉。仓库层按插入顺序返回,故"首行" = 先插入的那条。
+    /// </remarks>
+    [Fact]
+    public async Task CsvAndJson_UseFirstVocabRowStem_WhenKeyHasMultipleRows() {
+        // 同一 key 两行:先插入的先被 <c>GroupBy(...).First()</c> 取到。
+        Assert.True(_vocabRepo.Add(new Vocab {
+            Id = "en:apple", WordKey = "en:apple", Word = "apple", Stem = "appl"
+        }), "插入 WORDS 首行失败");
+        Assert.True(_vocabRepo.Add(new Vocab {
+            Id = "en:apple#dup", WordKey = "en:apple", Word = "apple", Stem = "不该被选中"
+        }), "插入 WORDS 次行失败");
+        Assert.True(_lookupRepo.Add(new Lookup {
+            WordKey = "en:apple", Usage = "an apple a day", Title = "Some Book",
+            Authors = "Some Author", Timestamp = "2020-01-01 10:00:00"
+        }), "插入 LOOKUPS 夹具失败");
+
+        await _export.ExportVocabsToCsvAsync(includeDefinitions: false);
+        Assert.True(_export.ExportVocabsToJson());
+
+        Assert.Equal("appl", ReadCsvStem());
+        Assert.Equal("appl", ReadJsonStem());
     }
 
     // ————————————————— helpers —————————————————
