@@ -115,7 +115,7 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj
 - [x] 删除（单条 / 整本书 / 某个词）与**回收站**（删除可恢复）
 - [x] 重命名书籍（书名 + 作者）
 - [x] 清理 / 重建 / 备份 / 清空数据库
-- [x] 导出为 Markdown / CSV（可导入 Anki）/ JSON（结构化）/ Obsidian 库（双链 + frontmatter）
+- [x] 导出为 Markdown / CSV（可导入 Anki）/ JSON（结构化）/ Obsidian 库（双链 + frontmatter）/ Anki 牌组（`.apkg`，拖进 Anki 即可）
 - [x] 统计功能
 - [x] 夜间模式（深色模式）
 - [x] 语言切换（简体中文 / 繁体中文 / English）
