@@ -6,6 +6,10 @@ public interface IExportManager {
     bool ExportClippingsToCsv();
     /// <summary>导出生词 CSV。<paramref name="includeDefinitions"/> 为 true 时会**联网**查释义(把生词发给有道)。</summary>
     Task<bool> ExportVocabsToCsvAsync(bool includeDefinitions, CancellationToken cancellationToken = default);
+    /// <summary>导出标注为 JSON(按书名分组),离线。</summary>
+    bool ExportClippingsToJson();
+    /// <summary>导出生词为 JSON,离线(不查释义)。</summary>
+    bool ExportVocabsToJson();
     /// <summary>
     /// 备份标注为可直接放回 Kindle 的 <c>MyClippings_&lt;时间戳&gt;.txt</c>。
     /// 内容 = **库里仍然存在的标注**,不含回收站里已删除的条目。

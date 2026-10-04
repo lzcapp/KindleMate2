@@ -394,7 +394,7 @@
     <value>重建数据库</value>
   </data>
   <data name="Confirm_Rebuild_Database" xml:space="preserve">
-    <value>确认要重建数据库吗?</value>
+    <value>确认要重建数据库吗？重建会从原始记录重新生成全部标注，回收站里已删除的标注也会一并恢复。</value>
   </data>
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>创建数据库失败</value>
@@ -506,6 +506,9 @@
   </data>
   <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
     <value>导出为 CSV(含释义)</value>
+  </data>
+  <data name="Ui_Menu_ExportJson" xml:space="preserve">
+    <value>导出为 JSON</value>
   </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>将联网查询生词释义:全部生词会被发送到有道词典。是否继续?</value>

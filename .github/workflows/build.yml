@@ -154,9 +154,10 @@ jobs:
           grep -q 'SelectedClipTable = SelectedItem?.Clipping' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           grep -q 'SelectedLookupTable = SelectedItem?.Lookup' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           # ④ 导出/备份在忙碌期必须让路(连接串没设 busy_timeout,与写操作并发直接 SQLITE_BUSY);
-          #    数量 4 = 导出全部(Markdown)/ 导出全部(CSV)/ 导出当前书 / 备份数据库,
-          #    多出第五个门禁时人工确认后改数。
-          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 4
+          #    数量 5 = 导出全部(Markdown)/ 导出全部(CSV)/ 导出全部(JSON)/ 导出当前书 / 备份数据库,
+          #    多出第六个门禁时人工确认后改数。
+          #    (2026-10-03:JSON 导出加入后 4 → 5,该断言按设计变红一次,已人工确认后改数。)
+          test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 5
           # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
@@ -287,6 +288,8 @@ jobs:
           # 不保证菜单项上还留着 IsVisible —— 删掉它不报错,菜单又会全域都出现)。
           grep -Eq 'IsVisible="\{Binding +CanRenameCurrentBook\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
           grep -Eq 'IsVisible="\{Binding +CanExportCurrent\}"' KindleMate2.Avalonia/Views/MainWindow.axaml
+          # 「导出为 JSON」菜单接线:入口从 axaml 删掉不报错(VM 命令还在,探针也不红),源码上钉一句。
+          grep -q 'Click="OnMenuExportJson"' KindleMate2.Avalonia/Views/MainWindow.axaml
           # 「重命名生词」共三处入口(左栏词节点 / 中栏列表行 / 详情面板),对齐「重命名书籍」。
           # 左栏这条与上面的 CanRenameCurrentBook **互斥**:丢了 IsVisible 的话,
           # 生词域的右键里会同时冒出「重命名书籍」和「重命名生词」两条。

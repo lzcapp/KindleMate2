@@ -7,5 +7,6 @@ namespace KindleMate2.Shared.Constants {
         public const string DB = ".db";
         public const string MD = ".md";
         public const string HTML = ".html";
+        public const string JSON = ".json";
     }
 }

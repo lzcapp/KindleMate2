@@ -391,7 +391,7 @@
     <value>重建資料庫</value>
   </data>
   <data name="Confirm_Rebuild_Database" xml:space="preserve">
-    <value>確認要重建資料庫嗎?</value>
+    <value>確認要重建資料庫嗎？重建會從原始記錄重新產生全部標註，回收站中已刪除的標註也會一併恢復。</value>
   </data>
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>建立資料庫失敗</value>
@@ -506,6 +506,9 @@
   </data>
   <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
     <value>匯出為 CSV(含釋義)</value>
+  </data>
+  <data name="Ui_Menu_ExportJson" xml:space="preserve">
+    <value>匯出為 JSON</value>
   </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>將連線查詢生詞釋義:全部生詞會被傳送到有道詞典。是否繼續?</value>

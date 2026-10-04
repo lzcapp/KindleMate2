@@ -394,7 +394,7 @@
     <value>Rebuild Database</value>
   </data>
   <data name="Confirm_Rebuild_Database" xml:space="preserve">
-    <value>Are you sure you want to rebuild database?</value>
+    <value>Are you sure you want to rebuild database? All clippings are regenerated from the original records, and the highlights you deleted (still in the recycle bin) will be restored as well.</value>
   </data>
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>Failed to create database</value>
@@ -506,6 +506,9 @@
   </data>
   <data name="Ui_Menu_ExportCsvWithDefinition" xml:space="preserve">
     <value>Export as CSV (with definitions)</value>
+  </data>
+  <data name="Ui_Menu_ExportJson" xml:space="preserve">
+    <value>Export as JSON</value>
   </data>
   <data name="Confirm_ExportCsv_Definitions" xml:space="preserve">
     <value>Definitions are looked up online: every word in your vocabulary list will be sent to Youdao Dictionary. Continue?</value>
