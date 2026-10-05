@@ -87,6 +87,70 @@ public sealed class SchemaVersionTests : IDisposable {
         Assert.Equal(1, AuditRowCount(_db));
     }
 
+    // ————————————————————————— 残缺库自愈 —————————————————————————
+
+    /// <summary>
+    /// **核心回归**:建库中途被打断留下的**残缺库**要能被自愈。
+    ///
+    /// <para>
+    /// <c>CreateDatabase</c> 不是原子的(逐脚本执行、无事务)。建到一半被打断后文件已在磁盘上,
+    /// 下次启动 <c>File.Exists==true</c> 会**跳过** <c>CreateDatabase</c> —— 此时
+    /// <c>MigrateSchemaIfNeeded</c> 是唯一的补救点。此前它只建 <c>schema_migration</c>,
+    /// 残缺库的缺失业务表就**永远不会被补上**(打开库报 <c>no such table</c>)。
+    /// </para>
+    /// <para>
+    /// 夹具刻意做成最严的形态:只留 <c>clippings</c> 一张表、<c>user_version=0</c>,
+    /// 其余业务表**连审计表都**不存在。于是这条同时覆盖"补业务表"与"重建审计表"两件事。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void MigrateSchemaIfNeeded_RepairsHalfBuiltDatabase() {
+        // 伪装成"建库刚建完 clippings 就被打断":删掉其余全部表(含审计表),版本压回 0。
+        foreach (var table in new[] { "lookups", "original_clipping_lines", "settings", "vocab", "schema_migration" }) {
+            Exec(_db, $"DROP TABLE IF EXISTS [{table}];");
+        }
+        Exec(_db, "PRAGMA user_version = 0;");
+
+        // 前置条件:残缺形态确实成立,否则本用例无法证明自愈路径。
+        Assert.Equal(0, DatabaseHelper.GetSchemaVersion(_db));
+        Assert.True(TableExists(_db, "clippings"));
+        Assert.False(TableExists(_db, "schema_migration"));
+        Assert.False(TableExists(_db, "lookups"));
+
+        DatabaseHelper.MigrateSchemaIfNeeded(_db);
+
+        // 缺哪张补哪张:全部业务表 + 审计表都到位,版本升到当前版本。
+        foreach (var table in new[] { "clippings", "lookups", "original_clipping_lines", "settings", "vocab", "schema_migration" }) {
+            Assert.True(TableExists(_db, table), $"残缺库自愈后仍缺表:{table}");
+        }
+        Assert.Equal(DatabaseHelper.CurrentSchemaVersion, DatabaseHelper.GetSchemaVersion(_db));
+        Assert.Equal(1, AuditRowCount(_db));
+    }
+
+    /// <summary>
+    /// **负向**:<c>user_version</c> 已是当前版本、但某张业务表被删掉(例如文件损坏)——
+    /// 迁移**不做无谓的全量建表**,该表仍不存在(早退判断生效)。
+    ///
+    /// <para>
+    /// 这条是**刻意**的:它把「只修**版本落后**的库」这个能力边界固定下来
+    /// (见 <c>MigrateSchemaIfNeeded</c> 的 XML 注释)。若想让"版本已是最新但表缺失"也被修,
+    /// 那是**语义变更**(需要单独的完整性检查),须先改注释与测试意图,不要默默放开这条断言。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void MigrateSchemaIfNeeded_DoesNotRebuildTables_WhenVersionIsCurrent() {
+        Exec(_db, "DROP TABLE IF EXISTS [vocab];");
+        Assert.Equal(DatabaseHelper.CurrentSchemaVersion, DatabaseHelper.GetSchemaVersion(_db));
+        Assert.False(TableExists(_db, "vocab"));
+
+        DatabaseHelper.MigrateSchemaIfNeeded(_db);
+
+        // 版本已是最新 → 早退,不补表;被删的表仍然不存在。
+        Assert.False(TableExists(_db, "vocab"),
+            "版本已是当前版本时迁移应早退、不做全量建表;若此断言失败,说明语义被放开了");
+        Assert.Equal(DatabaseHelper.CurrentSchemaVersion, DatabaseHelper.GetSchemaVersion(_db));
+    }
+
     // ————————————————————————— 幂等 —————————————————————————
 
     /// <summary>

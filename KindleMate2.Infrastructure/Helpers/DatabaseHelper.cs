@@ -568,12 +568,31 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
-        /// 幂等的 schema 迁移:把老库(阶段 0 之前建的库,即 v0)升到 <see cref="CurrentSchemaVersion"/>。
+        /// 幂等的 schema 迁移:把老库(阶段 0 之前建的库,即 v0)升到 <see cref="CurrentSchemaVersion"/>,
+        /// 并**补齐缺失的表**(见下方能力边界)。
         /// </summary>
         /// <remarks>
-        /// 全过程在**单事务**内完成(建审计表 + 写审计行 + 设 <c>user_version</c>)——
+        /// 全过程在**单事务**内完成(建全表 + 写审计行 + 设 <c>user_version</c>)——
         /// 因为 <c>PRAGMA user_version</c> 随事务回滚(见 <see cref="CurrentSchemaVersion"/>),
-        /// 这三步要么全成、要么全不动,不会留下"表建好了但版本没设"的中间态。
+        /// 这几步要么全成、要么全不动,不会留下"表建好了但版本没设"的中间态。
+        /// <para>
+        /// **能力边界**(重要,别以为它万能):
+        /// </para>
+        /// <list type="bullet">
+        /// <item>✅ **能修**:<c>user_version</c> 落后于当前版本(含 0)+ 表缺失 / 不全。
+        /// 遍历 <see cref="GetTableCreationScripts"/> 把缺的表补上,再标记版本。典型场景是
+        /// 「建库中途被打断」留下的**残缺库** —— <c>CreateDatabase</c> 不是原子的(逐脚本执行、
+        /// 无事务),建到一半被打断后文件已在磁盘上,下次启动 <c>File.Exists==true</c> 会跳过
+        /// <c>CreateDatabase</c>,这里就是唯一的补救点。</item>
+        /// <item>❌ **不能修**:<c>user_version</c> 已是当前版本、但表缺失(例如文件损坏)。
+        /// 下面的早退判断会直接返回,不做任何检查。那种情况需要单独的完整性检查,**不在本方法职责内**。</item>
+        /// </list>
+        /// <para>
+        /// 全部脚本都是 <c>CREATE TABLE / INDEX IF NOT EXISTS</c>,对**正常库是彻底的 no-op** ——
+        /// 因此这是纯粹的自愈,不会改写任何既有数据。顺带也会补索引(脚本集合末尾展开了
+        /// <see cref="GetIndexScripts"/>);与 <see cref="EnsureIndexesIfNeeded"/> 的重叠**无害**
+        /// (两者都幂等),故不必去动那个方法。
+        /// </para>
         /// <para>
         /// 已是当前版本或更高 → 直接返回,不做任何事。**注意:版本过高不在这里报错** ——
         /// 拒绝打开过高版本是 VM 层的职责(<c>MainWindowViewModel.PrepareDatabaseAsync</c> 的前向保护),
@@ -597,9 +616,16 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                 using var transaction = connection.BeginTransaction();
                 try {
-                    using (var command = connection.CreateCommand()) {
+                    // 建全建表脚本(不只是审计表)—— 全部是 CREATE TABLE/INDEX IF NOT EXISTS,
+                    // 对正常库是彻底的 no-op;对「建库中途被打断」留下的残缺库则是自愈:
+                    // 缺哪张补哪张。此前只建 schema_migration,那类库的缺失业务表永远不会被补上
+                    // (下次启动 File.Exists==true 会跳过 CreateDatabase,届时已无补救点)。
+                    // 注意 GetTableCreationScripts() 已包含 SchemaMigrationTableScript,
+                    // 故这里**不要**再单独跑一遍审计表脚本。
+                    foreach (var script in GetTableCreationScripts()) {
+                        using var command = connection.CreateCommand();
                         command.Transaction = transaction;
-                        command.CommandText = SchemaMigrationTableScript;
+                        command.CommandText = script;
                         command.ExecuteNonQuery();
                     }
 
