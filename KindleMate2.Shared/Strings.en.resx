@@ -399,6 +399,12 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>Failed to create database</value>
   </data>
+  <data name="Error_Database_TooNew" xml:space="preserve">
+    <value>Database version too new</value>
+  </data>
+  <data name="Database_TooNew_Message" xml:space="preserve">
+    <value>This database was created by a newer version of KindleMate2 (version {0}). Please update the app before opening it.</value>
+  </data>
   <data name="Confirm_Clear_Clippings" xml:space="preserve">
     <value>Are you sure you want to clear all clippings? </value>
   </data>

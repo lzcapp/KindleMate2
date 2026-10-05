@@ -125,8 +125,11 @@ public partial class MainWindow : Window {
             // 对齐原版 FrmMain 构造函数:固定 KM2.dat → 不存在则建库 → 一次性 lookups 迁移
             var (fatal, ok, error) = await vm.PrepareDatabaseAsync();
             if (fatal) {
+                // 标题优先用 VM 给的(FatalTitle 非空时);为空则完全保持原行为 ——
+                // 既有的「建库失败」路径弹框内容一个字符都不变,只有"库版本过新"才换标题。
+                var title = vm.FatalTitle.Length > 0 ? vm.FatalTitle : Strings.Create_Database_Failed;
                 await AppDialog.AlertAsync(this, Strings.Error,
-                    MessageHelper.BuildMessage(Strings.Create_Database_Failed, new Exception(error)));
+                    MessageHelper.BuildMessage(title, new Exception(error)));
                 Close();   // 原版此处 Environment.Exit(0)
                 return;
             }

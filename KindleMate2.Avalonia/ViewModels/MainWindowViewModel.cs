@@ -490,13 +490,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// <list type="number">
     ///   <item>库路径固定为 <c>&lt;当前目录&gt;/KM2.dat</c>(原版即如此,没有库选择器);</item>
     ///   <item>文件不存在则用 <c>DatabaseHelper.CreateDatabase</c> 自动建库,失败则报错并退出;</item>
+    ///   <item><b>前向保护</b>:库的 schema 版本高于本程序支持的版本 → 拒绝打开(硬失败,不是警告);</item>
+    ///   <item>执行一次幂等的 <c>MigrateSchemaIfNeeded</c>,把老库(v0)升到当前 schema 版本(失败仅告警);</item>
     ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断);</item>
     ///   <item>执行一次幂等的 <c>EnsureIndexesIfNeeded</c>,给老库补上查询索引(失败仅告警)。</item>
     /// </list>
     /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
     /// </summary>
     /// <returns>
-    /// <c>Fatal</c> = 建库失败(原版会错误框 + 退出);<c>Ok</c> = 库已成功打开;
+    /// <c>Fatal</c> = 建库失败或库版本过新(原版会错误框 + 退出);<c>Ok</c> = 库已成功打开;
     /// <c>Error</c> 为消息(失败时)。
     /// </returns>
     public async Task<(bool Fatal, bool Ok, string Error)> PrepareDatabaseAsync() {
@@ -508,7 +510,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             }
         }
 
+        // 前向保护:库版本高于本程序支持的版本 → 拒绝打开(照常写入可能损坏更新的 schema)。
+        // 判定放在迁移之前、且在「迁移失败仅告警」的 try 之外 —— 它是硬失败,不能被降级成警告。
+        // 新库刚由 CreateDatabase 建成 v1,所以这段对新建库不会触发。
+        var schemaVersion = DatabaseHelper.GetSchemaVersion(databasePath);
+        if (schemaVersion > DatabaseHelper.CurrentSchemaVersion) {
+            FatalTitle = Strings.Error_Database_TooNew;
+            return (true, false, string.Format(CultureInfo.CurrentCulture,
+                Strings.Database_TooNew_Message, schemaVersion));
+        }
+
         try {
+            DatabaseHelper.MigrateSchemaIfNeeded(databasePath);
             DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
             // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
             DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
@@ -525,6 +538,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>schema 迁移失败的告警文案(空表示无告警);由视图层弹一次提示。</summary>
     public string MigrationWarning { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// <c>Fatal</c> 时的错误标题(空表示沿用既有的「创建数据库失败」)。
+    /// </summary>
+    /// <remarks>
+    /// 视图层 <c>MainWindow.axaml.cs</c> 的 fatal 分支此前把标题硬编码为
+    /// <c>Strings.Create_Database_Failed</c>,但 fatal 现在有**两种**成因 —— 建库失败、库版本过新。
+    /// 后者若也弹「创建数据库失败」就语义不符,故把标题做成可覆写的属性;为空时视图层完全保持原行为,
+    /// 于是既有的「建库失败」路径弹框内容一个字符都不变。
+    /// </remarks>
+    public string FatalTitle { get; private set; } = string.Empty;
 
     /// <summary>持久化主题选择。</summary>
     public void PersistTheme(bool dark) {
