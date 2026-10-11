@@ -42,6 +42,7 @@ internal static class TestTempCleanup {
         "km2-mtp-import-", "km2-mtp-writeback-", "km2-update-tests-",
         "km2-anki-",
         "km2-pubexport-",
+        "km2-schema-integrity-tests-",
         "km2-schema-version-"
     };
 

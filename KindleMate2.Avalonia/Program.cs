@@ -461,6 +461,7 @@ internal static class Program {
             // → 打开一个 schema 不匹配的库后点「刷新」会直接崩进程。
             // 注意:原版对库损坏没有预校验,就是把异常交给 RefreshData 的 catch 弹错误框 ——
             // 因此这里断言的是"不抛异常 + 不留坏会话",而不是某个友好文案。
+            // (例外见下面场景 C:「空库 = 缺表」这一种成因现在**会**换成友好文案,那里单独断言。)
             var badPath = Path.Combine(Path.GetTempPath(), "km2-bad-" + Guid.NewGuid().ToString("N") + ".dat");
             File.WriteAllBytes(badPath, new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 });
             try {
@@ -483,7 +484,13 @@ internal static class Program {
                 try {
                     var blank = new MainWindowViewModel();
                     blank.OpenDatabaseAsync(emptyPath).GetAwaiter().GetResult();
-                    report.AppendLine($"empty db (fresh): hasSession={blank.HasSession} status={blank.StatusText}");
+                    // 空库 = 缺表,不是"文件损坏":应当给**友好文案**(而不是 SQLite 原文)。
+                    // 判据用资源模板里 {0} 之前的那段前缀拼出来 —— 与语言无关,且真正钉住
+                    // 「VM 确实走了这条文案」这层接线(单测够不着 Avalonia 的 VM)。
+                    var incompleteTemplate = Strings.Ui_Status_OpenFailed_SchemaIncomplete;
+                    var incompletePrefix = incompleteTemplate[..incompleteTemplate.IndexOf("{0}", StringComparison.Ordinal)];
+                    var friendlyHint = blank.StatusText.StartsWith(incompletePrefix, StringComparison.Ordinal);
+                    report.AppendLine($"empty db (fresh): hasSession={blank.HasSession} friendlyHint={friendlyHint} status={blank.StatusText}");
                     blank.ReloadAsync().GetAwaiter().GetResult();
                     report.AppendLine("  reload -> no throw (OK)");
                 } finally {

@@ -543,6 +543,83 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
+        /// 报告库里**缺失的表**(结构完整性检查,只读,**不做任何修补**)。
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// 用途单一:库打不开时把「结构损坏」这一种成因识别出来,好让上层给用户一条看得懂、能照着做的
+        /// 提示,而不是把 <c>SQLite Error 1: 'no such table: vocab'.</c> 原样甩出去 —— 那是给开发者看的。
+        /// </para>
+        /// <para>
+        /// <b>刻意只读</b>:不补表、不动版本号。要不要修、怎么修由用户决定(见 issue #148 的取舍说明)——
+        /// 自动补出来的是**空表**,原数据已经丢了,不该静默发生。
+        /// </para>
+        /// <para>
+        /// 期望清单**取自建表脚本本身**(<see cref="GetTableCreationScripts"/>),不另维护一份表名列表 ——
+        /// 另写一份必然与脚本漂移。索引脚本**不在**清单里:索引由 <see cref="EnsureIndexesIfNeeded"/>
+        /// 每次启动补齐,缺索引不算「结构损坏」。
+        /// </para>
+        /// </remarks>
+        /// <param name="filePath">SQLite 数据库文件路径。</param>
+        /// <param name="missingTables">缺的表名(按建表脚本顺序);不缺表时为空集合。</param>
+        /// <returns>
+        /// 确实缺表时为 <c>true</c>。库正常、路径为空、文件不存在,或**读不出**(页损坏 / 不是 SQLite
+        /// 文件 / 被占用)时均为 <c>false</c> —— 后几种不属于「缺表」这条路径,交给调用方沿用原来的报错。
+        /// </returns>
+        public static bool TryDescribeMissingTables(string filePath, out IReadOnlyList<string> missingTables) {
+            missingTables = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return false;
+            }
+
+            try {
+                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var connection = new SqliteConnection(GetConnectionString(filePath))) {
+                    connection.Open();
+                    using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT [name] FROM [sqlite_master] WHERE [type] = 'table';";
+                    using var reader = command.ExecuteReader();
+                    while (reader.Read()) {
+                        existing.Add(reader.GetString(0));
+                    }
+                }
+
+                var absent = ExpectedTableNames().Where(name => !existing.Contains(name)).ToList();
+                if (absent.Count == 0) {
+                    return false;
+                }
+
+                missingTables = absent;
+                return true;
+            } catch {
+                // 读不出(页损坏 / 不是 SQLite / 被占用):识别不了就不硬猜 —— 让调用方走原来的报错。
+                return false;
+            }
+        }
+
+        /// <summary>建表脚本里声明要建的表名,按脚本顺序。</summary>
+        /// <remarks>
+        /// 脚本形态固定为 <c>CREATE TABLE IF NOT EXISTS [名字] (</c>,按这个前缀取名字即可 ——
+        /// 不需要正则,也不会误取到索引脚本(<c>CREATE INDEX …</c> 不含该前缀)。
+        /// 若将来新增的建表脚本换了写法,<c>SchemaIntegrityTests</c> 里那条「期望表名集合」用例会红,
+        /// 从而逼着人回来看这里。
+        /// </remarks>
+        private static IEnumerable<string> ExpectedTableNames() {
+            const string prefix = "CREATE TABLE IF NOT EXISTS [";
+            foreach (var script in GetTableCreationScripts()) {
+                var start = script.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+                if (start < 0) {
+                    continue;
+                }
+                start += prefix.Length;
+                var end = script.IndexOf(']', start);
+                if (end > start) {
+                    yield return script[start..end];
+                }
+            }
+        }
+
+        /// <summary>
         /// 读取库的 schema 版本(<c>PRAGMA user_version</c>)。
         /// **读不出来时返回 0,不抛** —— 库损坏 / 非 SQLite 文件交给后续流程去报错,
         /// 不在这里引入新的崩溃点。

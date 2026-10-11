@@ -681,6 +681,12 @@
   <data name="Ui_Status_OpenFailed" xml:space="preserve">
     <value>Open failed: {0}</value>
   </data>
+  <data name="Ui_Status_OpenFailed_SchemaIncomplete" xml:space="preserve">
+    <value>Open failed: the database structure is incomplete. Missing table(s): {0}. Restore from a backup, or use "Rebuild database" to regenerate it.</value>
+  </data>
+  <data name="Ui_Text_ListSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
   <data name="Ui_Status_SummaryClippings" xml:space="preserve">
     <value>{0} books · {1} clippings · {2} deleted</value>
   </data>
