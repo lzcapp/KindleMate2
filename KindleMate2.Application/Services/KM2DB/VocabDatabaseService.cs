@@ -30,9 +30,13 @@ namespace KindleMate2.Application.Services.KM2DB {
             _vocabRepository = vocabRepository;
         }
 
-        /// <summary>导入设备上 vocab.db 里的生词与查询记录。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
+        /// <summary>
+        /// 导入设备上 vocab.db 里的生词与查询记录。<paramref name="progress"/> 供界面展示阶段与进度。
+        /// <paramref name="originBatch"/> 为本次导入在 import_batches 里的 id,写入各行的 origin_batch 溯源列;
+        /// 传 null 时不落溯源(旧调用方兼容)。
+        /// </summary>
         public bool ImportKindleWords(string sourceFilePath, out Dictionary<string, string> result,
-            IProgress<OperationProgress>? progress = null) {
+            IProgress<OperationProgress>? progress = null, long? originBatch = null) {
             try {
                 // 读的是另一份库(vocab.db),词量大时有可感知耗时
                 progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
@@ -53,7 +57,9 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 // Dedup against one in-memory snapshot of existing vocab ids instead of a
                 // GetById round-trip (new connection + query) per candidate row.
-                var existingVocabIds = _vocabRepository.GetAll()
+                // 必须含 tombstone(GetAllIncludingDeleted):删除是软删,若只读活表,
+                // "删过的词再导一次"会被判为新行插回来 —— 正是这次要修的复活缺陷。
+                var existingVocabIds = _vocabRepository.GetAllIncludingDeleted()
                     .Where(v => v.Id != null)
                     .Select(v => v.Id!)
                     .ToHashSet(StringComparer.Ordinal);
@@ -97,7 +103,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Stem = stem,
                         Category = category,
                         Timestamp = formattedDateTime,
-                        Frequency = 0
+                        Frequency = 0,
+                        OriginBatch = originBatch
                     });
                 }
                 if (newVocabs.Count > 0) {
@@ -115,7 +122,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 // constraint and rolls back the whole batch. The set is seeded from the
                 // existing destination rows so the previous per-row
                 // ExistsByWordKeyAndTimestamp query (one connection each) disappears too.
-                var seenLookupKeys = _km2DbLookupRepository.GetAll()
+                // 同样必须含 tombstone:被删的 (word_key, timestamp) 仍占着 UNIQUE 键,
+                // 只读活表会让删过的查询记录被重新导回来。
+                var seenLookupKeys = _km2DbLookupRepository.GetAllIncludingDeleted()
                     .Where(l => l.WordKey != null && l.Timestamp != null)
                     .Select(l => l.WordKey + "\u0000" + l.Timestamp)
                     .ToHashSet(StringComparer.Ordinal);
@@ -161,7 +170,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                         Usage = usage,
                         Title = title,
                         Authors = authors,
-                        Timestamp = formattedDateTime
+                        Timestamp = formattedDateTime,
+                        OriginBatch = originBatch
                     });
                 }
                 if (newLookups.Count > 0) {

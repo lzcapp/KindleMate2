@@ -5,7 +5,13 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
     public interface ILookupRepository {
         Lookup? GetByWordKey(string wordKey);
 
+        /// <summary>活跃行(未软删除)。UI / 导出 / 词频重算都用它。</summary>
         List<Lookup> GetAll();
+
+        /// <summary>
+        /// 全部行,含软删除的 tombstone。**只给导入判重用** —— 见 <see cref="IVocabRepository.GetAllIncludingDeleted"/> 的说明。
+        /// </summary>
+        List<Lookup> GetAllIncludingDeleted();
 
         List<Lookup> GetByTimestamp(string timeStamp);
 

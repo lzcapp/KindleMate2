@@ -193,8 +193,12 @@ public sealed class KmateImportTests : IDisposable {
         Assert.Single(vocabRepo.GetAll());
     }
 
+    /// <summary>
+    /// 判重下沉到唯一约束之后(2026-10-11):与目标库已有行(含 tombstone)撞主键的 vocab
+    /// 候选**静默跳过**,其余候选照常写入 —— 不再让一条冲突毁掉整批导入。
+    /// </summary>
     [Fact]
-    public void KmateAtomicWriter_ConflictRollsBackAllTables() {
+    public void KmateAtomicWriter_VocabConflict_SkippedWithoutRollingBackOthers() {
         var targetDb = NewDb("kt-atomic.db");
         var targetConn = DatabaseHelper.GetConnectionString(targetDb);
         var clipRepo = new ClippingRepository(targetConn);
@@ -212,16 +216,57 @@ public sealed class KmateImportTests : IDisposable {
             AuthorName = "Author"
         };
 
-        // The vocab insert conflicts -> whole batch must roll back, including clippings.
-        Assert.ThrowsAny<Exception>(() => KmateAtomicWriter.WriteAll(
+        KmateAtomicWriter.WriteAll(
             targetConn,
             new[] { goodClipping },
             Array.Empty<OriginalClippingLine>(),
             Array.Empty<Lookup>(),
-            new[] { conflictVocab }));
+            new[] { conflictVocab });
 
-        Assert.Empty(clipRepo.GetAll());
-        Assert.Single(vocabRepo.GetAll()); // only the pre-existing row remains
+        Assert.Single(clipRepo.GetAll()); // 好行照常写入(不再被冲突连坐)
+        var remaining = Assert.Single(vocabRepo.GetAll()); // 冲突候选被跳过,库里只有原有行
+        Assert.Equal("dup", remaining.Word); // 原有行未被 dup-2 覆盖
+    }
+
+    /// <summary>
+    /// 非判重类的失败必须整批回滚:导入绝不允许留下半迁移的库。
+    /// 冲突放在**第二步**(original_clipping_lines 主键冲突,它仍是普通 INSERT),
+    /// 这样第一步写入的 clippings 是"已写但必须撤销"的,回滚断言才有意义。
+    /// </summary>
+    [Fact]
+    public void KmateAtomicWriter_LineConflict_RollsBackEarlierTables() {
+        var targetDb = NewDb("kt-atomic2.db");
+        var targetConn = DatabaseHelper.GetConnectionString(targetDb);
+        var clipRepo = new ClippingRepository(targetConn);
+        var lineRepo = new OriginalClippingLineRepository(targetConn);
+        var vocabRepo = new VocabRepository(targetConn);
+
+        var existingLine = new OriginalClippingLine { Key = "cccc1111222233334444555566667777", Line1 = "pre-existing" };
+        Assert.True(lineRepo.Add(existingLine));
+
+        var goodClipping = new Clipping {
+            Key = "dddd1111222233334444555566667777",
+            Content = "a highlight",
+            BookName = "Atomic Book",
+            AuthorName = "Author"
+        };
+        var conflictLine = new OriginalClippingLine {
+            Key = "cccc1111222233334444555566667777", // same primary key as the pre-existing row
+            Line1 = "incoming duplicate"
+        };
+        var vocabCandidate = new Vocab { Id = "en:roll", Word = "roll", WordKey = "en:roll" };
+
+        // Step 1 (clippings) succeeds, step 2 (lines) conflicts -> everything rolls back.
+        Assert.ThrowsAny<Exception>(() => KmateAtomicWriter.WriteAll(
+            targetConn,
+            new[] { goodClipping },
+            new[] { conflictLine },
+            Array.Empty<Lookup>(),
+            new[] { vocabCandidate }));
+
+        Assert.Empty(clipRepo.GetAll()); // 冲突发生前已写入的 clippings 一并撤销
+        Assert.Equal("cccc1111222233334444555566667777", Assert.Single(lineRepo.GetAllKeys())); // 原有行原样
+        Assert.Empty(vocabRepo.GetAll()); // vocab candidate rolled back with the batch
     }
 
     /// <summary>

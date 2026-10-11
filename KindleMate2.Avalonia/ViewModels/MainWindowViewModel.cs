@@ -493,6 +493,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     ///   <item><b>前向保护</b>:库的 schema 版本高于本程序支持的版本 → 拒绝打开(硬失败,不是警告);</item>
     ///   <item>执行一次幂等的 <c>MigrateSchemaIfNeeded</c>,把老库(v0)升到当前 schema 版本(失败仅告警);</item>
     ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断);</item>
+    ///   <item>执行一次幂等的 <c>EnsureSoftDeleteSchemaIfNeeded</c>,补软删除列与 import_batches 表(失败仅告警);</item>
     ///   <item>执行一次幂等的 <c>EnsureIndexesIfNeeded</c>,给老库补上查询索引(失败仅告警)。</item>
     /// </list>
     /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
@@ -523,6 +524,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         try {
             DatabaseHelper.MigrateSchemaIfNeeded(databasePath);
             DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
+            // 软删除列 + import_batches 表(就地演进第一步)。必须在 MigrateLookupsSchemaIfNeeded 之后:
+            // 那个旧迁移重建 lookups 时用老的 5 列脚本,会抹掉 deleted_at/origin_batch。
+            DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(databasePath);
             // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
             DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
         } catch (Exception ex) {

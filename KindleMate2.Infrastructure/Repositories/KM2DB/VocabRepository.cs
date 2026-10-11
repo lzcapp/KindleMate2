@@ -1,4 +1,5 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+﻿using System.Globalization;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Entities;
@@ -6,61 +7,92 @@ using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.KM2DB {
     public class VocabRepository(string connectionString) : IVocabRepository {
+        /// <summary>全部业务列(顺序即 SELECT 序号;新增列时只改这一处)。</summary>
+        private const string Columns =
+            "id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB, deleted_at, origin_batch";
+
+        /// <summary>旧格式源库(软删除改造前的 KM 库,只读)的列清单 —— 没有 deleted_at / origin_batch。</summary>
+        private const string LegacyColumns =
+            "id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB";
+
+        /// <summary>软删除时间戳格式 —— 与其余时间列同款(InvariantCulture,防泰历/回历写出非公历年)。</summary>
+        private static string NowTimestamp() =>
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
         public Vocab? GetById(string id) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab WHERE id = @id", connection);
+            var cmd = new SqliteCommand($"SELECT {Columns} FROM vocab WHERE id = @id AND deleted_at IS NULL", connection);
             cmd.Parameters.AddWithValue("@id", id);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
-            if (reader.Read()) {
-                return new Vocab {
-                    Id = DatabaseHelper.GetSafeString(reader, 0) ?? throw new InvalidOperationException(),
-                    WordKey = DatabaseHelper.GetSafeString(reader, 1),
-                    Word = DatabaseHelper.GetSafeString(reader, 2) ?? throw new InvalidOperationException(),
-                    Stem = DatabaseHelper.GetSafeString(reader, 3),
-                    Category = DatabaseHelper.GetSafeLong(reader, 4),
-                    Translation = DatabaseHelper.GetSafeString(reader, 5),
-                    Timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                    Frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                    Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                    ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
-                };
-            }
-            return null;
+            return reader.Read() ? MapVocab(reader) : null;
         }
 
-        public List<Vocab> GetAll() {
+        public List<Vocab> GetAll() => Query(includeDeleted: false);
+
+        public List<Vocab> GetAllIncludingDeleted() => Query(includeDeleted: true);
+
+        /// <summary>
+        /// 该表是否已带软删除两列。按连接探测一次后缓存到实例 ——
+        /// 扁平 KM 导入会拿本仓储读**旧格式源库**(没有这两列),读取 SQL 必须随之分支。
+        /// </summary>
+        private bool? _hasSoftDeleteColumns;
+
+        /// <summary>
+        /// 共享查询:唯一区别是 WHERE 里有没有 <c>deleted_at IS NULL</c>(映射逻辑只写这一份)。
+        /// 旧格式源库没有这两列:退化为全表读(旧库本就没有 tombstone,语义不变),行按缺列映射。
+        /// </summary>
+        private List<Vocab> Query(bool includeDeleted) {
             var results = new List<Vocab>();
-            
+
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab", connection);
+            _hasSoftDeleteColumns ??= DatabaseHelper.HasColumn(connection, "vocab", "deleted_at");
+            var hasSoftDelete = _hasSoftDeleteColumns.Value;
+            var columns = hasSoftDelete ? Columns : LegacyColumns;
+
+            var sql = $"SELECT {columns} FROM vocab";
+            if (hasSoftDelete && !includeDeleted) {
+                sql += " WHERE deleted_at IS NULL";
+            }
+            var cmd = new SqliteCommand(sql, connection);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
-                var id = DatabaseHelper.GetSafeString(reader, 0);
-                var word = DatabaseHelper.GetSafeString(reader, 2);
-                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(word)) {
+                var vocab = MapVocab(reader);
+                if (vocab == null) {
                     continue;
                 }
-                var vocab = new Vocab {
-                    Id = id,
-                    WordKey = DatabaseHelper.GetSafeString(reader, 1),
-                    Word = word,
-                    Stem = DatabaseHelper.GetSafeString(reader, 3),
-                    Category = DatabaseHelper.GetSafeLong(reader, 4),
-                    Translation = DatabaseHelper.GetSafeString(reader, 5),
-                    Timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                    Frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                    Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                    ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
-                };
                 results.Add(vocab);
             }
             return results;
+        }
+
+        /// <summary>行 → 实体。id/word 任一为空的行视为脏数据跳过(返回 null,调用方过滤)。
+        /// 尾部两列按 <c>FieldCount</c> 探测:旧格式源库只有前 10 列,缺则为 null。</summary>
+        private static Vocab? MapVocab(SqliteDataReader reader) {
+            var id = DatabaseHelper.GetSafeString(reader, 0);
+            var word = DatabaseHelper.GetSafeString(reader, 2);
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(word)) {
+                return null;
+            }
+            return new Vocab {
+                Id = id,
+                WordKey = DatabaseHelper.GetSafeString(reader, 1),
+                Word = word,
+                Stem = DatabaseHelper.GetSafeString(reader, 3),
+                Category = DatabaseHelper.GetSafeLong(reader, 4),
+                Translation = DatabaseHelper.GetSafeString(reader, 5),
+                Timestamp = DatabaseHelper.GetSafeString(reader, 6),
+                Frequency = DatabaseHelper.GetSafeInt(reader, 7),
+                Sync = DatabaseHelper.GetSafeInt(reader, 8),
+                ColorRgb = DatabaseHelper.GetSafeLong(reader, 9),
+                DeletedAt = reader.FieldCount > 10 ? DatabaseHelper.GetSafeString(reader, 10) : null,
+                OriginBatch = reader.FieldCount > 11 ? DatabaseHelper.GetSafeLong(reader, 11) : null
+            };
         }
 
         public List<Vocab> GetByFuzzySearch(string search, AppEntities.SearchType type) {
@@ -75,29 +107,22 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                 AppEntities.SearchType.All => "WHERE word LIKE '%' || @strSearch || '%' ESCAPE '\\' OR stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
-            var query = "SELECT id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB FROM vocab " + sql;
+            if (!string.IsNullOrEmpty(sql)) {
+                sql += " AND deleted_at IS NULL";
+            } else {
+                sql = "WHERE deleted_at IS NULL";
+            }
+            var query = $"SELECT {Columns} FROM vocab " + sql;
             var cmd = new SqliteCommand(query, connection);
             cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
-                var id = DatabaseHelper.GetSafeString(reader, 0);
-                var word = DatabaseHelper.GetSafeString(reader, 2);
-                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(word)) {
+                var vocab = MapVocab(reader);
+                if (vocab == null) {
                     continue;
                 }
-                results.Add(new Vocab {
-                    Id = id,
-                    WordKey = DatabaseHelper.GetSafeString(reader, 1),
-                    Word = word,
-                    Stem = DatabaseHelper.GetSafeString(reader, 3),
-                    Category = DatabaseHelper.GetSafeLong(reader, 4),
-                    Translation = DatabaseHelper.GetSafeString(reader, 5),
-                    Timestamp = DatabaseHelper.GetSafeString(reader, 6),
-                    Frequency = DatabaseHelper.GetSafeInt(reader, 7),
-                    Sync = DatabaseHelper.GetSafeInt(reader, 8),
-                    ColorRgb = DatabaseHelper.GetSafeLong(reader, 9)
-                });
+                results.Add(vocab);
             }
             return results;
         }
@@ -107,7 +132,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT DISTINCT word FROM vocab", connection);
+            var cmd = new SqliteCommand("SELECT DISTINCT word FROM vocab WHERE deleted_at IS NULL", connection);
 
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {
@@ -125,7 +150,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM vocab", connection);
+            // 只数活跃行:状态栏 / 导入前后差值都按"用户看得见的条目"算,tombstone 不该掺进来。
+            var cmd = new SqliteCommand("SELECT COUNT(*) FROM vocab WHERE deleted_at IS NULL", connection);
             var result = cmd.ExecuteScalar();
 
             return Convert.ToInt32(result);
@@ -135,17 +161,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection);
-            cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());
-            cmd.Parameters.AddWithValue("@stem", vocab.Stem ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@category", vocab.Category ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@translation", vocab.Translation ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@sync", vocab.Sync ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb ?? (object)DBNull.Value);
+            var cmd = new SqliteCommand(InsertSql(orIgnore: false), connection);
+            AddParameters(cmd, vocab);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -156,19 +173,12 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
-                using var cmd = new SqliteCommand("INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)", connection, transaction);
+                // 批量插入一律 OR IGNORE:判重的最终裁判是数据库约束(vocab 主键 id),不再靠
+                // 应用层 HashSet 现读活表 —— 那正是"删过再导被复活"的根源(活表里已删行看不见)。
+                // 与 UNIQUE 冲突的行(含 tombstone)静默跳过,返回值只计真正插入的行数。
+                using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, transaction);
                 foreach (Vocab vocab in vocabs) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
-                    cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());
-                    cmd.Parameters.AddWithValue("@stem", vocab.Stem ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@category", vocab.Category ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@translation", vocab.Translation ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@frequency", vocab.Frequency ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@sync", vocab.Sync ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb ?? (object)DBNull.Value);
+                    AddParameters(cmd, vocab);
                     if (cmd.ExecuteNonQuery() > 0) {
                         count++;
                     }
@@ -181,11 +191,33 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return count;
         }
 
+        private static string InsertSql(bool orIgnore) =>
+            $"INSERT {(orIgnore ? "OR IGNORE " : string.Empty)}INTO vocab ({Columns}) VALUES " +
+            "(@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB, @deleted_at, @origin_batch)";
+
+        private static void AddParameters(SqliteCommand cmd, Vocab vocab) {
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());
+            cmd.Parameters.AddWithValue("@stem", vocab.Stem ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@category", vocab.Category ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@translation", vocab.Translation ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@timestamp", vocab.Timestamp ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@sync", vocab.Sync ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@deleted_at", vocab.DeletedAt ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@origin_batch", vocab.OriginBatch ?? (object)DBNull.Value);
+        }
+
         public bool Update(Vocab vocab) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE vocab SET word_key = @word_key, word = @word, stem = @stem, category = @category, translation = @translation, timestamp = @timestamp, frequency = @frequency, sync = @sync, colorRGB = @colorRGB WHERE id = @id", connection);
+            // 刻意不更新 deleted_at / origin_batch:Update 是"改内容",软删除状态与来源
+            // 是导入/删除流程写死的事实,不该被一次普通编辑顺手抹掉。
+            var cmd = new SqliteCommand("UPDATE vocab SET word_key = @word_key, word = @word, stem = @stem, category = @category, translation = @translation, timestamp = @timestamp, frequency = @frequency, sync = @sync, colorRGB = @colorRGB WHERE id = @id AND deleted_at IS NULL", connection);
             cmd.Parameters.AddWithValue("@id", vocab.Id ?? throw new InvalidOperationException());
             cmd.Parameters.AddWithValue("@word_key", vocab.WordKey ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@word", vocab.Word ?? throw new InvalidOperationException());
@@ -203,7 +235,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key", connection);
+            var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection);
             var wordKey = vocab.WordKey;
             if (string.IsNullOrWhiteSpace(wordKey)) {
                 throw new InvalidOperationException();
@@ -228,7 +260,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
-                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key", connection, transaction);
+                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection, transaction);
                 foreach (Vocab vocab in vocabs) {
                     var wordKey = vocab.WordKey;
                     if (string.IsNullOrWhiteSpace(wordKey)) {
@@ -247,30 +279,41 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return count;
         }
 
+        /// <summary>
+        /// 软删除(2026-10-11):置 deleted_at 而非 DELETE。行留着占住主键 id ——
+        /// 重新导入同一份库时 OR IGNORE 撞键跳过,被删的词不会"复活"。
+        /// </summary>
         public bool Delete(string id) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM vocab WHERE id = @id", connection);
             if (string.IsNullOrWhiteSpace(id)) {
                 throw new InvalidOperationException();
             }
+            var cmd = new SqliteCommand("UPDATE vocab SET deleted_at = @deleted_at WHERE id = @id AND deleted_at IS NULL", connection);
+            cmd.Parameters.AddWithValue("@deleted_at", NowTimestamp());
             cmd.Parameters.AddWithValue("@id", id);
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>按词软删除整词(词条 + 它的全部发生记录语义上一起消失,见 DeleteByWordKey 的调用方)。</summary>
         public bool DeleteByWordKey(string wordKey) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("DELETE FROM vocab WHERE word_key = @word_key", connection);
             if (string.IsNullOrWhiteSpace(wordKey)) {
                 throw new InvalidOperationException();
             }
+            var cmd = new SqliteCommand("UPDATE vocab SET deleted_at = @deleted_at WHERE word_key = @word_key AND deleted_at IS NULL", connection);
+            cmd.Parameters.AddWithValue("@deleted_at", NowTimestamp());
             cmd.Parameters.AddWithValue("@word_key", wordKey);
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// 真删(含 tombstone)—— 只用于「清空全部数据」:那条路径先整库备份再清空,
+        /// 语义是"我要全新的库",留着 tombstone 反而会挡住随后的重新导入。
+        /// </summary>
         public bool DeleteAll() {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();

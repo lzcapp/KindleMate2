@@ -23,7 +23,7 @@ public sealed class SchemaIntegrityTests : IDisposable {
 
     /// <summary>建表脚本里声明的全部表,按脚本顺序 —— 与 <c>DatabaseHelper.GetTableCreationScripts()</c> 一致。</summary>
     private static readonly string[] AllExpectedTables = [
-        "clippings", "lookups", "original_clipping_lines", "settings", "vocab",
+        "clippings", "lookups", "original_clipping_lines", "settings", "vocab", "import_batches",
     ];
 
     public SchemaIntegrityTests() {

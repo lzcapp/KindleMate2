@@ -134,9 +134,13 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 **库路径固定为 `<当前目录>/KM2.dat`**（与原 WinForms 版一致，没有库选择器）：
 
 1. 文件不存在 → `DatabaseHelper.CreateDatabase()` 自动建库；失败 → 错误框 + 退出。
-2. `DatabaseHelper.MigrateLookupsSchemaIfNeeded()` 一次性幂等 schema 迁移，失败仅告警；
-   `DatabaseHelper.EnsureIndexesIfNeeded()` 幂等补齐查询索引（`clippings` 复合索引、
-   `vocab.word_key`），失败同样仅告警。两条路径的索引 SQL 同源于 `GetIndexScripts()`。
+2. `DatabaseHelper.MigrateSchemaIfNeeded()` + `DatabaseHelper.MigrateLookupsSchemaIfNeeded()`
+   一次性幂等 schema 迁移，失败仅告警；随后 `DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded()`
+   补软删除两列与 `import_batches` 表（**必须排在 MigrateLookupsSchemaIfNeeded 之后** ——
+   后者重建 `lookups` 用的是老的 5 列脚本，会抹掉 `deleted_at` / `origin_batch`；
+   本迁移按 `PRAGMA table_info` 探测列是否存在，故对新库、老库、半迁移库都幂等）；
+   最后 `DatabaseHelper.EnsureIndexesIfNeeded()` 幂等补齐查询索引（`clippings` 复合索引、
+   `vocab.word_key`），失败同样仅告警。索引 SQL 同源于 `GetIndexScripts()`。
 3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份到
    `Backups/OnExit/`，随后 `DatabaseHelper.PruneBackups()` 只保留最新 3 份。
 
@@ -147,7 +151,32 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
 > （后者会被复制 / 云同步改写），这也是备份名时间戳必须走 `InvariantCulture` 的原因之一。
 
 当前格式的 schema 由 `DatabaseHelper.CreateDatabase()` 定义（`clippings` / `lookups` /
-`original_clipping_lines` / `settings` / `vocab`）。
+`original_clipping_lines` / `settings` / `vocab` / `import_batches`）。
+
+### vocab / lookups 的软删除与批次溯源（2026-10-11）
+
+删除 `vocab` / `lookups` 是**软删除**：置 `deleted_at`（`yyyy-MM-dd HH:mm:ss`，
+InvariantCulture），行留着占住唯一键。这样"删过的词再导一次"不会被当成新行插回来
+（复活缺陷）—— 判重读 `GetAllIncludingDeleted()`（含 tombstone），批量插入用
+`INSERT OR IGNORE`，让 `UNIQUE(word_key, timestamp)` / 主键 `id` 当最终裁判。
+
+- `GetAll()` 只返回活跃行（UI / 导出 / 词频 / 状态栏都按"用户看得见的条目"算）；
+  `GetAllIncludingDeleted()` 只给导入判重用。
+- `origin_batch` 指向 `import_batches.id`：每次导入开一行批次记录（来源类型 + 路径 +
+  时间 + 计数），事后可对账"这批词是哪次导进来的"，也是将来「撤销本次导入」的抓手。
+  批次只记账、**不参与判重**。
+- `DeleteAll()`（清空全部数据）保持**硬删**：那条路径先整库备份再清空，语义是"我要全新
+  的库"，留 tombstone 反而会挡住随后的重新导入。
+- `MergeWordKey` 搬行连 tombstone 一起搬（软删除状态是行的事实，跟着词走）；
+  `ExistsByWordKeyAndTimestamp` 计入 tombstone（幂等检查语义）。
+- **旧格式源库兼容**：扁平 KM 导入用同一套仓储读改造前的 `.dat`（没有这两列），
+  `Query()` 按 `DatabaseHelper.HasColumn()` 探测后分支列清单与 WHERE，
+  `MapVocab` / `MapLookup` 按 `FieldCount` 给缺失列补 null —— 一条 `no such column`
+  都不能有。只有 `GetAll` / `GetAllIncludingDeleted` 会碰到旧源库；其余方法
+  （`GetCount` / 模糊搜索等）只在当前库上用，当前库启动时已迁移、必有新列。
+
+> **`user_version` 保持 1 不升版**：纯加列迁移，旧版读端用显式列名不受影响，
+> 因此降级回旧版仍能打开库（逃生门）。旧版对新列一无所知，只是不读不写。
 
 > **旧格式库不能直接打开。** 那套关系型旧库（样本在仓库外 fixtures）虽有 `clippings` 表但**没有 `key` 列**，
 > 直接打开会报 `no such column: key`。迁入旧数据的通道是

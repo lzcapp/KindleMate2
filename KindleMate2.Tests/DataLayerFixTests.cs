@@ -47,16 +47,22 @@ public sealed class DataLayerFixTests : IDisposable {
         Assert.Equal("wk4999", last!.WordKey);
     }
 
+    /// <summary>
+    /// 批量插入改用 INSERT OR IGNORE 之后(2026-10-11 软删除改造):同一 (word_key, timestamp)
+    /// 在批内出现两次,不再抛异常整批回滚,而是跳过重复、只插首条,返回值只计真正插入的行数。
+    /// 判重的最终裁判是 UNIQUE(word_key, timestamp) —— 这也是"删过再导不复活"能成立的前提
+    /// (tombstone 占着唯一键,重导入的行被 OR IGNORE 挡掉)。
+    /// </summary>
     [Fact]
-    public void LookupBatchAdd_DuplicateCompositeKey_ThrowsAndRollsBackAtomically() {
+    public void LookupBatchAdd_DuplicateCompositeKey_SkipsDuplicateAndKeepsFirst() {
         var repo = new LookupRepository(DatabaseHelper.GetConnectionString(NewDb("t2.db")));
         var batch = new List<Lookup> {
             new() { WordKey = "dup", Title = "a", Timestamp = "2026-09-01 10:00:00" },
             // duplicate (word_key, timestamp) inside the same batch
             new() { WordKey = "dup", Title = "b", Timestamp = "2026-09-01 10:00:00" }
         };
-        Assert.ThrowsAny<Exception>(() => repo.Add(batch));
-        Assert.Null(repo.GetByWordKey("dup")); // atomic rollback, no partial rows
+        Assert.Equal(1, repo.Add(batch)); // only the first row counts as inserted
+        Assert.Equal("a", repo.GetByWordKey("dup")!.Title); // first wins, no rollback
     }
 
     [Theory]

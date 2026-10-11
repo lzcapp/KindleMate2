@@ -31,5 +31,11 @@
             get => _colorRgb;
             set => _colorRgb = value ?? -1;
         }
+
+        /// <summary>软删除时间(NULL=活跃)。删除不再抹行:行留着占判重键,重导入不会把它插回来。</summary>
+        public string? DeletedAt { get; set; }
+
+        /// <summary>来自哪次导入(import_batches.id;NULL=旧数据/手工数据,来源不可考)。</summary>
+        public long? OriginBatch { get; set; }
     }
 }

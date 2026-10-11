@@ -79,6 +79,21 @@ namespace KindleMate2.Infrastructure.Helpers {
             "CREATE INDEX IF NOT EXISTS [ix_vocab_word_key] ON [vocab]([word_key]);";
 
         /// <summary>
+        /// <c>[import_batches]</c> 的建表脚本。建库(<see cref="GetTableCreationScripts"/>)与
+        /// 老库迁移(<see cref="EnsureSoftDeleteSchemaIfNeeded"/>)共用,避免两处 SQL 漂移。
+        /// </summary>
+        internal const string ImportBatchTableScript =
+            @"
+            CREATE TABLE IF NOT EXISTS [import_batches] (
+                [id] INTEGER PRIMARY KEY AUTOINCREMENT, 
+                [source_type] TEXT NOT NULL, 
+                [source_path] TEXT, 
+                [imported_at] TEXT NOT NULL, 
+                [parsed_count] INTEGER DEFAULT(0), 
+                [inserted_count] INTEGER DEFAULT(0)
+            );";
+
+        /// <summary>
         /// Creates a new SQLite database with required tables.
         /// </summary>
         /// <param name="filePath">Path where the database file will be created</param>
@@ -159,6 +174,8 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [title] TEXT, 
                     [authors] TEXT, 
                     [timestamp] TEXT,
+                    [deleted_at] TEXT, 
+                    [origin_batch] INTEGER, 
                     CONSTRAINT [uq_lookups_word_key_timestamp] UNIQUE ([word_key], [timestamp])
                 );",
 
@@ -189,8 +206,15 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [timestamp] TEXT, 
                     [frequency] INT DEFAULT(0), 
                     [sync] INT DEFAULT(0), 
-                    [colorRGB] INTEGER DEFAULT(-1)
+                    [colorRGB] INTEGER DEFAULT(-1), 
+                    [deleted_at] TEXT, 
+                    [origin_batch] INTEGER
                 );",
+
+                // 导入批次留底:每次导入记一行(来源 + 时间 + 计数)。vocab/lookups 的 origin_batch
+                // 指回这里 —— 既能事后对账"这批词是哪次导进来的",也是「按批次撤销导入」的抓手。
+                // 老库由 EnsureSoftDeleteSchemaIfNeeded 补建,与本表同样幂等。
+                ImportBatchTableScript,
 
                 // 查询索引:新建的库在这里直接带上,老库由 EnsureIndexesIfNeeded 补。
                 // 两处共用 GetIndexScripts(),只维护一份 SQL。
@@ -796,6 +820,91 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
         
         /// <summary>
+        /// 软删除 + 导入批次留底的幂等补丁(「就地演进」第一步,2026-10-11):
+        /// <list type="bullet">
+        /// <item>给 <c>[vocab]</c> / <c>[lookups]</c> 补 <c>deleted_at</c>(软删除时间,NULL=活跃)
+        /// 与 <c>origin_batch</c>(来自哪次导入,NULL=未知)两列;</item>
+        /// <item>补建 <c>[import_batches]</c> 表(每次导入记一行来源与计数)。</item>
+        /// </list>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// 为什么删除要留底:此前生词/查询是硬删,判重集合又全靠**活表现读**
+        /// (<c>GetAll()</c> 进内存 HashSet),于是"删掉的词再导一次"会被原样插回来 ——
+        /// 标注侧正是靠 original_clipping_lines 留底避免了这个问题,生词侧一直缺位。
+        /// 现在删除只置 <c>deleted_at</c>,行不消失 ⇒ 判重键仍占位 ⇒ 重导入被跳过;
+        /// 且粒度天然正确:被删的 (词+时间戳) 拦下,同词**新时间戳**的查询照样导入。
+        /// </para>
+        /// <para>
+        /// <b>调用顺序有要求:必须在 <see cref="MigrateLookupsSchemaIfNeeded"/> 之后</b> ——
+        /// 那个旧迁移重建 lookups 表时用的是老的 5 列脚本,会把这两列抹掉;放在它之后跑,
+        /// 缺了就再补回来。本方法按「列是否存在」判定(而非版本号),因此对新库、老库、
+        /// 半迁移库都幂等,重复调用是 no-op。
+        /// </para>
+        /// </remarks>
+        /// <param name="filePath">SQLite 数据库文件路径;为空或文件不存在时直接返回。</param>
+        /// <exception cref="InvalidOperationException">迁移失败。</exception>
+        public static void EnsureSoftDeleteSchemaIfNeeded(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return;
+            }
+
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+                try {
+                    EnsureColumn(connection, transaction, "vocab", "deleted_at", "TEXT");
+                    EnsureColumn(connection, transaction, "vocab", "origin_batch", "INTEGER");
+                    EnsureColumn(connection, transaction, "lookups", "deleted_at", "TEXT");
+                    EnsureColumn(connection, transaction, "lookups", "origin_batch", "INTEGER");
+
+                    using (var command = connection.CreateCommand()) {
+                        command.Transaction = transaction;
+                        command.CommandText = ImportBatchTableScript;
+                        command.ExecuteNonQuery();
+                    }
+
+                    transaction.Commit();
+                } catch {
+                    transaction.Rollback();
+                    throw;
+                }
+            } catch (Exception e) {
+                throw new InvalidOperationException($"Failed to ensure soft-delete schema in '{filePath}': {e.Message}", e);
+            }
+        }
+
+        /// <summary>
+        /// 给已存在的表补一列(已存在则 no-op)。用 <c>PRAGMA table_info</c> 探测而不是直接
+        /// <c>ALTER TABLE</c> —— SQLite 对重复列名是硬错误,探测后跳过才能真正幂等。
+        /// </summary>
+        private static void EnsureColumn(SqliteConnection connection, SqliteTransaction transaction,
+            string table, string column, string columnType) {
+            var exists = false;
+            using (var pragma = connection.CreateCommand()) {
+                pragma.Transaction = transaction;
+                pragma.CommandText = $"PRAGMA table_info([{table}]);";
+                using var reader = pragma.ExecuteReader();
+                while (reader.Read()) {
+                    if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) {
+                        exists = true;
+                        break;
+                    }
+                }
+            }
+            if (exists) {
+                return;
+            }
+
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = $"ALTER TABLE [{table}] ADD COLUMN [{column}] {columnType};";
+            command.ExecuteNonQuery();
+        }
+
+        /// <summary>
         /// Idempotent one-time schema migration for the [lookups] table.
         /// Legacy databases were created with a single-column UNIQUE on [timestamp],
         /// which rejects legitimate duplicates (e.g. several words looked up within
@@ -902,6 +1011,24 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
             var s = reader.GetString(ordinal);
             return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        }
+
+        /// <summary>
+        /// 探测某表是否已有某列(<c>PRAGMA table_info</c>)。
+        /// 用途:扁平 KM 导入用**同一套仓储**读旧格式源库(只读),那些库没有后来加的列
+        /// (如 vocab/lookups 的 deleted_at / origin_batch)—— 读取 SQL 必须按源库实际
+        /// schema 分支,否则一条 <c>no such column</c> 会把整份导入打死。
+        /// </summary>
+        public static bool HasColumn(SqliteConnection connection, string table, string column) {
+            using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info([{table}]);";
+            using var reader = command.ExecuteReader();
+            while (reader.Read()) {
+                if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

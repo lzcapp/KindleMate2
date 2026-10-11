@@ -91,7 +91,7 @@ public static class KmateAtomicWriter {
             return;
         }
         using var cmd = new SqliteCommand(
-            "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES (@word_key, @usage, @title, @authors, @timestamp)",
+            "INSERT OR IGNORE INTO lookups (word_key, usage, title, authors, timestamp, deleted_at, origin_batch) VALUES (@word_key, @usage, @title, @authors, @timestamp, @deleted_at, @origin_batch)",
             connection, transaction);
         foreach (Lookup lookup in lookups) {
             cmd.Parameters.Clear();
@@ -100,6 +100,8 @@ public static class KmateAtomicWriter {
             cmd.Parameters.AddWithValue("@title", lookup.Title ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@authors", lookup.Authors ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@timestamp", lookup.Timestamp ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@deleted_at", lookup.DeletedAt ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@origin_batch", lookup.OriginBatch ?? (object)DBNull.Value);
             cmd.ExecuteNonQuery();
         }
     }
@@ -108,8 +110,10 @@ public static class KmateAtomicWriter {
         if (vocabs.Count == 0) {
             return;
         }
+        // OR IGNORE:判重由 UNIQUE/主键裁决(候选集是"现读活表"比出来的,已删行不在其中,
+        // 但它们仍占着键)。与目标库 tombstone 撞键的候选静默跳过,不让一条冲突毁掉整批导入。
         using var cmd = new SqliteCommand(
-            "INSERT INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB)",
+            "INSERT OR IGNORE INTO vocab (id, word_key, word, stem, category, translation, timestamp, frequency, sync, colorRGB, deleted_at, origin_batch) VALUES (@id, @word_key, @word, @stem, @category, @translation, @timestamp, @frequency, @sync, @colorRGB, @deleted_at, @origin_batch)",
             connection, transaction);
         foreach (Vocab vocab in vocabs) {
             cmd.Parameters.Clear();
@@ -123,6 +127,8 @@ public static class KmateAtomicWriter {
             cmd.Parameters.AddWithValue("@frequency", vocab.Frequency ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@sync", vocab.Sync ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@colorRGB", vocab.ColorRgb ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@deleted_at", vocab.DeletedAt ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@origin_batch", vocab.OriginBatch ?? (object)DBNull.Value);
             cmd.ExecuteNonQuery();
         }
     }

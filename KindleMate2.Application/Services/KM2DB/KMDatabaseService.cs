@@ -35,16 +35,19 @@ namespace KindleMate2.Application.Services.KM2DB {
             _kmVocabRepository = kmVocabRepository;
         }
 
-        /// <summary>合并一个扁平 schema 源库(原版 KM / 本程序 KM2)的数据。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
+        /// <summary>合并一个扁平 schema 源库(原版 KM / 本程序 KM2)的数据。<paramref name="progress"/> 供界面展示阶段与进度。
+        /// <paramref name="originBatch"/> 为本次导入在 import_batches 里的 id,写入各行的 origin_batch 溯源列;
+        /// 传 null 时不落溯源(旧调用方兼容)。</summary>
         /// <remarks>
         /// **先判重收集候选,再一次性批量写入**。此前是逐条 <c>Add</c> —— 每行一次连接、一次事务、
         /// 一次 fsync,几千条的源库上要十几分钟(实测:5,803 行 ≈ 15 分钟),这正是「导入数据库」卡顿的根因。
         /// 改走仓储的批量重载后,整批只开一个事务。
         /// 批量重载的失败语义已核对:Clipping / OriginalClippingLine 为「整批失败后降级逐条独立事务」,
-        /// Lookup / Vocab 为「原子回滚」;两边的源库判重都保证不会撞 UNIQUE,故与逐条写入等价。
-        /// 判重集合仍在收集时同步更新 —— 否则同一源库里的重复 key 会撞 PRIMARY KEY。
+        /// Lookup / Vocab 的批量插入改用 INSERT OR IGNORE(2026-10-11 软删除改造)—— 判重的最终裁判
+        /// 是数据库唯一约束,与 tombstone 撞键的行静默跳过,不再需要"判重集合保证不撞 UNIQUE"。
+        /// 判重集合仍在收集时同步更新 —— 否则同一源库里的重复行会被重复计入导入条数。
         /// </remarks>
-        public bool ImportFromKmDatabase(IProgress<OperationProgress>? progress = null) {
+        public bool ImportFromKmDatabase(IProgress<OperationProgress>? progress = null, long? originBatch = null) {
             try {
                 // 读源库全表(标注 / 原始行 / 生词)都在这一步,源库大时有可感知耗时
                 progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
@@ -121,11 +124,13 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // lookups 的身份是 (word_key, timestamp)(同一词可查多次),判重必须按这对键 ——
                     // 之前只按 word_key 判重,会把同词不同时间的查询记录**整批丢掉**。
                     // 与 KMate 导入路径(KmateDatabaseService)口径一致。
-                    var targetLookupPairs = _lookupRepository.GetAll()
+                    // 目标侧判重必须含 tombstone(GetAllIncludingDeleted):删除是软删,
+                    // 只读活表会把"目标库已删的词/查询"判成新行插回来(复活缺陷)。
+                    var targetLookupPairs = _lookupRepository.GetAllIncludingDeleted()
                         .Where(l => l.WordKey != null)
                         .Select(l => ComposeLookupPair(l.WordKey!, l.Timestamp))
                         .ToHashSet();
-                    var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
+                    var targetVocabIds = _vocabRepository.GetAllIncludingDeleted().Select(v => v.Id).ToHashSet();
 
                     // 生词同样「先判重收集、再批量写」,与标注一致
                     var vocabScanTotal = kmLookups.Count + kmVocabs.Count;
@@ -143,6 +148,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         }
                         var pair = ComposeLookupPair(kmLookup.WordKey, kmLookup.Timestamp);
                         if (!targetLookupPairs.Contains(pair)) {
+                            kmLookup.OriginBatch = originBatch;
                             lookupsToAdd.Add(kmLookup);
                             targetLookupPairs.Add(pair);
                         }
@@ -156,6 +162,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         vocabScanned++;
 
                         if (!targetVocabIds.Contains(kmVocab.Id)) {
+                            kmVocab.OriginBatch = originBatch;
                             vocabsToAdd.Add(kmVocab);
                             targetVocabIds.Add(kmVocab.Id);
                         }
