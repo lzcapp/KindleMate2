@@ -568,6 +568,29 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
+        /// 在**给定连接**上读 <c>PRAGMA user_version</c>;读不出就抛。
+        /// </summary>
+        /// <remarks>
+        /// 与 <see cref="GetSchemaVersion"/> 的区别是**不吞异常**:
+        /// <list type="bullet">
+        /// <item><see cref="GetSchemaVersion"/> 返回 0 表示"读不出来",调用方(VM 的前向保护)据此
+        /// 继续走既有的报错路径即可 —— 那是"读不到就当作最老"的宽松口径。</item>
+        /// <item>迁移路径上则必须严格:把"读不出来"当成 v0 会把高版本库**降级**(见
+        /// <see cref="MigrateSchemaIfNeeded"/> 里的说明),故这里失败即抛、中止迁移。</item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">读取失败或结果为 NULL 时抛出。</exception>
+        private static int ReadUserVersion(SqliteConnection connection) {
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA user_version;";
+            var result = command.ExecuteScalar();
+            if (result is null or DBNull) {
+                throw new InvalidOperationException("无法读取 PRAGMA user_version(结果为 NULL)。");
+            }
+            return Convert.ToInt32(result);
+        }
+
+        /// <summary>
         /// 幂等的 schema 迁移:把老库(阶段 0 之前建的库,即 v0)升到 <see cref="CurrentSchemaVersion"/>,
         /// 并**补齐缺失的表**(见下方能力边界)。
         /// </summary>
@@ -606,13 +629,18 @@ namespace KindleMate2.Infrastructure.Helpers {
                 return;
             }
 
-            if (GetSchemaVersion(filePath) >= CurrentSchemaVersion) {
-                return;
-            }
-
             try {
                 using var connection = new SqliteConnection(GetConnectionString(filePath));
                 connection.Open();
+
+                // 版本号在**本方法自己的连接**上读,且读不出就抛 —— 这里刻意不用 GetSchemaVersion:
+                // 那个方法的契约是"读不出来返回 0,不抛"(供 VM 的前向保护用),于是把「读失败」与
+                // 「v0 老库」归成了同一个 0。若在这里沿用它,一次瞬时读失败(例如库被短暂占用)就会让
+                // 一个**更高版本**的库被当成 v0:建表脚本全是 IF NOT EXISTS 故无结构破坏,但最后会把
+                // user_version 写成当前值 —— 即把库**降级**,前向保护随之失效。这里失败即中止,绝不下写版本。
+                if (ReadUserVersion(connection) >= CurrentSchemaVersion) {
+                    return;
+                }
 
                 using var transaction = connection.BeginTransaction();
                 try {
@@ -652,28 +680,42 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <c>PRAGMA user_version</c> 随事务回滚,先提交再设版本会留下不一致的中间态。
         /// </para>
         /// <para>
+        /// ⚠️ **内部顺序固定为「先写审计行、后设 <c>PRAGMA</c>」,不要对调。** 建库路径
+        /// (<paramref name="transaction"/> 为 <c>null</c>)是自动提交、没有事务可回滚,顺序决定了
+        /// 「被打断」时留下的是哪种中间态:
+        /// <list type="bullet">
+        /// <item>本顺序 → 中间态是「审计行已落、版本仍是 0」。下次启动
+        /// <see cref="MigrateSchemaIfNeeded"/> 的早退判断不成立,会重跑一遍并
+        /// <c>INSERT OR REPLACE</c> 覆盖那行 ⇒ **自愈**。</item>
+        /// <item>反过来(先设版本) → 中间态是「版本已是当前值、审计行缺失」。下次启动迁移会因
+        /// <c>version &gt;= CurrentSchemaVersion</c> **早退**,那条审计行**永远补不回来**。</item>
+        /// </list>
+        /// 也就是说:让"版本号"成为提交点 —— 它写成功才算这一步完成。
+        /// </para>
+        /// <para>
         /// <c>PRAGMA</c> 不支持参数绑定,版本号只能插值 —— 它是内部常量,安全。
         /// 审计行用 <c>INSERT OR REPLACE</c>:幂等地重复标记同一版本时不会撞主键。
         /// </para>
         /// </remarks>
         private static void MarkSchemaVersion(SqliteConnection connection, SqliteTransaction? transaction,
             int version, string description) {
-            using (var versionCommand = connection.CreateCommand()) {
-                versionCommand.Transaction = transaction;
-                versionCommand.CommandText = $"PRAGMA user_version = {version};";
-                versionCommand.ExecuteNonQuery();
+            // 顺序见上:审计行先写,PRAGMA 最后设 —— 让版本号成为"这一步已完成"的提交点。
+            using (var auditCommand = connection.CreateCommand()) {
+                auditCommand.Transaction = transaction;
+                auditCommand.CommandText =
+                    "INSERT OR REPLACE INTO [schema_migration] ([version], [applied_at], [description]) VALUES (@version, @appliedAt, @description);";
+                auditCommand.Parameters.AddWithValue("@version", version);
+                // 时间戳格式必须配 InvariantCulture:否则泰历/回历等区域会写出非公历日期。
+                auditCommand.Parameters.AddWithValue("@appliedAt",
+                    DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                auditCommand.Parameters.AddWithValue("@description", description);
+                auditCommand.ExecuteNonQuery();
             }
 
-            using var auditCommand = connection.CreateCommand();
-            auditCommand.Transaction = transaction;
-            auditCommand.CommandText =
-                "INSERT OR REPLACE INTO [schema_migration] ([version], [applied_at], [description]) VALUES (@version, @appliedAt, @description);";
-            auditCommand.Parameters.AddWithValue("@version", version);
-            // 时间戳格式必须配 InvariantCulture:否则泰历/回历等区域会写出非公历日期(CI 有负向断言专抓这个)。
-            auditCommand.Parameters.AddWithValue("@appliedAt",
-                DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
-            auditCommand.Parameters.AddWithValue("@description", description);
-            auditCommand.ExecuteNonQuery();
+            using var versionCommand = connection.CreateCommand();
+            versionCommand.Transaction = transaction;
+            versionCommand.CommandText = $"PRAGMA user_version = {version};";
+            versionCommand.ExecuteNonQuery();
         }
         
         /// <summary>

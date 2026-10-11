@@ -237,6 +237,56 @@ public sealed class SchemaVersionTests : IDisposable {
         Assert.Equal(1, AuditRowCount(_db));
     }
 
+    // ————————————————————————— 写入顺序(建库那条无事务路径的自愈前提) —————————————————————————
+
+    /// <summary>
+    /// 把 <c>MarkSchemaVersion</c> 的**内部顺序**钉住:必须是「先写审计行、后设 <c>PRAGMA</c>」。
+    ///
+    /// <para>
+    /// 手法:让审计行那一步**必然失败**(给 <c>schema_migration</c> 加一个无默认值的
+    /// <c>NOT NULL</c> 列,而 INSERT 不提供它),再看 <c>user_version</c> 有没有被动过。
+    /// 若顺序是"先设 PRAGMA 后写审计行",失败发生前版本就已经被改掉了 —— 断言会红;
+    /// 反过来则版本原封不动。
+    /// </para>
+    /// <para>
+    /// 为什么值得钉:建库路径(<c>transaction: null</c>)是自动提交、没有事务可回滚,顺序决定了被打断时
+    /// 留下哪种中间态。「先审计后 PRAGMA」留下的是"审计行已落、版本还是 0",下次启动迁移会重跑并覆盖
+    /// ⇒ 自愈;反过来留下的是"版本已是当前值、审计行缺失",迁移会因早退而**永远补不回那行**。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void MarkSchemaVersion_WritesAuditRowBeforeVersion() {
+        // 造一张 INSERT 必定失败的审计表:多一个无默认值的 NOT NULL 列。
+        // 建表脚本全是 IF NOT EXISTS,所以 CreateDatabase 不会把它改回来。
+        Exec(_db, "DROP TABLE [schema_migration];");
+        Exec(_db, "CREATE TABLE [schema_migration] (" +
+                  "[version] INTEGER PRIMARY KEY, [applied_at] TEXT NOT NULL, " +
+                  "[description] TEXT NOT NULL, [extra] TEXT NOT NULL);");
+        Exec(_db, "PRAGMA user_version = 0;");
+
+        // CreateDatabase 自己吞异常并返回 false,所以断言的是"返回 false" + "版本没被改"。
+        Assert.False(DatabaseHelper.CreateDatabase(_db, out _));
+        Assert.Equal(0, DatabaseHelper.GetSchemaVersion(_db));
+    }
+
+    /// <summary>
+    /// 「先写审计行、后设 <c>PRAGMA</c>」被打断留下的中间态(审计行在、版本还是 0)要能自愈:
+    /// 早退判断不成立 ⇒ 迁移重跑 ⇒ <c>INSERT OR REPLACE</c> 覆盖那一行,状态收敛。
+    /// </summary>
+    [Fact]
+    public void MigrateSchemaIfNeeded_SelfHeals_WhenAuditRowWrittenButVersionNotSet() {
+        Exec(_db, "PRAGMA user_version = 0;");
+        // 前置条件:审计行还在(说明"先写审计行"那一步已完成),而版本尚未设。
+        Assert.Equal(0, DatabaseHelper.GetSchemaVersion(_db));
+        Assert.Equal(1, AuditRowCount(_db));
+
+        DatabaseHelper.MigrateSchemaIfNeeded(_db);
+
+        Assert.Equal(DatabaseHelper.CurrentSchemaVersion, DatabaseHelper.GetSchemaVersion(_db));
+        // INSERT OR REPLACE ⇒ 仍是 1 行,没有变成 2 行。
+        Assert.Equal(1, AuditRowCount(_db));
+    }
+
     // ————————————————————————— helpers —————————————————————————
 
     /// <summary>把库伪装成阶段 0 之前的老库:版本压回 0、清空审计行。</summary>
