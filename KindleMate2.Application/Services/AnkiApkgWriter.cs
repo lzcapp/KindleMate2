@@ -36,6 +36,12 @@ namespace KindleMate2.Application.Services;
 /// </list>
 /// </para>
 /// <para>
+/// <b>字段是 HTML,纯文本必须先转义:</b>Anki 按 HTML 渲染 note 字段,本类的五个字段全部是纯文本,
+/// 故一律经 <see cref="EscapeField"/> 转义后再拼进 <c>flds</c>(见其说明:不转义会让标注 / 释义里的
+/// <c>&lt;</c> <c>&gt;</c> <c>&amp;</c> 被解析掉,极端情况下内容整段消失)。<c>sfld</c> / <c>csum</c>
+/// 同样取自转义后的那一份,以与 Anki 的 <c>field_checksum</c> 口径一致。
+/// </para>
+/// <para>
 /// <b>刻意生成 legacy 的 <c>collection.anki2</c>(而非 <c>collection.anki21</c>):</b>
 /// 后者是 zstd 压缩的,新老 Anki 都能读 legacy,反之不然 —— 兼容性优先。
 /// </para>
@@ -73,6 +79,48 @@ internal static class AnkiApkgWriter {
 
     /// <summary>字段分隔符(U+001F),Anki 用它把一条 note 的多个字段拼进单个 <c>flds</c> 文本列。</summary>
     private const char FieldSeparator = '\u001f';
+
+    /// <summary>
+    /// 把**纯文本**字段转义成可安全放进 Anki note 字段的 HTML。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Anki 的 note 字段是 <b>HTML</b> —— 渲染器会按标签解析字段值。本程序的五个字段全部是纯文本
+    /// (词形 / 释义 / 词干 / 原句 / 来源),不转义就直接落进 <c>flds</c> 的话,文本里的
+    /// <c>&lt;</c> <c>&gt;</c> <c>&amp;</c> 会被当成标签或实体:轻则排版被改
+    /// (<c>&lt;b&gt;bold&lt;/b&gt;</c> 变成粗体、标签消失),重则**内容整段丢失**
+    /// (<c>&lt;script&gt;…&lt;/script&gt;</c> 里的文字不会渲染出来)。
+    /// </para>
+    /// <para>
+    /// <b>只替换 HTML 有意义的 5 个字符,其余(含中文 / emoji)一律原样保留。</b>
+    /// 刻意不用 <c>System.Text.Encodings.Web.HtmlEncoder</c>:实测
+    /// <c>HtmlEncoder.Create(UnicodeRanges.All)</c> 仍会把**补充平面**字符编成数字实体
+    /// (emoji <c>📚</c> → <c>&amp;#x1F4DA;</c>),而默认的 <c>HtmlEncoder.Default</c> 连
+    /// 中文都会编成 <c>&amp;#28145;</c>。两者虽然仍能显示,但可读性与体积都明显变差,且会让
+    /// 字段内容与用户输入不再逐字对应。显式列 5 个字符,行为完全确定、无需依赖编码器的范围配置。
+    /// </para>
+    /// </remarks>
+    private static string EscapeField(string text) {
+        StringBuilder? builder = null;
+        for (var i = 0; i < text.Length; i++) {
+            var replacement = text[i] switch {
+                '&' => "&amp;",
+                '<' => "&lt;",
+                '>' => "&gt;",
+                '"' => "&quot;",
+                '\'' => "&#39;",
+                _ => null,
+            };
+            if (replacement is null) {
+                builder?.Append(text[i]);
+                continue;
+            }
+            // 第一次命中才建 builder:绝大多数字段一个字符都不用换,省掉一次分配。
+            builder ??= new StringBuilder(text.Length + 8).Append(text, 0, i);
+            builder.Append(replacement);
+        }
+        return builder?.ToString() ?? text;
+    }
 
     /// <summary>
     /// Anki 的 guid 是 base91 编码的随机数(见 <c>rslib</c> 的 <c>guid64</c>)。
@@ -377,7 +425,15 @@ internal static class AnkiApkgWriter {
         foreach (var word in document.Words) {
             var definition = definitionsByWord.TryGetValue(word.Word, out var text) ? text : string.Empty;
             var source = BuildSource(word.Book, word.Author);
-            var fields = new[] { word.Word, definition, word.Stem, word.Usage, source };
+            // 五个字段都是纯文本 → 逐个转义后再拼。见 EscapeField 的说明:Anki 按 HTML 渲染字段,
+            // 不转义会让标注 / 释义里的 < > & 被解析掉,极端情况下整段内容消失。
+            var fields = new[] {
+                EscapeField(word.Word),
+                EscapeField(definition),
+                EscapeField(word.Stem),
+                EscapeField(word.Usage),
+                EscapeField(source),
+            };
 
             var noteIdentifier = nextId++;
             noteId.Value = noteIdentifier;
@@ -385,8 +441,10 @@ internal static class AnkiApkgWriter {
             tags.Value = BuildTags(word.Book);
             flds.Value = string.Join(FieldSeparator, fields);
             // sfld = 首个字段(排序用);csum = 首字段的数字校验和(Anki 的 field_checksum)。
-            sfld.Value = word.Word;
-            csum.Value = FieldChecksum(word.Word);
+            // 两者都取**转义后**的那一份 —— Anki 的 field_checksum 算的是**存储态**文本,必须与
+            // flds 里那串逐字一致,否则导入后库内靠 ix_notes_csum 做的重复检测会失灵。
+            sfld.Value = fields[0];
+            csum.Value = FieldChecksum(fields[0]);
             noteCommand.ExecuteNonQuery();
 
             // due:新卡(queue=0)的 due 是**位置**(1 起算的正整数),不是日期 —— Anki 用它在

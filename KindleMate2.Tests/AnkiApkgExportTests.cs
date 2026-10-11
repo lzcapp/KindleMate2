@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Net;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -320,6 +321,72 @@ public sealed class AnkiApkgExportTests : IDisposable {
         using var connection = OpenCollection(apkg);
         Assert.Equal(1L, Scalar<long>(connection, "SELECT COUNT(*) FROM notes"));
         Assert.Equal(string.Empty, Scalar<string>(connection, "SELECT flds FROM notes").Split('\u001f')[1]);
+    }
+
+    // ————————————————————————— 字段转义(Anki 按 HTML 渲染字段) —————————————————————————
+
+    /// <summary>
+    /// Anki 把 note 字段当 **HTML** 渲染,所以纯文本字段必须先转义再落进 <c>flds</c>。
+    /// 这几条正是「不转义会怎样」的实测样本:标注原文里的 HTML 元字符若原样落库,渲染时会被
+    /// 当标签 / 实体解析 —— 轻则排版被改(<c>&lt;b&gt;bold&lt;/b&gt;</c> 变成粗体),
+    /// 重则**内容整段消失**(<c>&lt;script&gt;…&lt;/script&gt;</c> 里的文字不渲染)。
+    /// </summary>
+    [Theory]
+    [InlineData("line one<br>line two")]
+    [InlineData("looks like <b>bold</b> and <i>italic</i>")]
+    [InlineData("literal &lt;angle&gt; and &amp; ampersand")]
+    [InlineData("before <script>alert(1)</script> after")]
+    [InlineData("plain 5 < 10 and AT&T text")]
+    [InlineData("colored <span style=\"color:red\">RED</span> text")]
+    public void WriteAnkiDeck_PlainTextFields_AreHtmlEscaped(string usage) {
+        var apkg = Path.Combine(_dir, "escape-" + Guid.NewGuid().ToString("N")[..8] + ".apkg");
+        ExportManager.WriteAnkiDeck([Lookup("en:word", usage)], apkg, NoDefinitions, FixedAt);
+
+        using var connection = OpenCollection(apkg);
+        var usageField = Scalar<string>(connection, "SELECT flds FROM notes").Split('\u001f')[3];
+
+        // 转义后字段里不该再残留任何"真"标签定界符。
+        Assert.DoesNotContain("<", usageField, StringComparison.Ordinal);
+        Assert.DoesNotContain(">", usageField, StringComparison.Ordinal);
+        // 解回来必须与原文**逐字相同** —— 证明只是转义,没有丢内容、没有多转。
+        Assert.Equal(usage, WebUtility.HtmlDecode(usageField));
+    }
+
+    /// <summary>
+    /// 转义器不能把非 ASCII 写成数字实体:默认的 <c>HtmlEncoder.Default</c> 会把中文 / emoji
+    /// 编成 <c>&amp;#28145;</c> 之类(仍能显示,但可读性与体积都差)。这里钉住"中文 / emoji 原样保留"。
+    /// </summary>
+    [Fact]
+    public void WriteAnkiDeck_CjkAndEmoji_NotEncodedAsNumericEntities() {
+        var apkg = Path.Combine(_dir, "cjk.apkg");
+        ExportManager.WriteAnkiDeck([Lookup("zh:深度工作", "深度工作是一种能力。📚")], apkg,
+            NoDefinitions, FixedAt);
+
+        using var connection = OpenCollection(apkg);
+        var flds = Scalar<string>(connection, "SELECT flds FROM notes");
+
+        Assert.Contains("深度工作", flds, StringComparison.Ordinal);
+        Assert.Contains("📚", flds, StringComparison.Ordinal);
+        Assert.DoesNotContain("&#", flds, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>sfld</c> / <c>csum</c> 必须取自**转义后**的首字段:Anki 的 <c>field_checksum</c> 算的是
+    /// **存储态**文本,与 <c>flds</c> 里那一份必须是同一个串,否则导入后库内靠 <c>ix_notes_csum</c>
+    /// 做的重复检测会失灵。
+    /// </summary>
+    [Fact]
+    public void WriteAnkiDeck_SfldAndCsum_UseTheEscapedFirstField() {
+        var apkg = Path.Combine(_dir, "sfld-escaped.apkg");
+        // 词形里带 '&' —— 转义后是 a&amp;b,与未转义的 a&b 是两个不同的串,足以区分两种口径。
+        ExportManager.WriteAnkiDeck([Lookup("en:a&b")], apkg, NoDefinitions, FixedAt);
+
+        using var connection = OpenCollection(apkg);
+        var firstField = Scalar<string>(connection, "SELECT flds FROM notes").Split('\u001f')[0];
+
+        Assert.Equal("a&amp;b", firstField);
+        Assert.Equal(firstField, Scalar<string>(connection, "SELECT sfld FROM notes"));
+        Assert.Equal(AnkiApkgWriter.FieldChecksum(firstField), Scalar<long>(connection, "SELECT csum FROM notes"));
     }
 
     // ————————————————————————— helpers —————————————————————————
