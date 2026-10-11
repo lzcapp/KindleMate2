@@ -215,6 +215,116 @@ public sealed class SoftDeleteImportTests : IDisposable {
     // ————————————————————————— 迁移(老库补列) —————————————————————————
 
     /// <summary>
+    /// 端到端「老用户升级」:造一个**上一版程序产出的真实库**(user_version=1、
+    /// lookups 是老式单列 <c>UNIQUE(timestamp)</c>、vocab 无软删两列、没有 import_batches),
+    /// 灌入数据后按启动顺序(MainWindowViewModel.PrepareDatabaseAsync 里的
+    /// MigrateSchemaIfNeeded → MigrateLookupsSchemaIfNeeded → EnsureSoftDeleteSchemaIfNeeded →
+    /// EnsureIndexesIfNeeded)跑一遍,验证:
+    /// <list type="bullet">
+    ///   <item>老数据一行不丢,且迁移后都是**活跃行**(deleted_at NULL);</item>
+    ///   <item>lookups 被重建为 (word_key, timestamp) 唯一 —— 老式按 timestamp 唯一会把
+    ///     同一秒查的两个不同词判成重复,这正是那次重建要修的;</item>
+    ///   <item>软删除两列 + import_batches 表已补上,**软删与重导不复活在升级后的库上立即可用**;</item>
+    ///   <item><c>user_version</c> 仍是 1(不升版)—— 逃生门:降级回旧版仍能打开;</item>
+    ///   <item>整条链再跑一遍是 no-op(幂等),升级中断后重来也安全。</item>
+    /// </list>
+    /// </summary>
+    [Fact]
+    public void Upgrade_FromPreviousVersion_MigratesInPlace_AndSoftDeleteWorks() {
+        var oldDb = NewOldVersionDb("upgrade.db");
+
+        // 老库灌数据:一条标注、两条查询(其中一个 word_key 撞老式 timestamp 唯一约束的场景留作断言)、一个生词
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(oldDb))) {
+            conn.Open();
+            Exec(conn, "INSERT INTO clippings (key, content, bookname) VALUES ('clip1', 'a highlight', 'Book A')");
+            Exec(conn, "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES ('en:apple', 'u1', 'Book A', 'A', '2026-01-01 10:00:00')");
+            Exec(conn, "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES ('en:banana', 'u2', 'Book A', 'A', '2026-01-01 10:00:05')");
+            Exec(conn, "INSERT INTO vocab (id, word_key, word, stem, timestamp) VALUES ('apple2026-01-01 10:00:00', 'en:apple', 'apple', 'appl', '2026-01-01 10:00:00')");
+            Exec(conn, "PRAGMA user_version = 1;");
+        }
+
+        // 按启动顺序跑完整迁移链(与 MainWindowViewModel.PrepareDatabaseAsync 一致)
+        DatabaseHelper.MigrateSchemaIfNeeded(oldDb);
+        DatabaseHelper.MigrateLookupsSchemaIfNeeded(oldDb);
+        DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(oldDb);
+        DatabaseHelper.EnsureIndexesIfNeeded(oldDb);
+
+        var connStr = DatabaseHelper.GetConnectionString(oldDb);
+        using (var conn = new SqliteConnection(connStr)) {
+            conn.Open();
+            // 软删两列 + import_batches 表已补
+            Assert.True(DatabaseHelper.HasColumn(conn, "vocab", "deleted_at"));
+            Assert.True(DatabaseHelper.HasColumn(conn, "vocab", "origin_batch"));
+            Assert.True(DatabaseHelper.HasColumn(conn, "lookups", "deleted_at"));
+            Assert.True(DatabaseHelper.HasColumn(conn, "lookups", "origin_batch"));
+            using (var cmd = conn.CreateCommand()) {
+                cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='import_batches';";
+                Assert.Equal(1L, Convert.ToInt64(cmd.ExecuteScalar()));
+            }
+            // 逃生门:user_version 不升 —— 旧版程序打开时不会因前向保护拒绝
+            using (var cmd = conn.CreateCommand()) {
+                cmd.CommandText = "PRAGMA user_version;";
+                Assert.Equal(1L, Convert.ToInt64(cmd.ExecuteScalar()));
+            }
+        }
+
+        // 老数据一行不丢,且都是活跃行
+        var vocabRepo = new VocabRepository(connStr);
+        var lookupRepo = new LookupRepository(connStr);
+        Assert.Equal(1, vocabRepo.GetCount());
+        Assert.Equal(2, lookupRepo.GetCount());
+        Assert.Single(vocabRepo.GetAllIncludingDeleted()); // 尚无 tombstone,与活行数一致
+        Assert.Equal(2, lookupRepo.GetAllIncludingDeleted().Count);
+
+        // lookups 已重建为 (word_key, timestamp) 唯一:现在能插入"同一秒、不同词"的两条 ——
+        // 老式 UNIQUE(timestamp) 会把第二条判成重复拒掉,这正是那次重建要修的缺陷。
+        using (var conn = new SqliteConnection(connStr)) {
+            conn.Open();
+            Exec(conn, "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES ('en:cherry', 'u3', 'Book A', 'A', '2026-01-01 10:00:00')");
+        }
+        Assert.Equal(3, lookupRepo.GetCount());
+
+        // 软删除在升级后的库上立即可用
+        Assert.True(vocabRepo.DeleteByWordKey("en:apple"));
+        Assert.True(lookupRepo.Delete("en:apple"));
+        Assert.Equal(0, vocabRepo.GetCount());
+        Assert.Equal(2, lookupRepo.GetCount());
+
+        // 重导不复活:拿老库自己当源再导一次(升级用户的常见操作),被删的 apple 不回来
+        var svc = NewService(oldDb, oldDb);
+        Assert.True(svc.ImportFromKmDatabase());
+        Assert.Equal(0, vocabRepo.GetCount());
+        Assert.DoesNotContain(lookupRepo.GetAll(), l => l.WordKey == "en:apple");
+
+        // 整条链再跑一遍是 no-op:数据不动、不炸(升级中断后重来也安全)
+        DatabaseHelper.MigrateSchemaIfNeeded(oldDb);
+        DatabaseHelper.MigrateLookupsSchemaIfNeeded(oldDb);
+        DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(oldDb);
+        DatabaseHelper.EnsureIndexesIfNeeded(oldDb);
+        Assert.Equal(0, vocabRepo.GetCount());
+        Assert.Equal(2, lookupRepo.GetCount());
+    }
+
+    /// <summary>
+    /// 造一个**上一版程序产出的真实库**:user_version=1(已过前向保护)、
+    /// lookups 是老式单列 <c>UNIQUE(timestamp)</c>(触发重建)、vocab 无软删两列、
+    /// 没有 import_batches 表。表结构照抄改造前的 <c>CreateDatabase</c>。
+    /// </summary>
+    private string NewOldVersionDb(string name) {
+        var path = Path.Combine(_dir, name);
+        using var conn = new SqliteConnection($"Data Source={path};Mode=ReadWriteCreate;");
+        conn.Open();
+        Exec(conn, "CREATE TABLE schema_migration (user_version INTEGER PRIMARY KEY, applied_at TEXT, description TEXT)");
+        Exec(conn, "CREATE TABLE clippings (key TEXT PRIMARY KEY NOT NULL UNIQUE, content TEXT DEFAULT(''), bookname TEXT DEFAULT(''), authorname TEXT, brieftype INTEGER, clippingtypelocation TEXT, clippingdate TEXT, read INT DEFAULT(0), clipping_importdate TEXT, tag TEXT, sync INT DEFAULT(0), newbookname TEXT, colorRGB INTEGER DEFAULT(-1), pagenumber INT DEFAULT(0))");
+        // ⚠️ 老式:UNIQUE 只在 timestamp 一列(新库是 (word_key, timestamp))
+        Exec(conn, "CREATE TABLE lookups (word_key TEXT, usage TEXT, title TEXT, authors TEXT, timestamp TEXT, CONSTRAINT [uq_lookups_timestamp] UNIQUE ([timestamp]))");
+        Exec(conn, "CREATE TABLE original_clipping_lines (key TEXT PRIMARY KEY NOT NULL UNIQUE, line1 TEXT, line2 TEXT, line3 TEXT, line4 TEXT, line5 TEXT)");
+        Exec(conn, "CREATE TABLE settings (name TEXT PRIMARY KEY UNIQUE, value TEXT)");
+        Exec(conn, "CREATE TABLE vocab (id TEXT PRIMARY KEY NOT NULL UNIQUE, word_key TEXT, word TEXT NOT NULL, stem TEXT, category INTEGER DEFAULT '0', translation TEXT, timestamp TEXT, frequency INT DEFAULT(0), sync INT DEFAULT(0), colorRGB INTEGER DEFAULT(-1))");
+        return path;
+    }
+
+    /// <summary>
     /// 老库升级:EnsureSoftDeleteSchemaIfNeeded 给 vocab/lookups 补两列、建 import_batches,
     /// 已有行的 deleted_at/origin_batch 为 NULL(= 活行),且重复调用是 no-op(幂等)。
     /// </summary>
