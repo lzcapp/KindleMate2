@@ -23,3 +23,9 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps(nuget)"
+    # Avalonia 系列成组升级,避免「核心已升、主题未升」的半对齐中间态
+    # (如 12.1.3 分批 PR #143/#144,合一个另一个就要 rebase)
+    groups:
+      avalonia:
+        patterns:
+          - "Avalonia*"
