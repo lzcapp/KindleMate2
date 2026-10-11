@@ -428,6 +428,25 @@ internal static class Program {
                                           $" 改空位={plain.Message == Strings.Word_Renamed}/无键词条=[{cVocab?.Word}/{cVocab?.WordKey ?? "<null>"}](期望 wmD/null)" +
                                           $" -> result={(mergeOk ? "OK" : "失败!撞名该静默并入,且数据要真改对")}");
                     }
+
+                    // —— 端到端导出:在临时库上真跑一次 JSON / Obsidian 导出 ——
+                    //
+                    // axaml 里的 grep 只证明"菜单入口还在"(Click 处理器没被删),单测覆盖的是
+                    // "手工组装 ExportManager + 真库" —— 中间那段「真实会话里的 ExportManager 把
+                    // 产物落到真实磁盘」谁都没碰。这里补上它:真调一次 JSON / Obsidian 导出,断言
+                    // 产物文件存在且非空。全程离线、不依赖设备,故可在 CI 无头跑。
+                    {
+                        var export = startupVm.Session!.ExportManager;
+                        var exportDir = startupVm.Session!.ExportDirectory;
+                        var jsonOk = export.ExportClippingsToJson() && export.ExportVocabsToJson();
+                        var obsidianOk = export.ExportObsidianVault();
+                        var filesOk = IsNonEmptyFile(Path.Combine(exportDir, "Clippings.json"))
+                                      && IsNonEmptyFile(Path.Combine(exportDir, "Vocabs.json"))
+                                      && IsNonEmptyFile(Path.Combine(exportDir, "Obsidian", "index.md"));
+                        var exportOk = jsonOk && obsidianOk && filesOk;
+                        report.AppendLine($"export: json={jsonOk} obsidian={obsidianOk} files={filesOk}" +
+                                          $" -> result={(exportOk ? "OK" : "失败!导出没把产物落到磁盘")}");
+                    }
                 } else {
                     report.AppendLine("recycle bin view: 跳过(启动自检没拿到会话)");
                 }
@@ -491,6 +510,9 @@ internal static class Program {
             return 1;
         }
     }
+
+    /// <summary>文件存在且非空 —— 端到端导出探针用的最小落盘证据。</summary>
+    private static bool IsNonEmptyFile(string path) => File.Exists(path) && new FileInfo(path).Length > 0;
 
     /// <summary>
     /// 「清洗标注文本」预览窗口的数据探针。

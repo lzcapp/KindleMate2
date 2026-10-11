@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using KindleMate2.Domain.Models.Export;
-using KindleMate2.Infrastructure.Helpers;
 
 namespace KindleMate2.Application.Services;
 
@@ -51,17 +50,6 @@ internal static class ObsidianExportWriter {
     private const string NewLine = "\n";
 
     /// <summary>
-    /// 书文件名撞名判据用**大小写不敏感**。
-    /// </summary>
-    /// <remarks>
-    /// 动机与 <see cref="StringHelper.SanitizeFilename"/>「按三平台非法字符并集净化」一致:
-    /// Windows / macOS 的文件系统默认大小写不敏感,导出目录又常被拷到 Windows / SMB 共享 ——
-    /// 若在 Linux 上按大小写敏感判重,"Book" 与 "book" 会各自成文件,拷到 Windows 上就互相覆盖,
-    /// 其中一个被静默吞掉。这里宁可**保守**(在 Linux 上也把二者当撞名)以保证产物跨平台一致。
-    /// </remarks>
-    private static readonly StringComparer FileNameComparer = StringComparer.OrdinalIgnoreCase;
-
-    /// <summary>
     /// 在 <paramref name="exportsDirectory"/> 下产出整份 Obsidian vault。
     /// </summary>
     /// <param name="clippings">标注文档(通常来自 <see cref="ExportModelBuilder.BuildClippingsDocument"/>)。</param>
@@ -98,61 +86,12 @@ internal static class ObsidianExportWriter {
     /// 为每本书分配一个**确定性**的文件名(不含扩展名),顺序与 <paramref name="books"/> 一致。
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// 消歧规则(按优先级):① <c>净化(书名)</c>;② 冲突时退化为 <c>净化(作者 - 书名)</c>;
-    /// ③ 仍冲突则在上一个候选后追加 <c> (2)</c>、<c> (3)</c>… 直到落空。
-    /// </para>
-    /// <para>
-    /// 刻意**不用随机数 / 时间戳**消歧:那会让同一份库每次导出得到不同文件名,<c>index.md</c> 的
-    /// 双链随之漂移,Obsidian 里昨天建立的链接今天全断。确定性 = 同名输入恒得同套文件名。
-    /// </para>
+    /// 判定规则与实现已收敛到 <see cref="ExportFileNameAllocator.AssignFileNames"/> —— 那套逻辑现在
+    /// 同时服务"按书导出 Markdown"(单书、看目录消歧)。本方法只**保留原有签名、内部转调**,
+    /// 目的是消除"同一判定两份实现"这一隐患,不再自己重写候选序。
     /// </remarks>
     internal static List<string> AssignBookFileNames(IReadOnlyList<ExportBook> books) {
-        var used = new HashSet<string>(FileNameComparer);
-        var names = new List<string>(books.Count);
-        foreach (var book in books) {
-            names.Add(AssignOneFileName(book, used));
-        }
-        return names;
-    }
-
-    private static string AssignOneFileName(ExportBook book, HashSet<string> used) {
-        var title = SanitizeOrUnknown(book.Title);
-
-        var candidates = new List<string> { title };
-        var author = (book.Author ?? string.Empty).Trim();
-        if (author.Length > 0) {
-            var withAuthor = SanitizeOrUnknown(author + " - " + book.Title);
-            // 作者限定名与书名同名(如作者为空串已被排除,这里是净化后恰好相等)时不必重复试探。
-            if (!FileNameComparer.Equals(withAuthor, title)) {
-                candidates.Add(withAuthor);
-            }
-        }
-
-        foreach (var candidate in candidates) {
-            // HashSet.Add 同时完成"查重"与"占位":返回 true 即此前不存在,当场登记。
-            if (used.Add(candidate)) {
-                return candidate;
-            }
-        }
-
-        // 全部候选都被占用 → 在**最后一个候选**(优先是作者限定名,更可能唯一)后叠加序号。
-        var baseName = candidates[^1];
-        for (var n = 2; ; n++) {
-            var numbered = baseName + " (" + n.ToString(CultureInfo.InvariantCulture) + ")";
-            if (used.Add(numbered)) {
-                return numbered;
-            }
-        }
-    }
-
-    /// <summary>净化书名;<paramref name="title"/> 净化后为空时退化为 <see cref="ExportModelBuilder.UnknownBookName"/>。</summary>
-    private static string SanitizeOrUnknown(string? title) {
-        var sanitized = StringHelper.SanitizeFilename(title ?? string.Empty).Trim();
-        // 兜底:整串被净化 / 修剪掉(如全为空白)时不能让文件名退化成空串,否则会写出一个隐藏文件。
-        return sanitized.Length > 0
-            ? sanitized
-            : StringHelper.SanitizeFilename(ExportModelBuilder.UnknownBookName);
+        return ExportFileNameAllocator.AssignFileNames(books);
     }
 
     /// <summary>拼装单本书文件:<c>--- frontmatter ---</c> + 标题 + 作者 + 逐条标注。</summary>
@@ -265,7 +204,7 @@ internal static class ObsidianExportWriter {
     /// **不存在的文件**,Obsidian 里整页链接全断。文件名与书名不一致时附带别名,让链接显示回原名。
     /// </remarks>
     private static string BuildBookLink(string title, string fileName) {
-        if (FileNameComparer.Equals(fileName, title)) {
+        if (ExportFileNameAllocator.FileNameComparer.Equals(fileName, title)) {
             return "[[" + fileName + "]]";
         }
         return "[[" + fileName + "|" + EscapeLinkAlias(title) + "]]";

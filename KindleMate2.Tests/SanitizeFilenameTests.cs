@@ -1,3 +1,4 @@
+using System.Text;
 using Xunit;
 using KindleMate2.Infrastructure.Helpers;
 
@@ -96,5 +97,74 @@ public sealed class SanitizeFilenameTests {
             var once = StringHelper.SanitizeFilename(input);
             Assert.Equal(once, StringHelper.SanitizeFilename(once));
         }
+    }
+
+    // ————————————————————————— 长度截断(A2) —————————————————————————
+
+    /// <summary>合法 UTF-8 的自检:编码再解码必须逐字还原(即没有半个字符 / 孤立 surrogate)。</summary>
+    private static void AssertValidUtf8(string value) {
+        Assert.Equal(value, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(value)));
+        Assert.DoesNotContain('\uFFFD', value);
+        for (var i = 0; i < value.Length; i++) {
+            if (char.IsHighSurrogate(value[i])) {
+                Assert.True(i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]), "出现孤立的高代理");
+                i++;
+            } else {
+                Assert.False(char.IsLowSurrogate(value[i]), "出现孤立的低代理");
+            }
+        }
+    }
+
+    [Fact]
+    public void SanitizeFilename_LongChineseName_TruncatedWithinByteLimit_AndStaysValidUtf8() {
+        // 200 个中文 = 600 字节,远超默认上限。
+        var result = StringHelper.SanitizeFilename(new string('长', 200));
+
+        Assert.True(Encoding.UTF8.GetByteCount(result) <= StringHelper.DefaultMaxUtf8Bytes,
+            $"结果 {Encoding.UTF8.GetByteCount(result)} 字节,超过上限");
+        AssertValidUtf8(result);
+    }
+
+    [Fact]
+    public void SanitizeFilename_LongEmojiName_NeverSplitsSurrogatePair() {
+        // 每个 📚 是 4 字节的代理对;按 char 截断极易劈成半个。
+        var result = StringHelper.SanitizeFilename(string.Concat(Enumerable.Repeat("📚", 100)));
+
+        Assert.True(Encoding.UTF8.GetByteCount(result) <= StringHelper.DefaultMaxUtf8Bytes);
+        AssertValidUtf8(result);
+    }
+
+    [Theory]
+    [InlineData("普通书名")]
+    [InlineData("Sapiens: A Brief History")]
+    [InlineData("emoji 📚 与 : 冒号")]
+    [InlineData("深度工作")]
+    public void SanitizeFilename_NormalLengthNames_UnchangedByDefaultCap(string input) {
+        // 默认上限只对**超长**名生效:正常长度的名字,输出必须与"完全不截断"逐字相同(int.MaxValue 关闭截断)。
+        Assert.Equal(StringHelper.SanitizeFilename(input, int.MaxValue), StringHelper.SanitizeFilename(input));
+    }
+
+    [Fact]
+    public void SanitizeFilename_TruncationResultEndingWithDot_StillStripsTrailingDot() {
+        // 239 个 'a' 之后正好是第 240 字节的 '.';截断到 240 字节时结果以 '.' 结尾 → 必须被去掉。
+        // (顺序反过来"先去尾点再截断"时,尾点在截断**之后**才出现,就漏掉了 —— 这条正是为守这个顺序。)
+        var name = new string('a', 239) + "." + new string('b', 10);
+
+        var result = StringHelper.SanitizeFilename(name);
+
+        Assert.Equal(new string('a', 239), result);
+        Assert.False(result.EndsWith('.'));
+    }
+
+    [Theory]
+    [InlineData("CON")]
+    [InlineData("NUL")]
+    [InlineData("aux")]
+    public void SanitizeFilename_TruncationResultHittingReservedName_StillPrefixed(string reserved) {
+        // 前 3 字节恰是保留名,后面跟大量字符;截断到 3 字节后结果落回保留名 → 仍要加前缀。
+        // 判定的对象必须是**最终**那个串(截断之后)。
+        var result = StringHelper.SanitizeFilename(reserved + new string('x', 300), maxUtf8Bytes: 3);
+
+        Assert.Equal("_" + reserved, result);
     }
 }

@@ -269,6 +269,78 @@ public sealed class ObsidianExportTests : IDisposable {
         Assert.Contains("语言 en", md, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// 同一个词在 LOOKUPS 里跨多本书各留一条记录时,<c>Vocabs.md</c> 里每条要归到**它自己那本书**
+    /// 的分组下 —— 不能漏、不能串组。
+    /// </summary>
+    /// <remarks>
+    /// LOOKUPS 的身份是 (word_key, timestamp),同一个词被多本书查过就是多行;而 <c>Vocabs.md</c>
+    /// 按 <c>Book</c> 分组。分组若按"词"而不是"行"来建,会把同一词的不同来源折叠成一条、
+    /// 或把某条塞进错误的书下面 —— 两种都让导出对不上库。
+    /// </remarks>
+    [Fact]
+    public void WriteVault_Vocabs_SameWordInDifferentBooks_EachRowStaysInItsOwnGroup() {
+        var lookups = new List<Lookup> {
+            new() {
+                WordKey = "en:apple", Usage = "甲书里的句子", Title = "甲书",
+                Authors = "A", Timestamp = "2026-01-01 10:00:00",
+            },
+            new() {
+                WordKey = "en:apple", Usage = "乙书里的句子", Title = "乙书",
+                Authors = "B", Timestamp = "2026-01-02 10:00:00",
+            },
+        };
+
+        ExportManager.WriteObsidianVault(new List<Clipping>(), lookups, _dir, FixedAt);
+
+        var md = File.ReadAllText(VocabsPath);
+        var jia = GroupBody(md, "甲书");
+        var yi = GroupBody(md, "乙书");
+        // 各自的原句只出现在自己那组里(不串组)。
+        Assert.Contains("甲书里的句子", jia, StringComparison.Ordinal);
+        Assert.DoesNotContain("乙书里的句子", jia, StringComparison.Ordinal);
+        Assert.Contains("乙书里的句子", yi, StringComparison.Ordinal);
+        Assert.DoesNotContain("甲书里的句子", yi, StringComparison.Ordinal);
+        // 两行都在(不漏):同一个词应作为两行分别出现。
+        Assert.Equal(2, Regex.Matches(md, @"- \*\*apple\*\*").Count);
+    }
+
+    // ————————————————————————— 跨次导出 —————————————————————————
+
+    /// <summary>
+    /// 同一目录导出两次、第二次书名变少时,第一次的书文件**必须留下**。
+    /// </summary>
+    /// <remarks>
+    /// 这是 <see cref="ObsidianExportWriter.WriteVault"/> 的**刻意行为**:只新建 / 覆盖本程序产出的
+    /// 文件,**从不删除** <c>Books/</c> 里的任何东西 —— 用户可能已经在自己 vault 里给某本书加了笔记
+    /// 或附件,清空目录会把它们一起删掉。代价是少导一本书 / 改了书名时旧文件会残留成孤儿,由用户
+    /// 自行清理。该取舍此前只写在注释里(注释会漂),这里用测试把它固化。
+    /// <para>
+    /// 同时钉住另一半:<c>index.md</c> 是**整批覆盖**的,所以它不该再挂着那本已经不在的书 ——
+    /// 否则索引会指向一个"这次没导出"的孤儿链接。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void WriteVault_SecondExportWithFewerBooks_KeepsPreviousBookFiles() {
+        var firstRun = new List<Clipping> {
+            Clipping("k1", "旧书内容", book: "旧书"),
+            Clipping("k2", "新书内容", book: "新书"),
+        };
+        ExportManager.WriteObsidianVault(firstRun, new List<Lookup>(), _dir, FixedAt);
+        Assert.True(File.Exists(Path.Combine(BooksDir, "旧书.md")));
+
+        // 第二次只剩「新书」—— 「旧书」的产物成了孤儿,但**不许**被删。
+        var secondRun = new List<Clipping> { Clipping("k2", "新书内容", book: "新书") };
+        ExportManager.WriteObsidianVault(secondRun, new List<Lookup>(), _dir, FixedAt);
+
+        Assert.True(File.Exists(Path.Combine(BooksDir, "旧书.md")),
+            "旧书的产物被删了 —— 这违反『绝不误删用户数据』的取舍");
+        Assert.True(File.Exists(Path.Combine(BooksDir, "新书.md")));
+        var index = File.ReadAllText(IndexPath);
+        Assert.Contains("新书", index, StringComparison.Ordinal);
+        Assert.DoesNotContain("旧书", index, StringComparison.Ordinal);
+    }
+
     // ————————————————————————— 落盘细节 —————————————————————————
 
     [Fact]
@@ -369,4 +441,12 @@ public sealed class ObsidianExportTests : IDisposable {
         Regex.Matches(markdown, @"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
             .Select(match => match.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>取出 <c>## &lt;book&gt;</c> 那一组到下一个 <c>##</c>(或文末)之前的正文。</summary>
+    private static string GroupBody(string markdown, string book) {
+        var start = markdown.IndexOf("## " + book, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Vocabs.md 里找不到分组「{book}」");
+        var next = markdown.IndexOf("\n## ", start + 1, StringComparison.Ordinal);
+        return next < 0 ? markdown[start..] : markdown[start..next];
+    }
 }

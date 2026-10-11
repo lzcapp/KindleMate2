@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -133,9 +134,14 @@ namespace KindleMate2.Application.Services.KM2DB {
                     markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
                 }
             } else {
-                filename = StringHelper.SanitizeFilename(bookName);
-
                 var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
+
+                // 文件名消歧必须**看目标目录**:单书导出看不到同批的其他书,只能靠"目录里已有的同名文件
+                // 是不是同一本"来判定 —— 否则「A/B」与「A:B」净化后同为 A_B,第二次会静默覆盖第一次
+                // (.md 与 .html 一起丢)。作者用于撞名时退化成「作者 - 书名」,与 Obsidian 侧同一候选序。
+                var author = clippings.Count > 0 ? clippings[0].AuthorName : null;
+                filename = ExportFileNameAllocator.AssignSingleFileName(filePath, bookName, author);
+
                 markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
             }
 
