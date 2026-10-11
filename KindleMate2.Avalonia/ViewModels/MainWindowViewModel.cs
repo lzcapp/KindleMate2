@@ -902,6 +902,34 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         });
     }
 
+    /// <summary>
+    /// 导出生词为一份**可直接导入 Anki 的牌组**(<c>Vocabs.apkg</c>)。
+    /// </summary>
+    /// <remarks>
+    /// 与 CSV / JSON / Obsidian 并列的独立入口:产物是 Anki 自己的二进制牌组格式(内含 SQLite),
+    /// 消费方式与前三者都不同(拖进 Anki 即可,不必手工映射字段),合并只会让产物形态说不清。
+    /// **默认离线**:释义字段留空由用户自己填 —— 联网查释义会把全部生词发给第三方,不放进这个入口。
+    /// </remarks>
+    public Task<OperationResult> ExportAnkiDeckAsync() {
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
+        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        if (IsBusy) return Task.FromResult(OperationResult.Silent);
+        if (_session is not { } session) {
+            return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
+        }
+        var exportDir = session.ExportDirectory;
+        return Task.Run(async () => {
+            // 与菜单一致:离线导出(includeDefinitions: false),不发起任何网络请求。
+            if (!await session.ExportManager.ExportVocabsToAnkiDeckAsync(includeDefinitions: false)
+                    .ConfigureAwait(false)) {
+                return new OperationResult(false, Strings.Failed, Strings.Ui_Result_NothingToExport);
+            }
+            return new OperationResult(true, Strings.Successful,
+                Strings.Export_Successful + Strings.Open_Folder,
+                FeedbackKind.OpenFolderPrompt, exportDir);
+        });
+    }
+
     /// <summary>导出当前选中书籍的标注(原版 MenuBooksExport_Click 的书页分支)。</summary>
     public Task<OperationResult> ExportCurrentBookMarkdownAsync() {
         // 忙碌期与写操作互斥,理由见 ExportAllMarkdownAsync。

@@ -116,7 +116,7 @@ and the headless self-checks.
 - [x] Delete (single / whole book / single word) and **recycle bin** (deletions are restorable)
 - [x] Rename books (title + author)
 - [x] Clean / Rebuild / Backup / Clear database
-- [x] Export Function (Markdown / CSV / JSON / Obsidian vault; CSV importable to Anki)
+- [x] Export Function (Markdown / CSV / JSON / Obsidian vault; CSV importable to Anki; Anki deck `.apkg` you can drag straight into Anki)
 - [x] Statistics Function
 - [x] Night Mode (Dark Mode)
 - [x] Language Switch (简体中文 / 繁體中文 / English)
