@@ -129,7 +129,9 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <param name="filename">The filename to sanitize</param>
         /// <param name="maxUtf8Bytes">
         /// 结果串允许的最大 **UTF-8 字节数**(默认 <see cref="DefaultMaxUtf8Bytes"/>);按字符边界截断,
-        /// 绝不切出半个字符。传 <see cref="int.MaxValue"/> 可关闭截断(仅供测试对照)。
+        /// 绝不切出半个字符。传 <see cref="int.MaxValue"/> 可关闭截断 —— 生产代码里
+        /// <see cref="ComposeTruncatedFileName"/> 就用它:那里需要"先只净化、不截断",再由调用方按
+        /// 重要性分配预算统一截断(否则本方法会先按默认上限把书名截掉,预算分配就无从谈起)。
         /// </param>
         /// <returns>A sanitized filename safe for file system use</returns>
         /// <exception cref="ArgumentNullException">Thrown when filename is null</exception>

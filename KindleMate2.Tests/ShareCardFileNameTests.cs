@@ -166,4 +166,29 @@ public sealed class ShareCardFileNameTests {
         Assert.Equal("深度工作_20200101-000000.png", result);
         Assert.DoesNotContain("__", result, StringComparison.Ordinal);
     }
+
+    // ————————————————————————— 已知边界:尾段本身不截断 —————————————————————————
+
+    [Fact]
+    public void OversizedTail_IsKeptWhole_TotalMayExceedTheLimit() {
+        // **刻意固定下来的已知边界,不是待修的缺陷。** 尾段(位置 + 时间)是「必须完整保留」的,
+        // 本方法不截它;于是当尾段自己就超出预算时,总长会突破 maxTotalUtf8Bytes。
+        // 换来的是「位置与时间永不被砍」这条更强的保证 —— 而位置与时间正是区分
+        // 「同一本书同一天不同标注」的唯一来源(见 ComposeTruncatedFileName 的说明)。
+        // 真实数据里 Location 是 `113-113` 这类短串,触发不到;这条用例的价值在于把这个取舍
+        // **钉住**,以免将来有人为了「总长不超限」顺手改成截尾段,悄悄破坏区分度。
+        var oversizedLocation = new string('9', 300);   // 300 字节,单它就超过 251 的主干预算
+
+        var result = StringHelper.ComposeTruncatedFileName(
+            "书", new[] { oversizedLocation, Time }, ".png", MaxTotalUtf8Bytes);
+
+        Assert.True(Encoding.UTF8.GetByteCount(result) > MaxTotalUtf8Bytes,
+            $"本用例记录的就是允许超限这一边界;实际 {Encoding.UTF8.GetByteCount(result)} 字节");
+        // 核心保证:尾段必须完整保留。
+        Assert.Contains(oversizedLocation, result, StringComparison.Ordinal);
+        Assert.Contains(Time, result, StringComparison.Ordinal);
+        Assert.EndsWith(".png", result, StringComparison.Ordinal);
+        // 可截断的主干被压到 0 ⇒ 连分隔符一起省掉,不留前导下划线。
+        Assert.StartsWith(oversizedLocation, result, StringComparison.Ordinal);
+    }
 }
