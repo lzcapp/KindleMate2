@@ -40,7 +40,7 @@ internal static class TestTempCleanup {
         "km2-tests-", "km2-snapshot-tests-", "kmate-import-tests-",
         "km2-linux-roots-", "km2-volumes-", "km2-export-tests-",
         "km2-mtp-import-", "km2-mtp-writeback-", "km2-update-tests-",
-        "km2-pubexport-"
+        "km2-pubexport-", "km2-schema-integrity-tests-"
     };
 
     [ModuleInitializer]

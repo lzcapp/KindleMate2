@@ -595,7 +595,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             _session = null;
             ResetCollections();
             NotifySessionStateChanged();
-            StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
+            // 结构损坏(库里缺表 —— 版本号说"已是最新"但表不全、或文件被外部工具改过)时,
+            // 给一条用户看得懂、能照着做的提示;其余情况沿用原文(含 SQLite 错误号与表名,
+            // 那是给开发者看的)。**只读识别,不修补**:补出来的是空表、原数据已丢,
+            // 要不要修由用户决定(见 issue #148)。
+            if (DatabaseHelper.TryDescribeMissingTables(path, out var missingTables)) {
+                // 分隔符走资源键而不用 CultureInfo.TextInfo.ListSeparator:后者对 zh-CN 给的是半角逗号,
+                // 与仓库既定的「中文全角标点」口径(见 #136)不符。
+                var names = string.Join(Strings.Ui_Text_ListSeparator, missingTables);
+                StatusText = string.Format(CultureInfo.CurrentCulture,
+                    Strings.Ui_Status_OpenFailed_SchemaIncomplete, names);
+                KindleMate2.Shared.Diagnostics.AppLog.Write(
+                    $"[OpenDatabase] 数据库结构不完整,缺失的表: {names}");
+            } else {
+                StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_OpenFailed, ex.Message);
+            }
             // 这里刻意吞掉异常(不向上抛),因此必须自己留痕:否则该错误只会短暂出现在状态栏,
             // 用户切走就再无从查起。WinExe 下 Console.WriteLine 无处可去,走文件日志。
             KindleMate2.Shared.Diagnostics.AppLog.Write(ex);

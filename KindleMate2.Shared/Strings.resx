@@ -672,6 +672,12 @@
   <data name="Ui_Status_OpenFailed" xml:space="preserve">
     <value>打开失败: {0}</value>
   </data>
+  <data name="Ui_Status_OpenFailed_SchemaIncomplete" xml:space="preserve">
+    <value>打开失败：数据库结构不完整，缺少这些表：{0}。请从备份恢复，或使用「重建数据库」重新生成。</value>
+  </data>
+  <data name="Ui_Text_ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
   <data name="Ui_Status_SummaryClippings" xml:space="preserve">
     <value>共 {0} 本书 · {1} 条标注 · 已删除 {2} 条</value>
   </data>
