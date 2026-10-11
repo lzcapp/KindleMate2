@@ -193,7 +193,7 @@ jobs:
           Compress-Archive -Path "publish/${{ matrix.suffix }}/*" -DestinationPath $name
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.zip
@@ -278,7 +278,7 @@ jobs:
           echo "unix 产物 + 启动器自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.tar.gz
@@ -554,7 +554,7 @@ jobs:
           echo "macOS 产物启动自检通过:${{ matrix.suffix }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: assets-${{ matrix.suffix }}
           path: KindleMate2_${{ matrix.suffix }}.dmg
@@ -638,7 +638,7 @@ jobs:
           echo "签名指纹:$(gpg --with-colons --list-keys | awk -F: '/^fpr:/{print $10; exit}')"
 
       - name: Upload signed checksums
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: assets-checksums
           path: |
