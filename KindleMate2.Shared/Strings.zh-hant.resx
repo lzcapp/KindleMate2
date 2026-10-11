@@ -396,6 +396,12 @@
   <data name="Create_Database_Failed" xml:space="preserve">
     <value>建立資料庫失敗</value>
   </data>
+  <data name="Error_Database_TooNew" xml:space="preserve">
+    <value>資料庫版本過新</value>
+  </data>
+  <data name="Database_TooNew_Message" xml:space="preserve">
+    <value>此資料庫由新版本的 KindleMate2 建立（版本 {0}），請升級程式後再開啟。</value>
+  </data>
   <data name="English" xml:space="preserve">
     <value>英文</value>
   </data>

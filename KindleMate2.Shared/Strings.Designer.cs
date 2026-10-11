@@ -380,6 +380,24 @@ namespace KindleMate2.Shared {
         }
         
         /// <summary>
+        ///   查找类似 数据库版本过新 的本地化字符串。
+        /// </summary>
+        public static string Error_Database_TooNew {
+            get {
+                return ResourceManager.GetString("Error_Database_TooNew", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 此数据库由更新版本的 KindleMate2 创建（版本 {0}），请升级程序后再打开。 的本地化字符串。
+        /// </summary>
+        public static string Database_TooNew_Message {
+            get {
+                return ResourceManager.GetString("Database_TooNew_Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 数据已清空 的本地化字符串。
         /// </summary>
         public static string Data_Cleared {

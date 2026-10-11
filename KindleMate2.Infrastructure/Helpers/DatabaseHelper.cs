@@ -5,6 +5,33 @@ using System.Globalization;
 namespace KindleMate2.Infrastructure.Helpers {
     public static class DatabaseHelper {
         /// <summary>
+        /// 本程序认识的最高 schema 版本。老库低于它则迁移;高于它则拒绝打开
+        /// (拒绝的判定在 <c>MainWindowViewModel.PrepareDatabaseAsync</c> —— DB 层只负责迁移,不负责拒绝)。
+        /// </summary>
+        /// <remarks>
+        /// 版本号存在 <c>PRAGMA user_version</c> 里(权威依据),<c>schema_migration</c> 表作为审计日志。
+        /// <para>
+        /// ⚠️ **<c>PRAGMA user_version</c> 会随事务回滚。** 本项目实际依赖的引擎
+        /// (e_sqlite3 3.53.3)上实测:<c>BEGIN; CREATE TABLE s(v); PRAGMA user_version=1; ROLLBACK;</c>
+        /// 之后读回 <c>user_version</c> 仍是 0、表 <c>s</c> 也没了;<c>BEGIN; PRAGMA user_version=1; COMMIT;</c>
+        /// 才留住 1。因此设置版本号必须作为迁移事务的**最后一步**,与建表、写审计行**一起原子提交** ——
+        /// **不要**写成"先提交事务、再单独设 PRAGMA",那会留下"表建好了但版本没设"的中间态,下次启动会重跑。
+        /// </para>
+        /// </remarks>
+        public const int CurrentSchemaVersion = 1;
+
+        /// <summary>
+        /// <c>[schema_migration]</c> 审计表的建表脚本 —— 建库脚本与老库迁移**共用这一份**
+        /// (与 <see cref="GetIndexScripts"/> 同样的理由:两处写死就会漂移)。
+        /// </summary>
+        private const string SchemaMigrationTableScript =
+            @"CREATE TABLE IF NOT EXISTS [schema_migration] (
+                [version]     INTEGER PRIMARY KEY,
+                [applied_at]  TEXT NOT NULL,
+                [description] TEXT NOT NULL
+            );";
+
+        /// <summary>
         /// VACUUM INTO 等待写事务释放锁的默认毫秒数。连接串未设 busy_timeout
         /// (SQLite 默认 0,即立即失败),导入收尾这类短暂持锁场景给一个等待窗口即可;
         /// 长时间导入/清理仍应靠 UI 层互斥来避免并发,不能只指望这个等待。
@@ -83,6 +110,14 @@ namespace KindleMate2.Infrastructure.Helpers {
                     command.ExecuteNonQuery();
                 }
 
+                // 新库建成后直接标记为当前版本,于是它一出生就是 v1。
+                //
+                // 刻意**不**给这里包显式事务:CreateDatabase 现有 20+ 处测试直接调用,包事务是额外
+                // 风险面,而收益有限 —— 建表脚本全是 CREATE TABLE IF NOT EXISTS,即便"表建好了但版本
+                // 没设"这一瞬间被打断,下次启动的 MigrateSchemaIfNeeded 也会把版本补齐(它同样幂等)。
+                // 因此"最小改动"在此是更稳妥的选择,见 MigrateSchemaIfNeeded。
+                MarkSchemaVersion(connection, null, CurrentSchemaVersion, "initial schema");
+
                 return true;
             } catch (Exception e) {
                 exception = e;
@@ -91,8 +126,14 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
         }
 
+        /// <summary>
+        /// 新库的建表脚本集合。新库由这里一次建全(含 <c>[schema_migration]</c> 审计表)。
+        /// </summary>
         private static List<string> GetTableCreationScripts() {
             return [
+                // schema 版本审计表放最前:它是版本机制的载体,先于业务表建立。
+                SchemaMigrationTableScript,
+
                 @"
                 CREATE TABLE IF NOT EXISTS [clippings] (
                     [key] TEXT PRIMARY KEY NOT NULL UNIQUE, 
@@ -576,6 +617,182 @@ namespace KindleMate2.Infrastructure.Helpers {
                     yield return script[start..end];
                 }
             }
+        }
+
+        /// <summary>
+        /// 读取库的 schema 版本(<c>PRAGMA user_version</c>)。
+        /// **读不出来时返回 0,不抛** —— 库损坏 / 非 SQLite 文件交给后续流程去报错,
+        /// 不在这里引入新的崩溃点。
+        /// </summary>
+        /// <param name="filePath">SQLite 数据库文件路径。</param>
+        /// <returns>版本号;路径为空、文件不存在或读取失败时返回 0。</returns>
+        public static int GetSchemaVersion(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return 0;
+            }
+
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "PRAGMA user_version;";
+                var result = command.ExecuteScalar();
+                return result is null or DBNull ? 0 : Convert.ToInt32(result);
+            } catch {
+                // 库被占用 / 文件不是 SQLite / 权限不足…… 一律当作"读不出",交给上层继续按原版方式报错。
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// 在**给定连接**上读 <c>PRAGMA user_version</c>;读不出就抛。
+        /// </summary>
+        /// <remarks>
+        /// 与 <see cref="GetSchemaVersion"/> 的区别是**不吞异常**:
+        /// <list type="bullet">
+        /// <item><see cref="GetSchemaVersion"/> 返回 0 表示"读不出来",调用方(VM 的前向保护)据此
+        /// 继续走既有的报错路径即可 —— 那是"读不到就当作最老"的宽松口径。</item>
+        /// <item>迁移路径上则必须严格:把"读不出来"当成 v0 会把高版本库**降级**(见
+        /// <see cref="MigrateSchemaIfNeeded"/> 里的说明),故这里失败即抛、中止迁移。</item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">读取失败或结果为 NULL 时抛出。</exception>
+        private static int ReadUserVersion(SqliteConnection connection) {
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA user_version;";
+            var result = command.ExecuteScalar();
+            if (result is null or DBNull) {
+                throw new InvalidOperationException("无法读取 PRAGMA user_version(结果为 NULL)。");
+            }
+            return Convert.ToInt32(result);
+        }
+
+        /// <summary>
+        /// 幂等的 schema 迁移:把老库(阶段 0 之前建的库,即 v0)升到 <see cref="CurrentSchemaVersion"/>,
+        /// 并**补齐缺失的表**(见下方能力边界)。
+        /// </summary>
+        /// <remarks>
+        /// 全过程在**单事务**内完成(建全表 + 写审计行 + 设 <c>user_version</c>)——
+        /// 因为 <c>PRAGMA user_version</c> 随事务回滚(见 <see cref="CurrentSchemaVersion"/>),
+        /// 这几步要么全成、要么全不动,不会留下"表建好了但版本没设"的中间态。
+        /// <para>
+        /// **能力边界**(重要,别以为它万能):
+        /// </para>
+        /// <list type="bullet">
+        /// <item>✅ **能修**:<c>user_version</c> 落后于当前版本(含 0)+ 表缺失 / 不全。
+        /// 遍历 <see cref="GetTableCreationScripts"/> 把缺的表补上,再标记版本。典型场景是
+        /// 「建库中途被打断」留下的**残缺库** —— <c>CreateDatabase</c> 不是原子的(逐脚本执行、
+        /// 无事务),建到一半被打断后文件已在磁盘上,下次启动 <c>File.Exists==true</c> 会跳过
+        /// <c>CreateDatabase</c>,这里就是唯一的补救点。</item>
+        /// <item>❌ **不能修**:<c>user_version</c> 已是当前版本、但表缺失(例如文件损坏)。
+        /// 下面的早退判断会直接返回,不做任何检查。那种情况需要单独的完整性检查,**不在本方法职责内**。</item>
+        /// </list>
+        /// <para>
+        /// 全部脚本都是 <c>CREATE TABLE / INDEX IF NOT EXISTS</c>,对**正常库是彻底的 no-op** ——
+        /// 因此这是纯粹的自愈,不会改写任何既有数据。顺带也会补索引(脚本集合末尾展开了
+        /// <see cref="GetIndexScripts"/>);与 <see cref="EnsureIndexesIfNeeded"/> 的重叠**无害**
+        /// (两者都幂等),故不必去动那个方法。
+        /// </para>
+        /// <para>
+        /// 已是当前版本或更高 → 直接返回,不做任何事。**注意:版本过高不在这里报错** ——
+        /// 拒绝打开过高版本是 VM 层的职责(<c>MainWindowViewModel.PrepareDatabaseAsync</c> 的前向保护),
+        /// DB 层只保证"不破坏"(参见 <c>SchemaVersionTests</c> 的不降级用例)。
+        /// </para>
+        /// </remarks>
+        /// <param name="filePath">SQLite 数据库文件路径;为空或文件不存在时直接返回。</param>
+        /// <exception cref="InvalidOperationException">迁移失败(与 <see cref="MigrateLookupsSchemaIfNeeded"/> 的既有约定一致)。</exception>
+        public static void MigrateSchemaIfNeeded(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return;
+            }
+
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+
+                // 版本号在**本方法自己的连接**上读,且读不出就抛 —— 这里刻意不用 GetSchemaVersion:
+                // 那个方法的契约是"读不出来返回 0,不抛"(供 VM 的前向保护用),于是把「读失败」与
+                // 「v0 老库」归成了同一个 0。若在这里沿用它,一次瞬时读失败(例如库被短暂占用)就会让
+                // 一个**更高版本**的库被当成 v0:建表脚本全是 IF NOT EXISTS 故无结构破坏,但最后会把
+                // user_version 写成当前值 —— 即把库**降级**,前向保护随之失效。这里失败即中止,绝不下写版本。
+                if (ReadUserVersion(connection) >= CurrentSchemaVersion) {
+                    return;
+                }
+
+                using var transaction = connection.BeginTransaction();
+                try {
+                    // 建全建表脚本(不只是审计表)—— 全部是 CREATE TABLE/INDEX IF NOT EXISTS,
+                    // 对正常库是彻底的 no-op;对「建库中途被打断」留下的残缺库则是自愈:
+                    // 缺哪张补哪张。此前只建 schema_migration,那类库的缺失业务表永远不会被补上
+                    // (下次启动 File.Exists==true 会跳过 CreateDatabase,届时已无补救点)。
+                    // 注意 GetTableCreationScripts() 已包含 SchemaMigrationTableScript,
+                    // 故这里**不要**再单独跑一遍审计表脚本。
+                    foreach (var script in GetTableCreationScripts()) {
+                        using var command = connection.CreateCommand();
+                        command.Transaction = transaction;
+                        command.CommandText = script;
+                        command.ExecuteNonQuery();
+                    }
+
+                    // 设版本号是事务的**最后一步** —— 与建表、写审计一起原子提交。
+                    MarkSchemaVersion(connection, transaction, CurrentSchemaVersion, "initial schema");
+
+                    transaction.Commit();
+                } catch {
+                    transaction.Rollback();
+                    throw;
+                }
+            } catch (Exception e) {
+                throw new InvalidOperationException($"Failed to migrate schema in '{filePath}': {e.Message}", e);
+            }
+        }
+
+        /// <summary>
+        /// 把库标记为指定 schema 版本,并写一条审计记录。
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="transaction"/> 为 <c>null</c> 表示不在显式事务里(新库建库路径)。
+        /// <para>
+        /// ⚠️ 在事务里调用时,**必须把本方法放在事务的最后一步** —— 见 <see cref="CurrentSchemaVersion"/>:
+        /// <c>PRAGMA user_version</c> 随事务回滚,先提交再设版本会留下不一致的中间态。
+        /// </para>
+        /// <para>
+        /// ⚠️ **内部顺序固定为「先写审计行、后设 <c>PRAGMA</c>」,不要对调。** 建库路径
+        /// (<paramref name="transaction"/> 为 <c>null</c>)是自动提交、没有事务可回滚,顺序决定了
+        /// 「被打断」时留下的是哪种中间态:
+        /// <list type="bullet">
+        /// <item>本顺序 → 中间态是「审计行已落、版本仍是 0」。下次启动
+        /// <see cref="MigrateSchemaIfNeeded"/> 的早退判断不成立,会重跑一遍并
+        /// <c>INSERT OR REPLACE</c> 覆盖那行 ⇒ **自愈**。</item>
+        /// <item>反过来(先设版本) → 中间态是「版本已是当前值、审计行缺失」。下次启动迁移会因
+        /// <c>version &gt;= CurrentSchemaVersion</c> **早退**,那条审计行**永远补不回来**。</item>
+        /// </list>
+        /// 也就是说:让"版本号"成为提交点 —— 它写成功才算这一步完成。
+        /// </para>
+        /// <para>
+        /// <c>PRAGMA</c> 不支持参数绑定,版本号只能插值 —— 它是内部常量,安全。
+        /// 审计行用 <c>INSERT OR REPLACE</c>:幂等地重复标记同一版本时不会撞主键。
+        /// </para>
+        /// </remarks>
+        private static void MarkSchemaVersion(SqliteConnection connection, SqliteTransaction? transaction,
+            int version, string description) {
+            // 顺序见上:审计行先写,PRAGMA 最后设 —— 让版本号成为"这一步已完成"的提交点。
+            using (var auditCommand = connection.CreateCommand()) {
+                auditCommand.Transaction = transaction;
+                auditCommand.CommandText =
+                    "INSERT OR REPLACE INTO [schema_migration] ([version], [applied_at], [description]) VALUES (@version, @appliedAt, @description);";
+                auditCommand.Parameters.AddWithValue("@version", version);
+                // 时间戳格式必须配 InvariantCulture:否则泰历/回历等区域会写出非公历日期。
+                auditCommand.Parameters.AddWithValue("@appliedAt",
+                    DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                auditCommand.Parameters.AddWithValue("@description", description);
+                auditCommand.ExecuteNonQuery();
+            }
+
+            using var versionCommand = connection.CreateCommand();
+            versionCommand.Transaction = transaction;
+            versionCommand.CommandText = $"PRAGMA user_version = {version};";
+            versionCommand.ExecuteNonQuery();
         }
         
         /// <summary>
