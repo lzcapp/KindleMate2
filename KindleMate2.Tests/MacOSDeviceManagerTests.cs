@@ -220,7 +220,7 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
 
     [Fact]
     public void Watching_IgnoresTransientBlip_ShorterThanDebounceWindow() {
-        // 防抖的意义就在这条:摘掉又在窗口内插回,不应把界面状态来回抖两次
+        // 防抖的意义就在这条:摘掉又在窗口内插回,不应把界面状态来回抖两次。
         MountKindleVolume();
         using var manager = CreateManager(debounce: TimeSpan.FromMilliseconds(400));
         var events = new List<bool>();
@@ -228,9 +228,26 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
         manager.StartWatching();
         Thread.Sleep(100);
 
-        UnmountKindleVolume();
-        Thread.Sleep(120);      // 足够轮询观测到断开(20ms 一轮),但远不到 400ms 防抖窗口
-        MountKindleVolume();
+        // 制造抖动:**改名单个特征文件再改回**。
+        //
+        // 刻意不用 UnmountKindleVolume() —— 它内部是 Directory.Delete(recursive: true),
+        // 在 Windows 上可能耗时数百毫秒(本机实测 ~757ms,受杀软实时扫描与磁盘影响),
+        // 于是"抖动窗口"从预期的 120ms 变成「删除耗时 + 120ms ≈ 880ms」,**反而超过了 400ms 防抖窗口**:
+        // 那就不再是抖动,而是一次真实的长时间断开,防抖理所当然不吸收(实测本机稳定失败,CI 的
+        // ubuntu/macOS 因删除是毫秒级而恰好通过)。卷判定只认「documents/My Clippings.txt 存在」,
+        // 所以改名同样能让判定翻转,且同卷改名是元数据操作、微秒级 —— 这才真的是"短于防抖窗口的抖动"。
+        var clippings = Path.Combine(KindleVolume, AppConstants.DocumentsPathName, AppConstants.ClippingsFileName);
+        var parked = clippings + ".parked";
+        File.Move(clippings, parked);
+
+        // 夹具自检:改名是同步的,判定必须**立刻**翻转 —— 否则下面的断言会退化成"什么都没发生"。
+        Assert.False(manager.IsKindleConnected(), "改名后判定应立刻翻转为未连接");
+
+        // 保持 100ms:① 长于 20ms 的轮询间隔,保证管理器的轮询**真的观测到**这次断开
+        // (否则本用例退化成空断言 —— 实测把这段缩到"改回即走"时,连"去掉防抖复检守卫"这种
+        // 变异都能通过);② 又远短于 400ms 防抖窗口,才是"窗口内的抖动"。
+        Thread.Sleep(100);
+        File.Move(parked, clippings);
         Thread.Sleep(900);      // 等过防抖窗口
 
         lock (events) Assert.Empty(events);
