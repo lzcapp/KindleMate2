@@ -13,7 +13,9 @@ namespace KindleMate2.Application.Services.KM2DB {
     /// Source rows are mapped by <see cref="KmateSourceReader"/> (the km3 schema differs from the KM2
     /// target schema, so the shared repositories cannot read it directly). Target reads (dedup pre-fetch)
     /// use the regular KM2 repositories; target writes go through <see cref="KmateAtomicWriter"/> in a
-    /// single transaction (all-or-nothing). Deduplication mirrors <see cref="KmDatabaseService"/> with three
+    /// single transaction (vocab/lookups conflicts — including tombstones — are skipped via
+    /// INSERT OR IGNORE; any genuine error rolls back everything). Deduplication mirrors
+    /// <see cref="KmDatabaseService"/> with three
     /// km3-specific corrections:
     /// <list type="bullet">
     /// <item><c>original_clipping_lines</c> are only imported when their key belongs to an accepted

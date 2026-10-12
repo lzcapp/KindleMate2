@@ -13,6 +13,8 @@ public interface IVocabService {
     void UpdateVocab(Vocab vocab);
     void DeleteVocab(string id);
     bool DeleteVocabByWordKey(string wordKey);
+
+    /// <summary>批量删除全部生词(左栏「全部生词」节点)—— 软删,重导入不复活;整库重来用「清空全部数据」。</summary>
     void DeleteAllVocabs();
     List<string> GetVocabWordList();
     List<string> GetVocabStemList();

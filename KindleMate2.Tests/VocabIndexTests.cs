@@ -93,8 +93,10 @@ public sealed class VocabIndexTests : IDisposable {
     // ————————————————————————— 索引确实被用上 —————————————————————————
 
     /// <summary>
-    /// 索引存在不等于用得上。仓储里按 word_key 的等值查询(GetByWordKey / DeleteByWordKey /
-    /// UpdateFrequencyByWordKey)都必须走它,而不是全表扫描。
+    /// 索引存在不等于用得上。仓储里按 word_key 的等值查询与更新(GetByWordKey /
+    /// DeleteByWordKey 的软删 UPDATE / UpdateFrequencyByWordKey 的词频 UPDATE)都必须走它,
+    /// 而不是全表扫描。SQL 形状刻意对齐仓储实际下发的语句(软删改造后删除已是
+    /// UPDATE … SET deleted_at,不再是 DELETE)。
     /// </summary>
     [Fact]
     public void Index_IsUsableForWordKeyLookup() {
@@ -102,8 +104,15 @@ public sealed class VocabIndexTests : IDisposable {
         Assert.Contains(IndexName, select);
         Assert.DoesNotContain("SCAN", select, StringComparison.OrdinalIgnoreCase);
 
-        var delete = QueryPlan(_db, "DELETE FROM vocab WHERE word_key = 'en:apple';");
-        Assert.Contains(IndexName, delete);
+        // DeleteByWordKey 实际下发的形状
+        var softDelete = QueryPlan(_db, "UPDATE vocab SET deleted_at = '2026-01-01 00:00:00' WHERE word_key = 'en:apple';");
+        Assert.Contains(IndexName, softDelete);
+        Assert.DoesNotContain("SCAN", softDelete, StringComparison.OrdinalIgnoreCase);
+
+        // UpdateFrequencyByWordKey 实际下发的形状
+        var updateFrequency = QueryPlan(_db, "UPDATE vocab SET frequency = frequency + 1 WHERE word_key = 'en:apple' AND deleted_at IS NULL;");
+        Assert.Contains(IndexName, updateFrequency);
+        Assert.DoesNotContain("SCAN", updateFrequency, StringComparison.OrdinalIgnoreCase);
     }
 
     // ————————————————————————— helpers —————————————————————————

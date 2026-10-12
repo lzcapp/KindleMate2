@@ -398,6 +398,24 @@ namespace KindleMate2.Shared {
         }
         
         /// <summary>
+        ///   查找类似 数据库迁移失败 的本地化字符串。
+        /// </summary>
+        public static string Error_Database_Migration_Failed {
+            get {
+                return ResourceManager.GetString("Error_Database_Migration_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法为此数据库补全新版本所需的结构（软删除列）。通常是磁盘空间不足或数据库文件被占用所致，请检查后重新启动；若库文件损坏，请从备份恢复。 的本地化字符串。
+        /// </summary>
+        public static string Database_Migration_Failed_Message {
+            get {
+                return ResourceManager.GetString("Database_Migration_Failed_Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 数据已清空 的本地化字符串。
         /// </summary>
         public static string Data_Cleared {

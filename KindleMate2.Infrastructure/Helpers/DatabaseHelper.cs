@@ -94,6 +94,24 @@ namespace KindleMate2.Infrastructure.Helpers {
             );";
 
         /// <summary>
+        /// <c>[vocab]</c> / <c>[lookups]</c> 两表共有的软删除与溯源列 —— **唯一来源**:
+        /// 建库 DDL(<see cref="GetTableCreationScripts"/>)与老库补列
+        /// (<see cref="EnsureSoftDeleteSchemaIfNeeded"/>)都从这里取,改列名或类型只改这一处。
+        /// 两条路径产出的列集是否真的一致,由 SchemaIntegrityTests 的列集断言兜底。
+        /// </summary>
+        internal static readonly (string Column, string Type)[] SoftDeleteColumns = [
+            ("deleted_at", "TEXT"),
+            ("origin_batch", "INTEGER"),
+        ];
+
+        /// <summary>
+        /// <see cref="SoftDeleteColumns"/> 的建表 DDL 片段(<c>"a, b"</c>,不含前导逗号)——
+        /// 拼进两段 <c>CREATE TABLE</c> 用,避免列定义在 DDL 与 EnsureColumn 各写一遍。
+        /// </summary>
+        internal static string SoftDeleteColumnsDdl =>
+            string.Join(", ", SoftDeleteColumns.Select(c => $"[{c.Column}] {c.Type}"));
+
+        /// <summary>
         /// Creates a new SQLite database with required tables.
         /// </summary>
         /// <param name="filePath">Path where the database file will be created</param>
@@ -167,15 +185,15 @@ namespace KindleMate2.Infrastructure.Helpers {
                     pagenumber INT DEFAULT(0)
                 );",
 
-                @"
+                // 软删除两列从 SoftDeleteColumnsDdl 拼入(与 EnsureSoftDeleteSchemaIfNeeded 同源)
+                $@"
                 CREATE TABLE IF NOT EXISTS [lookups] (
                     [word_key] TEXT, 
                     [usage] TEXT, 
                     [title] TEXT, 
                     [authors] TEXT, 
                     [timestamp] TEXT,
-                    [deleted_at] TEXT, 
-                    [origin_batch] INTEGER, 
+                    {SoftDeleteColumnsDdl}, 
                     CONSTRAINT [uq_lookups_word_key_timestamp] UNIQUE ([word_key], [timestamp])
                 );",
 
@@ -195,7 +213,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [value] TEXT
                 );",
 
-                @"
+                $@"
                 CREATE TABLE IF NOT EXISTS [vocab] (
                     [id] TEXT PRIMARY KEY NOT NULL UNIQUE, 
                     [word_key] TEXT, 
@@ -207,8 +225,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                     [frequency] INT DEFAULT(0), 
                     [sync] INT DEFAULT(0), 
                     [colorRGB] INTEGER DEFAULT(-1), 
-                    [deleted_at] TEXT, 
-                    [origin_batch] INTEGER
+                    {SoftDeleteColumnsDdl}
                 );",
 
                 // 导入批次留底:每次导入记一行(来源 + 时间 + 计数)。vocab/lookups 的 origin_batch
@@ -855,10 +872,12 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                 using var transaction = connection.BeginTransaction();
                 try {
-                    EnsureColumn(connection, transaction, "vocab", "deleted_at", "TEXT");
-                    EnsureColumn(connection, transaction, "vocab", "origin_batch", "INTEGER");
-                    EnsureColumn(connection, transaction, "lookups", "deleted_at", "TEXT");
-                    EnsureColumn(connection, transaction, "lookups", "origin_batch", "INTEGER");
+                    // 列定义与建库 DDL 同源(SoftDeleteColumns),两处不再各写一遍
+                    foreach (var table in new[] { "vocab", "lookups" }) {
+                        foreach (var (column, columnType) in SoftDeleteColumns) {
+                            EnsureColumn(connection, transaction, table, column, columnType);
+                        }
+                    }
 
                     using (var command = connection.CreateCommand()) {
                         command.Transaction = transaction;
@@ -1029,6 +1048,53 @@ namespace KindleMate2.Infrastructure.Helpers {
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// 迁移后置条件探测(启动时调用):<c>vocab</c> / <c>lookups</c> **表在**,却缺
+        /// <c>deleted_at</c> / <c>origin_batch</c> 任一列 → 软删除迁移失败了,返回 true。
+        /// </summary>
+        /// <remarks>
+        /// 为什么失败要升级成硬失败而不是"仅告警继续":仓储的**读**路径按 <see cref="HasColumn"/>
+        /// 分支还能读,**写**路径(插入 / 编辑 / 删除 / 词频)却会直接
+        /// <c>no such column: deleted_at</c> —— 半迁移库"能打开、看得见,但什么都写不了",
+        /// 用户只会撞上含糊的 SQLite 报错。由调用方(启动流程)按 Fatal 拒绝打开,
+        /// 提示清楚成因,修复(磁盘 / 占用)后重启即可 —— 迁移按列探测幂等,重跑安全。
+        /// <para>
+        /// **表本身缺失**(结构损坏)不归这里管:返回 false,交给既有的缺表提示 /
+        /// 库打不开错误框,免得把"结构损坏"误诊成"迁移失败"。读不出来同理返回 false ——
+        /// 契约是"确认缺列才报",与 <c>GetSchemaVersion</c> 的前向保护同思路。
+        /// </para>
+        /// </remarks>
+        public static bool NeedsSoftDeleteColumns(string filePath) {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+                return false;
+            }
+            try {
+                using var connection = new SqliteConnection(GetConnectionString(filePath));
+                connection.Open();
+                foreach (var table in new[] { "vocab", "lookups" }) {
+                    if (!TableExists(connection, table)) {
+                        return false;
+                    }
+                    foreach (var (column, _) in SoftDeleteColumns) {
+                        if (!HasColumn(connection, table, column)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            } catch {
+                return false;
+            }
+        }
+
+        /// <summary>表是否存在于 <c>sqlite_master</c>。</summary>
+        private static bool TableExists(SqliteConnection connection, string table) {
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @name;";
+            command.Parameters.AddWithValue("@name", table);
+            return Convert.ToInt32(command.ExecuteScalar()) > 0;
         }
 
         /// <summary>

@@ -120,8 +120,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 // the exact same formatted timestamp must not be inserted twice. Dedup
                 // in-memory on that composite key so a single import pass never trips the
                 // constraint and rolls back the whole batch. The set is seeded from the
-                // existing destination rows so the previous per-row
-                // ExistsByWordKeyAndTimestamp query (one connection each) disappears too.
+                // existing destination rows so the previous per-row existence query
+                // (one connection each) disappears too.
                 // 同样必须含 tombstone:被删的 (word_key, timestamp) 仍占着 UNIQUE 键,
                 // 只读活表会让删过的查询记录被重新导回来。
                 var seenLookupKeys = _km2DbLookupRepository.GetAllIncludingDeleted()

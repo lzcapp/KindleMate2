@@ -493,13 +493,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     ///   <item><b>前向保护</b>:库的 schema 版本高于本程序支持的版本 → 拒绝打开(硬失败,不是警告);</item>
     ///   <item>执行一次幂等的 <c>MigrateSchemaIfNeeded</c>,把老库(v0)升到当前 schema 版本(失败仅告警);</item>
     ///   <item>执行一次幂等的 <c>MigrateLookupsSchemaIfNeeded</c>(失败仅告警,不中断);</item>
-    ///   <item>执行一次幂等的 <c>EnsureSoftDeleteSchemaIfNeeded</c>,补软删除列与 import_batches 表(失败仅告警);</item>
+    ///   <item>执行一次幂等的 <c>EnsureSoftDeleteSchemaIfNeeded</c>,补软删除列与 import_batches 表
+    ///     (失败或列仍缺失 → <b>硬失败拒绝打开</b>:半迁移库写路径全挂,见后置条件验证);</item>
     ///   <item>执行一次幂等的 <c>EnsureIndexesIfNeeded</c>,给老库补上查询索引(失败仅告警)。</item>
     /// </list>
     /// 建库失败由视图层弹错误框并退出(原版为 <c>Environment.Exit(0)</c>)——VM 不碰 UI。
     /// </summary>
     /// <returns>
-    /// <c>Fatal</c> = 建库失败或库版本过新(原版会错误框 + 退出);<c>Ok</c> = 库已成功打开;
+    /// <c>Fatal</c> = 建库失败、库版本过新,或软删除迁移验证失败(原版会错误框 + 退出);<c>Ok</c> = 库已成功打开;
     /// <c>Error</c> 为消息(失败时)。
     /// </returns>
     public async Task<(bool Fatal, bool Ok, string Error)> PrepareDatabaseAsync() {
@@ -535,6 +536,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             OnPropertyChanged(nameof(MigrationWarning));
         }
 
+        // 迁移后置条件验证:软删除两列必须真的补上了。此前"失败仅告警继续"在软删除改造后
+        // 不再安全 —— 仓储只有**读**路径按列分支(能读),**写**路径(插入/编辑/删除/词频)
+        // 会直接 no such column,半迁移库"能打开、看得见,却什么都写不了",用户只撞得到
+        // 含糊的 SQLite 报错。表在、列缺 = 明确的迁移失败 → 按 Fatal 拒绝打开并说清成因,
+        // 修复(磁盘/占用)后重启即可(迁移按列探测幂等,重跑安全)。
+        // 缺表 / 读不出等其他形态返回 false,不归这里管 —— 交由既有的缺表提示与
+        // "库打不开"错误框按原样接手,免得把"结构损坏"误诊成"迁移失败"。
+        if (DatabaseHelper.NeedsSoftDeleteColumns(databasePath)) {
+            FatalTitle = Strings.Error_Database_Migration_Failed;
+            var detail = string.IsNullOrEmpty(MigrationWarning) ? string.Empty : Environment.NewLine + MigrationWarning;
+            return (true, false, Strings.Database_Migration_Failed_Message + detail);
+        }
+
         await OpenDatabaseAsync(databasePath);
         // 原版对「库打不开」不退出:弹错误框,界面继续(数据为空)。
         return (false, HasSession, HasSession ? string.Empty : StatusText);
@@ -548,9 +562,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </summary>
     /// <remarks>
     /// 视图层 <c>MainWindow.axaml.cs</c> 的 fatal 分支此前把标题硬编码为
-    /// <c>Strings.Create_Database_Failed</c>,但 fatal 现在有**两种**成因 —— 建库失败、库版本过新。
-    /// 后者若也弹「创建数据库失败」就语义不符,故把标题做成可覆写的属性;为空时视图层完全保持原行为,
-    /// 于是既有的「建库失败」路径弹框内容一个字符都不变。
+    /// <c>Strings.Create_Database_Failed</c>,但 fatal 现在有**三种**成因 —— 建库失败、库版本过新、
+    /// 软删除迁移验证失败。后两者若也弹「创建数据库失败」就语义不符,故把标题做成可覆写的属性;
+    /// 为空时视图层完全保持原行为,于是既有的「建库失败」路径弹框内容一个字符都不变。
     /// </remarks>
     public string FatalTitle { get; private set; } = string.Empty;
 

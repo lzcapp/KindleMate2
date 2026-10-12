@@ -101,17 +101,20 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var sql = type switch {
-                AppEntities.SearchType.Vocabulary => "WHERE word LIKE '%' || @strSearch || '%' ESCAPE '\\'",
-                AppEntities.SearchType.Stem => "WHERE stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
-                AppEntities.SearchType.All => "WHERE word LIKE '%' || @strSearch || '%' ESCAPE '\\' OR stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+            // 谓词不含 WHERE,最后统一拼装 —— 关键是给谓词**包一层括号**:
+            // SearchType.All 是 "A OR B",若直接接 " AND deleted_at IS NULL",
+            // AND 优先级高于 OR,拼出来是 "A OR (B AND deleted_at IS NULL)" ——
+            // 命中 word 分支就绕过软删过滤,已删的词会被搜出来。
+            // (与 LookupRepository.GetByFuzzySearch 的写法对齐。)
+            var predicate = type switch {
+                AppEntities.SearchType.Vocabulary => "word LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.Stem => "stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
+                AppEntities.SearchType.All => "word LIKE '%' || @strSearch || '%' ESCAPE '\\' OR stem LIKE '%' || @strSearch || '%' ESCAPE '\\'",
                 _ => string.Empty
             };
-            if (!string.IsNullOrEmpty(sql)) {
-                sql += " AND deleted_at IS NULL";
-            } else {
-                sql = "WHERE deleted_at IS NULL";
-            }
+            var sql = string.IsNullOrEmpty(predicate)
+                ? "WHERE deleted_at IS NULL"
+                : "WHERE (" + predicate + ") AND deleted_at IS NULL";
             var query = $"SELECT {Columns} FROM vocab " + sql;
             var cmd = new SqliteCommand(query, connection);
             cmd.Parameters.AddWithValue("@strSearch", DatabaseHelper.EscapeLikePattern(search));
@@ -311,8 +314,26 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         }
 
         /// <summary>
+        /// 批量软删除全部生词(左栏「全部生词」节点)—— 与单删同语义:只置 deleted_at,
+        /// 行留着占键,重导入同一份库不会把整批词原样复活(那正是本改造要修的缺陷,
+        /// 只是规模是全部)。想"整库重来"的出口是「清空全部数据」(硬删 + 先备份,
+        /// 见 <see cref="DeleteAll"/>)—— 那条路会连 tombstone 一起清掉,重新导入才会放行。
+        /// </summary>
+        /// <returns>实际置为已删的行数(已是 tombstone 的行不重复计)。</returns>
+        public int SoftDeleteAll() {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            using var cmd = new SqliteCommand(
+                "UPDATE vocab SET deleted_at = @deleted_at WHERE deleted_at IS NULL", connection);
+            cmd.Parameters.AddWithValue("@deleted_at", NowTimestamp());
+            return cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
         /// 真删(含 tombstone)—— 只用于「清空全部数据」:那条路径先整库备份再清空,
         /// 语义是"我要全新的库",留着 tombstone 反而会挡住随后的重新导入。
+        /// (左栏「全部生词」的批量删除走 <see cref="SoftDeleteAll"/>,别接错。)
         /// </summary>
         public bool DeleteAll() {
             using var connection = new SqliteConnection(connectionString);

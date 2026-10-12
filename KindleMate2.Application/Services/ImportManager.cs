@@ -46,20 +46,34 @@ public class ImportManager : IImportManager {
     /// 在 import_batches 里开一条批次记录,返回其 id(写入各行的 origin_batch 溯源列)。
     /// 计数由 <see cref="CompleteBatch"/> 在导入成功后回填;导入中途失败的批次留在
     /// parsed=inserted=0 —— 这本身就是「尝试过但没进来」的记录,不需要额外状态列。
+    /// <para>
+    /// 批次是**辅助账本**,写不进去(表缺失 / 库被占 / 磁盘满)时吞掉异常返回 null,
+    /// 让主导入照常进行 —— 溯源降级为「无批次」(各行 origin_batch 留 NULL),
+    /// 反过来把导入弄挂就本末倒置了(与 <see cref="CompleteBatch"/> 同一口径)。
+    /// </para>
     /// </summary>
-    private long BeginBatch(string sourceType, string sourcePath) =>
-        _importBatchRepository.Add(new ImportBatch {
-            SourceType = sourceType,
-            SourcePath = sourcePath,
-            ImportedAt = DateTimeHelper.GetCurrentTimestamp()
-        });
-
-    /// <summary>回填批次计数;仓储异常只记日志不外抛 —— 溯源是辅助信息,不能反过来弄挂主导入。</summary>
-    private void CompleteBatch(long batchId, int parsedCount, int insertedCount) {
+    private long? BeginBatch(string sourceType, string sourcePath) {
         try {
-            _importBatchRepository.UpdateCounts(batchId, parsedCount, insertedCount);
+            return _importBatchRepository.Add(new ImportBatch {
+                SourceType = sourceType,
+                SourcePath = sourcePath,
+                ImportedAt = DateTimeHelper.GetCurrentTimestamp()
+            });
         } catch (Exception e) {
-            AppLog.Write($"[ImportManager.CompleteBatch] 回填批次 {batchId} 计数失败: {e.Message}");
+            AppLog.Write($"[ImportManager.BeginBatch] 建批次失败,本次导入不记溯源: {e.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>回填批次计数;null(建批次失败)直接跳过。仓储异常只记日志不外抛 —— 溯源是辅助信息,不能反过来弄挂主导入。</summary>
+    private void CompleteBatch(long? batchId, int parsedCount, int insertedCount) {
+        if (batchId is not { } id) {
+            return;
+        }
+        try {
+            _importBatchRepository.UpdateCounts(id, parsedCount, insertedCount);
+        } catch (Exception e) {
+            AppLog.Write($"[ImportManager.CompleteBatch] 回填批次 {id} 计数失败: {e.Message}");
         }
     }
 

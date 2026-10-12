@@ -4,6 +4,7 @@ using KindleMate2.Application.Services.KM2DB;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Infrastructure.Repositories.KM2DB;
+using KindleMate2.Shared.Entities;
 
 namespace KindleMate2.Tests;
 
@@ -189,6 +190,41 @@ public sealed class SoftDeleteImportTests : IDisposable {
         Assert.Equal(2, lookupRepo.GetCount());
     }
 
+    /// <summary>
+    /// P2-1(审阅):左栏「全部生词」节点走**软删**(经 <c>VocabService.DeleteAllVocabs</c>),
+    /// 与单删同语义 —— 批量删除后重导入同一份库,词不得整批复活(此前该路径是硬删,
+    /// 与本改造要修的缺陷一模一样,只是规模是全部)。整库重来仍走 <c>DeleteAll</c>
+    /// (上一条用例),两者语义刻意不同。
+    /// </summary>
+    [Fact]
+    public void DeleteAllVocabs_SoftDeletes_BlocksFullReimport() {
+        var targetDb = NewDb("target3b.db");
+        var kmDb = NewDb("km3b.db");
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(kmDb))) {
+            conn.Open();
+            SeedSource(conn);
+        }
+
+        var svc = NewService(targetDb, kmDb);
+        Assert.True(svc.ImportFromKmDatabase());
+
+        var targetConnStr = DatabaseHelper.GetConnectionString(targetDb);
+        var vocabRepo = new VocabRepository(targetConnStr);
+        var lookupRepo = new LookupRepository(targetConnStr);
+
+        // 「全部生词」入口:界面清空,但行留着占键
+        new VocabService(vocabRepo).DeleteAllVocabs();
+        Assert.Equal(0, vocabRepo.GetCount());
+        Assert.Equal(2, vocabRepo.GetAllIncludingDeleted().Count);
+
+        // 重导入:词不得回来(tombstone 占键 → OR IGNORE 跳过)
+        Assert.True(svc.ImportFromKmDatabase());
+        Assert.Equal(0, vocabRepo.GetCount());
+        Assert.Equal(2, vocabRepo.GetAllIncludingDeleted().Count);
+        // 查询记录没被「全部生词」动过(该节点只删生词,既有行为),重导入也不该凭空多出来
+        Assert.Equal(2, lookupRepo.GetCount());
+    }
+
     // ————————————————————————— 判重下沉到唯一约束 —————————————————————————
 
     /// <summary>
@@ -210,6 +246,51 @@ public sealed class SoftDeleteImportTests : IDisposable {
 
         Assert.Equal(1, repo.GetCount()); // 只有 fresh 是活行
         Assert.Equal(2, repo.GetAllIncludingDeleted().Count); // id1 的 tombstone + fresh
+    }
+
+    // ————————————————————————— 模糊搜索排除 tombstone —————————————————————————
+
+    /// <summary>
+    /// P1(审阅):<c>SearchType.All</c> 的谓词是 <c>"word LIKE … OR stem LIKE …"</c>,
+    /// 若不包括号就接 <c>" AND deleted_at IS NULL"</c>,SQL 里 AND 优先级高于 OR ——
+    /// 拼出来是 <c>"A OR (B AND deleted_at IS NULL)"</c>,命中 word 分支就绕过软删过滤,
+    /// 已删的词会被搜出来。这里两条 OR 分支各钉一次:已删行无论命中哪一侧都不得出现,
+    /// 活行照常返回;<c>LookupRepository</c> 的同形写法一并覆盖(两者曾不一致)。
+    /// </summary>
+    [Fact]
+    public void FuzzySearch_All_ExcludesSoftDeleted_OnBothOrBranches() {
+        var db = NewDb("fuzzy.db");
+        using (var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(db))) {
+            conn.Open();
+            // vocab:d1 靠 word 命中(左支)、d2 靠 stem 命中(右支),live 靠 word 命中
+            Exec(conn, "INSERT INTO vocab (id, word_key, word, stem, timestamp) VALUES " +
+                       "('d1', 'en:apple', 'apple', 'appl', '2026-01-01 10:00:00'), " +
+                       "('d2', 'en:fruit', 'fruit', 'apples', '2026-01-01 10:00:01'), " +
+                       "('live', 'en:pineapple', 'pineapple', 'appl', '2026-01-01 10:00:02');");
+            // lookups:第一条靠 word_key + usage 命中,第二条是活行
+            Exec(conn, "INSERT INTO lookups (word_key, usage, title, authors, timestamp) VALUES " +
+                       "('en:apple', 'apple usage', 'Book', 'A', '2026-01-01 10:00:00'), " +
+                       "('en:pineapple', 'pineapple usage', 'Book', 'A', '2026-01-01 10:00:01');");
+        }
+
+        var connStr = DatabaseHelper.GetConnectionString(db);
+        var vocabRepo = new VocabRepository(connStr);
+        var lookupRepo = new LookupRepository(connStr);
+        Assert.True(vocabRepo.Delete("d1"));
+        Assert.True(vocabRepo.Delete("d2"));
+        Assert.True(lookupRepo.Delete("en:apple"));
+
+        // All:搜 "apple" 同时命中两条已删行(左支 d1、右支 d2)与活行 —— 只许活行出现
+        var vocabHits = vocabRepo.GetByFuzzySearch("apple", AppEntities.SearchType.All);
+        Assert.Equal("live", Assert.Single(vocabHits).Id);
+
+        // 单支同样不得漏:d1(word)、d2(stem)各自被排除
+        Assert.Equal("live", Assert.Single(vocabRepo.GetByFuzzySearch("apple", AppEntities.SearchType.Vocabulary)).Id);
+        Assert.Empty(vocabRepo.GetByFuzzySearch("apples", AppEntities.SearchType.Stem)); // 只有 d2 的 stem 命中
+
+        // Lookup 侧同形(此前就包了括号,这里钉住不许回退)
+        var lookupHits = lookupRepo.GetByFuzzySearch("apple", AppEntities.SearchType.All);
+        Assert.Equal("en:pineapple", Assert.Single(lookupHits).WordKey);
     }
 
     // ————————————————————————— 迁移(老库补列) —————————————————————————

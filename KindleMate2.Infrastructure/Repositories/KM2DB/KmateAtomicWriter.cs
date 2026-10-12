@@ -4,10 +4,13 @@ using Microsoft.Data.Sqlite;
 namespace KindleMate2.Infrastructure.Repositories.KM2DB;
 
 /// <summary>
-/// All-or-nothing batched writer for KMate (km3.dat) imports.
-/// Inserts the four candidate sets (clippings / original_clipping_lines / lookups / vocab) inside a
-/// single connection and a single transaction: if any insert fails, everything is rolled back, so an
-/// import can never leave a partially migrated database behind.
+/// Single-connection, single-transaction batched writer for KMate (km3.dat) imports of the four
+/// candidate sets (clippings / original_clipping_lines / lookups / vocab).
+/// vocab / lookups go in with <c>INSERT OR IGNORE</c>: a UNIQUE conflict — including a soft-deleted
+/// row that still occupies the key (tombstone) — is skipped and the constraint stays the final judge,
+/// instead of one conflict aborting the whole import. clippings / original_clipping_lines still use
+/// plain INSERT, and any genuine failure (disk full, corrupt file) rolls back the entire transaction —
+/// an import never leaves a partially migrated database behind.
 /// </summary>
 /// <remarks>
 /// Column lists and parameter mapping intentionally mirror the single/Add and Add(List) overloads of the
@@ -90,6 +93,7 @@ public static class KmateAtomicWriter {
         if (lookups.Count == 0) {
             return;
         }
+        // OR IGNORE 同 InsertVocabs:与 tombstone 撞 (word_key, timestamp) 唯一键的候选静默跳过
         using var cmd = new SqliteCommand(
             "INSERT OR IGNORE INTO lookups (word_key, usage, title, authors, timestamp, deleted_at, origin_batch) VALUES (@word_key, @usage, @title, @authors, @timestamp, @deleted_at, @origin_batch)",
             connection, transaction);

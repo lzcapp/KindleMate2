@@ -113,21 +113,6 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return results;
         }
 
-        /// <summary>
-        /// 判定 (word_key, timestamp) 是否已存在 —— **含 tombstone**:导入幂等性检查里
-        /// "被用户删掉的那条"也算存在,否则删过的记录会被重新导回来。
-        /// </summary>
-        public bool ExistsByWordKeyAndTimestamp(string wordKey, string timestamp) {
-            using var connection = new SqliteConnection(connectionString);
-            connection.Open();
-
-            var cmd = new SqliteCommand("SELECT COUNT(*) FROM lookups WHERE word_key = @word_key AND timestamp = @timestamp", connection);
-            cmd.Parameters.AddWithValue("@word_key", wordKey);
-            cmd.Parameters.AddWithValue("@timestamp", timestamp);
-
-            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
-        }
-
         public List<Lookup> GetByTitle(string title) {
             var results = new List<Lookup>();
             

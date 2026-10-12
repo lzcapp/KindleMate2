@@ -405,6 +405,12 @@
   <data name="Database_TooNew_Message" xml:space="preserve">
     <value>This database was created by a newer version of KindleMate2 (version {0}). Please update the app before opening it.</value>
   </data>
+  <data name="Error_Database_Migration_Failed" xml:space="preserve">
+    <value>Database migration failed</value>
+  </data>
+  <data name="Database_Migration_Failed_Message" xml:space="preserve">
+    <value>The new required structure (soft-delete columns) could not be added to this database. This is usually caused by a full disk or the database file being locked. Please check and restart; restore from a backup if the file is corrupted.</value>
+  </data>
   <data name="Confirm_Clear_Clippings" xml:space="preserve">
     <value>Are you sure you want to clear all clippings? </value>
   </data>

@@ -90,6 +90,43 @@ public sealed class SchemaIntegrityTests : IDisposable {
     }
 
     /// <summary>
+    /// **列级**漂移守卫:老库(没有软删除两列)跑完启动迁移链后的 vocab / lookups 列集,
+    /// 必须与新建库(建表脚本直接产出)完全一致 —— 上面那条全空库断言挡住**表**、挡不住**列**,
+    /// 而「建库脚本 vs 迁移脚本不漂移」的真守卫恰恰在列这一层(本次改造正是加两列 + 加一表)。
+    /// <para>
+    /// 老库的 lookups 刻意造成老式单列 <c>UNIQUE(timestamp)</c> 形状,把
+    /// <c>MigrateLookupsSchemaIfNeeded</c> 的重建脚本(第三份 DDL)也纳入同一轮比对 ——
+    /// 三份 SQL(建库 / lookups 重建 / 软删补列)任何一处漂移,这条都会红。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void StartupMigrationChain_ProducesSameColumns_AsCreateDatabase() {
+        var legacy = Path.Combine(_dir, "legacy-drift.dat");
+        Assert.True(DatabaseHelper.CreateDatabase(legacy, out var ex), "CreateDatabase failed: " + ex.Message);
+
+        // 逐项摘成「上一版程序产出的库」
+        Exec(legacy, "ALTER TABLE vocab DROP COLUMN deleted_at;");
+        Exec(legacy, "ALTER TABLE vocab DROP COLUMN origin_batch;");
+        Exec(legacy, "DROP TABLE lookups;");
+        // 老式:UNIQUE 只在 timestamp 一列(触发 MigrateLookupsSchemaIfNeeded 重建)
+        Exec(legacy, "CREATE TABLE lookups (word_key TEXT, usage TEXT, title TEXT, authors TEXT, timestamp TEXT, CONSTRAINT [uq_lookups_timestamp] UNIQUE ([timestamp]));");
+        Exec(legacy, "DROP TABLE import_batches;");
+
+        // 启动顺序(与 MainWindowViewModel.PrepareDatabaseAsync 一致)
+        DatabaseHelper.MigrateSchemaIfNeeded(legacy);
+        DatabaseHelper.MigrateLookupsSchemaIfNeeded(legacy);
+        DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(legacy);
+        DatabaseHelper.EnsureIndexesIfNeeded(legacy);
+
+        // 表齐(结构完整)
+        Assert.False(DatabaseHelper.TryDescribeMissingTables(legacy, out var missing),
+            "迁移后仍缺表: " + string.Join(", ", missing));
+        // 两表列集与新建库一致(顺序无关 —— 查询都用显式列名)
+        Assert.Equal(ColumnNames(_db, "vocab"), ColumnNames(legacy, "vocab"));
+        Assert.Equal(ColumnNames(_db, "lookups"), ColumnNames(legacy, "lookups"));
+    }
+
+    /// <summary>
     /// 索引缺失**不算**结构损坏:索引由 <c>EnsureIndexesIfNeeded</c> 每次启动补齐,
     /// 不该把"库能正常打开"误报成结构损坏。
     /// </summary>
@@ -130,6 +167,21 @@ public sealed class SchemaIntegrityTests : IDisposable {
     }
 
     // ————————————————————————— helpers —————————————————————————
+
+    private static string[] ColumnNames(string dbPath, string table) {
+        using var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(dbPath));
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info([{table}]);";
+        var names = new List<string>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read()) {
+            // table_info 的列:cid / name / type / notnull / dflt_value / pk
+            names.Add(reader.GetString(1));
+        }
+        // 排序后比对:列**集合**一致即可 —— 查询都用显式列名,物理顺序不影响读写
+        return names.OrderBy(n => n, StringComparer.Ordinal).ToArray();
+    }
 
     private static void Exec(string dbPath, string sql) {
         using var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(dbPath));
