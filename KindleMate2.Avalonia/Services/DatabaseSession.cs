@@ -38,6 +38,7 @@ public sealed class DatabaseSession : IDisposable {
     public IVocabRepository VocabRepository { get; }
     public ISettingRepository SettingRepository { get; }
     public IDatabaseRepository DatabaseRepository { get; }
+    public IImportBatchRepository ImportBatchRepository { get; }
 
     // —— KM2DB 服务 ——
     public IClippingService ClippingService { get; }
@@ -82,6 +83,7 @@ public sealed class DatabaseSession : IDisposable {
         VocabRepository = new VocabRepository(connectionString);
         SettingRepository = new SettingRepository(connectionString);
         DatabaseRepository = new DatabaseRepository(connectionString);
+        ImportBatchRepository = new ImportBatchRepository(connectionString);
 
         ClippingService = new ClippingService(ClippingRepository);
         LookupService = new LookupService(LookupRepository);
@@ -108,7 +110,8 @@ public sealed class DatabaseSession : IDisposable {
 
         ImportManager = new ImportManager(
             Km2DatabaseService, ClippingService, VocabService, OriginalClippingLineService, LookupService,
-            VocabDatabaseServiceFactory, KmDatabaseServiceFactory, KmateDatabaseServiceFactory, ImportDirectory);
+            VocabDatabaseServiceFactory, KmDatabaseServiceFactory, KmateDatabaseServiceFactory,
+            ImportBatchRepository, ImportDirectory);
 
         ExportManager = new ExportManager(
             ClippingService, LookupService, VocabService, OriginalClippingLineService, DeviceManager,

@@ -44,8 +44,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             return repository.DeleteByWordKey(wordKey);
         }
 
+        /// <summary>
+        /// 批量删除全部生词(左栏「全部生词」节点)—— **软删**:与单个删除同语义,行留着占键,
+        /// 之后重新导入同一份库不会把整批词复活。整库重来走「清空全部数据」(硬删 + 先备份)。
+        /// </summary>
         public void DeleteAllVocabs() {
-            repository.DeleteAll();
+            repository.SoftDeleteAll();
         }
 
         public List<string> GetVocabWordList() {

@@ -402,6 +402,12 @@
   <data name="Database_TooNew_Message" xml:space="preserve">
     <value>此資料庫由新版本的 KindleMate2 建立（版本 {0}），請升級程式後再開啟。</value>
   </data>
+  <data name="Error_Database_Migration_Failed" xml:space="preserve">
+    <value>資料庫遷移失敗</value>
+  </data>
+  <data name="Database_Migration_Failed_Message" xml:space="preserve">
+    <value>無法為此資料庫補全新版本所需的結構（軟刪除列）。通常原因是磁碟空間不足或資料庫檔案被佔用，請檢查後重新啟動；若檔案損壞，請從備份還原。</value>
+  </data>
   <data name="English" xml:space="preserve">
     <value>英文</value>
   </data>

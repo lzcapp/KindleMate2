@@ -5,16 +5,15 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
     public interface ILookupRepository {
         Lookup? GetByWordKey(string wordKey);
 
+        /// <summary>活跃行(未软删除)。UI / 导出 / 词频重算都用它。</summary>
         List<Lookup> GetAll();
 
-        List<Lookup> GetByTimestamp(string timeStamp);
-
         /// <summary>
-        /// True when a lookup with the given word key and formatted timestamp already exists.
-        /// Used as the idempotency check during vocab.db import — (word_key, timestamp) is
-        /// the semantic identity of a lookup, unlike timestamp alone.
+        /// 全部行,含软删除的 tombstone。**只给导入判重用** —— 见 <see cref="IVocabRepository.GetAllIncludingDeleted"/> 的说明。
         /// </summary>
-        bool ExistsByWordKeyAndTimestamp(string wordKey, string timestamp);
+        List<Lookup> GetAllIncludingDeleted();
+
+        List<Lookup> GetByTimestamp(string timeStamp);
 
         List<Lookup> GetByTitle(string title);
 

@@ -13,7 +13,9 @@ namespace KindleMate2.Application.Services.KM2DB {
     /// Source rows are mapped by <see cref="KmateSourceReader"/> (the km3 schema differs from the KM2
     /// target schema, so the shared repositories cannot read it directly). Target reads (dedup pre-fetch)
     /// use the regular KM2 repositories; target writes go through <see cref="KmateAtomicWriter"/> in a
-    /// single transaction (all-or-nothing). Deduplication mirrors <see cref="KmDatabaseService"/> with three
+    /// single transaction (vocab/lookups conflicts — including tombstones — are skipped via
+    /// INSERT OR IGNORE; any genuine error rolls back everything). Deduplication mirrors
+    /// <see cref="KmDatabaseService"/> with three
     /// km3-specific corrections:
     /// <list type="bullet">
     /// <item><c>original_clipping_lines</c> are only imported when their key belongs to an accepted
@@ -49,7 +51,11 @@ namespace KindleMate2.Application.Services.KM2DB {
             _targetConnectionString = targetConnectionString;
         }
 
-        public bool ImportFromKmateDatabase(IProgress<OperationProgress>? progress = null) {
+        /// <summary>
+        /// 导入 kmate km3.dat。<paramref name="originBatch"/> 为本次导入在 import_batches 里的 id,
+        /// 写入各行的 origin_batch 溯源列;传 null 时不落溯源(旧调用方兼容)。
+        /// </summary>
+        public bool ImportFromKmateDatabase(IProgress<OperationProgress>? progress = null, long? originBatch = null) {
             try {
                 // 读源文件并映射到 km2 schema 都在 TryRead 里,km3.dat 大时有可感知耗时
                 progress?.Report(OperationProgress.At(OperationStage.ReadingFile));
@@ -119,7 +125,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
 
                 if (data.Lookups.Count > 0) {
-                    var targetLookupPairs = _lookupRepository.GetAll()
+                    // 目标侧判重含 tombstone:删除是软删,只读活表会让"已删的查询"被重新导回来。
+                    var targetLookupPairs = _lookupRepository.GetAllIncludingDeleted()
                         .Where(l => l.WordKey != null)
                         .Select(l => ComposePair(l.WordKey!, l.Timestamp))
                         .ToHashSet();
@@ -135,6 +142,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                         }
                         var pair = ComposePair(kmLookup.WordKey, kmLookup.Timestamp);
                         if (!targetLookupPairs.Contains(pair)) {
+                            kmLookup.OriginBatch = originBatch;
                             lookupCandidates.Add(kmLookup);
                             targetLookupPairs.Add(pair);
                         }
@@ -142,7 +150,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 }
 
                 if (data.Vocabs.Count > 0) {
-                    var targetVocabIds = _vocabRepository.GetAll().Select(v => v.Id).ToHashSet();
+                    // 同上:tombstone 仍占着主键,判重必须含已删行。
+                    var targetVocabIds = _vocabRepository.GetAllIncludingDeleted().Select(v => v.Id).ToHashSet();
 
                     foreach (Vocab kmVocab in data.Vocabs) {
                         if (processedRows % ProgressReportInterval == 0) {
@@ -154,6 +163,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                             continue;
                         }
                         if (!targetVocabIds.Contains(kmVocab.Id)) {
+                            kmVocab.OriginBatch = originBatch;
                             vocabCandidates.Add(kmVocab);
                             targetVocabIds.Add(kmVocab.Id);
                         }

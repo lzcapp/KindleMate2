@@ -1,8 +1,11 @@
 using KindleMate2.Application.Services.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Application.Services;
 
@@ -18,12 +21,14 @@ public class ImportManager : IImportManager {
     private readonly IVocabDatabaseServiceFactory _vocabDatabaseServiceFactory;
     private readonly IKmDatabaseServiceFactory _kmDatabaseServiceFactory;
     private readonly IKmateDatabaseServiceFactory _kmateDatabaseServiceFactory;
+    private readonly IImportBatchRepository _importBatchRepository;
     private readonly string _importPath;
 
     public ImportManager(IKm2DatabaseService km2DatabaseService, IClippingService clippingService, IVocabService vocabService,
         IOriginalClippingLineService originalClippingLineService, ILookupService lookupService,
         IVocabDatabaseServiceFactory vocabDatabaseServiceFactory, IKmDatabaseServiceFactory kmDatabaseServiceFactory,
         IKmateDatabaseServiceFactory kmateDatabaseServiceFactory,
+        IImportBatchRepository importBatchRepository,
         string importPath) {
         _km2DatabaseService = km2DatabaseService;
         _clippingService = clippingService;
@@ -33,7 +38,43 @@ public class ImportManager : IImportManager {
         _vocabDatabaseServiceFactory = vocabDatabaseServiceFactory;
         _kmDatabaseServiceFactory = kmDatabaseServiceFactory;
         _kmateDatabaseServiceFactory = kmateDatabaseServiceFactory;
+        _importBatchRepository = importBatchRepository;
         _importPath = importPath;
+    }
+
+    /// <summary>
+    /// 在 import_batches 里开一条批次记录,返回其 id(写入各行的 origin_batch 溯源列)。
+    /// 计数由 <see cref="CompleteBatch"/> 在导入成功后回填;导入中途失败的批次留在
+    /// parsed=inserted=0 —— 这本身就是「尝试过但没进来」的记录,不需要额外状态列。
+    /// <para>
+    /// 批次是**辅助账本**,写不进去(表缺失 / 库被占 / 磁盘满)时吞掉异常返回 null,
+    /// 让主导入照常进行 —— 溯源降级为「无批次」(各行 origin_batch 留 NULL),
+    /// 反过来把导入弄挂就本末倒置了(与 <see cref="CompleteBatch"/> 同一口径)。
+    /// </para>
+    /// </summary>
+    private long? BeginBatch(string sourceType, string sourcePath) {
+        try {
+            return _importBatchRepository.Add(new ImportBatch {
+                SourceType = sourceType,
+                SourcePath = sourcePath,
+                ImportedAt = DateTimeHelper.GetCurrentTimestamp()
+            });
+        } catch (Exception e) {
+            AppLog.Write($"[ImportManager.BeginBatch] 建批次失败,本次导入不记溯源: {e.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>回填批次计数;null(建批次失败)直接跳过。仓储异常只记日志不外抛 —— 溯源是辅助信息,不能反过来弄挂主导入。</summary>
+    private void CompleteBatch(long? batchId, int parsedCount, int insertedCount) {
+        if (batchId is not { } id) {
+            return;
+        }
+        try {
+            _importBatchRepository.UpdateCounts(id, parsedCount, insertedCount);
+        } catch (Exception e) {
+            AppLog.Write($"[ImportManager.CompleteBatch] 回填批次 {id} 计数失败: {e.Message}");
+        }
     }
 
     /// <summary>
@@ -65,12 +106,18 @@ public class ImportManager : IImportManager {
 
     /// <summary>导入 Kindle 标注(My Clippings.txt)。<paramref name="progress"/> 供界面展示阶段与进度。</summary>
     public string ImportKindleClippings(string clippingsPath, IProgress<OperationProgress>? progress = null) {
+        // 标注侧本轮不引入 origin_batch 列(它已由 original_clipping_lines 留底),
+        // 但批次行照记 —— import_batches 是「每次导入发生了什么」的总账,不分表。
+        var batchId = BeginBatch(ImportBatch.SourceKindleClippings, clippingsPath);
         if (!_km2DatabaseService.ImportKindleClippings(clippingsPath, out var result, progress)) {
             var exception = result[AppConstants.Exception];
             throw new InvalidOperationException(exception);
         }
         var parsedCount = result[AppConstants.ParsedCount];
         var insertedCount = result[AppConstants.InsertedCount];
+        CompleteBatch(batchId,
+            int.TryParse(parsedCount, out var parsed) ? parsed : 0,
+            int.TryParse(insertedCount, out var inserted) ? inserted : 0);
         return Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
                Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
     }
@@ -80,22 +127,27 @@ public class ImportManager : IImportManager {
             return string.Empty;
         }
 
+        var batchId = BeginBatch(ImportBatch.SourceKindleVocab, kindleWordsPath);
         var vocabDatabaseService = _vocabDatabaseServiceFactory.Create(kindleWordsPath);
 
-        if (!vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result, progress)) {
+        if (!vocabDatabaseService.ImportKindleWords(kindleWordsPath, out var result, progress, batchId)) {
             var exception = result[AppConstants.Exception];
             throw new InvalidOperationException(exception);
         }
         var lookupCount = result[AppConstants.LookupCount];
         var insertedLookupCount = result[AppConstants.InsertedLookupCount];
         var insertedVocabCount = result[AppConstants.InsertedVocabCount];
+        CompleteBatch(batchId,
+            int.TryParse(lookupCount, out var parsed) ? parsed : 0,
+            (int.TryParse(insertedLookupCount, out var insertedLookups) ? insertedLookups : 0) +
+            (int.TryParse(insertedVocabCount, out var insertedVocabs) ? insertedVocabs : 0));
         return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma +
                Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups + Strings.Space +
                Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
     }
 
     public string ImportKmDatabase(string filePath, IProgress<OperationProgress>? progress = null) =>
-        ImportFlatSchemaDatabase(filePath, "KM_", progress);
+        ImportFlatSchemaDatabase(filePath, "KM_", ImportBatch.SourceKm, progress);
 
     /// <summary>
     /// 导入另一个 <b>Kindle Mate 2</b> 数据库(本程序自己的库格式,即 KM2.dat)。
@@ -109,15 +161,16 @@ public class ImportManager : IImportManager {
     /// 区分开(KM2_ 前缀),便于事后分辨。
     /// </remarks>
     public string ImportKm2Database(string filePath, IProgress<OperationProgress>? progress = null) =>
-        ImportFlatSchemaDatabase(filePath, "KM2_", progress);
+        ImportFlatSchemaDatabase(filePath, "KM2_", ImportBatch.SourceKm2, progress);
 
     /// <summary>原版 Kindle Mate 与本程序自己的库共用同一套扁平 schema,合并逻辑写在这里一份。</summary>
-    private string ImportFlatSchemaDatabase(string filePath, string backupFileNamePrefix,
+    private string ImportFlatSchemaDatabase(string filePath, string backupFileNamePrefix, string sourceType,
         IProgress<OperationProgress>? progress = null) {
         var kmDatabaseService = _kmDatabaseServiceFactory.Create(filePath);
 
         var clippingsCount = _clippingService.GetCount();
         var vocabCount = _vocabService.GetCount();
+        var lookupCount = _lookupService.GetCount();
 
         if (File.Exists(filePath)) {
             // 备份是整库文件拷贝,源库大时有可感知耗时,归入「读取文件」阶段
@@ -126,7 +179,8 @@ public class ImportManager : IImportManager {
             File.Copy(filePath, backupFilePath, true);
         }
 
-        if (!kmDatabaseService.ImportFromKmDatabase(progress)) {
+        var batchId = BeginBatch(sourceType, filePath);
+        if (!kmDatabaseService.ImportFromKmDatabase(progress, batchId)) {
             return string.Empty;
         }
 
@@ -135,6 +189,9 @@ public class ImportManager : IImportManager {
         // 重复导入时就会出现「导入 -904 条」这种负数。
         var importedClippings = _clippingService.GetCount() - clippingsCount;
         var importedVocabs = _vocabService.GetCount() - vocabCount;
+        // 溯源账记 vocab+lookups 增量(标注不写 origin_batch);parsed 记 0 = 扁平合并
+        // 不区分「解析量」与「插入量」,两个都是活表差值,没有可诚实填写的解析分母。
+        CompleteBatch(batchId, 0, importedVocabs + (_lookupService.GetCount() - lookupCount));
 
         // 收尾的清理与词频刷新同样在导入链路上(判重扫描 + 批量回写),不报进度末尾会留一段空白。
         // 清理结果此前被丢弃(out _),正是弹窗口径说不清的根源 —— 现在收下来单独展示。
@@ -174,6 +231,7 @@ public class ImportManager : IImportManager {
 
         var clippingsCount = _clippingService.GetCount();
         var vocabCount = _vocabService.GetCount();
+        var lookupCount = _lookupService.GetCount();
 
         if (File.Exists(filePath)) {
             // 备份是整库文件拷贝,源库大时有可感知耗时,归入「读取文件」阶段
@@ -182,13 +240,15 @@ public class ImportManager : IImportManager {
             File.Copy(filePath, backupFilePath, true);
         }
 
-        if (!kmateDatabaseService.ImportFromKmateDatabase(progress)) {
+        var batchId = BeginBatch(ImportBatch.SourceKmate, filePath);
+        if (!kmateDatabaseService.ImportFromKmateDatabase(progress, batchId)) {
             return string.Empty;
         }
 
         // 同 ImportFlatSchemaDatabase:先量新增、再收清理结果 —— 顺序反过来就会把净变化当成导入条数
         var importedClippings = _clippingService.GetCount() - clippingsCount;
         var importedVocabs = _vocabService.GetCount() - vocabCount;
+        CompleteBatch(batchId, 0, importedVocabs + (_lookupService.GetCount() - lookupCount));
 
         // 收尾清理只判**同书内**重复(crossBookDuplicates: false):跨书同文是两条独立高亮,
         // 跨书判重会把库里已有的那条一并删掉 —— 详见 FindDuplicatedClippings 的导入分支。
