@@ -1238,7 +1238,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             // 清空前的这份保底备份读不出日期,用户就没法按名字找回来。
             var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
-            File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
+            // 走一致性快照(VACUUM INTO)而不是 File.Copy —— 理由见 DatabaseHelper.cs:291-307:
+            // 直接复制库文件会在 rollback journal 下静默产出部分改写的文件、在 WAL 下丢掉最近提交,
+            // 恰在这份"清空前的唯一保底备份"最需要可靠时,产出损坏或漏行的结果。
+            // 这里刻意用 CreateConsistentSnapshot 而非 DatabaseHelper.BackupDatabase:后者的文件名
+            // 带 `_backup_` 中缀,会落进 PruneBackups 的匹配模式;保底备份要留在 Backups 根目录、
+            // 不参与退出备份的保留策略,故沿用现有 `KM2_<时间戳>.dat` 命名。
+            DatabaseHelper.CreateConsistentSnapshot(
+                session.DatabasePath,
+                Path.Combine(session.BackupDirectory, fileName),
+                overwrite: true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
         }, true, Strings.Successful, Strings.Clear_Failed);
     }
