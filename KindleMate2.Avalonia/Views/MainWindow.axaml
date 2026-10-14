@@ -206,7 +206,8 @@
             点击后下载、交给替换脚本并自动重启 —— 见 MainWindowViewModel.DownloadAndApplyUpdateAsync。
           -->
           <Button Classes="ghost" Content="{Binding UpdateButtonText}" Click="OnUpdateClick"
-                  IsVisible="{Binding IsUpdateAvailable}" Cursor="Hand" Margin="0,0,8,0" />
+                  IsVisible="{Binding IsUpdateAvailable}" IsEnabled="{Binding !IsUpdateBusy}"
+                  Cursor="Hand" Margin="0,0,8,0" />
           <!--
             这一排的每个孩子都必须自己声明 VerticalAlignment="Center"，不能靠默认值。
             默认是 Stretch：更新按钮的基线样式带 MinHeight=28(见 App.axaml)，有更新时它把整排

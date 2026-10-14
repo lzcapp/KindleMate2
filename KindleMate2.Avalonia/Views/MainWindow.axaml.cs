@@ -968,6 +968,8 @@ public partial class MainWindow : Window {
         if (restart) {
             Environment.Exit(0);
         }
+        // Message 为空 = 已有更新流程在跑(重复点击被 VM 的重入闸吞掉),别弹错误框。
+        if (string.IsNullOrEmpty(message)) return;
 
         await AppDialog.AlertAsync(this, Strings.Failed, message);
     }

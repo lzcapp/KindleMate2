@@ -1717,6 +1717,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         settings.Save();
     }
 
+    private bool _isUpdateBusy;
+
+    /// <summary>
+    /// 更新流程(下载 + 交给替换脚本)是否进行中 —— 「更新」按钮的启用依据。
+    /// 下载要跑几分钟,期间重复点击会各开一条完整下载(各自的临时目录、各自校验,
+    /// 先完成的还会先跑替换脚本)—— 故下载期间把按钮置灰,入口处也按此闸拒绝重入。
+    /// </summary>
+    public bool IsUpdateBusy {
+        get => _isUpdateBusy;
+        private set {
+            if (_isUpdateBusy == value) return;
+            _isUpdateBusy = value;
+            OnPropertyChanged(nameof(IsUpdateBusy));
+        }
+    }
+
     /// <summary>更新按钮的文案,如「有新版本 2026.09.17」。</summary>
     public string UpdateButtonText => _availableUpdate is null
         ? string.Empty
@@ -1774,7 +1790,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (_availableUpdate is not { } update || update.Asset is not { } asset) {
             return (false, Strings.Ui_Update_UpToDate);
         }
+        // 重入闸:下载要跑几分钟,期间重复点击(状态栏按钮 / 弹窗各一条入口)会各开一条
+        // 完整下载 —— 各自临时目录、各自校验,先完成的还会先跑替换脚本。已在更新就静默返回,
+        // Message 留空 = 调用方别弹错误框(用户没做错什么,只是点快了)。
+        if (IsUpdateBusy) return (false, string.Empty);
 
+        IsUpdateBusy = true;
         try {
             var progress = new Progress<double>(fraction =>
                 StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Downloading,
@@ -1794,6 +1815,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             var message = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_ApplyFailed, ex.Message);
             StatusText = message;
             return (false, message);
+        } finally {
+            IsUpdateBusy = false;
         }
     }
 
