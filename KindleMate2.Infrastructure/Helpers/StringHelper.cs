@@ -166,7 +166,11 @@ namespace KindleMate2.Infrastructure.Helpers {
             // 必须放在 Trim / 截断 / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为
             // "非保留名",修剪 / 截断之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上
             // 一直如此,2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
+            //
+            // 基名还要再 TrimEnd(' ', '.') 一次:Windows 解析文件名时会先剥掉基名尾部的空格 / 点,
+            // 于是 "CON .txt" 实际会被当成 "CON.txt" —— 仍是保留名。只按 GetFileNameWithoutExtension
+            // 判(得到基名 "CON ")会漏掉「扩展名之前带空格 / 点」的这一类。
+            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized).TrimEnd(' ', '.');
             if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
                 sanitized = "_" + sanitized;
             }
@@ -227,6 +231,48 @@ namespace KindleMate2.Infrastructure.Helpers {
                 length += charCount;
             }
             return value[..length];
+        }
+
+        /// <summary>
+        /// 组合后的**整路径**(目录 + 文件名 + 扩展名)允许的最大 UTF-8 字节数。
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SanitizeFilename"/> 管的是**单段文件名**的上限(<see cref="DefaultMaxUtf8Bytes"/>);
+        /// 但整条路径另有一层上限:目录越长,留给文件名的实际预算越少 —— Windows 的经典 MAX_PATH 是
+        /// 260 个 UTF-16 码元(含盘符),导出目录常位于较深的用户目录下,极端长的书名会把整条路径撑过上限,
+        /// 落盘时抛 <see cref="PathTooLongException"/>。这里取 255 字节(与多数文件系统的单段 NAME_MAX 同值)
+        /// 作为**保守**门槛:ASCII 下约等于 255 个码元,中文按字节更早触发截断。正常长度的目录 / 书名远达不到,
+        /// 故常规导出行为与改动前逐字相同。
+        /// </remarks>
+        public const int DefaultMaxPathUtf8Bytes = 255;
+
+        /// <summary>
+        /// 截短 <paramref name="fileName"/>,使 <c>目录 + 文件名 + 扩展名</c> 的**整路径**不超过
+        /// <paramref name="maxPathUtf8Bytes"/> 字节;按码点边界截断,绝不切出半个字符。
+        /// </summary>
+        /// <param name="directory">目标目录(可带或不带结尾分隔符)。</param>
+        /// <param name="fileName">文件名(不含扩展名);超出剩余预算时被截短。</param>
+        /// <param name="extension">扩展名(含前导点,如 <c>.md</c>)。</param>
+        /// <param name="maxPathUtf8Bytes">整路径 UTF-8 字节上限(默认 <see cref="DefaultMaxPathUtf8Bytes"/>)。</param>
+        /// <remarks>
+        /// 目录(含其与文件名之间的那一枚分隔符)与扩展名都**原样计入**,只截文件名 —— 目录由用户 /
+        /// 调用方决定,不该被本 helper 改写。剩余预算不足 1 字节时返回**空串**,由调用方判为"无法落盘"
+        /// (而不是写一个退化名)。截断复用 <see cref="TruncateToUtf8Bytes"/>,与单段文件名同一套字节口径。
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">任一参数为 null 时抛出。</exception>
+        public static string TruncateFileNameToFitPath(
+            string directory,
+            string fileName,
+            string extension,
+            int maxPathUtf8Bytes = DefaultMaxPathUtf8Bytes) {
+            ArgumentNullException.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(extension);
+
+            // +1:Path.Combine 在目录与文件名之间补的那一枚路径分隔符。
+            var overhead = Encoding.UTF8.GetByteCount(directory) + Encoding.UTF8.GetByteCount(extension) + 1;
+            var budget = maxPathUtf8Bytes - overhead;
+            return budget <= 0 ? string.Empty : TruncateToUtf8Bytes(fileName, budget);
         }
 
         /// <summary>
@@ -387,6 +433,112 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
+        /// 把正文转义成 Markdown **字面量**,使其不会改变导出文档的结构。
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// 修的缺陷:正文原样写入时,行首的 <c>#</c> 会被 Markdig 渲染成一个标题、任意位置的 <c>|</c>
+        /// 会拆掉表格、裸 <c>&lt;tag&gt;</c> 会被当成 HTML 原样透传 —— 导出的排版因此取决于标注内容本身。
+        /// 本方法把这几点转义成字面量(其中 <c>|</c> 与 Obsidian 导出对表格单元格的
+        /// 处理(<c>ObsidianExportWriter.EscapeTableCell</c>)同一写法),让 Markdown / HTML 导出与
+        /// Obsidian 导出口径一致。
+        /// </para>
+        /// <para>
+        /// 刻意**只**转义会引发结构变化的字符,不做"全 ASCII 标点转义"(那会把普通标点也写成
+        /// <c>\,</c> <c>\.</c> 之类,可读性尽失):
+        /// <list type="bullet">
+        /// <item>行首(允许至多 3 个前导空格)的块级标记:<c>#</c> <c>&gt;</c> <c>-</c> <c>+</c>
+        ///   <c>*</c> <c>_</c> <c>=</c> <c>~</c> <c>`</c>,以及有序列表标记 <c>1.</c> / <c>1)</c>;</item>
+        /// <item>任意位置的行内标记:<c>|</c>(表格)、<c>&lt;</c>(裸 HTML)、<c>\</c>(转义前缀)、
+        ///   <c>`</c>(行内代码)。</item>
+        /// </list>
+        /// 换行原样保留(正文的段落结构不该被压掉)。
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="content"/> 为 null 时抛出。</exception>
+        public static string EscapeMarkdownContent(string content) {
+            ArgumentNullException.ThrowIfNull(content);
+
+            if (content.Length == 0) {
+                return content;
+            }
+
+            // 按 '\n' 切行,行尾可能残留的 '\r' 由行内分支原样带过(不参与块级判定)。
+            var lines = content.Split('\n');
+            var sb = new StringBuilder(content.Length + 16);
+            for (var i = 0; i < lines.Length; i++) {
+                if (i > 0) {
+                    sb.Append('\n');
+                }
+                AppendEscapedMarkdownLine(sb, lines[i]);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>转义单行并追加到 <paramref name="sb"/>(见 <see cref="EscapeMarkdownContent"/>)。</summary>
+        private static void AppendEscapedMarkdownLine(StringBuilder sb, string line) {
+            // 前导空格原样保留:CommonMark 允许块级标记前有至多 3 个空格,故仍要判块级。
+            var start = 0;
+            while (start < line.Length && line[start] == ' ') {
+                start++;
+            }
+            if (start > 0) {
+                sb.Append(line, 0, start);
+            }
+
+            var i = start;
+            if (i < line.Length && IsMarkdownBlockMarker(line, i)) {
+                // 先单独转义首字符再跳过:否则它会在下面的行内分支里被**二次**转义(如行首的 '`')。
+                sb.Append('\\').Append(line[i]);
+                i++;
+            }
+            for (; i < line.Length; i++) {
+                switch (line[i]) {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '`': sb.Append("\\`"); break;
+                    case '|': sb.Append("\\|"); break;
+                    case '<': sb.Append("\\<"); break;
+                    default: sb.Append(line[i]); break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// <paramref name="line"/> 从 <paramref name="index"/> 起是否为一个标记**块级**结构的起始。
+        /// </summary>
+        /// <remarks>
+        /// 只判块级:行内 <c>*</c> / <c>_</c> 等不在其中(它们不改变文档结构,转义反而让正常正文变丑)。
+        /// 有序列表按 CommonMark:1–9 位数字 + <c>.</c> 或 <c>)</c> + 空白 / 行尾。
+        /// </remarks>
+        private static bool IsMarkdownBlockMarker(string line, int index) {
+            switch (line[index]) {
+                case '#':
+                case '>':
+                case '-':
+                case '+':
+                case '*':
+                case '_':
+                case '=':
+                case '~':
+                case '`':
+                    return true;
+                default:
+                    if (!char.IsAsciiDigit(line[index])) {
+                        return false;
+                    }
+                    var i = index;
+                    while (i < line.Length && char.IsAsciiDigit(line[i])) {
+                        i++;
+                    }
+                    if (i - index > 9 || i >= line.Length || (line[i] != '.' && line[i] != ')')) {
+                        return false;
+                    }
+                    var after = i + 1;
+                    return after >= line.Length || line[after] == ' ' || line[after] == '\t' || line[after] == '\r';
+            }
+        }
+
+        /// <summary>
         /// Builds markdown content from a list of clippings for a specific book.
         /// </summary>
         /// <param name="clippings">List of clippings to process</param>
@@ -423,7 +575,9 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                     markdown.AppendLine("**" + clippingLocation + "**");
                     markdown.AppendLine();
-                    markdown.AppendLine(content);
+                    // 正文转义成 Markdown 字面量:否则行首 '#' / 任意 '|' / 裸 HTML 会让导出排版
+                    // 取决于标注内容(与 Obsidian 导出对 '|' 的转义口径一致)。
+                    markdown.AppendLine(EscapeMarkdownContent(content));
                     markdown.AppendLine();
                 }
                 

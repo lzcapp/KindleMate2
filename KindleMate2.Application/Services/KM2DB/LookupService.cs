@@ -128,6 +128,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             } else {
                 var lookups = listLookups.Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
 
+                // 指定的词**一条查询记录都没有**:与标注侧同一处理 —— 不写一个只有标题的近乎空文件
+                // 再报成功,直接判失败,由调用方提示"无可导出内容"。
+                if (lookups.Count == 0) {
+                    return false;
+                }
+
                 // 与 clippings 侧同一套消歧:看目标目录判断已有同名文件是不是同一个词(生词没有作者,
                 // 故只有「净化(词) →  (2)(3)…」这一条候选序)。详见 ExportFileNameAllocator。
                 filename = ExportFileNameAllocator.AssignSingleFileName(filePath, word);
@@ -135,11 +141,19 @@ namespace KindleMate2.Application.Services.KM2DB {
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 
+            // 整路径长度守卫(与标注侧一致):按最长扩展名 .html 留预算,.md / .html 共用同一基名。
+            filename = StringHelper.TruncateFileNameToFitPath(filePath, filename, FileExtension.HTML);
+            if (filename.Length == 0) {
+                return false;
+            }
+
             if (!Directory.Exists(filePath)) {
                 Directory.CreateDirectory(filePath);
             }
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
+            // 一律 UTF-8 **无 BOM**(与 Obsidian / JSON 及标注侧 Markdown 导出同口径)。
+            var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), utf8NoBom);
 
             var htmlContent = AppConstants.HtmlBegin;
             MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
