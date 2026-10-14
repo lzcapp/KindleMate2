@@ -6,7 +6,7 @@
 
 KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自 Kindle 设备的
 `My Clippings.txt` 与 `vocab.db`，统一落在本地 SQLite 库中，供检索、编辑、
-统计与导出（Markdown / HTML+CSS / CSV / JSON / 分享卡 PNG / Obsidian vault）。
+统计与导出（Markdown / HTML+CSS / CSV / JSON / 分享卡 PNG / Obsidian vault / Anki 牌组）。
 
 > 两个源文件的**结构与字段语义**（含若干极易误解的字段，例如 `LOOKUPS.pos` 其实是
 > 书中位置而非词性）单独记在 [`formats.md`](formats.md)。
@@ -49,7 +49,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
 | `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
 | `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
-| `KindleMate2.Tests` | `net10.0` | 只引用 Application / Infrastructure / Domain，可跨平台运行 |
+| `KindleMate2.Tests` | `net10.0` | 引用 Application / Infrastructure / Domain 与 Devices.MacOS / Devices.Posix / Devices.Linux（后三者均为中性 `net10.0`），可跨平台运行 |
 
 ### 3. 项目依赖关系
 
@@ -72,13 +72,13 @@ graph TD
     DEV --> SH
 
     POS --> POSIX["KindleMate2.Devices.Posix<br/>net10.0"]
+    POS --> APP
+    POS --> SH
+
     POSIX --> APP
-    POSIX --> DOM
-    POSIX --> INF
     POSIX --> SH
 
     INF --> DOM
-    INF --> SH
 
     DOM --> SH
 
@@ -89,6 +89,10 @@ graph TD
     T --> POSIX
 ```
 
+> 上图画的是各 `.csproj` 里的**直接** `ProjectReference` 边。`Devices.Posix` /
+> `Devices.MacOS` / `Devices.Linux` 对 `Domain` / `Infrastructure` 的引用是**经 `Application`
+> 传递**而来的，`Infrastructure` 对 `Shared` 同理 —— 传递边不画在本图里。
+
 ### 4. 平台专有代码的边界
 
 **原则：平台专有代码一律收敛到独立程序集，不在业务层散布条件编译。**
@@ -96,7 +100,7 @@ graph TD
 - Windows 专有程序集是 `KindleMate2.Devices.Windows`（USB 盘符枚举、MTP(MediaDevices)、WMI 事件监听，`net10.0-windows`，依赖 `MediaDevices` + `System.Management`）。
 - macOS / Linux 的设备实现是纯 BCL 的 `KindleMate2.Devices.Posix`（`net10.0`：libmtp 的 P/Invoke 绑定、libusb 只读 USB 探测、卷扫描），由两个薄壳 `Devices.MacOS` / `Devices.Linux` 注入各自的候选挂载根；因此这两个程序集可在**任意平台**编译与单测（用例把卷根指到临时目录）。
 - `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
-- **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
+- **`IDeviceManager` 的注册由各平台壳负责**，不在 Application 层 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现（早期那套集中注册文件 `Application/DependencyInjection.cs` 已删除）。
 - Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
 
 ---
@@ -106,7 +110,8 @@ graph TD
 ### `Services/DatabaseSession.cs`（UI 与业务之间的组装点）
 
 按"当前打开的库路径"组装仓储 + 服务 + 各工厂 + `DeviceManager` / `ImportManager` /
-`ExportManager`。这是绕开 `Application/DependencyInjection.cs` 中硬编码连接串的正解，
+`ExportManager`。早期那套集中注册（`Application/DependencyInjection.cs`，已删除）把所有仓储
+硬编码到写死的相对路径 `KM2.dat` 连接串上；`DatabaseSession` 是按路径参数化、绕开它的正解，
 所有 UI 动作都经由它。
 
 ```
