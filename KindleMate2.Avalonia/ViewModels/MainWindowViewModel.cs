@@ -855,8 +855,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // 这是**有意偏离原版**的一处,已在提交说明中标注。
 
     public Task<OperationResult> ExportAllMarkdownAsync() {
-        // 与写操作互斥:连接串没设 busy_timeout,导入/清理持锁期间并行导出会 SQLITE_BUSY
-        // 失败,还会被误报成「没有可导出的内容」。忙碌时与 RunOperationAsync 同样静默让路。
+        // 与写操作互斥:导入/清理持锁期间并行导出会撞 SQLITE_BUSY。连接串虽已统一带
+        // 命令超时(DatabaseHelper.BuildConnectionString 的 Default Timeout),但那只让命令在锁上
+        // 重试等待,长导入仍可能等超时后失败,还会被误报成「没有可导出的内容」。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -880,8 +881,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 为 false(默认)时完全离线,Definition 列留空。
     /// </summary>
     public Task<OperationResult> ExportAllCsvAsync(bool includeDefinitions = false) {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -913,8 +914,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 别据此认为两格式逐字段可对齐,<c>stem</c> 的补齐口径目前也不一致(见 ExportManager.FillStemsFromVocabs)。
     /// </remarks>
     public Task<OperationResult> ExportAllJsonAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -941,8 +942,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 拼装全部基于同一份中间模型(见 <c>ExportManager.ExportObsidianVault</c>),故分组 / 省略口径与 JSON 一致。
     /// </remarks>
     public Task<OperationResult> ExportObsidianAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -967,8 +968,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// **默认离线**:释义字段留空由用户自己填 —— 联网查释义会把全部生词发给第三方,不放进这个入口。
     /// </remarks>
     public Task<OperationResult> ExportAnkiDeckAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));

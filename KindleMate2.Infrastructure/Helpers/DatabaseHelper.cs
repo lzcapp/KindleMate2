@@ -39,6 +39,26 @@ namespace KindleMate2.Infrastructure.Helpers {
         private const int DefaultSnapshotBusyTimeoutMs = 10_000;
 
         /// <summary>
+        /// 连接串上的统一命令超时(秒),经 <c>SqliteConnectionStringBuilder.DefaultTimeout</c> 落到
+        /// <see cref="SqliteCommand.CommandTimeout"/>:锁竞争时命令会在该窗口内**重试等待**而不是立即失败。
+        /// 集中在 <see cref="BuildConnectionString"/> 一处设置,避免各调用点各写一份而漂移。
+        /// </summary>
+        /// <remarks>
+        /// ⚠️ 实测(Microsoft.Data.Sqlite 10.0.12,本项目实际依赖的引擎):
+        /// <list type="bullet">
+        /// <item>该库**默认**<c>CommandTimeout</c> 已是 30 秒 —— 不设 <c>Default Timeout</c> 时命令同样会
+        /// 在锁上等待约 30 秒才报 <c>SQLITE_BUSY</c>,并非"立即失败"(旧注释/审计里"连接串没设
+        /// busy_timeout、默认 0"的说法与本库行为不符)。</item>
+        /// <item>真正生效的是 <c>CommandTimeout</c>;SQLite 层的 <c>PRAGMA busy_timeout</c>
+        /// **管不住**它(实测:即便把 PRAGMA 设成 500ms,未设 <c>Default Timeout</c> 时仍等满 30 秒)。
+        /// 因此这里显式取 30 秒 = 与既有隐式默认一致,只把"依赖库默认值"变成"本程序显式声明",
+        /// **不改变并发行为**,也便于日后统一调整。</item>
+        /// </list>
+        /// 若日后要容忍更久持锁的导入/清理,只需调大此值;要更早失败则调小 —— 改一处即可。
+        /// </remarks>
+        private const int ConnectionDefaultTimeoutSeconds = 30;
+
+        /// <summary>
         /// 快照落盘时的临时后缀。VACUUM INTO 只能写到不存在的路径,因此先写
         /// <c>目标路径 + 此后缀</c>,成功后再原子替换到目标 —— 中途失败不会毁掉上一份快照。
         /// </summary>
@@ -77,6 +97,18 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </remarks>
         private const string VocabWordKeyIndexScript =
             "CREATE INDEX IF NOT EXISTS [ix_vocab_word_key] ON [vocab]([word_key]);";
+
+        /// <summary>
+        /// <c>[lookups].[timestamp]</c> 的索引。服务 <c>LookupRepository.GetByTimestamp</c>
+        /// (<c>WHERE timestamp = @timeStamp AND deleted_at IS NULL</c>)。
+        /// </summary>
+        /// <remarks>
+        /// 现有 <c>UNIQUE([word_key], [timestamp])</c> 的最左前缀是 <c>word_key</c>,
+        /// 单按 <c>timestamp</c> 过滤命中不了它 —— 没有本索引时该查询是整表扫。<c>timestamp</c>
+        /// 是短文本列,索引体积远小于数据本身,写入开销可控,故按需补上。
+        /// </remarks>
+        private const string LookupsTimestampIndexScript =
+            "CREATE INDEX IF NOT EXISTS [ix_lookups_timestamp] ON [lookups]([timestamp]);";
 
         /// <summary>
         /// <c>[import_batches]</c> 的建表脚本。建库(<see cref="GetTableCreationScripts"/>)与
@@ -246,6 +278,7 @@ namespace KindleMate2.Infrastructure.Helpers {
         private static IEnumerable<string> GetIndexScripts() {
             yield return ClippingsBookIndexScript;
             yield return VocabWordKeyIndexScript;
+            yield return LookupsTimestampIndexScript;
         }
 
         /// <summary>
@@ -398,9 +431,10 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <item>目标目录必须已存在,否则报 <c>unable to open database</c>。</item>
         /// </list>
         ///
-        /// 并发:写入方持有独占锁时 VACUUM 会 SQLITE_BUSY。连接串没有 busy_timeout,
-        /// 默认值为 0(立即失败),所以这里显式设一个等待窗口。但**长时间导入/清理过程中仍可能
-        /// 超时失败** —— 调用方应在 UI 层避免与这些操作并发触发,不要只依赖这里的等待。
+        /// 并发:写入方持有独占锁时 VACUUM 会 SQLITE_BUSY,等待窗口由**连接上的命令超时**决定
+        /// (见 <see cref="BuildConnectionString"/> 统一设置的 <c>Default Timeout</c>;实测 SQLite 层的
+        /// <c>PRAGMA busy_timeout</c> 管不住它)。但**长时间导入/清理过程中仍可能超时失败** ——
+        /// 调用方应在 UI 层避免与这些操作并发触发,不要只依赖这里的等待。
         /// </remarks>
         /// <param name="sourcePath">源数据库文件路径</param>
         /// <param name="destPath">快照输出路径;父目录必须已存在</param>
@@ -560,6 +594,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// 就是全表扫描加临时排序。这里建一个覆盖这三列的复合索引:前缀等值查询与按序扫描都能用上它。</item>
         /// <item><c>[vocab].[word_key]</c> —— 见 <see cref="VocabWordKeyIndexScript"/>,
         /// 它是词频重算从 O(vocab²) 降到 O(vocab·log) 的关键。</item>
+        /// <item><c>[lookups].[timestamp]</c> —— 见 <see cref="LookupsTimestampIndexScript"/>,
+        /// 服务 <c>GetByTimestamp</c>;复合唯一键的最左前缀不含 <c>timestamp</c>,缺它即整表扫。</item>
         /// </list>
         /// 老库靠本方法补齐;新建的库由 <see cref="GetTableCreationScripts"/> 直接带上。
         /// **两条路径必须始终取同一份脚本**,否则会出现"新库有索引、老库没有"这种静默的错配。
@@ -950,8 +986,16 @@ namespace KindleMate2.Infrastructure.Helpers {
                     using var command = connection.CreateCommand();
                     command.Transaction = transaction;
 
+                    // 先清掉可能残留的临时表再建:lookups_migrated 是本次迁移**自用的草稿表**,
+                    // 名字固定、App 从不读它 —— 若上一次迁移在"建表后、改名(或回滚)前"被打断
+                    // 而留下同名表,不加处理会让下面的 INSERT 往旧草稿表里塞数据、RENAME 又覆盖
+                    // 真正的 lookups,轻则迁移永久失败、重则串数据。DROP 掉重建最稳(草稿表内
+                    // 绝无用户数据 —— 用户数据始终在 lookups 里)。
+                    command.CommandText = "DROP TABLE IF EXISTS [lookups_migrated];";
+                    command.ExecuteNonQuery();
+
                     command.CommandText = @"
-                        CREATE TABLE [lookups_migrated] (
+                        CREATE TABLE IF NOT EXISTS [lookups_migrated] (
                             [word_key] TEXT, 
                             [usage] TEXT, 
                             [title] TEXT, 
@@ -984,44 +1028,51 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <summary>
         /// Detects the legacy lookups schema: a UNIQUE index on the single [timestamp] column.
         /// </summary>
+        /// <remarks>
+        /// **探测失败即抛,绝不吞异常返回 false。** 旧实现把 <c>catch (Exception)</c> 一律当
+        /// 「无需迁移」,于是 PRAGMA 一旦读不出来(库损坏 / 非 SQLite / 被占用),方法就判定
+        /// 「表已是新形态」并静默跳过 —— legacy lookups(单列 <c>UNIQUE(timestamp)</c>)永远得不到
+        /// 重建,之后同秒多词插入会撞唯一约束失败且无任何告警。这里区分两种结局:
+        /// <list type="bullet">
+        /// <item><b>已确认无需迁移</b>:能正常读到索引且不满足 legacy 特征 → 返回 <c>false</c>;</item>
+        /// <item><b>无法判定</b>:探测过程本身抛错 → 让异常向上传播,由
+        /// <see cref="MigrateLookupsSchemaIfNeeded"/> 包装成 <see cref="InvalidOperationException"/>,
+        /// 最终经启动流程的 <c>MigrationWarning</c> 让用户知晓(与既有错误处理风格一致)。</item>
+        /// </list>
+        /// </remarks>
         private static bool NeedsLookupsSchemaMigration(SqliteConnection connection) {
-            try {
-                // Collect unique index names first so index_info can be queried after the reader is disposed.
-                var uniqueIndexNames = new List<string>();
-                using (var listCommand = connection.CreateCommand()) {
-                    listCommand.CommandText = "PRAGMA index_list('lookups');";
-                    using var reader = listCommand.ExecuteReader();
-                    while (reader.Read()) {
-                        var isUnique = !reader.IsDBNull(2) && reader.GetInt64(2) == 1;
-                        if (isUnique) {
-                            uniqueIndexNames.Add(reader.GetString(1));
-                        }
+            // Collect unique index names first so index_info can be queried after the reader is disposed.
+            var uniqueIndexNames = new List<string>();
+            using (var listCommand = connection.CreateCommand()) {
+                listCommand.CommandText = "PRAGMA index_list('lookups');";
+                using var reader = listCommand.ExecuteReader();
+                while (reader.Read()) {
+                    var isUnique = !reader.IsDBNull(2) && reader.GetInt64(2) == 1;
+                    if (isUnique) {
+                        uniqueIndexNames.Add(reader.GetString(1));
                     }
                 }
-
-                foreach (var indexName in uniqueIndexNames) {
-                    using var infoCommand = connection.CreateCommand();
-                    infoCommand.CommandText = $"PRAGMA index_info('{indexName}');";
-                    using var reader = infoCommand.ExecuteReader();
-
-                    var columns = new List<string>();
-                    while (reader.Read()) {
-                        if (!reader.IsDBNull(2)) {
-                            columns.Add(reader.GetString(2));
-                        }
-                    }
-
-                    // Legacy: exactly one unique column "timestamp" → must rebuild.
-                    if (columns.Count == 1 && columns[0].Equals("timestamp", StringComparison.OrdinalIgnoreCase)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            } catch (Exception) {
-                // If the schema cannot be inspected, leave the table untouched.
-                return false;
             }
+
+            foreach (var indexName in uniqueIndexNames) {
+                using var infoCommand = connection.CreateCommand();
+                infoCommand.CommandText = $"PRAGMA index_info('{indexName}');";
+                using var reader = infoCommand.ExecuteReader();
+
+                var columns = new List<string>();
+                while (reader.Read()) {
+                    if (!reader.IsDBNull(2)) {
+                        columns.Add(reader.GetString(2));
+                    }
+                }
+
+                // Legacy: exactly one unique column "timestamp" → must rebuild.
+                if (columns.Count == 1 && columns[0].Equals("timestamp", StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static string? GetSafeString(SqliteDataReader reader, int ordinal) {
@@ -1099,29 +1150,59 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         /// <summary>
         /// 批量插入「逐条降级」兜底时,判定某条失败是否可以安全跳过:
-        /// <list type="bullet">
-        ///   <item>SQLite 约束冲突(SQLITE_CONSTRAINT = 19):重复主键 key / 唯一约束撞车;</item>
-        ///   <item><see cref="InvalidOperationException"/>:数据非法(如 key 为空,InsertOne 里
-        ///       <c>?? throw</c> 抛出的)。</item>
-        /// </list>
-        /// 其余一律 <c>false</c> —— 磁盘满(SQLITE_FULL)、库被锁(SQLITE_BUSY)、I/O / 损坏等
-        /// 系统性问题必须向上抛,绝不能伪装成「导入成功、只是少了几条」。
+        /// **只有 SQLite 约束冲突**(<c>SQLITE_CONSTRAINT = 19</c>,含重复主键 / 唯一约束撞车,
+        /// 以及 <c>19 | (n &lt;&lt; 8)</c> 形式的扩展码)算可跳过。
         /// </summary>
+        /// <remarks>
+        /// 旧实现把**任意** <see cref="InvalidOperationException"/> 也当可跳过,范围过宽 ——
+        /// 那会把真实故障(数据层内部状态错乱等)一并吞成"导入成功、只少几条"。现已收窄:
+        /// <list type="bullet">
+        /// <item>"数据非法(如 key 为空)"这一类**不再靠异常**判定,而由各仓储的逐条降级循环
+        /// <b>显式跳过空 key 的行</b>(见 <c>ClippingRepository.Add(List)</c> 等);</item>
+        /// <item>磁盘满(<c>SQLITE_FULL</c>)、库被锁(<c>SQLITE_BUSY</c>)、I/O / 损坏等系统性问题
+        /// 一律 <c>false</c> —— 必须向上抛,绝不能伪装成「导入成功、只是少了几条」。</item>
+        /// </list>
+        /// 按主码 <c>code &amp; 0xFF</c> 判定,故扩展错误码(如 <c>SQLITE_CONSTRAINT_UNIQUE</c>)也能命中。
+        /// </remarks>
         public static bool IsSkippableInsertFailure(Exception ex) {
-            return ex is InvalidOperationException ||
-                   ex is SqliteException { SqliteErrorCode: 19 };
+            return ex is SqliteException { SqliteErrorCode: var code } && (code & 0xFF) == 19;
         }
 
+        /// <summary>
+        /// 容错读取整数列:NULL → <c>null</c>;非 NULL 但**不是整数**(如历史库里把数值存成 TEXT,
+        /// 或存了非数字文本)时也**不抛异常**,而是按 <see cref="long.TryParse(string, out long)"/>/
+        /// <see cref="int.TryParse(string, out int)"/> 兜底为 <c>null</c>。
+        /// </summary>
+        /// <remarks>
+        /// 旧实现直接 <c>reader.GetInt32/GetInt64</c>:SQLite 列是动态类型,历史列里若混入 TEXT
+        /// 会抛 <c>InvalidCastException</c> 把整条读取打死。防御口径与 <c>KmateSourceReader.ParseLong/ParseInt</c>
+        /// 一致(那边早就是 <c>Convert.ToString + TryParse</c>),这里补齐,让 KM2DB 仓储同样不会因
+        /// 脏值整表读不出来。
+        /// </remarks>
         public static int? GetSafeInt(SqliteDataReader reader, int ordinal) {
-            return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+            if (reader.IsDBNull(ordinal)) {
+                return null;
+            }
+            var raw = Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
         }
 
+        /// <inheritdoc cref="GetSafeInt(SqliteDataReader, int)"/>
         public static long? GetSafeLong(SqliteDataReader reader, int ordinal) {
-            return reader.IsDBNull(ordinal) ? null : reader.GetInt64(ordinal);
+            if (reader.IsDBNull(ordinal)) {
+                return null;
+            }
+            var raw = Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
+            return long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
         }
 
+        /// <summary>容错读取整数列,无法解析时返回 <paramref name="defaultValue"/>(语义同 <see cref="GetSafeInt(SqliteDataReader, int)"/>)。</summary>
         public static int GetSafeInt(SqliteDataReader reader, int ordinal, int defaultValue) {
-            return reader.IsDBNull(ordinal) ? defaultValue : reader.GetInt32(ordinal);
+            if (reader.IsDBNull(ordinal)) {
+                return defaultValue;
+            }
+            var raw = Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : defaultValue;
         }
         
         /// <summary>
@@ -1147,7 +1228,9 @@ namespace KindleMate2.Infrastructure.Helpers {
             return new SqliteConnectionStringBuilder {
                 DataSource = dbFile,
                 Mode = mode,
-                Cache = sharedCache ? SqliteCacheMode.Shared : SqliteCacheMode.Default
+                Cache = sharedCache ? SqliteCacheMode.Shared : SqliteCacheMode.Default,
+                // 统一锁等待窗口:所有连接都从这里取,避免各调用点各写一份而漂移(见常量说明)。
+                DefaultTimeout = ConnectionDefaultTimeoutSeconds
             }.ToString();
         }
 

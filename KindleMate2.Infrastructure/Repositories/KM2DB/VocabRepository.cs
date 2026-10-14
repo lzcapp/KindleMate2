@@ -169,29 +169,60 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// 批量插入。**先走整批单事务(最快);整批失败则降级为逐条插入** —— 与
+        /// <c>ClippingRepository.Add(List&lt;Clipping&gt;)</c> 同一策略:逐条时跳过违反约束或数据非法的行,
+        /// 使"判重漏网 / 脏数据"的后果从**整份文件全部导入失败**降为**只少几条**。
+        /// 实际插入的条数由返回值给出。
+        /// </summary>
+        /// <remarks>
+        /// 判重的最终裁判是数据库约束(vocab 主键 <c>id</c>):批量一律 <c>OR IGNORE</c>,
+        /// 与 UNIQUE 冲突的行(含 tombstone)静默跳过 —— 不再靠"应用层 HashSet 现读活表",
+        /// 那正是"删过再导被复活"的根源。快路径会因**数据非法**(<c>id</c>/<c>word</c> 为空,
+        /// <c>AddParameters</c> 里 <c>?? throw</c>)整批回滚,故补上逐条降级兜底。
+        /// </remarks>
         public int Add(List<Vocab> vocabs) {
-            var count = 0;
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            using var transaction = connection.BeginTransaction();
-            try {
-                // 批量插入一律 OR IGNORE:判重的最终裁判是数据库约束(vocab 主键 id),不再靠
-                // 应用层 HashSet 现读活表 —— 那正是"删过再导被复活"的根源(活表里已删行看不见)。
-                // 与 UNIQUE 冲突的行(含 tombstone)静默跳过,返回值只计真正插入的行数。
-                using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, transaction);
-                foreach (Vocab vocab in vocabs) {
+            // ① 快路径:整批单事务(OR IGNORE,唯一约束冲突静默跳过)
+            using (var transaction = connection.BeginTransaction()) {
+                try {
+                    var count = 0;
+                    using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, transaction);
+                    foreach (Vocab vocab in vocabs) {
+                        AddParameters(cmd, vocab);
+                        if (cmd.ExecuteNonQuery() > 0) {
+                            count++;
+                        }
+                    }
+                    transaction.Commit();
+                    return count;
+                } catch {
+                    try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
+                }
+            }
+
+            // ② 兜底:逐条插入,每条独立事务;显式跳过数据非法(无 id / word)的行,
+            //    只吞可跳过项(约束冲突),系统性问题向上抛。
+            var inserted = 0;
+            foreach (Vocab vocab in vocabs) {
+                if (string.IsNullOrWhiteSpace(vocab.Id) || string.IsNullOrWhiteSpace(vocab.Word)) {
+                    continue;
+                }
+                using var rowTransaction = connection.BeginTransaction();
+                try {
+                    using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, rowTransaction);
                     AddParameters(cmd, vocab);
                     if (cmd.ExecuteNonQuery() > 0) {
-                        count++;
+                        inserted++;
                     }
+                    rowTransaction.Commit();
+                } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
+                    try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
-                transaction.Commit();
-            } catch {
-                transaction.Rollback();
-                throw;
             }
-            return count;
+            return inserted;
         }
 
         private static string InsertSql(bool orIgnore) =>
