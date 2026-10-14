@@ -30,10 +30,10 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 for (var i = 0; i < lines.Count; i++) {
                     lines[i] = StringHelper.RemoveControlChar(lines[i]);
-                    // 分隔符按**整行精确相等**判定:正文可多行,分隔符上一行未必是空行,
-                    // 任何依赖上下文行(如 lines[i-2] 为空)的判据都会漏掉多行正文条目的分隔符,
-                    // 进而把相邻两条并成一条。起点取 0 以保证首两行也被 RemoveControlChar 清洗。
-                    if (lines[i].Trim().Equals(Symbols.Delimiter, StringComparison.Ordinal)) {
+                    // 分隔符按**整行独立判定**(不依赖上下文行 —— 正文可多行,分隔符上一行未必是空行,
+                    // 任何像 lines[i-2] 为空这样的判据都会漏掉多行正文条目的分隔符,把相邻两条并成一条)。
+                    // 起点取 0 以保证首两行也被 RemoveControlChar 清洗。
+                    if (IsDelimiterLine(lines[i])) {
                         delimiterIndex.Add(i);
                     }
                 }
@@ -86,6 +86,29 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 判定一行是否为条目分隔符。规则:**整行 trim 后非空、长度 ≥ 3、且每个字符都是 '='**。
+        /// <para>
+        /// 为什么是宽松规则而非「精确等于 <see cref="Symbols.Delimiter"/>(10 个 '=')」:
+        /// 原实现是 <c>StartsWith("===") &amp;&amp; EndsWith("===")</c>(宽松),收紧到恰好 10 个
+        /// 属于**行为收窄**;而 <c>formats.md</c> 多处标注「未实测」,无法排除设备写出不同数量
+        /// '=' 的可能。本规则是原宽松行为的**子集** —— 比原实现更严(不再接受 <c>===abc===</c>
+        /// 这类),因此既修掉多行正文的 bug,又不引入任何新的误判。
+        /// </para>
+        /// </summary>
+        private static bool IsDelimiterLine(string line) {
+            var trimmed = line.Trim();
+            if (trimmed.Length < 3) {
+                return false;
+            }
+            foreach (var c in trimmed) {
+                if (c != Symbols.Delimiter[0]) {
+                    return false;
+                }
+            }
+            return true;
         }
         
         public bool RebuildDatabase(out Dictionary<string, string> result) {

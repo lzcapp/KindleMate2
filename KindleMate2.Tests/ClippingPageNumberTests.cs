@@ -51,7 +51,7 @@ Book R (Author R)
 - Your Highlight on page 5 | Location 100-101 | Added on Thursday, January 1, 2026, 12:00:00 AM
 
 a highlight
-==========
+=========
 """);
 
         Assert.True(service.ImportKindleClippings(path, out _));
@@ -68,7 +68,7 @@ Book R (Author R)
 - Your Highlight on Location 100-101 | Added on Thursday, January 1, 2026, 12:00:00 AM
 
 a highlight
-==========
+=========
 """);
 
         Assert.True(service.ImportKindleClippings(path, out _));

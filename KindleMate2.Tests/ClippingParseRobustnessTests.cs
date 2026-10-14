@@ -93,6 +93,42 @@ content B
     }
 
     /// <summary>
+    /// 分隔符判定**刻意容忍非 10 个 <c>=</c>**:<c>formats.md</c> 多处标注「未实测」,
+    /// 无法排除设备写出不同数量 <c>=</c> 的可能(原实现 <c>StartsWith("===")</c> 也是宽松的)。
+    /// 这里用 9 个 <c>=</c> 的分隔符钉住该宽容性是**刻意约定、不是巧合** —— 两条须被正确拆开。
+    /// </summary>
+    [Fact]
+    public void ImportKindleClippings_NonStandardDelimiterLength_StillSplitsEntries() {
+        var targetDb = NewDb("short-delimiter.db");
+        var path = Path.Combine(_dir, "My Clippings.txt");
+        File.WriteAllText(path, """
+Book C (Author C)
+- Highlight | Page 7 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+content C
+=========
+Book D (Author D)
+- Highlight | Page 8 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+content D
+=========
+""");
+
+        var clipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = NewService(targetDb);
+
+        Assert.True(svc.ImportKindleClippings(path, out var result));
+
+        Assert.Equal("2", result[AppConstants.ParsedCount]);
+        Assert.Equal("2", result[AppConstants.InsertedCount]);
+
+        var clippings = clipRepo.GetAll();
+        Assert.Equal(2, clippings.Count);
+        Assert.Contains("content C", clippings.Single(c => c.BookName == "Book C").Content);
+        Assert.Contains("content D", clippings.Single(c => c.BookName == "Book D").Content);
+    }
+
+    /// <summary>
     /// 只有两侧带空格的 <c> - </c> 才拆分为「书名 / 作者」;书名内的裸连字符(Spider-Man)
     /// 不得被当成分隔符。修复前 <c>Spider-Man</c> 会被拆成 Title=Spider、Author=Man。
     /// </summary>

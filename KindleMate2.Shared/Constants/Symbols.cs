@@ -7,8 +7,9 @@
         public const char OpeningParenthesisChinese = '（';
 
         /// <summary>
-        /// <c>My Clippings.txt</c> 中分隔条目的整行分隔符(Kindle 固定写 10 个 <c>=</c>)。
-        /// 解析处必须按**整行精确相等**判定,不能依赖上下文行(正文可多行)。
+        /// <c>My Clippings.txt</c> 中分隔条目的**规范**分隔符(Kindle 固定写 10 个 <c>=</c>)。
+        /// 判定处按「整行 trim 后全为 <c>=</c> 且长度 ≥ 3」的宽松规则识别(容忍设备写出不同
+        /// 数量的 <c>=</c>),本常量即该规则所指的规范值。
         /// </summary>
         public const string Delimiter = "==========";
 
