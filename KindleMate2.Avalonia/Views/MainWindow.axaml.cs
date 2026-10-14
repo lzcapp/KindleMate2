@@ -200,10 +200,14 @@ public partial class MainWindow : Window {
     /// 有**可安装**的更新时弹「取消 / 更新」,点了就走更新流程;返回这次是否弹过。
     /// 「帮助 → 检查更新」与启动自动检查共用这一段 —— 两个入口对"要不要弹、弹什么"
     /// 必须同口径,否则同一个更新菜单里能弹、启动时就弹不出来。
-    /// 无更新 / 无资产 / 窗口已关 / 已有弹窗在处理时都不弹(调用方各自决定要不要给"已是最新"这类提示)。
+    /// 无更新 / 无资产 / 窗口已关 / 已有弹窗在处理 / **更新流程进行中**时都不弹
+    /// (调用方各自决定要不要给"已是最新"这类提示)。
     /// </summary>
     private async Task<bool> PromptUpdateAsync(MainWindowViewModel vm) {
-        if (!vm.CanApplyUpdate || !IsVisible || _updatePromptBusy) return false;
+        // IsUpdateBusy 与 _updatePromptBusy 是同一类"已经有更新流程在跑":前者是下载/替换进行中,
+        // 后者是弹窗正开着。两种情形都不该再弹 —— 下载中重弹出来的「更新」点了会被 VM 的重入闸
+        // 静默吞掉(见 MainWindowViewModel.DownloadAndApplyUpdateAsync),弹了反而是误导。
+        if (!vm.CanApplyUpdate || !IsVisible || _updatePromptBusy || vm.IsUpdateBusy) return false;
         _updatePromptBusy = true;
         try {
             var (apply, skip) = await AppDialog.ConfirmWithOptionAsync(this, Strings.Ui_Update_Check,
@@ -941,6 +945,12 @@ public partial class MainWindow : Window {
     /// </summary>
     private async void OnMenuCheckUpdates(object? sender, RoutedEventArgs e) {
         if (Vm is not { } vm) return;
+        // 更新流程进行中(下载要跑几分钟)直接不理会:该知道的都知道了 —— 再查一次也还是那个版本,
+        // 而弹出来的「取消 / 更新」点了会被 VM 的重入闸吞掉、零反馈,看起来像按钮失灵。状态栏此刻
+        // 正在报下载进度,"更新在跑"这个信息用户并不缺,所以这里静默跳过、连网络都不必再跑一趟
+        // (与下面那句 _updatePromptBusy 是同一个道理)。
+        if (vm.IsUpdateBusy) return;
+
         var message = await vm.CheckForUpdatesAsync();
 
         if (await PromptUpdateAsync(vm)) return;
@@ -968,6 +978,8 @@ public partial class MainWindow : Window {
         if (restart) {
             Environment.Exit(0);
         }
+        // Message 为空 = 已有更新流程在跑(重复点击被 VM 的重入闸吞掉),别弹错误框。
+        if (string.IsNullOrEmpty(message)) return;
 
         await AppDialog.AlertAsync(this, Strings.Failed, message);
     }
