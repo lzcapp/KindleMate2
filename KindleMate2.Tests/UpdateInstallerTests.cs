@@ -355,4 +355,145 @@ public sealed class UpdateInstallerTests : IDisposable {
         Assert.Throws<InvalidOperationException>(() =>
             UpdateInstaller.ResolveAppBundlePath(Path.Combine(_work, "KindleMate2.Avalonia")));
     }
+
+    // ————————————————————— 安装布局守卫 —————————————————————
+
+    /// <summary>临时目录里本类创建过的替换脚本 —— 用来断言"被拒时一个脚本都没写出来"。</summary>
+    private static HashSet<string> ApplyScripts() =>
+        Directory.EnumerateFiles(Path.GetTempPath(), "km2-apply-update-*").ToHashSet();
+
+    /// <summary>
+    /// 以 `dotnet KindleMate2.dll` 等方式宿主时,<c>ProcessPath</c> 不是本应用可执行文件
+    /// (如 <c>dotnet.exe</c>),其目录是 .NET 运行时目录 —— 绝不能把新包覆盖进去了。
+    /// 注意 <c>KindleMate2.Avalonia.exe</c> 也必须被拒:AssemblyName 是 <c>KindleMate2</c>。
+    /// </summary>
+    [Theory]
+    [InlineData("dotnet.exe")]
+    [InlineData("dotnet")]
+    [InlineData("KindleMate2.Avalonia.exe")]
+    [InlineData("java.exe")]
+    public void ApplyAndRestart_RejectsWhenExecutableIsNotTheInstalledApp(string exeName) {
+        var prepared = Path.Combine(_work, "prepared");
+        Directory.CreateDirectory(prepared);
+
+        var before = ApplyScripts();
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            UpdateInstaller.ApplyAndRestart(prepared, Path.Combine(_work, "host", exeName), 4242));
+
+        Assert.Contains("KindleMate2", ex.Message);        // 失败原因对用户可读(会被塞进"更新失败:{0}")
+        Assert.Empty(ApplyScripts().Except(before));       // 拒绝必须发生在写脚本之前
+    }
+
+    /// <summary>空/缺失的可执行路径同样不是"安装形态",应当拒绝而不是把空串当安装目录。</summary>
+    [Fact]
+    public void ApplyAndRestart_RejectsEmptyExecutablePath() {
+        var prepared = Path.Combine(_work, "prepared");
+        Directory.CreateDirectory(prepared);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            UpdateInstaller.ApplyAndRestart(prepared, string.Empty, 4242));
+    }
+
+    /// <summary>可执行名是本应用(安装形态)时,行为不变 —— 脚本照常生成、内容里带上待安装目录。</summary>
+    [Fact]
+    public void WriteApplyScript_OnInstalledLayout_StillProducesTheScript() {
+        var prepared = Path.Combine(_work, "prepared");
+        Directory.CreateDirectory(prepared);
+
+        var (executable, _) = InstalledLayoutExecutable();
+        var before = ApplyScripts();
+        var scriptPath = UpdateInstaller.WriteApplyScript(prepared, executable, 4242);
+        try {
+            Assert.True(File.Exists(scriptPath));
+            Assert.Contains(prepared, File.ReadAllText(scriptPath));
+            Assert.Single(ApplyScripts().Except(before));
+        } finally {
+            File.Delete(scriptPath);
+        }
+    }
+
+    /// <summary>构造"安装形态"的可执行文件路径:基名是本应用、且落在合理的安装位置(macOS 须在 .app 内)。</summary>
+    private (string Executable, string Directory) InstalledLayoutExecutable() {
+        if (OperatingSystem.IsMacOS()) {
+            var app = Path.Combine(_work, "Kindle Mate 2.app");
+            var macos = Path.Combine(app, "Contents", "MacOS");
+            Directory.CreateDirectory(macos);
+            return (Path.Combine(macos, "KindleMate2"), app);
+        }
+
+        var install = Path.Combine(_work, "install");
+        Directory.CreateDirectory(install);
+        return (Path.Combine(install, OperatingSystem.IsWindows() ? "KindleMate2.exe" : "KindleMate2"), install);
+    }
+
+    // ————————————————————— 符号链接 / 路径穿越(2026-10 实测 BCL 已拦截,留作回归防线) —————————————————————
+    //
+    // 实测结论(.NET 10):TarFile.ExtractToDirectory 与 ZipFile.ExtractToDirectory 都会**显式拦截**
+    // 「链接目标 / 条目路径落在目标目录之外」的条目并抛 IOException —— 消息即
+    // "would have resulted in a link target outside the specified destination directory"。
+    // 这是托管层、与平台无关的安全校验,故 Extract 无需再加过滤;这几条测试把该性质钉成
+    // 回归:BCL 若哪天放松,必须被这里拦下。
+
+    [Fact]
+    public void Extract_TarGz_RelativeSymlinkEscapingDestination_DoesNotEscape() {
+        var archive = Path.Combine(_work, "symlink-rel.tar.gz");
+        var escaped = Path.Combine(_work, "pwned-rel.txt");
+
+        using (var file = File.Create(archive))
+        using (var gzip = new GZipStream(file, CompressionMode.Compress))
+        using (var writer = new TarWriter(gzip, TarEntryFormat.Pax, leaveOpen: false)) {
+            writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = "../" + Path.GetFileName(escaped) });
+            writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "link/pwned.txt") {
+                DataStream = new MemoryStream(Encoding.UTF8.GetBytes("pwned"))
+            });
+        }
+
+        AssertExtractCannotEscape(archive, escaped);
+    }
+
+    [Fact]
+    public void Extract_TarGz_AbsoluteSymlinkEscapingDestination_DoesNotEscape() {
+        var outside = Path.Combine(_work, "outside");
+        Directory.CreateDirectory(outside);
+        var archive = Path.Combine(_work, "symlink-abs.tar.gz");
+
+        using (var file = File.Create(archive))
+        using (var gzip = new GZipStream(file, CompressionMode.Compress))
+        using (var writer = new TarWriter(gzip, TarEntryFormat.Pax, leaveOpen: false)) {
+            writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = outside });
+            writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "link/pwned.txt") {
+                DataStream = new MemoryStream(Encoding.UTF8.GetBytes("pwned"))
+            });
+        }
+
+        AssertExtractCannotEscape(archive, Path.Combine(outside, "pwned.txt"));
+    }
+
+    [Fact]
+    public void Extract_Zip_EntryEscapingDestination_DoesNotEscape() {
+        var archive = Path.Combine(_work, "slip.zip");
+        using (var file = File.Create(archive))
+        using (var zip = new ZipArchive(file, ZipArchiveMode.Create)) {
+            using var entry = zip.CreateEntry("../pwned-zip.txt").Open();
+            entry.Write(Encoding.UTF8.GetBytes("pwned"));
+        }
+
+        AssertExtractCannotEscape(archive, Path.Combine(_work, "pwned-zip.txt"));
+    }
+
+    /// <summary>
+    /// 解压并断言「要么抛异常、要么目标目录外没有被创建任何东西」。抛了则必须是
+    /// <see cref="IOException"/>(BCL 的显式拦截);且两者必居其一 —— 否则断言是空的。
+    /// </summary>
+    private void AssertExtractCannotEscape(string archive, string escapedPath) {
+        var destination = Path.Combine(_work, "dest-" + Guid.NewGuid().ToString("N")[..6]);
+        var ex = Record.Exception(() => UpdateInstaller.Extract(archive, destination));
+
+        Assert.False(File.Exists(escapedPath), "目标目录外被创建了文件(符号链接 / 路径穿越)");
+        var createdLink = File.Exists(Path.Combine(destination, "link")) || Directory.Exists(Path.Combine(destination, "link"));
+        Assert.True(ex is not null || !createdLink, "既未拒绝也未落任何条目 —— 断言未覆盖任何实际行为");
+        if (ex is not null) {
+            Assert.IsAssignableFrom<IOException>(ex);
+        }
+    }
 }

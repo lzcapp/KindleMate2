@@ -280,6 +280,6 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
   `CS0103: InitializeComponent 不存在`。
-- **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
+- **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。生成替换脚本前有**安装布局守卫**：`Environment.ProcessPath` 的基名必须是本应用（`KindleMate2`），否则拒绝自动替换 —— 以 `dotnet …dll` 宿主时其目录是 .NET 运行时目录，误覆盖后果远超本应用。解压 tar.gz/zip 走 BCL（`TarFile`/`ZipFile`），其自带对**符号链接与 `..` 路径穿越条目**的拦截（实测抛 `IOException`，不落在目标目录之外）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。

@@ -192,12 +192,56 @@ public static class UpdateInstaller {
         OperatingSystem.IsMacOS() ? UpdateTarget.MacOsAppBundle : UpdateTarget.Directory;
 
     /// <summary>
+    /// 本应用可执行文件的**基名**(不含扩展名)。三平台一致,取自
+    /// <c>KindleMate2.Avalonia.csproj</c> 的 <c>AssemblyName</c>:Windows 的 <c>KindleMate2.exe</c>,
+    /// 以及 Linux/macOS 启动器 <c>exec</c> 到的真程序 <c>KindleMate2</c>(启动脚本本身不会被
+    /// <c>ProcessPath</c> 如实报告 —— <c>exec</c> 已把进程镜像换成真程序)。
+    /// </summary>
+    internal const string AppExecutableName = "KindleMate2";
+
+    /// <summary>
+    /// 「已安装布局」守卫:<paramref name="executablePath"/> 的基名必须确实是本应用可执行文件。
+    ///
+    /// **为什么必须有**:<see cref="ApplyAndRestart"/> 拿可执行文件所在目录当**安装目录**去覆盖。
+    /// 若应用是以 <c>dotnet KindleMate2.dll</c> 启动的,<c>Environment.ProcessPath</c> 是
+    /// <c>dotnet.exe</c>,其目录是 **.NET 运行时安装目录** —— 脚本会把新包 <c>xcopy</c> 进去,
+    /// 破坏的是共享运行时,后果远超本应用。开发期跑 dll、或用别的方式宿主时不具备自动替换的前提,
+    /// 应当明确报错而不是静默替换(与 <see cref="ResolveAppBundlePath"/> 同一套风格)。
+    /// </summary>
+    internal static void EnsureInstalledLayout(string? executablePath) {
+        var name = string.IsNullOrEmpty(executablePath) ? string.Empty : Path.GetFileNameWithoutExtension(executablePath);
+        if (!string.Equals(name, AppExecutableName, StringComparison.OrdinalIgnoreCase)) {
+            throw new InvalidOperationException(
+                $"当前不是以安装形态运行(可执行文件为 \"{Path.GetFileName(executablePath)}\",不是 {AppExecutableName}),无法自动替换;请手动下载安装包更新");
+        }
+    }
+
+    /// <summary>
     /// 生成替换脚本并分离启动它。**调用方随后应立即退出应用** —— 脚本在等我们退出。
     /// </summary>
     /// <param name="preparedPath"><see cref="PrepareAsync"/> 的返回值(dmg 或已解压目录)。</param>
     /// <param name="executablePath">当前可执行文件完整路径。</param>
     /// <param name="processId">当前进程 id,脚本靠它等我们退出。</param>
     public static string ApplyAndRestart(string preparedPath, string executablePath, int processId) {
+        var scriptPath = WriteApplyScript(preparedPath, executablePath, processId);
+
+        // 分离启动:脚本要活过当前进程,所以不能用"父进程等子进程"的普通方式
+        var startInfo = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo { FileName = "cmd.exe", Arguments = $"/c \"{scriptPath}\"", UseShellExecute = false, CreateNoWindow = true }
+            : new ProcessStartInfo { FileName = "/bin/sh", Arguments = $"\"{scriptPath}\"", UseShellExecute = false };
+
+        Process.Start(startInfo);
+        AppLog.Write($"[UpdateInstaller] 已启动替换脚本 {scriptPath}(等待 PID {processId} 退出)");
+        return scriptPath;
+    }
+
+    /// <summary>
+    /// 生成替换脚本并落盘,**不启动**它。先过安装布局守卫 —— 非法形态一个脚本都不该写出来。
+    /// 与启动分离是为了让守卫与脚本内容可在测试里直接验证(启动会真的跑替换脚本)。
+    /// </summary>
+    internal static string WriteApplyScript(string preparedPath, string executablePath, int processId) {
+        EnsureInstalledLayout(executablePath);
+
         var installDirectory = Path.GetDirectoryName(executablePath)!;
 
         var (script, extension) = OperatingSystem.IsWindows()
@@ -208,14 +252,6 @@ public static class UpdateInstaller {
 
         var scriptPath = Path.Combine(Path.GetTempPath(), "km2-apply-update-" + Guid.NewGuid().ToString("N")[..8] + extension);
         File.WriteAllText(scriptPath, script);
-
-        // 分离启动:脚本要活过当前进程,所以不能用"父进程等子进程"的普通方式
-        var startInfo = OperatingSystem.IsWindows()
-            ? new ProcessStartInfo { FileName = "cmd.exe", Arguments = $"/c \"{scriptPath}\"", UseShellExecute = false, CreateNoWindow = true }
-            : new ProcessStartInfo { FileName = "/bin/sh", Arguments = $"\"{scriptPath}\"", UseShellExecute = false };
-
-        Process.Start(startInfo);
-        AppLog.Write($"[UpdateInstaller] 已启动替换脚本 {scriptPath}(等待 PID {processId} 退出)");
         return scriptPath;
     }
 

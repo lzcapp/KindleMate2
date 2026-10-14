@@ -1804,7 +1804,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             var target = UpdateInstaller.TargetForCurrentPlatform();
             var prepared = await UpdateInstaller.PrepareAsync(asset, target, progress).ConfigureAwait(true);
 
-            // 以 .app 包启动时才可能自动替换(开发期直接跑 dll 不具备这个前提)
+            // 只有以「安装形态」启动时才自动替换(开发期 `dotnet …dll` 时 ProcessPath 是 dotnet.exe,
+            // 其目录是 .NET 运行时目录)。ApplyAndRestart 内的布局守卫会据此拒绝并抛出明确原因。
             var executable = Environment.ProcessPath ?? string.Empty;
             UpdateInstaller.ApplyAndRestart(prepared, executable, Environment.ProcessId);
 
