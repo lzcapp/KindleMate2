@@ -28,9 +28,12 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 var delimiterIndex = new List<int>();
 
-                for (var i = 2; i < lines.Count; i++) {
+                for (var i = 0; i < lines.Count; i++) {
                     lines[i] = StringHelper.RemoveControlChar(lines[i]);
-                    if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
+                    // 分隔符按**整行精确相等**判定:正文可多行,分隔符上一行未必是空行,
+                    // 任何依赖上下文行(如 lines[i-2] 为空)的判据都会漏掉多行正文条目的分隔符,
+                    // 进而把相邻两条并成一条。起点取 0 以保证首两行也被 RemoveControlChar 清洗。
+                    if (lines[i].Trim().Equals(Symbols.Delimiter, StringComparison.Ordinal)) {
                         delimiterIndex.Add(i);
                     }
                 }
