@@ -4,7 +4,9 @@ using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
-    public class LookupRepository(string connectionString) : ILookupRepository {
+    public class LookupRepository(string connectionString, VocabSourceSchema? schema = null) : ILookupRepository {
+        // 源库(设备 vocab.db)的表/列由设备决定,可能缺表缺列。探测一次并缓存。
+        private readonly VocabSourceSchema _schema = schema ?? VocabSourceSchema.Probe(connectionString);
         public Lookup? GetById(string id) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
@@ -33,7 +35,13 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var cmd = new SqliteCommand("SELECT id, word_key, book_key, dict_key, pos, usage, timestamp FROM LOOKUPS", connection);
+            // 按源库**实际列**构造 SELECT:缺表/缺必需列 → 该表逐表跳过(返回空),不阻断其它表。
+            var selectList = _schema.BuildSelectList(VocabSourceSchema.LookupsTable,
+                VocabSourceSchema.LookupsColumns, VocabSourceSchema.LookupsRequiredColumns);
+            if (selectList is null) {
+                return results;
+            }
+            var cmd = new SqliteCommand($"SELECT {selectList} FROM LOOKUPS", connection);
         
             using SqliteDataReader reader = cmd.ExecuteReader();
             while (reader.Read()) {

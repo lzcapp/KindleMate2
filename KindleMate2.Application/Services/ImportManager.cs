@@ -6,6 +6,7 @@ using KindleMate2.Application.Models;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 using KindleMate2.Shared.Diagnostics;
+using System.Globalization;
 
 namespace KindleMate2.Application.Services;
 
@@ -119,7 +120,8 @@ public class ImportManager : IImportManager {
             int.TryParse(parsedCount, out var parsed) ? parsed : 0,
             int.TryParse(insertedCount, out var inserted) ? inserted : 0);
         return Strings.Parsed_X + Strings.Space + parsedCount + Strings.Space + Strings.X_Clippings + Strings.Symbol_Comma +
-               Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings;
+               Strings.Imported_X + Strings.Space + insertedCount + Strings.Space + Strings.X_Clippings +
+               ComposeClippingSkipSuffix(result);
     }
 
     public string ImportKindleWords(string kindleWordsPath, IProgress<OperationProgress>? progress = null) {
@@ -143,8 +145,49 @@ public class ImportManager : IImportManager {
             (int.TryParse(insertedVocabCount, out var insertedVocabs) ? insertedVocabs : 0));
         return Strings.Parsed_X + Strings.Space + lookupCount + Strings.Space + Strings.X_Vocabs + Strings.Space + Strings.Symbol_Comma +
                Strings.Imported_X + Strings.Space + insertedLookupCount + Strings.Space + Strings.X_Lookups + Strings.Space +
-               Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs;
+               Strings.Symbol_Comma + insertedVocabCount + Strings.Space + Strings.X_Vocabs +
+               ComposeWordSkipSuffix(result);
     }
+
+    /// <summary>
+    /// 标注导入的跳过明细后缀。此前 <c>SkippedDateCount / SkippedPageCount / SkippedLimitCount</c>
+    /// 只在结果字典里躺着、从不呈现 —— 用户看到"导入 N 条"便以为全成功,实际有解析失败的条目被静默丢弃。
+    /// 现在任一计数非 0 就补一句「跳过 N 条(日期解析失败 X / 页码异常 Y / 超出上限 Z)」。
+    /// </summary>
+    private static string ComposeClippingSkipSuffix(Dictionary<string, string> result) {
+        var dateFailed = GetCount(result, AppConstants.SkippedDateCount);
+        var pageFailed = GetCount(result, AppConstants.SkippedPageCount);
+        var limitReached = GetCount(result, AppConstants.SkippedLimitCount);
+        var total = dateFailed + pageFailed + limitReached;
+        if (total <= 0) {
+            return string.Empty;
+        }
+        return string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Clippings_Format,
+            total, dateFailed, pageFailed, limitReached);
+    }
+
+    /// <summary>
+    /// 生词导入的跳过明细后缀,合并两类口径:源库缺表/缺必需列而逐表跳过的表数,
+    /// 与时间戳非法/越界被忽略的记录数。都为 0 时不产生任何噪音。
+    /// </summary>
+    private static string ComposeWordSkipSuffix(Dictionary<string, string> result) {
+        var suffix = string.Empty;
+        var skippedTables = GetCount(result, AppConstants.SkippedTableCount);
+        if (skippedTables > 0) {
+            suffix += string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Tables_Format, skippedTables);
+        }
+        var skippedTimestamps = GetCount(result, AppConstants.SkippedTimestampCount);
+        if (skippedTimestamps > 0) {
+            suffix += string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Timestamps_Format, skippedTimestamps);
+        }
+        return suffix;
+    }
+
+    /// <summary>从结果字典取计数;缺失或非数字一律按 0(旧的失败路径字典里没有这些键)。</summary>
+    private static int GetCount(Dictionary<string, string> result, string key) =>
+        result.TryGetValue(key, out var raw) && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : 0;
 
     public string ImportKmDatabase(string filePath, IProgress<OperationProgress>? progress = null) =>
         ImportFlatSchemaDatabase(filePath, "KM_", ImportBatch.SourceKm, progress);

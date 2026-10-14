@@ -240,6 +240,15 @@
   <data name="Imported_X" xml:space="preserve">
     <value>Imported: </value>
   </data>
+  <data name="Import_Skipped_Clippings_Format" xml:space="preserve">
+    <value>, {0} skipped (date parse failed: {1} / page abnormal: {2} / over limit: {3})</value>
+  </data>
+  <data name="Import_Skipped_Tables_Format" xml:space="preserve">
+    <value>, {0} table(s) skipped</value>
+  </data>
+  <data name="Import_Skipped_Timestamps_Format" xml:space="preserve">
+    <value>, {0} record(s) ignored due to invalid timestamp</value>
+  </data>
   <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
     <value>Are you sure you want to delete all clipping(s) in this book?</value>
   </data>
