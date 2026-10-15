@@ -283,3 +283,12 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 - **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。
+- **两条不可回退的导入边界**（详见 `formats.md` §六）：
+  ① **时间语义两源不一致**（审计 P2-13）—— 标注的时间是设备**本地墙钟**的自然语言文本（**无时区**），
+  生词的时间是 unix 毫秒、按**导入机时区**换算成本地时间；`My Clippings.txt` 侧根本没有时区信息，
+  **存量数据无法回溯修正**，只能文档化，不要试图"统一"。
+  ② **`clippings.key` 不含书名**（审计 P2-14）—— `key = 日期|类型+位置`，而它是
+  `PRIMARY KEY NOT NULL UNIQUE`；两本不同的书在「同一秒 + 同一位置 + 同一类型」时会撞 key，后到的
+  那条被**静默跳过**（Kindle 的 Location 每本书各自编号，跨书位置相同很常见）。修复需改
+  `clippings.key` 主键并迁移 `original_clipping_lines`，属 schema 版本升级，**未在本次处理**；
+  现状由 `KindleMate2.Tests/AuditLeftoverTests` 的用例钉住。

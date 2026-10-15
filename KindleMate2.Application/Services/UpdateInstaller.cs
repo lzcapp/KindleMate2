@@ -28,6 +28,13 @@ public enum UpdateTarget {
 /// </summary>
 public static class UpdateInstaller {
     /// <summary>
+    /// 未注入 <c>httpClient</c> 时使用的下载客户端。**静态复用** —— 每次下载新建 HttpClient
+    /// 会各自持有连接池、socket 无法复用(TIME_WAIT 堆积)。超时是下载专用的 10 分钟,
+    /// 与检查更新/查词各自保留自己的超时,不共用一个实例。
+    /// </summary>
+    private static readonly HttpClient DownloadClient = new() { Timeout = TimeSpan.FromMinutes(10) };
+
+    /// <summary>
     /// 下载资产到临时目录并解压好,返回**待安装内容的目录**;macOS 例外 —— 那里返回下载到的 dmg
     /// (挂载镜像只能靠 <c>hdiutil</c>,不适合在托管代码里做)。
     /// </summary>
@@ -61,8 +68,8 @@ public static class UpdateInstaller {
         var target = Path.Combine(directory, fileName);
 
         try {
-            using var owned = httpClient is null ? new HttpClient { Timeout = TimeSpan.FromMinutes(10) } : null;
-            var client = httpClient ?? owned!;
+            // httpClient 是测试注入点:注入则用注入的,否则复用静态实例(不再每次新建)。
+            var client = httpClient ?? DownloadClient;
 
             using var response = await client.GetAsync(asset.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
@@ -145,7 +152,10 @@ public static class UpdateInstaller {
 
     /// <summary>
     /// 解析 <c>sha256sum</c> 风格清单里某个文件名的哈希:行形如 <c>&lt;hex&gt;␠␠&lt;文件名&gt;</c>
-    /// (GNU coreutils 在文本模式下可能带 <c>*</c> 前缀)。找不到返回 null。
+    /// (GNU coreutils 在文本模式下可能带 <c>*</c> 前缀)。**只认合法的 64 位十六进制哈希** ——
+    /// 清单被篡改/损坏时,哈希段可能是任意垃圾串,不校验就会把垃圾当作"期望哈希"返回,后续
+    /// 比对失败的错误信息会误导(说"哈希不匹配",实际是清单坏了)。非法行视为无效、继续找下一行;
+    /// 全部无效返回 null(调用方对"找不到"是 fail-closed,会中止更新)。
     /// </summary>
     internal static string? ParseExpectedHash(string checksumText, string fileName) {
         foreach (var raw in checksumText.Split('\n')) {
@@ -158,12 +168,29 @@ public static class UpdateInstaller {
                 continue;
             }
             var hash = line[..separator];
+            if (!IsSha256Hex(hash)) {
+                continue;
+            }
             var name = line[(separator + 1)..].Trim().TrimStart('*');
             if (string.Equals(name, fileName, StringComparison.Ordinal)) {
                 return hash;
             }
         }
         return null;
+    }
+
+    /// <summary>严格判定:长度必须为 64 且全为十六进制字符(大小写均可)。</summary>
+    private static bool IsSha256Hex(string value) {
+        if (value.Length != 64) {
+            return false;
+        }
+        foreach (var c in value) {
+            if (c is (>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F')) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     /// <summary>按扩展名解压(tar.gz / zip)。两种发布产物都用得上,且两条路径都要能被测试真的跑一遍。</summary>

@@ -280,3 +280,45 @@ vocab.db  BOOK_INFO.asin = 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
 `system/readingstreams/readingstreams.db`、`system/freetime/freetime.db`、
 `system/fmcache/fmcache.db`、`kmc/kpm/kpm.db`、`audible/default.hushpuppy.db` ——
 存在，用途未知。
+
+---
+
+## 六、两条不可回退的限制（已文档化，勿试图"修复"）
+
+以下两条是**已知且刻意不修**的边界（审计 P2-13 / P2-14）。它们不是待办 bug，而是
+"改了会更糟"或"存量数据无法回溯修正"的现实 —— **不要在代码里试图"统一"它们，只能文档化**。
+
+### 6.1 时间语义两源不一致（P2-13）
+
+| 源 | 时间从哪来 | 语义 |
+|---|---|---|
+| `My Clippings.txt` | 标注元数据行里的**自然语言文本** | 设备**本地墙钟**时间，**不含时区** |
+| `vocab.db` | `LOOKUPS.timestamp` / `WORDS.timestamp`（unix 毫秒） | UTC 毫秒，导入时按**导入机时区**换算成本地时间 |
+
+两者落库后看起来是同一种 `yyyy-MM-dd HH:mm:ss` 文本，但**语义不同源**：一条是"设备当时显示的
+墙上时间"，另一条是"某一瞬间的 UTC 按导入机时区换算的结果"。
+
+**为什么不能统一**：`My Clippings.txt` 侧**根本没有时区信息**，也无从得知标注发生时的设备时区。
+任何"统一"都只能是猜测，且**存量数据无法回溯修正**（原始时区信息已经丢失，不在文件里）。
+因此：**只文档化，不转换、不"校正"**。跨源按时间排序/比较时请记住这一点。
+
+### 6.2 `clippings.key` 不含书名（P2-14）
+
+导入 `My Clippings.txt` 时的判重键为：
+
+```
+key = 标注日期("yyyy-MM-dd HH:mm:ss") + "|" + 类型+位置
+```
+
+其中"类型+位置"是元数据行**去掉日期段**后的部分（如
+`Your Highlight on page 5 | Location 100-101`），**不含书名**。而 `clippings.key` 是
+`PRIMARY KEY NOT NULL UNIQUE`（见 `KindleMate2.Infrastructure/Helpers/DatabaseHelper.cs`）。
+
+于是**两本不同的书若在同一秒、同一位置、同一类型**，会算出**同一个 key** —— 后到的那条被判为
+重复、**静默跳过**（不进库，也不报错）。Kindle 的 Location 是**每本书各自编号**，跨书位置相同
+很常见，所以这不是纯理论情形。
+
+**为什么本次不修**：真正的修复要让 key 纳入书名，涉及 `clippings.key` 主键的 schema 迁移，以及
+`original_clipping_lines`（回收站靠 key 关联）的同步迁移，属 **schema 版本升级**，另立项处理。
+现状由 `KindleMate2.Tests/AuditLeftoverTests` 里的用例**钉住**（断言"只导入 1 条"）；若将来修好，
+那条用例会失败 —— 届时应把它改成断言"导入 2 条"。

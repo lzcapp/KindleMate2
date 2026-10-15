@@ -253,8 +253,13 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         /// command. Replaces the previous per-vocab call pattern that opened a new
         /// connection (and auto-committed) once per row — the dominant cost when an
         /// import triggers a full frequency recompute over thousands of vocab rows.
-        /// Rows with a null/blank word_key are skipped (they can never match any
-        /// lookup), which keeps the batch from aborting on legacy junk rows.
+        ///
+        /// **按主键 <c>id</c> 定位**(而非 <c>word_key</c>):<c>word_key</c> 读取时经
+        /// <see cref="DatabaseHelper.GetSafeString"/> 被 <c>Trim</c> 过,而库里存的是原始值 ——
+        /// 词键带前后空白时,用读回来的(已 Trim 的)word_key 去 <c>WHERE word_key = ?</c> 会**匹配不到**
+        /// 那一行,词频写不进去(UpdateFrequency 的统计因此对这类行恒为 0)。<c>id</c> 是
+        /// <c>PRIMARY KEY</c>、读取不 Trim,按它定位既精确又走主键索引。
+        /// Rows with a null/blank id are skipped, which keeps the batch from aborting on junk rows.
         /// </summary>
         public int UpdateFrequencyByWordKey(List<Vocab> vocabs) {
             var count = 0;
@@ -263,14 +268,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
-                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection, transaction);
+                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE id = @id AND deleted_at IS NULL", connection, transaction);
                 foreach (Vocab vocab in vocabs) {
-                    var wordKey = vocab.WordKey;
-                    if (string.IsNullOrWhiteSpace(wordKey)) {
+                    var id = vocab.Id;
+                    if (string.IsNullOrWhiteSpace(id)) {
                         continue;
                     }
                     cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@word_key", wordKey);
+                    cmd.Parameters.AddWithValue("@id", id);
                     cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
                     count += cmd.ExecuteNonQuery();
                 }

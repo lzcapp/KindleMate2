@@ -24,6 +24,18 @@ public class ExportManager : IExportManager {
     private readonly string _backupPath;
     private readonly string _tempPath;
 
+    /// <summary>
+    /// 导出时批量查词用的共享客户端。**静态复用**(连接池/socket 可复用),保留本用途自己的
+    /// 8 秒超时 —— 不与检查更新/下载共用实例。查词是"顺手补个释义",不该让用户等网络。
+    /// </summary>
+    private static readonly HttpClient DefinitionClient = CreateDefinitionClient();
+
+    private static HttpClient CreateDefinitionClient() {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("KindleMate2-Dictionary");
+        return client;
+    }
+
     public ExportManager(IClippingService clippingService, ILookupService lookupService,
         IVocabService vocabService, IOriginalClippingLineService originalClippingLineService,
         IDeviceManager deviceManager, string programPath, string backupPath, string tempPath) {
@@ -249,8 +261,7 @@ public class ExportManager : IExportManager {
             return result;
         }
 
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("KindleMate2-Dictionary");
+        var http = DefinitionClient;
         using var gate = new SemaphoreSlim(4);
         var tasks = words.Select(async word => {
             await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
