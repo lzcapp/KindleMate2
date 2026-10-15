@@ -36,7 +36,13 @@
 
 - `dotnet test` 默认**不碰真机/外网**：真机探测需 `KM2_MANUAL_DEVICE_TESTS=1`，联网探测需
   `KM2_MANUAL_NETWORK_TESTS=1`；两类均带 `[Trait("Category","Manual")]`。
-- 视图层（Avalonia VM）行为单测够不着，靠 `--smoke` 探针 + CI 的 grep 断言覆盖。
+  这些用例经 `ManualTestGate` 早退。**注意：xUnit 2.9.3 不支持运行期动态跳过**，未设 env 时它们在
+  报告里是 **PASSED（通过）而非 SKIPPED（跳过）** —— "默认跳过"指"默认不产生真机/外网副作用"，
+  不等于报告里显示 skipped。CI 靠 `--filter "Category!=Manual"` 排除，并有一条断言校验该排除确实成立。
+- 测试临时目录的前缀白名单维护在 `TestTempCleanup.OwnedPrefixes`；新增前缀漏登记会被元测试
+  `TempDirPrefixTests` 拦下。
+- 视图层（Avalonia VM）行为单测够不着，靠 `--smoke` 探针 + CI 的 grep 断言覆盖；写链
+  （导入 → 导出 → 备份 → 重命名 → … → 清空 → 重导）靠 `--ops` 探针，两者均已接入 `build.yml`。
 
 ## 许可证
 

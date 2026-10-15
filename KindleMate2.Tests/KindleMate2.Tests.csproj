@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- 只引用 Application/Infrastructure/Domain,不依赖 WinForms,因此可跨平台运行 -->
-    <TargetFramework>net10.0</TargetFramework>
+    <!--
+      Windows 宿主上把测试本身也编到 net10.0-windows:只有这样才能条件引用
+      Devices.Windows(Windows 专有实现,单目标 net10.0-windows),从而给
+      DeviceManager 的默认状态 / Dispose 幂等 / 无设备守卫补 CI 回归
+      (启用前该 434 行类在 CI 里零覆盖 —— Windows 恰是主平台)。
+      非 Windows 宿主仍只编 net10.0:Devices.Windows 是 net10.0-windows 单目标,
+      从 net10.0 引用它会在 ubuntu/macOS 上还原失败。
+      注:net10.0-windows **自带 WINDOWS 常量**,Windows 专有的用例文件用 #if WINDOWS 圈起。
+    -->
+    <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Windows'))">net10.0-windows</TargetFramework>
+    <TargetFramework Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
@@ -26,5 +36,9 @@
     <ProjectReference Include="..\KindleMate2.Devices.Posix\KindleMate2.Devices.Posix.csproj" />
     <!-- Linux 薄壳(候选挂载根不同),用于验证多根遍历;与 Devices.MacOS 一样是中性 net10.0 -->
     <ProjectReference Include="..\KindleMate2.Devices.Linux\KindleMate2.Devices.Linux.csproj" />
+  </ItemGroup>
+  <!-- Windows 专有设备实现:仅在 Windows 宿主上引用(见 TargetFramework 的条件注释)。 -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <ProjectReference Include="..\KindleMate2.Devices.Windows\KindleMate2.Devices.Windows.csproj" />
   </ItemGroup>
 </Project>

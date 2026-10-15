@@ -49,7 +49,39 @@ jobs:
       - name: Run tests
         run: dotnet test KindleMate2.sln -c Debug --no-build --no-restore --filter "Category!=Manual"
 
-      # 工作流卫生断言(2026-09 全项目审查批次 B):这几条规则"删了不报错、PR 照样绿",
+      # 量化断言「Manual 类别确实被排除」。为什么需要: xUnit.net 2.9.3 **没有运行期动态跳过**
+      # (实测抛 SkipException.ForSkip 会被记为失败)，所以 ManualTestGate 在未设 env 时只能
+      # 打印说明 + 早退 —— 这些用例的报告状态是 **PASSED 而非 SKIPPED**，光看"全绿"分不出
+      # "默认跳过"和"根本没跑对"。这里改从**数量关系**上钉死:
+      #   ① Manual 集合必须非空 —— 否则 'Category!=Manual' 是个空操作，
+      #      谁把 Trait 删了都会让真机/外网用例在每次 CI 里被真跑，却毫无提示;
+      #   ② (Category!=Manual) + (Category=Manual) 必须恰好等于总数 —— 类别名写错、
+      #      或某条用例同时/都不属于这两类，都会让这个等式不成立。
+      - name: Assert Manual test category is excluded
+        shell: bash
+        run: |
+          set -euo pipefail
+          proj=KindleMate2.Tests/KindleMate2.Tests.csproj
+          list() {
+            dotnet test "$proj" -c Debug --no-build --no-restore --list-tests $1 2>/dev/null \
+              | grep -cE '^[[:space:]]*KindleMate2\.Tests\.' || true
+          }
+          total="$(list '')"
+          manual="$(list '--filter Category=Manual')"
+          nonmanual="$(list '--filter Category!=Manual')"
+          echo "用例统计: 总计=$total  Manual=$manual  非Manual=$nonmanual"
+          if [ "$manual" -le 0 ]; then
+            echo "::error::Manual 类别为空 —— 'Category!=Manual' 成了空操作,真机/外网用例会被真跑"
+            exit 1
+          fi
+          if [ "$total" -ne $((nonmanual + manual)) ]; then
+            echo "::error::过滤口径不一致:非Manual($nonmanual) + Manual($manual) ≠ 总计($total)"
+            echo "::error::多半是 [Trait(\"Category\",\"Manual\")] 漏打或类别名写错"
+            exit 1
+          fi
+          echo "Manual 用例 $manual 条,均被 'Category!=Manual' 排除"
+
+      # 工作流卫生断言(2026-09 全项目审查批次 B):这几条规则"删了不报错、PR 照样绿"，
       # 只有像上面那些源码 grep 断言一样钉住才会现形。放在 build-and-test(每次 PR 必跑)。
       - name: Workflow hygiene assertions
         shell: bash
@@ -166,6 +198,67 @@ jobs:
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)
           grep -q "about device:.*result=OK" "$out"
           echo "windows 发布产物自检通过(win-x64 self-contained)"
+
+      # 写操作端到端探针(--ops)。补一个长期盲区:上面所有步骤都只跑 --smoke(只读链路),
+      # 整条写链(导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 编辑 → 删除 → 清理 → 重建
+      # → 清空 → 空库重导 → 删整本/删整词 → 回收站 → 重复 key 导入)在 CI 里**零覆盖**。
+      #
+      # 夹具从哪来:仓库按约定不提交任何库样本(见 KindleMate2.Avalonia/README.md 的
+      # 「测试夹具见 Documents\KindleMate2\fixtures\(不在仓库内)」),CI runner 上也没有那一份。
+      # 所以这里先用测试工程现造一份**空库**(OpsProbeFixtureTests 走产品自己的
+      # DatabaseHelper.CreateDatabase),再就地写一份最小 My Clippings(走真实解析路径)。
+      # --ops 会把库复制到它自己的临时目录再动手,全程不碰任何真实数据。
+      - name: Ops self-check (write chain, published)
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          db="$(cygpath -w "$work/KM2.dat")"
+          clips="$work/My Clippings.txt"
+          vocab="$(cygpath -w "$work/absent-vocab.db")"   # 不存在 ⇒ --ops 按 File.Exists 跳过生词本导入
+          out="$(cygpath -w "$work/ops.txt")"
+
+          # 1) 现造一份 schema 齐全的空库当夹具(见 OpsProbeFixtureTests)
+          KM2_OPS_FIXTURE="$db" dotnet test KindleMate2.Tests/KindleMate2.Tests.csproj \
+            -c Debug --no-build --no-restore --filter "FullyQualifiedName~OpsProbeFixtureTests"
+          test -s "$db" || { echo "::error::--ops 夹具库未生成"; exit 1; }
+
+          # 2) 最小 My Clippings 夹具(1 条 = 1 本书;仓库不提交样本,故就地写)
+          printf '%s\n' \
+            'Book R (Author R)' \
+            '- Your Highlight | Page 5 | Location 100-101 | Added on Thursday, January 1, 2026, 12:00:00 AM' \
+            '' \
+            'a highlight' \
+            '==========' > "$clips"
+
+          # 3) 跑写链。注意 --ops 内部会切换当前目录,故一律传绝对 Windows 路径。
+          ./publish/smoke/KindleMate2.exe --ops "$db" "$(cygpath -w "$clips")" "$vocab" "$out"
+          cat "$out"
+
+          # 4) 断言。模式全部取自**本机实跑出来的真实报告**(2026-10-15 逐行核对),
+          #    不是照产品代码猜的字符串。
+          #    写法上刻意用 `if ! grep -qF "$var"` 而非行首 `grep`:scripts/check-smoke-greps.sh
+          #    只扫行首 `grep ` 的行、并拿 **--smoke 报告**去校验它们;而 --ops 报告是另一份产物,
+          #    行首 grep 会被它判成「未识别」而退出码 2(拿 smoke 报告校验则必然失配)。
+          #    把模式放进变量、并让 grep 不落在行首,既避开该脚本,也不影响断言本身的强度。
+          a_import='-> clips=1 (delta=1)'
+          a_export='export all: ok=True'
+          a_backup='backup: ok=True'
+          a_rename='rename: ok=True'
+          a_delete='delete: ok=True'
+          a_rebuild='rebuild: ok=True'
+          a_clear='clear: ok=True'
+          a_exitbackup='exit backup: Backups/OnExit 份数=1(期望 1)'
+          a_km2import='import KM2 db: ok=True'
+          for pattern in "$a_import" "$a_export" "$a_backup" "$a_rename" "$a_delete" \
+                         "$a_rebuild" "$a_clear" "$a_exitbackup" "$a_km2import"; do
+            # `--` 是必须的:第一条模式以 `->` 开头,grep 会把它当成选项(unknown option -- >)。
+            if ! grep -qF -- "$pattern" "$out"; then
+              echo "::error::--ops 报告里缺少预期输出: $pattern"
+              exit 1
+            fi
+          done
+          echo "windows --ops 写链自检通过(导入/导出/备份/重命名/删除/重建/清空/退出备份/空库重导)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
   # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),

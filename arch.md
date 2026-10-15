@@ -240,8 +240,8 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 |---|---|---|
 | 只读自检 | `KindleMate2 --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
-| 单元测试 | `dotnet test KindleMate2.Tests` | 跨平台 TFM；真机 / 联网探测默认跳过，需 `KM2_MANUAL_DEVICE_TESTS=1` / `KM2_MANUAL_NETWORK_TESTS=1` 手动开启 |
-| CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
+| 单元测试 | `dotnet test KindleMate2.Tests` | 跨平台 TFM（Windows 宿主上另编 `net10.0-windows` 以覆盖 `Devices.Windows`）；真机 / 联网探测需 `KM2_MANUAL_DEVICE_TESTS=1` / `KM2_MANUAL_NETWORK_TESTS=1` 手动开启（xUnit 2.9.3 无动态跳过，未开启时报告为 PASSED 而非 SKIPPED，CI 用 `--filter "Category!=Manual"` 排除并断言） |
+| CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测 + `--smoke` / `--ops` 自检；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
 | CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz（内含 `kindlemate2` 启动器）+ macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
 
 两套自检**全程在临时副本上执行**，不会改动传入的真实数据库。
