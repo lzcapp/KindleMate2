@@ -217,7 +217,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (wordKey == null) {
                     continue;
                 }
-                frequencyMap.TryGetValue(wordKey, out var frequency);
+                // 查表侧与上面的 GroupBy 保持同一口径(都 Trim),与 Km2DatabaseService.UpdateFrequency 一致。
+                // (词频能否写回由仓储按主键 id 定位保证 —— 见 VocabRepository.UpdateFrequencyByWordKey。)
+                frequencyMap.TryGetValue(wordKey.Trim(), out var frequency);
                 updates.Add(new Vocab {
                     WordKey = wordKey,
                     Frequency = frequency,

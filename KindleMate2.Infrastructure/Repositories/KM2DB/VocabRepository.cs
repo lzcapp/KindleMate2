@@ -234,20 +234,6 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
-        public bool UpdateFrequencyByWordKey(Vocab vocab) {
-            using var connection = new SqliteConnection(connectionString);
-            connection.Open();
-
-            var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection);
-            var wordKey = vocab.WordKey;
-            if (string.IsNullOrWhiteSpace(wordKey)) {
-                throw new InvalidOperationException();
-            }
-            cmd.Parameters.AddWithValue("@word_key", wordKey);
-            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
-            return cmd.ExecuteNonQuery() > 0;
-        }
-
         /// <summary>
         /// Bulk-updates frequency for many vocabs in a single transaction with one reused
         /// command. Replaces the previous per-vocab call pattern that opened a new
