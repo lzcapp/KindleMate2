@@ -690,6 +690,9 @@
   <data name="Ui_Status_OpenFailed_SchemaIncomplete" xml:space="preserve">
     <value>打开失败：数据库结构不完整，缺少这些表：{0}。请从备份恢复，或使用「重建数据库」重新生成。</value>
   </data>
+  <data name="Ui_Status_DatabaseNotOpen" xml:space="preserve">
+    <value>尚未打开数据库</value>
+  </data>
   <data name="Ui_Text_ListSeparator" xml:space="preserve">
     <value>、</value>
   </data>

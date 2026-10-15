@@ -31,7 +31,7 @@ namespace KindleMate2.Avalonia.ViewModels;
 /// 顶部命令栏(全局搜索 + 视图/主题/语言) · 左栏导航(标注/生词 + 列表) · 中列表 · 右预览面板 · 底状态栏。
 /// 数据全部来自现有分层(仓储 / 实体),UI 零业务逻辑。
 /// </summary>
-public sealed class MainWindowViewModel : INotifyPropertyChanged {
+public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable {
     private string _searchText = string.Empty;
     private string _searchType = TypeTextMap.SearchTypes[0];
     private string _statusText = Strings.Ui_Status_Initial;
@@ -483,8 +483,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         ? string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_SummaryClippings, BookCount, ClipCount, DeletedCount)
         : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_SummaryVocab, WordCount, LookupCount);
 
-    public string StatusRight => _deviceStatus;
-
     /// <summary>
     /// 启动流程 —— 严格对齐原 WinForms 版 <c>FrmMain</c> 构造函数里的数据库生命周期:
     /// <list type="number">
@@ -523,13 +521,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         }
 
         try {
-            DatabaseHelper.MigrateSchemaIfNeeded(databasePath);
-            DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
-            // 软删除列 + import_batches 表(就地演进第一步)。必须在 MigrateLookupsSchemaIfNeeded 之后:
-            // 那个旧迁移重建 lookups 时用老的 5 列脚本,会抹掉 deleted_at/origin_batch。
-            DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(databasePath);
-            // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
-            DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
+            // 迁移 / 补索引是**同步**文件 IO:大库上建索引可达秒级。本方法由 MainWindow.OnOpened
+            // 在 **UI 线程**调用,此前这几步在 await OpenDatabaseAsync 之前同步跑,会冻结启动界面。
+            // 放进 Task.Run 后台执行(失败仅告警的语义不变)。
+            // 这几个 DatabaseHelper 方法各自开连接、不共享可变状态,后台执行安全;await 之后
+            // 续体会回到 UI 线程,下面的 MigrationWarning 赋值/通知仍在 UI 线程上。
+            await Task.Run(() => {
+                DatabaseHelper.MigrateSchemaIfNeeded(databasePath);
+                DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
+                // 软删除列 + import_batches 表(就地演进第一步)。必须在 MigrateLookupsSchemaIfNeeded 之后:
+                // 那个旧迁移重建 lookups 时用老的 5 列脚本,会抹掉 deleted_at/origin_batch。
+                DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(databasePath);
+                // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
+                DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
+            });
         } catch (Exception ex) {
             // 原版此处只弹一个警告框,不阻断启动
             MigrationWarning = ex.Message;
@@ -663,7 +668,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     /// <summary>从当前会话重新装载全部数据(打开库 / 导入 / 维护 / 删除后)。须在后台线程调用。</summary>
     private long ReloadFromSession() {
-        var session = _session ?? throw new InvalidOperationException("尚未打开数据库");
+        // 经 Strings 资源取文案:此前硬编码中文,一旦这条异常被 Ui_Status_OpenFailed 格式串
+        // 带进状态栏,英文界面下就会漏出中文。
+        var session = _session ?? throw new InvalidOperationException(Strings.Ui_Status_DatabaseNotOpen);
         var stopwatch = Stopwatch.StartNew();
         _allClippings = session.ClippingRepository.GetAll();
         _allLookups = session.LookupRepository.GetAll();
@@ -711,7 +718,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// </summary>
     private void NotifyCountsChanged() {
         OnPropertyChanged(nameof(StatusLeft));
-        OnPropertyChanged(nameof(StatusRight));
         OnPropertyChanged(nameof(DeletedCount));
     }
 
@@ -1669,7 +1675,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 ? Strings.Ui_Status_DeviceOnline
                 : string.Format(CultureInfo.CurrentCulture, Strings.Ui_Status_DeviceOnlineDrive, drive);
             return (text, true);
-        } catch {
+        } catch (Exception ex) {
+            // 此前是裸 catch{} —— 探测失败(设备被占用 / MTP 会话打不开等)被静默吞掉,
+            // 界面只表现为"未连接",用户与开发者都无从判断成因。至少留一条日志。
+            AppLog.Write($"[ProbeDevice] 设备探测失败:{ex}");
             return (Strings.Ui_Status_DeviceOffline, false);
         }
     }
@@ -2645,4 +2654,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    /// <summary>
+    /// 释放本 VM 持有的托管资源:在飞的在线释义查询(<see cref="_definitionCancellation"/>)
+    /// 与数据库会话。**幂等**。此前的漏洞是 <see cref="_definitionCancellation"/> 从不释放:
+    /// 它只被"下一次查词"取消/替换,窗口关闭后最后那个 CTS 就悬着(连同其注册的定时器)。
+    ///
+    /// 调用方:<c>MainWindow.OnClosed</c>(关窗,以及切语言时重建窗口关闭旧窗)与
+    /// <c>MainWindow.TryRebuildWindow</c>。会话释放复用 <see cref="ReleaseSession"/>。
+    /// </summary>
+    public void Dispose() {
+        _definitionCancellation?.Cancel();
+        _definitionCancellation?.Dispose();
+        _definitionCancellation = null;
+        ReleaseSession();
+    }
 }

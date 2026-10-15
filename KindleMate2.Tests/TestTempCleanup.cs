@@ -43,7 +43,8 @@ internal static class TestTempCleanup {
         "km2-anki-",
         "km2-pubexport-",
         "km2-schema-integrity-tests-",
-        "km2-schema-version-"
+        "km2-schema-version-",
+        "km2-atomic-tests-"
     };
 
     [ModuleInitializer]

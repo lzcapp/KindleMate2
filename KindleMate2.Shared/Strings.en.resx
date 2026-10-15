@@ -690,6 +690,9 @@
   <data name="Ui_Status_OpenFailed_SchemaIncomplete" xml:space="preserve">
     <value>Open failed: the database structure is incomplete. Missing table(s): {0}. Restore from a backup, or use "Rebuild database" to regenerate it.</value>
   </data>
+  <data name="Ui_Status_DatabaseNotOpen" xml:space="preserve">
+    <value>No database is open</value>
+  </data>
   <data name="Ui_Text_ListSeparator" xml:space="preserve">
     <value>, </value>
   </data>

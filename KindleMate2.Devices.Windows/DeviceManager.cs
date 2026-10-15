@@ -72,24 +72,68 @@ public class DeviceManager : IDeviceManager {
 
     private readonly object _lockObj = new object();
 
+    /// <summary>
+    /// 是否有一次昂贵探测(MTP 会 <c>Connect()</c> + <c>DownloadFile</c>,秒级)正在跑。
+    /// 旧实现把整段探测包在 <see cref="_lockObj"/> 里,后果是 UI 状态刷新 / 8 秒轮询 / 防抖回调
+    /// **互相阻塞**在锁上,而且每次都重开一次 MTP 会话。现在探测在锁外执行,并发调用者不排队,
+    /// 直接拿最近一次结果 —— 详见 <see cref="IsKindleConnected"/>。
+    /// </summary>
+    private int _probeInFlight;
+
+    /// <summary>最近一次探测完成的时间(UTC)。用于合并短时间内的重复探测,避免反复开 MTP 会话。</summary>
+    private DateTime _lastProbeUtc = DateTime.MinValue;
+
+    /// <summary>
+    /// 探测结果缓存窗口。窗口内重复调用直接复用上次结果 ——
+    /// 启动时 <c>StartWatching()</c> 与界面首次刷新、以及 WMI 事件抖动,都会在毫秒级内连调数次;
+    /// 没有缓存就是连开数次 MTP 会话(单会话协议,既慢又可能与导入/写回抢设备)。
+    /// 取 1.5 秒:远短于 8 秒轮询与 2.5 秒防抖,不至于让"刚拔了设备"滞后太久。
+    /// </summary>
+    private static readonly TimeSpan ProbeCacheDuration = TimeSpan.FromMilliseconds(1500);
+
     public bool IsKindleConnected() {
+        // ① 已有探测在飞:不排队等待(旧实现的持锁阻塞就在这里),直接给最近一次已知结果。
+        if (Volatile.Read(ref _probeInFlight) != 0) {
+            return IsConnected;
+        }
+
+        // ② 结果还在缓存窗口内:复用,不再开一次 MTP 会话。
         lock (_lockObj) {
-            try {
-                var isConnected = HandleUsbDevice();
-            if (!isConnected) {
-                isConnected = HandleMtpDevice();
+            if (DateTime.UtcNow - _lastProbeUtc < ProbeCacheDuration) {
+                return IsConnected;
             }
+        }
 
-            if (!isConnected) {
-                _driveLetter = string.Empty;
-                _deviceType = Device.Type.Unknown;
-            }
+        // ③ 抢到"本轮唯一探测者"才真正探测;抢不到说明别人刚抢到,用其结果即可。
+        if (Interlocked.CompareExchange(ref _probeInFlight, 1, 0) != 0) {
+            return IsConnected;
+        }
 
-            return isConnected;
-            } catch (Exception ex) {
-                AppLog.Write($"[IsKindleConnected] {ex}");
-                return false;
+        try {
+            // 昂贵探测全部在锁外执行。探测函数只读、不改共享状态;结果在锁内一次性写回。
+            var usbDrive = TryProbeUsbDevice();
+            var connected = usbDrive != null || TryProbeMtpDevice();
+
+            lock (_lockObj) {
+                if (usbDrive != null) {
+                    _driveLetter = usbDrive;
+                    _deviceType = Device.Type.USB;
+                } else if (connected) {
+                    _driveLetter = @"\Internal Storage\";
+                    _deviceType = Device.Type.MTP;
+                } else {
+                    _driveLetter = string.Empty;
+                    _deviceType = Device.Type.Unknown;
+                }
+                _lastProbeUtc = DateTime.UtcNow;
+                return connected;
             }
+        } catch (Exception ex) {
+            // 保持既有语义:探测抛异常时返回 false 且不改动已缓存的状态。
+            AppLog.Write($"[IsKindleConnected] {ex}");
+            return false;
+        } finally {
+            Volatile.Write(ref _probeInFlight, 0);
         }
     }
 
@@ -114,7 +158,7 @@ public class DeviceManager : IDeviceManager {
     /// <summary>
     /// 关于窗口「设备」段的数据源(见 <see cref="IDeviceManager.GetDeviceInfo"/>)。
     /// 不**额外**开新会话:连接与否复用既有探测(与状态栏同源)。注意该探测在没找到 USB 卷时
-    /// 会走 <c>HandleMtpDevice</c>(对 MTP 机型本就 <c>Connect()</c> 一次)—— 这是既有行为,
+    /// 会走 <see cref="TryProbeMtpDevice"/>(对 MTP 机型本就 <c>Connect()</c> 一次)—— 这是既有行为,
     /// 本 getter 不为其单独再开一次;字段只用卷路径/DriveInfo/既有状态。
     /// Windows 的 MTP 分支拿不到固件与容量(<c>_driveLetter</c> 是 <c>\Internal Storage\</c>
     /// 这种非文件系统占位,不是盘符)——字段留 null,UI 隐藏对应行,只显示连接方式一行。
@@ -158,10 +202,14 @@ public class DeviceManager : IDeviceManager {
         ConnectionChanged?.Invoke(IsConnected);
     }
 
-    private bool HandleUsbDevice() {
+    /// <summary>
+    /// 只读探测 USB 大容量存储机型:返回命中卷的盘符(如 <c>D:\</c>),没找到返回 null。
+    /// **不改动任何共享状态** —— 状态由 <see cref="IsKindleConnected"/> 在锁内统一写回,
+    /// 于是探测本身可以安全地在锁外执行。
+    /// </summary>
+    private static string? TryProbeUsbDevice() {
         try {
-            var drives = DriveInfo.GetDrives();
-            foreach (DriveInfo drive in drives) {
+            foreach (DriveInfo drive in DriveInfo.GetDrives()) {
                 if (drive.DriveType != DriveType.Removable) {
                     continue;
                 }
@@ -173,19 +221,20 @@ public class DeviceManager : IDeviceManager {
                 if (!File.Exists(clippingsPath)) {
                     continue;
                 }
-
-                _driveLetter = drive.Name;
-                _deviceType = Device.Type.USB;
-                return true;
+                return drive.Name;
             }
-            return false;
+            return null;
         } catch (Exception e) {
             AppLog.Write(e);
-            return false;
+            return null;
         }
     }
 
-    private bool HandleMtpDevice() {
+    /// <summary>
+    /// 探测 MTP 机型:开一次会话读 <c>system/version.txt</c> 以确认设备可用。
+    /// **昂贵**(<c>Connect()</c> + <c>DownloadFile</c>),但同样不改动共享状态,可在锁外执行。
+    /// </summary>
+    private static bool TryProbeMtpDevice() {
         try {
             var device = FindKindleDevice();
             if (device == null) {
@@ -194,8 +243,9 @@ public class DeviceManager : IDeviceManager {
 
             try {
                 device.Connect();
-                _driveLetter = @"\Internal Storage\";
-                MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(Path.Combine(_driveLetter, AppConstants.SystemPathName));
+                const string internalStorage = @"\Internal Storage\";
+                MediaDirectoryInfo? systemDir = device.GetDirectoryInfo(
+                    Path.Combine(internalStorage, AppConstants.SystemPathName));
                 var files = systemDir.EnumerateFiles(AppConstants.VersionFileName);
                 var mediaFileInfos = files as MediaFileInfo[] ?? files.ToArray();
                 if (mediaFileInfos.Length == 0) {
@@ -207,14 +257,9 @@ public class DeviceManager : IDeviceManager {
                 memoryStream.Position = 0;
                 using var reader = new StreamReader(memoryStream, leaveOpen: true);
                 reader.ReadToEnd(); // Version read for validation only
-                _deviceType = Device.Type.MTP;
                 return true;
             } catch (Exception e) {
                 AppLog.Write(e);
-                // Reset partial state if _driveLetter was set before failure
-                if (string.Equals(_driveLetter, @"\Internal Storage\", StringComparison.Ordinal)) {
-                    _driveLetter = string.Empty;
-                }
                 return false;
             } finally {
                 try { device.Disconnect(); } catch { /* best effort */ }

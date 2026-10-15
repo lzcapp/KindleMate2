@@ -96,6 +96,8 @@ graph TD
 - Windows 专有程序集是 `KindleMate2.Devices.Windows`（USB 盘符枚举、MTP(MediaDevices)、WMI 事件监听，`net10.0-windows`，依赖 `MediaDevices` + `System.Management`）。
 - macOS / Linux 的设备实现是纯 BCL 的 `KindleMate2.Devices.Posix`（`net10.0`：libmtp 的 P/Invoke 绑定、libusb 只读 USB 探测、卷扫描），由两个薄壳 `Devices.MacOS` / `Devices.Linux` 注入各自的候选挂载根；因此这两个程序集可在**任意平台**编译与单测（用例把卷根指到临时目录）。
 - `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
+- **探测不得持锁执行昂贵操作**：Windows 的 `IsKindleConnected()` 里 MTP 探测要 `Connect()` + `DownloadFile`（秒级），此前整段包在锁内会让 UI 状态刷新 / 8 秒轮询 / 防抖回调互相阻塞、并反复重开会话。现在探测函数只读、**在锁外执行**，结果在锁内一次性写回，并用「在飞标志 + 1.5 秒结果缓存」合并重复调用。POSIX 侧探测是 libusb **只读**枚举（绝不开 MTP 会话，见其注释），足够廉价，仍在锁内执行。
+- 设备轮询（`MainWindow` 的 8 秒 `DispatcherTimer`）自带 **`Interlocked` 互斥**：上一轮探测未结束就跳过本轮，不排队、不阻塞 UI 线程；探测异常一律记 `AppLog`，不静默。
 - **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
 - Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
 
@@ -141,6 +143,9 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
    本迁移按 `PRAGMA table_info` 探测列是否存在，故对新库、老库、半迁移库都幂等）；
    最后 `DatabaseHelper.EnsureIndexesIfNeeded()` 幂等补齐查询索引（`clippings` 复合索引、
    `vocab.word_key`），失败同样仅告警。索引 SQL 同源于 `GetIndexScripts()`。
+   **这几步在 `Task.Run` 后台线程执行**：它们是同步文件 IO，大库建索引可达秒级，而
+   `PrepareDatabaseAsync()` 由 `MainWindow.OnOpened` 在 UI 线程调用 —— 同步跑会冻结启动界面。
+   各方法各自开连接、无共享可变状态，后台执行安全；失败仅告警的语义不变。
    **迁移后置条件验证**：`DatabaseHelper.NeedsSoftDeleteColumns()` 确认软删两列真的补上了 ——
    表在、列缺 = 迁移失败，按 **Fatal 拒绝打开**（错误框 + 退出；修复磁盘 / 占用后重启即恢复，
    迁移按列探测幂等，重跑安全）。原因：半迁移库「读得写不得」（读路径按 `HasColumn` 分支，
@@ -215,6 +220,10 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
   `Strings.zh-hant.resx`、`Strings.en.resx`。
 - `Strings.Designer.cs` 由 `ResXFileCodeGenerator` 生成，新增键需**手工补**强类型属性；
   若在 VS 中重新生成该文件，手工增删会被覆盖 —— `.resx` 才是权威来源。
+- **本地化串集合不得缓存在 `static` 字段里**（如 `TypeTextMap.SearchTypes`）。静态字段只在
+  **首次访问**时求值一次，会把当时的语言固化下来；切语言走的是"重建窗口让 XAML 重新求值"，
+  但 C# 静态字段不会随之重算 ⇒ 下拉框永远停在旧语言。凡是要按当前文化取值的列表，一律
+  写成**每次读取现算**的属性/方法。
 - 清理死键：UI 重构后容易残留"定义了但没人引用"的键。**不要靠肉眼扫** —— 键有两种引用
   写法（`Strings.Ui_X` 与字面量 `"Ui_X"`），漏掉后者会误删在用的键。建议写脚本审计：
   从 `Strings.Designer.cs` 取键清单，扫描 Shared 目录**之外**的全部源码判定引用，
