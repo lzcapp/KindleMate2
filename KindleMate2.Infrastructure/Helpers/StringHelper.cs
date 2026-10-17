@@ -1,4 +1,4 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 using System.Runtime.InteropServices;
@@ -437,22 +437,33 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </summary>
         /// <remarks>
         /// <para>
-        /// 修的缺陷:正文原样写入时,行首的 <c>#</c> 会被 Markdig 渲染成一个标题、任意位置的 <c>|</c>
-        /// 会拆掉表格、裸 <c>&lt;tag&gt;</c> 会被当成 HTML 原样透传 —— 导出的排版因此取决于标注内容本身。
-        /// 本方法把这几点转义成字面量(其中 <c>|</c> 与 Obsidian 导出对表格单元格的
-        /// 处理(<c>ObsidianExportWriter.EscapeTableCell</c>)同一写法),让 Markdown / HTML 导出与
-        /// Obsidian 导出口径一致。
+        /// 修的缺陷:正文原样写入时,行首的 <c>#</c> 会被 Markdig 渲染成一个标题、行首 <c>[1]: url</c>
+        /// 会被当成链接引用定义而整行消失、任意位置的 <c>|</c> 会拆掉表格、裸 <c>&lt;tag&gt;</c>
+        /// 会被当成 HTML 原样透传 —— 导出的排版因此取决于标注内容本身。本方法把这几点转义成字面量
+        /// (其中 <c>|</c> 的写法与 Obsidian 导出对**表格单元格**的处理
+        /// (<c>ObsidianExportWriter.EscapeTableCell</c>)一致;Obsidian 的正文本身仍未转义,见
+        /// <see cref="BuildMarkdownWithLookups"/> 的说明)。
         /// </para>
         /// <para>
         /// 刻意**只**转义会引发结构变化的字符,不做"全 ASCII 标点转义"(那会把普通标点也写成
         /// <c>\,</c> <c>\.</c> 之类,可读性尽失):
         /// <list type="bullet">
-        /// <item>行首(允许至多 3 个前导空格)的块级标记:<c>#</c> <c>&gt;</c> <c>-</c> <c>+</c>
-        ///   <c>*</c> <c>_</c> <c>=</c> <c>~</c> <c>`</c>,以及有序列表标记 <c>1.</c> / <c>1)</c>;</item>
+        /// <item>行首(至多 3 个前导空格,CommonMark 的块级标记缩进上限)的块级标记:<c>#</c>
+        ///   <c>&gt;</c> <c>-</c> <c>+</c> <c>*</c> <c>_</c> <c>=</c> <c>~</c> <c>`</c>;</item>
+        /// <item>行首的有序列表:数字原样保留、只转义分隔符(<c>1\.</c> / <c>12\)</c>) ——
+        ///   反斜杠转义只对 ASCII 标点有效,转义数字(<c>\1.</c>)会把反斜杠本身渲染出来;</item>
+        /// <item>行首的链接引用定义(<c>[1]: url</c>):转义开头的 <c>[</c>,否则整行会被 Markdig 当定义
+        ///   吃掉、完全不渲染;</item>
         /// <item>任意位置的行内标记:<c>|</c>(表格)、<c>&lt;</c>(裸 HTML)、<c>\</c>(转义前缀)、
         ///   <c>`</c>(行内代码)。</item>
         /// </list>
         /// 换行原样保留(正文的段落结构不该被压掉)。
+        /// </para>
+        /// <para>
+        /// **已知限制**:4 个及以上前导空格的行是 CommonMark 的缩进代码块,代码块内反斜杠**不生效**,
+        /// 行内转义(<c>\</c> <c>\|</c> <c>\&lt;</c> <c>\`</c>)在那种行里会原样显示反斜杠。正文里的
+        /// 缩进代码块极少见(标注正文通常从行首开始),这里不做"逐行判断是否处于代码块内"的上下文分析,
+        /// 以免引入状态机;块级标记判定已限制在 ≤3 个前导空格,至少不会在代码块里额外转义 <c>#</c> 等。
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="content"/> 为 null 时抛出。</exception>
@@ -477,7 +488,8 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         /// <summary>转义单行并追加到 <paramref name="sb"/>(见 <see cref="EscapeMarkdownContent"/>)。</summary>
         private static void AppendEscapedMarkdownLine(StringBuilder sb, string line) {
-            // 前导空格原样保留:CommonMark 允许块级标记前有至多 3 个空格,故仍要判块级。
+            // 前导空格原样保留:CommonMark 允许块级标记前有**至多 3 个**空格;4 个以上就是缩进代码块,
+            // 块内反斜杠不生效(转义反而会显示反斜杠,见 EscapeMarkdownContent 的已知限制说明)。
             var start = 0;
             while (start < line.Length && line[start] == ' ') {
                 start++;
@@ -487,10 +499,24 @@ namespace KindleMate2.Infrastructure.Helpers {
             }
 
             var i = start;
-            if (i < line.Length && IsMarkdownBlockMarker(line, i)) {
-                // 先单独转义首字符再跳过:否则它会在下面的行内分支里被**二次**转义(如行首的 '`')。
-                sb.Append('\\').Append(line[i]);
-                i++;
+            if (start <= 3 && i < line.Length) {
+                var delimiter = FindOrderedListDelimiter(line, i);
+                if (delimiter >= 0) {
+                    // 有序列表:数字原样输出、**只转义分隔符**("1\." / "12\)")。
+                    // 不能转义首位数字:"\1" 不是 CommonMark 转义(反斜杠只对 ASCII 标点生效),
+                    // 会把反斜杠原样渲染出来(2026-10 审阅实测)。
+                    sb.Append(line, i, delimiter - i);
+                    sb.Append('\\').Append(line[delimiter]);
+                    i = delimiter + 1;
+                } else if (IsMarkdownBlockMarker(line, i)) {
+                    // 先单独转义首字符再跳过:否则它会在下面的行内分支里被**二次**转义(如行首的 '`')。
+                    sb.Append('\\').Append(line[i]);
+                    i++;
+                } else if (IsLinkReferenceDefinition(line, i)) {
+                    // 行首 "[1]: url" 会被解析成链接引用定义,整行不出现在渲染结果里 —— 转义开头的 '['。
+                    sb.Append("\\[");
+                    i++;
+                }
             }
             for (; i < line.Length; i++) {
                 switch (line[i]) {
@@ -508,7 +534,8 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </summary>
         /// <remarks>
         /// 只判块级:行内 <c>*</c> / <c>_</c> 等不在其中(它们不改变文档结构,转义反而让正常正文变丑)。
-        /// 有序列表按 CommonMark:1–9 位数字 + <c>.</c> 或 <c>)</c> + 空白 / 行尾。
+        /// 有序列表按 CommonMark:1–9 位数字 + <c>.</c> 或 <c>)</c> + 空白 / 行尾;转义由调用方
+        /// 改为"数字原样 + 只转义分隔符",见 <see cref="FindOrderedListDelimiter"/>。
         /// </remarks>
         private static bool IsMarkdownBlockMarker(string line, int index) {
             switch (line[index]) {
@@ -523,20 +550,46 @@ namespace KindleMate2.Infrastructure.Helpers {
                 case '`':
                     return true;
                 default:
-                    if (!char.IsAsciiDigit(line[index])) {
-                        return false;
-                    }
-                    var i = index;
-                    while (i < line.Length && char.IsAsciiDigit(line[i])) {
-                        i++;
-                    }
-                    if (i - index > 9 || i >= line.Length || (line[i] != '.' && line[i] != ')')) {
-                        return false;
-                    }
-                    var after = i + 1;
-                    return after >= line.Length || line[after] == ' ' || line[after] == '\t' || line[after] == '\r';
+                    return FindOrderedListDelimiter(line, index) >= 0;
             }
         }
+
+        /// <summary>
+        /// 若 <paramref name="line"/> 从 <paramref name="index"/> 起是 CommonMark 有序列表标记,
+        /// 返回**分隔符**(<c>.</c> 或 <c>)</c>)的下标;否则返回 -1。
+        /// </summary>
+        /// <remarks>
+        /// 规则:1–9 位 ASCII 数字 + <c>.</c>/<c>)</c> + 空白、<c>\r</c> 或行尾。
+        /// 返回分隔符位置是为了只转义它(<c>1\.</c>):反斜杠转义对数字无效,转义数字会显示反斜杠。
+        /// </remarks>
+        private static int FindOrderedListDelimiter(string line, int index) {
+            if (!char.IsAsciiDigit(line[index])) {
+                return -1;
+            }
+            var i = index;
+            while (i < line.Length && char.IsAsciiDigit(line[i])) {
+                i++;
+            }
+            if (i - index > 9 || i >= line.Length || (line[i] != '.' && line[i] != ')')) {
+                return -1;
+            }
+            var after = i + 1;
+            return after >= line.Length || line[after] == ' ' || line[after] == '\t' || line[after] == '\r'
+                ? i
+                : -1;
+        }
+
+        /// <summary>
+        /// <paramref name="line"/> 从 <paramref name="index"/> 起是否像一个**链接引用定义**行
+        /// (<c>[label]: destination</c>)。
+        /// </summary>
+        /// <remarks>
+        /// 只做"够用"的近似:以 <c>[</c> 开头且本行后面出现 <c>]:</c> 即认为会被解析成定义。
+        /// 转义开头的 <c>[</c> 即可让它降级为普通文本(不会再有整行被吞掉的问题)。
+        /// </remarks>
+        private static bool IsLinkReferenceDefinition(string line, int index) =>
+            line[index] == '[' &&
+            line.IndexOf("]:", index, StringComparison.Ordinal) > index;
 
         /// <summary>
         /// Builds markdown content from a list of clippings for a specific book.
@@ -575,8 +628,8 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                     markdown.AppendLine("**" + clippingLocation + "**");
                     markdown.AppendLine();
-                    // 正文转义成 Markdown 字面量:否则行首 '#' / 任意 '|' / 裸 HTML 会让导出排版
-                    // 取决于标注内容(与 Obsidian 导出对 '|' 的转义口径一致)。
+                    // 正文转义成 Markdown 字面量:否则行首 '#' / 行首链接引用定义 / 任意 '|' / 裸 HTML
+                    // 会让导出排版取决于标注内容(其中 '|' 的写法与 Obsidian 表格单元格一致)。
                     markdown.AppendLine(EscapeMarkdownContent(content));
                     markdown.AppendLine();
                 }
@@ -593,6 +646,14 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </summary>
         /// <param name="lookups">List of lookups to process</param>
         /// <returns>StringBuilder containing the formatted markdown</returns>
+        /// <remarks>
+        /// **usage 正文刻意不套 <see cref="EscapeMarkdownContent"/>**(本方法会先往 usage 正文里注入
+        /// <c>**`word`**</c> 高亮,若先整串转义,含 <c>|</c> <c>&lt;</c> <c>\</c> <c>`</c> 的词会匹配不到、
+        /// 丢高亮;若在注入后再整串转义,注入的标记本身又会被转义掉)。代价是 usage 里若出现行首
+        /// <c>#</c> / <c>|</c> / 裸 HTML 等,仍可能影响渲染 —— 属已知限制,留待后续用"分段转义 + 注入
+        /// 高亮"的方式跟进(2026-10 审阅记录)。标注正文走 <see cref="BuildMarkdownWithClippings"/>,
+        /// 那里**已**转义。
+        /// </remarks>
         /// <exception cref="ArgumentNullException">Thrown when lookups is null</exception>
         public static StringBuilder BuildMarkdownWithLookups(List<Lookup> lookups) {
             ArgumentNullException.ThrowIfNull(lookups);

@@ -1,4 +1,4 @@
-﻿using KindleMate2.Application.Services;
+using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -141,7 +141,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 
-            // 整路径长度守卫(与标注侧一致):按最长扩展名 .html 留预算,.md / .html 共用同一基名。
+            // 整路径长度兜底:按词导出时文件名已由 ExportFileNameAllocator 按同一预算(最长扩展名
+            // .html)截断;这里再算一次是为了**导出全部**分支的固定名(Vocabs)。
             filename = StringHelper.TruncateFileNameToFitPath(filePath, filename, FileExtension.HTML);
             if (filename.Length == 0) {
                 return false;
@@ -151,7 +152,8 @@ namespace KindleMate2.Application.Services.KM2DB {
                 Directory.CreateDirectory(filePath);
             }
 
-            // 一律 UTF-8 **无 BOM**(与 Obsidian / JSON 及标注侧 Markdown 导出同口径)。
+            // 一律 UTF-8 **无 BOM**(与 Obsidian / JSON 及标注侧 Markdown 导出同口径;.md 与 .html 都不带,
+            // 2026-10 审阅补齐 —— 原来只改了 .md,同一批产物编码不一致)。
             var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), utf8NoBom);
 
@@ -160,7 +162,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
             htmlContent += AppConstants.HtmlEnd;
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, utf8NoBom);
 
             File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
 

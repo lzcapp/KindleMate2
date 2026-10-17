@@ -161,6 +161,10 @@ jobs:
           test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 7
           # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑥ 删除查询行后必须重算词频(vocab.frequency 是落库值,统计页读它)。
+          #    三处 = 删除单条查询 / 删除整个词(连带删该键全部查询)/ 生词重命名·并入;
+          #    删掉任一处都不会有单测变红(单测工程不引 Avalonia,够不着 VM),故在这里钉数量。
+          test "$(grep -c 'session.Km2DatabaseService.UpdateFrequency();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)

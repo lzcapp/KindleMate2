@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
@@ -152,8 +152,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
             }
 
-            // 整路径长度守卫:文件名已按单段上限净化,但"目录 + 文件名 + 扩展名"叠加后仍可能超长
-            // (导出目录常较深)。按最长扩展名(.html,与 .md 同基名)留出预算,两个产物共用同一名字。
+            // 整路径长度兜底:按书导出时文件名已由 ExportFileNameAllocator 按同一预算(最长扩展名
+            // .html)截断;这里再算一次是为了**导出全部**分支的固定名(Clippings)——
+            // .md / .html 共用同一基名,故统一按 .html 留预算。剩余预算 < 1 字节时返回空串,
+            // 由调用方提示"无内容可导出"(极端深的导出目录才会触发)。
             filename = StringHelper.TruncateFileNameToFitPath(filePath, filename, FileExtension.HTML);
             if (filename.Length == 0) {
                 // 目录本身已吃掉全部预算:连一个字符的文件名都放不下,不写退化名,直接判失败。
@@ -166,6 +168,7 @@ namespace KindleMate2.Application.Services.KM2DB {
 
             // 一律 UTF-8 **无 BOM**:与 Obsidian(ObsidianExportWriter)、JSON(ExportManager.WriteJson)
             // 及本程序其它数据文件口径一致。BOM 会让部分 Markdown 工具把开头的 U+FEFF 当正文渲染。
+            // .md 与 .html 都不带 BOM(2026-10 审阅补齐 —— 原 PR 只改了 .md,同一批产物编码不一致)。
             var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), utf8NoBom);
 
@@ -174,7 +177,7 @@ namespace KindleMate2.Application.Services.KM2DB {
             htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
             htmlContent += AppConstants.HtmlEnd;
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, utf8NoBom);
 
             File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
 
