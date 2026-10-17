@@ -1,4 +1,4 @@
-﻿using KindleMate2.Shared.Constants;
+using KindleMate2.Shared.Constants;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 
@@ -431,15 +431,21 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <item>目标目录必须已存在,否则报 <c>unable to open database</c>。</item>
         /// </list>
         ///
-        /// 并发:写入方持有独占锁时 VACUUM 会 SQLITE_BUSY,等待窗口由**连接上的命令超时**决定
-        /// (见 <see cref="BuildConnectionString"/> 统一设置的 <c>Default Timeout</c>;实测 SQLite 层的
-        /// <c>PRAGMA busy_timeout</c> 管不住它)。但**长时间导入/清理过程中仍可能超时失败** ——
+        /// 并发:写入方持有独占锁时 VACUUM 会 SQLITE_BUSY。**总等待窗口由连接上的命令超时决定**
+        /// (见 <see cref="BuildConnectionString"/> 统一设置的 <c>Default Timeout</c>;Microsoft.Data.Sqlite
+        /// 的托管层按 <c>CommandTimeout</c> 重试)。SQLite 层的 <c>PRAGMA busy_timeout</c>
+        /// (即 <paramref name="busyTimeoutMs"/>)只决定**单次**内部等待的长短,管不住总窗口 ——
+        /// 把它设小并不会让这里更早失败。但**长时间导入/清理过程中仍可能超时失败** ——
         /// 调用方应在 UI 层避免与这些操作并发触发,不要只依赖这里的等待。
         /// </remarks>
         /// <param name="sourcePath">源数据库文件路径</param>
         /// <param name="destPath">快照输出路径;父目录必须已存在</param>
         /// <param name="overwrite">目标已存在时是否先删除。默认 false(抛错),避免静默覆盖</param>
-        /// <param name="busyTimeoutMs">等待写事务释放锁的毫秒数;0 表示立即失败</param>
+        /// <param name="busyTimeoutMs">
+        /// SQLite 层 <c>PRAGMA busy_timeout</c> 的毫秒数(单次锁等待);<c>0</c> 表示关闭 SQLite 内部的
+        /// busy handler。**注意**:总等待窗口由连接的命令超时(<c>Default Timeout</c> = 30s)决定,
+        /// 本参数设小不会让调用更早失败(托管层仍会重试到命令超时)。
+        /// </param>
         /// <exception cref="ArgumentNullException">参数为 null</exception>
         /// <exception cref="ArgumentException">参数为空或空白</exception>
         /// <exception cref="FileNotFoundException">源数据库文件不存在</exception>
@@ -1150,8 +1156,7 @@ namespace KindleMate2.Infrastructure.Helpers {
 
         /// <summary>
         /// 批量插入「逐条降级」兜底时,判定某条失败是否可以安全跳过:
-        /// **只有 SQLite 约束冲突**(<c>SQLITE_CONSTRAINT = 19</c>,含重复主键 / 唯一约束撞车,
-        /// 以及 <c>19 | (n &lt;&lt; 8)</c> 形式的扩展码)算可跳过。
+        /// **只有 SQLite 约束冲突**(<c>SQLITE_CONSTRAINT = 19</c>,含重复主键 / 唯一约束撞车)算可跳过。
         /// </summary>
         /// <remarks>
         /// 旧实现把**任意** <see cref="InvalidOperationException"/> 也当可跳过,范围过宽 ——
@@ -1162,22 +1167,29 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// <item>磁盘满(<c>SQLITE_FULL</c>)、库被锁(<c>SQLITE_BUSY</c>)、I/O / 损坏等系统性问题
         /// 一律 <c>false</c> —— 必须向上抛,绝不能伪装成「导入成功、只是少了几条」。</item>
         /// </list>
-        /// 按主码 <c>code &amp; 0xFF</c> 判定,故扩展错误码(如 <c>SQLITE_CONSTRAINT_UNIQUE</c>)也能命中。
+        /// 判定取 <c>code &amp; 0xFF</c>:正常路径下 <see cref="SqliteException.SqliteErrorCode"/> 就是主码
+        /// (19);掩码只是**防御性**地容忍某些来源把扩展码(如 <c>SQLITE_CONSTRAINT_UNIQUE</c>)放进该
+        /// 属性,不必据此认为修好了真实漏判。
         /// </remarks>
         public static bool IsSkippableInsertFailure(Exception ex) {
             return ex is SqliteException { SqliteErrorCode: var code } && (code & 0xFF) == 19;
         }
 
         /// <summary>
-        /// 容错读取整数列:NULL → <c>null</c>;非 NULL 但**不是整数**(如历史库里把数值存成 TEXT,
-        /// 或存了非数字文本)时也**不抛异常**,而是按 <see cref="long.TryParse(string, out long)"/>/
-        /// <see cref="int.TryParse(string, out int)"/> 兜底为 <c>null</c>。
+        /// 容错读取整数列:NULL → <c>null</c>;非 NULL 但**不是整数**(如历史库把数值存成 TEXT、
+        /// 存了非数字文本或 REAL)时也返回 <c>null</c>,而不是让调用方拿到一个静默转换出来的值。
         /// </summary>
         /// <remarks>
-        /// 旧实现直接 <c>reader.GetInt32/GetInt64</c>:SQLite 列是动态类型,历史列里若混入 TEXT
-        /// 会抛 <c>InvalidCastException</c> 把整条读取打死。防御口径与 <c>KmateSourceReader.ParseLong/ParseInt</c>
-        /// 一致(那边早就是 <c>Convert.ToString + TryParse</c>),这里补齐,让 KM2DB 仓储同样不会因
-        /// 脏值整表读不出来。
+        /// 旧实现直接 <c>reader.GetInt32/GetInt64</c>。对本项目依赖的 Microsoft.Data.Sqlite,
+        /// 这两个 API 最终调到 <c>sqlite3_column_int64</c>,**不会**对 TEXT/REAL 抛
+        /// <c>InvalidCastException</c> —— 它会静默转换(<c>'abc'</c>→0、<c>'3.5'</c>/REAL 3.5→3)。
+        /// 真正的失败模式是:
+        /// <list type="bullet">
+        /// <item>脏值被静默当成 0,与"缺值"不可区分,读路径无从发现;</item>
+        /// <item><c>GetInt32</c> 对超出 int32 范围的值抛 <c>OverflowException</c>,整条读取被打死。</item>
+        /// </list>
+        /// 现在改为 <c>Convert.ToString + TryParse</c> 兜底为 <c>null</c>,由实体 setter 决定默认值;
+        /// 口径与 <c>KmateSourceReader.ParseLong/ParseInt</c> 一致(那边早已如此)。
         /// </remarks>
         public static int? GetSafeInt(SqliteDataReader reader, int ordinal) {
             if (reader.IsDBNull(ordinal)) {

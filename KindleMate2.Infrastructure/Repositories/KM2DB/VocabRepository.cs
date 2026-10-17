@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -180,6 +180,15 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         /// 与 UNIQUE 冲突的行(含 tombstone)静默跳过 —— 不再靠"应用层 HashSet 现读活表",
         /// 那正是"删过再导被复活"的根源。快路径会因**数据非法**(<c>id</c>/<c>word</c> 为空,
         /// <c>AddParameters</c> 里 <c>?? throw</c>)整批回滚,故补上逐条降级兜底。
+        /// <para>
+        /// **代价**:逐条阶段每条各自提交,中途遇到非可跳过的系统性失败(磁盘满 / 只读 / IO 错)时,
+        /// 已提交的行不会回滚 —— 调用方仍会收到异常,但库内可能留下"部分导入"的结果(与 clippings
+        /// 的既有语义一致,重跑导入靠主键幂等)。
+        /// </para>
+        /// <para>
+        /// 逐条循环里的 <c>when(IsSkippableInsertFailure)</c> 目前基本不可达(逐条 INSERT 带
+        /// <c>OR IGNORE</c>,约束冲突不会抛;数据非法行已被显式跳过),保留作对称防御。
+        /// </para>
         /// </remarks>
         public int Add(List<Vocab> vocabs) {
             using var connection = new SqliteConnection(connectionString);
@@ -219,6 +228,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     }
                     rowTransaction.Commit();
                 } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
+                    // 防御性:OR IGNORE 下约束冲突本不会抛;保留以便将来去掉 OR IGNORE 时仍不吞坏数据。
                     try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }

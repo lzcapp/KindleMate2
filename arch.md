@@ -152,6 +152,7 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
    免得把「结构损坏」误诊成「迁移失败」。
    连接串统一由 `DatabaseHelper.BuildConnectionString()` 构造，并**显式**带上 `Default Timeout`
    （命令超时 → 锁竞争时的等待窗口），集中一处以免各调用点漂移。
+   （例外：Anki 导出写临时 `.anki2` 库时自建连接串并 `Pooling=false`，见 `AnkiApkgWriter`。）
 3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份到
    `Backups/OnExit/`，随后 `DatabaseHelper.PruneBackups()` 只保留最新 3 份。
 

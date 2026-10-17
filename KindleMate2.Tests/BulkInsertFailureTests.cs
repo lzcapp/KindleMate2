@@ -23,9 +23,9 @@ public sealed class BulkInsertFailureTests : IDisposable {
     }
 
     [Theory]
-    [InlineData(19, true)]   // SQLITE_CONSTRAINT —— 重复 key
-    [InlineData(2067, true)] // SQLITE_CONSTRAINT_UNIQUE(19 | 8<<8)—— 扩展码也应命中
-    [InlineData(1555, true)] // SQLITE_CONSTRAINT_PRIMARYKEY(19 | 6<<8)
+    [InlineData(19, true)]   // SQLITE_CONSTRAINT —— 重复 key(真实异常的 SqliteErrorCode 一般就是主码)
+    [InlineData(2067, true)] // SQLITE_CONSTRAINT_UNIQUE(19 | 8<<8)—— 防御性:容忍扩展码混进该属性
+    [InlineData(1555, true)] // SQLITE_CONSTRAINT_PRIMARYKEY(19 | 6<<8)—— 同上
     [InlineData(5, false)]   // SQLITE_BUSY —— 库被锁,不得吞
     [InlineData(13, false)]  // SQLITE_FULL —— 磁盘满,不得吞
     [InlineData(10, false)]  // SQLITE_IOERR
@@ -122,5 +122,54 @@ public sealed class BulkInsertFailureTests : IDisposable {
         Assert.Equal(1, inserted);
         Assert.Equal("apple", repo.GetById("v1")!.Word); // 冲突项未覆盖既有行
         Assert.NotNull(repo.GetById("v2"));
+    }
+
+    // ——————————————————— 系统性失败必须向上抛(两段式降级的核心承诺) ———————————————————
+
+    /// <summary>
+    /// 制造一个**确定性的非约束失败**用于验证"不吞系统性故障":把目标表删掉,后续 INSERT 会抛
+    /// SQLITE_ERROR(1) —— 真实世界的对应物是磁盘满 / 只读库 / IO 错,它们同样不在可跳过集合里。
+    /// (不用"只读库文件"模拟:同进程内 Microsoft.Data.Sqlite 的连接池会保留可写句柄,
+    /// Windows 上只读属性对已池化路径无效,那样写出来的用例会假绿。)
+    /// </summary>
+    private static void DropTable(string dbPath, string table) {
+        using var conn = new SqliteConnection(DatabaseHelper.GetConnectionString(dbPath));
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"DROP TABLE [{table}];";
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// lookups 批量插入遇到非可跳过失败时必须抛出来,不能吞成"导入成功、只少几条"。
+    /// 快路径整批失败后进入逐条降级,降级循环的第一条仍失败 → 因不在可跳过集合内而向上抛。
+    /// </summary>
+    [Fact]
+    public void LookupBatchAdd_SystemicFailure_PropagatesInsteadOfBeingSwallowed() {
+        var path = Path.Combine(_dir, "lookup-failure.db");
+        Assert.True(DatabaseHelper.CreateDatabase(path, out var ex), ex.Message);
+        DropTable(path, "lookups");
+        var repo = new LookupRepository(DatabaseHelper.GetConnectionString(path));
+
+        var thrown = Assert.Throws<SqliteException>(() => repo.Add(new List<Lookup> {
+            new() { WordKey = "en:apple", Timestamp = "2026-01-01 10:00:00" }
+        }));
+        Assert.False(DatabaseHelper.IsSkippableInsertFailure(thrown),
+            "系统性失败(SQLite 错误 " + thrown.SqliteErrorCode + ")不得被当作可跳过");
+    }
+
+    /// <summary>vocab 批量插入的同一承诺:非可跳过的系统性失败必须向上抛。</summary>
+    [Fact]
+    public void VocabBatchAdd_SystemicFailure_PropagatesInsteadOfBeingSwallowed() {
+        var path = Path.Combine(_dir, "vocab-failure.db");
+        Assert.True(DatabaseHelper.CreateDatabase(path, out var ex), ex.Message);
+        DropTable(path, "vocab");
+        var repo = new VocabRepository(DatabaseHelper.GetConnectionString(path));
+
+        var thrown = Assert.Throws<SqliteException>(() => repo.Add(new List<Vocab> {
+            new() { Id = "v1", Word = "apple", WordKey = "en:apple" }
+        }));
+        Assert.False(DatabaseHelper.IsSkippableInsertFailure(thrown),
+            "系统性失败(SQLite 错误 " + thrown.SqliteErrorCode + ")不得被当作可跳过");
     }
 }

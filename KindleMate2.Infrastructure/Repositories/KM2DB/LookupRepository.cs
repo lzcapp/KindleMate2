@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -226,6 +226,16 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         /// (已删行不在活表里,那套判重会把删过的记录重新插回来)。
         /// 快路径会因**数据非法**(如 word_key 为空,<c>AddParameters</c> 里 <c>?? throw</c>)
         /// 整批回滚,故补上与 clippings 对称的逐条降级兜底。
+        /// <para>
+        /// **代价**:逐条阶段每条各自提交,中途遇到非可跳过的系统性失败(磁盘满 / 只读 / IO 错)时,
+        /// 已提交的行不会回滚 —— 调用方仍会收到异常,但库内可能留下"部分导入"的结果。这与 clippings
+        /// 的既有语义一致(只少几条),重跑导入靠唯一约束幂等。
+        /// </para>
+        /// <para>
+        /// 逐条循环里的 <c>when(IsSkippableInsertFailure)</c> 目前基本不可达(逐条 INSERT 带
+        /// <c>OR IGNORE</c>,约束冲突不会抛;数据非法行已被显式跳过),保留它是为了与 clippings
+        /// 对称,并在将来去掉 <c>OR IGNORE</c> 时仍不至于把坏数据当成功。
+        /// </para>
         /// </remarks>
         public int Add(List<Lookup> lookups) {
             using var connection = new SqliteConnection(connectionString);
@@ -265,6 +275,7 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
                     }
                     rowTransaction.Commit();
                 } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
+                    // 防御性:OR IGNORE 下约束冲突本不会抛;保留以便将来去掉 OR IGNORE 时仍不吞坏数据。
                     try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
             }
