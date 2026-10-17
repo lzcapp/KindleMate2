@@ -177,6 +177,9 @@ jobs:
           #    三处 = 删除单条查询 / 删除整个词(连带删该键全部查询)/ 生词重命名·并入;
           #    删掉任一处都不会有单测变红(单测工程不引 Avalonia,够不着 VM),故在这里钉数量。
           test "$(grep -c 'session.Km2DatabaseService.UpdateFrequency();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑧ 更新下载前必须先做「可执行文件名守卫」的快速失败(非安装形态不该白下载一整包)。
+          #    ApplyAndRestart 内还会再校验一次,但那条在下载之后 —— 删掉这行不会有单测变红(VM 够不着)。
+          grep -q 'UpdateInstaller.EnsureInstalledLayout(executable)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)
