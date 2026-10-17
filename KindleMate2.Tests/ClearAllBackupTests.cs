@@ -11,14 +11,15 @@ namespace KindleMate2.Tests;
 /// 「清空全部数据」动手前落下的那份**保底备份**,必须是一份**可被 SQLite 正常打开、内容完整**的快照。
 ///
 /// 回归背景:<c>MainWindowViewModel.ClearAllDataAsync</c> 此前用裸 <c>File.Copy</c> 复制库文件。
-/// 而 <c>DatabaseHelper.CreateConsistentSnapshot</c> 的文档(<c>DatabaseHelper.cs:291-307</c>)已经论证过:
+/// 而 <c>DatabaseHelper.CreateConsistentSnapshot</c> 的 remarks(为什么不用 File.Copy)已经论证过:
 /// 直接复制库文件会在 rollback journal 下**静默**产出部分改写的文件(实测 3272 / 应 11001 行)、
 /// 在 WAL 下丢掉最近提交 —— 也就是说,备份"看起来成功了",却在真正要恢复时读不出来。
 /// 清空前的这份备份是用户唯一的回头路,恰在此处最不能失效,故改用 <c>VACUUM INTO</c> 快照。
 ///
 /// 可测边界:Avalonia 的 VM 不在测试工程引用范围内(见 AGENTS.md「视图层行为单测够不着」),
 /// 因此这里直接钉住 VM 现在调用的**那条 DatabaseHelper 路径** —— 复刻 VM 的保底备份文件名与落点,
-/// 再断言产出的确实是一份完整快照。VM 层的接线由 <c>--ops</c> 探针实跑 <c>ClearAllDataAsync</c> 覆盖。
+/// 再断言产出的确实是一份完整快照。VM 层的接线由 <c>build.yml</c> 的源码断言钉住
+/// (⑥:<c>ClearAllDataAsync</c> 必须调 <c>CreateConsistentSnapshot</c>、不得退回 <c>File.Copy</c>)。
 /// </summary>
 public sealed class ClearAllBackupTests : IDisposable {
     private const int SeededRows = 300;
@@ -77,31 +78,33 @@ public sealed class ClearAllBackupTests : IDisposable {
     }
 
     /// <summary>
-    /// 保底备份落在 <c>Backups</c> 根目录、文件名**不含** <c>_backup_</c> 中缀,因此
-    /// <see cref="DatabaseHelper.PruneBackups"/>(退出备份的"只留最新 N 份"策略)不会把它当成本库备份删掉。
-    /// 这条钉住一个刻意的设计取舍:保底备份是用户唯一的回头路,不该被自动清理误伤。
+    /// 保底备份落在 <c>Backups</c> 根目录,文件名是 <c>&lt;库名&gt;_yyyyMMdd_HHmmss&lt;扩展名&gt;</c>;
+    /// 退出备份落在 <c>Backups/OnExit</c>,保留策略只对该子目录执行(<see cref="DatabaseHelper.PruneBackups"/>,
+    /// 调用点见 App.axaml.cs 的 BackupOnExit)。两条目录线互不相交 ⇒ 自动清理不会误删这份"唯一回头路";
+    /// 用例同时钉住"<c>_backup_</c> 中缀只属于退出/手动备份"的命名约定。
     /// </summary>
     [Fact]
     public void ClearAllBackup_IsNotTouchedByPruneBackups() {
         var backupDir = Path.Combine(_dir, AppConstants.BackupsPathName);
-        Directory.CreateDirectory(backupDir);
+        var exitBackupDir = Path.Combine(backupDir, AppConstants.ExitBackupsPathName);
+        Directory.CreateDirectory(exitBackupDir);
 
         var backupName = ClearAllBackupFileName(_dbPath);
-        // 可读时间戳:KM2_yyyyMMdd_HHmmss.dat(定长零填充 ⇒ 字典序 = 时间序)。
+        // 可读时间戳:KM2_yyyyMMdd_HHmmss.dat(定长零填充 ⇒ 字典序 = 时间序),且不含 `_backup_` 中缀。
         Assert.Matches(@"^KM2_\d{8}_\d{6}\.dat$", backupName);
 
         File.WriteAllText(Path.Combine(backupDir, backupName), "snapshot");
-        File.WriteAllText(Path.Combine(backupDir, "KM2_backup_20260101_000000.dat"), "x");
-        File.WriteAllText(Path.Combine(backupDir, "KM2_backup_20260921_221834.dat"), "x");
+        File.WriteAllText(Path.Combine(exitBackupDir, "KM2_backup_20260101_000000.dat"), "x");
+        File.WriteAllText(Path.Combine(exitBackupDir, "KM2_backup_20260921_221834.dat"), "x");
 
-        // 只留 1 份 —— 退出备份那两份里删掉较旧的一份,保底备份必须原封不动。
-        var deleted = DatabaseHelper.PruneBackups(backupDir, 1, AppConstants.DatabaseFileName);
+        // 只留 1 份 —— 退出备份那两份里删掉较旧的一份,根目录的保底备份必须原封不动。
+        var deleted = DatabaseHelper.PruneBackups(exitBackupDir, 1, AppConstants.DatabaseFileName);
 
         Assert.Equal(1, deleted);
         Assert.True(File.Exists(Path.Combine(backupDir, backupName)), "保底备份不该被退出备份的保留策略删掉");
         Assert.Equal(
-            new[] { backupName, "KM2_backup_20260921_221834.dat" },
-            Directory.GetFiles(backupDir).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal).ToArray());
+            new[] { "KM2_backup_20260921_221834.dat" },
+            Directory.GetFiles(exitBackupDir).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal).ToArray());
     }
 
     // ————————————————————————— helpers —————————————————————————
