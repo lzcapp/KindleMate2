@@ -159,8 +159,20 @@ jobs:
           #    (2026-10-03:JSON 导出加入后 4 → 5;2026-10-04:Obsidian 导出加入后 5 → 6,
           #     Anki 牌组导出加入后 6 → 7,该断言按设计各变红一次,均已人工确认后改数。)
           test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 7
-          # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
+          # ⑤ 手动备份 / 维护 / 重建三处各调一次 session.ExportManager.BackupDatabase();。
+          #    「清空全部数据」**不在**这条里 —— 它直接调 DatabaseHelper.CreateConsistentSnapshot,
+          #    见下面 ⑥(此前清空用裸 File.Copy,这条注释曾误写成"维护/清空/重建三处")。
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑥ 「清空全部数据」前的保底备份必须走一致性快照(VACUUM INTO),不能退回裸 File.Copy ——
+          #    视图层接线,改回去不报错、单测也够不着(ClearAllBackupTests 只测 DatabaseHelper 路径,
+          #    且该路径在修复前就存在),只能在这里钉。数量写死 1:将来若真多出第二处快照调用,
+          #    这里该红一次,人工确认后再改数。
+          test "$(grep -c 'DatabaseHelper.CreateConsistentSnapshot(' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 1
+          #   连"直接复制当前库文件"的写法也一并禁掉:File.Copy 在并发写/事务中会静默产出
+          #   不一致的保底备份(详见 CreateConsistentSnapshot 的 remarks)。
+          if grep -n 'File.Copy(session.DatabasePath' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs; then
+            echo "清空前的保底备份不得退回 File.Copy —— 请用 DatabaseHelper.CreateConsistentSnapshot"; exit 1
+          fi
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)
