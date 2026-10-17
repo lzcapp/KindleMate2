@@ -93,9 +93,11 @@ content B
     }
 
     /// <summary>
-    /// 分隔符判定**刻意容忍非 10 个 <c>=</c>**:<c>formats.md</c> 多处标注「未实测」,
-    /// 无法排除设备写出不同数量 <c>=</c> 的可能(原实现 <c>StartsWith("===")</c> 也是宽松的)。
-    /// 这里用 9 个 <c>=</c> 的分隔符钉住该宽容性是**刻意约定、不是巧合** —— 两条须被正确拆开。
+    /// 分隔符判定**刻意容忍非 10 个 <c>=</c>**:<c>formats.md</c> §1.1/§1.2 把分隔符记为 10 个
+    /// <c>=</c>,但原实现(<c>StartsWith("===") &amp;&amp; EndsWith("===")</c>)本来就宽松,仓库内既有
+    /// 用例(<c>ClippingPageNumberTests</c>)也沿用了 9 个 <c>=</c> 的写法;收紧到精确 10 个属于
+    /// 行为收窄,且无法排除不同固件写出不同数量。这里用 9 个 <c>=</c> 钉住该宽容性是
+    /// **刻意约定、不是巧合**(本用例在修复前亦绿,属约定钉住而非回归测试) —— 两条须被正确拆开。
     /// </summary>
     [Fact]
     public void ImportKindleClippings_NonStandardDelimiterLength_StillSplitsEntries() {
@@ -126,6 +128,44 @@ content D
         Assert.Equal(2, clippings.Count);
         Assert.Contains("content C", clippings.Single(c => c.BookName == "Book C").Content);
         Assert.Contains("content D", clippings.Single(c => c.BookName == "Book D").Content);
+    }
+
+    /// <summary>
+    /// 空正文条目(书签按 4 行写:书名 / 元数据 / 空行 / 分隔符)的分隔符识别。
+    /// 旧判据要求分隔符「其上第 2 行是空行」——书签条目的分隔符上方第 2 行是元数据行,故被漏掉,
+    /// 书签与其后一条被并成一条:书签类型会在写库前被跳过,后一条(真正的标注)也跟着丢了。
+    /// 修复后两条都应被解析出、后一条正常入库;书签条目的 line4 取到的是分隔符本身
+    /// (<c>"=========="</c>),但 Bookmark 类型在写库前就 continue,不会污染 clippings。
+    /// </summary>
+    [Fact]
+    public void ImportKindleClippings_BookmarkWithoutBody_DoesNotSwallowNextEntry() {
+        var targetDb = NewDb("bookmark-no-body.db");
+        var path = Path.Combine(_dir, "My Clippings.txt");
+        File.WriteAllText(path, """
+Bookmark Book (Bookmark Author)
+- Your Bookmark on page 9 | Location 190 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+==========
+Book H (Author H)
+- Your Highlight on page 10 | Location 200-201 | Added on Tuesday, May 20, 2025, 9:00:00 AM
+
+highlight body
+==========
+""");
+
+        var clipRepo = new ClippingRepository(DatabaseHelper.GetConnectionString(targetDb));
+        var svc = NewService(targetDb);
+
+        Assert.True(svc.ImportKindleClippings(path, out var result));
+
+        // 旧判据只识别出 1 条(书签的分隔符被漏);那条还是 Bookmark 类型、写库前被跳过 ⇒ InsertedCount=0
+        Assert.Equal("2", result[AppConstants.ParsedCount]);
+        Assert.Equal("1", result[AppConstants.InsertedCount]);
+
+        // 书签不得入库(尤其不能把 "==========" 当正文写进去),后一条标注必须完整保留
+        var stored = Assert.Single(clipRepo.GetAll());
+        Assert.Equal("Book H", stored.BookName);
+        Assert.Equal("highlight body", stored.Content);
     }
 
     /// <summary>

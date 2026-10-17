@@ -91,11 +91,18 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <summary>
         /// 判定一行是否为条目分隔符。规则:**整行 trim 后非空、长度 ≥ 3、且每个字符都是 '='**。
         /// <para>
-        /// 为什么是宽松规则而非「精确等于 <see cref="Symbols.Delimiter"/>(10 个 '=')」:
-        /// 原实现是 <c>StartsWith("===") &amp;&amp; EndsWith("===")</c>(宽松),收紧到恰好 10 个
-        /// 属于**行为收窄**;而 <c>formats.md</c> 多处标注「未实测」,无法排除设备写出不同数量
-        /// '=' 的可能。本规则是原宽松行为的**子集** —— 比原实现更严(不再接受 <c>===abc===</c>
-        /// 这类),因此既修掉多行正文的 bug,又不引入任何新的误判。
+        /// 为什么是宽松规则而非「精确等于 <see cref="Symbols.Delimiter"/>(10 个 '=')」:原实现是
+        /// <c>StartsWith("===") &amp;&amp; EndsWith("===")</c>(宽松),收紧到恰好 10 个属于**行为收窄**;
+        /// <c>formats.md</c> §1.1/§1.2 虽把分隔符记为 10 个 <c>=</c>(该处「未实测」只指行尾 CRLF),
+        /// 但仓库内既有用例 <c>ClippingPageNumberTests</c> 的 fixture 就写着 9 个 <c>=</c>,且不能排除
+        /// 不同固件 / 越狱插件写出不同数量 <c>=</c> 的可能,故保留宽容性。就**单行谓词**而言,本规则
+        /// 比原实现更严(不再接受 <c>===abc===</c> 这类)。
+        /// </para>
+        /// <para>
+        /// ⚠ 已知的残留误判(刻意接受):因为不再依赖「上一行是空行」的上下文判据,正文中**整行只有
+        /// '='(≥3 个)**时会被误认成分隔符 —— 旧判据只在特定位置才会这样误判。Kindle 正文里出现
+        /// 这种行的概率极低;若换成精确 10 个 '=',又会把上面那份 9 个 '=' 的既有 fixture / 未知
+        /// 固件挡在外面,两害相权取其轻。
         /// </para>
         /// </summary>
         private static bool IsDelimiterLine(string line) {
@@ -104,7 +111,7 @@ namespace KindleMate2.Application.Services.KM2DB {
                 return false;
             }
             foreach (var c in trimmed) {
-                if (c != Symbols.Delimiter[0]) {
+                if (c != '=') {
                     return false;
                 }
             }
