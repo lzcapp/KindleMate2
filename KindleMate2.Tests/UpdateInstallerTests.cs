@@ -245,10 +245,12 @@ public sealed class UpdateInstallerTests : IDisposable {
     /// 清单里某文件的哈希 —— 行形如 <c>&lt;64 位 hex&gt;␠␠&lt;文件名&gt;</c>(GNU 文本模式可带 <c>*</c> 前缀)。
     /// **只认合法的 64 位十六进制**:SHA256SUMS 被篡改/损坏时,垃圾串不能被当作"期望哈希"返回
     /// (否则后续比对失败的错误信息会误导成"哈希不匹配",实际是清单坏了)。非法行跳过、继续找下一行。
+    /// 只支持 GNU sha256sum 生成的**裸文件名**清单(本仓库 release.yml 同款);CRLF 由 Trim 兼容。
     /// </summary>
     [Theory]
     [InlineData(HashA + "  pkg.zip\n", "pkg.zip", HashA)]
     [InlineData(HashA + " *pkg.zip\n", "pkg.zip", HashA)]                                   // GNU 文本模式的 * 前缀
+    [InlineData(HashA + "  pkg.zip\r\n", "pkg.zip", HashA)]                                 // CRLF 行尾(Trim 兼容)
     [InlineData(HashA + "  other.zip\n" + HashB + "  pkg.zip\n", "pkg.zip", HashB)]
     [InlineData(HashMixedCase + "  pkg.zip\n", "pkg.zip", HashMixedCase)]                   // 大小写混合合法
     [InlineData(HashA + "  pkg.tar.gz\n", "pkg.zip", null)]                                 // 清单里没有该文件

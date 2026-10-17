@@ -24,18 +24,6 @@ public class ExportManager : IExportManager {
     private readonly string _backupPath;
     private readonly string _tempPath;
 
-    /// <summary>
-    /// 导出时批量查词用的共享客户端。**静态复用**(连接池/socket 可复用),保留本用途自己的
-    /// 8 秒超时 —— 不与检查更新/下载共用实例。查词是"顺手补个释义",不该让用户等网络。
-    /// </summary>
-    private static readonly HttpClient DefinitionClient = CreateDefinitionClient();
-
-    private static HttpClient CreateDefinitionClient() {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("KindleMate2-Dictionary");
-        return client;
-    }
-
     public ExportManager(IClippingService clippingService, ILookupService lookupService,
         IVocabService vocabService, IOriginalClippingLineService originalClippingLineService,
         IDeviceManager deviceManager, string programPath, string backupPath, string tempPath) {
@@ -261,12 +249,13 @@ public class ExportManager : IExportManager {
             return result;
         }
 
-        var http = DefinitionClient;
         using var gate = new SemaphoreSlim(4);
         var tasks = words.Select(async word => {
             await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
-                var def = await WordDefinitionService.LookupAsync(word, http, cancellationToken)
+                // 复用 WordDefinitionService 自己的 static 客户端(同为 8s 超时/UA),
+                // 不在 ExportManager 里再建一个同用途实例(测试注入 seam 仍在 LookupAsync 上)。
+                var def = await WordDefinitionService.LookupAsync(word, null, cancellationToken)
                     .ConfigureAwait(false);
                 return (word, text: def?.ToDisplayText() ?? string.Empty);
             } finally {

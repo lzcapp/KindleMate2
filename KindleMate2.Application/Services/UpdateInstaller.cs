@@ -156,6 +156,13 @@ public static class UpdateInstaller {
     /// 清单被篡改/损坏时,哈希段可能是任意垃圾串,不校验就会把垃圾当作"期望哈希"返回,后续
     /// 比对失败的错误信息会误导(说"哈希不匹配",实际是清单坏了)。非法行视为无效、继续找下一行;
     /// 全部无效返回 null(调用方对"找不到"是 fail-closed,会中止更新)。
+    ///
+    /// <para>
+    /// <b>只支持 GNU sha256sum 的文本输出格式</b>(本仓库 `release.yml` 在 dist 目录内直接
+    /// <c>sha256sum KindleMate2_*.zip …</c> 生成:64 位小写 hex + 两个空格 + **裸文件名**、LF)。
+    /// CRLF 由 <see cref="string.Trim()"/> 兼容;不支持 <c>./</c>/目录前缀的古板清单 —— 若哪天
+    /// 清单生成方式改成带路径,这里会返回 null 让更新 fail-closed,而不是静默放过。
+    /// </para>
     /// </summary>
     internal static string? ParseExpectedHash(string checksumText, string fileName) {
         foreach (var raw in checksumText.Split('\n')) {

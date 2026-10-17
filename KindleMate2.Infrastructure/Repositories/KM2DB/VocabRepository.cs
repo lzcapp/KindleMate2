@@ -244,7 +244,8 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
         /// <see cref="DatabaseHelper.GetSafeString"/> 被 <c>Trim</c> 过,而库里存的是原始值 ——
         /// 词键带前后空白时,用读回来的(已 Trim 的)word_key 去 <c>WHERE word_key = ?</c> 会**匹配不到**
         /// 那一行,词频写不进去(UpdateFrequency 的统计因此对这类行恒为 0)。<c>id</c> 是
-        /// <c>PRIMARY KEY</c>、读取不 Trim,按它定位既精确又走主键索引。
+        /// <c>PRIMARY KEY</c>,由本程序生成、不含首尾空白(读取时虽然同样经
+        /// <see cref="DatabaseHelper.GetSafeString"/> Trim,但 Trim 前后值一致),按它定位既精确又走主键索引。
         /// Rows with a null/blank id are skipped, which keeps the batch from aborting on junk rows.
         /// </summary>
         public int UpdateFrequencyByWordKey(List<Vocab> vocabs) {

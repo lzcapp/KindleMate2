@@ -46,6 +46,11 @@ public class DeviceManager : IDeviceManager {
         _debounce = new DebouncedAction(DebounceInterval, OnDebounceElapsed);
     }
 
+    /// <summary>
+    /// 启动 WMI 设备监听。**注意:当前 Avalonia 壳尚未调用本方法**(全仓只有接口声明、各平台实现
+    /// 与测试引用它) —— 所以下面这条"二次调用会泄漏上一组 watcher"的保护目前属**防御性修复**;
+    /// 等壳按预期接线后,重复调用/窗口重建不会再泄漏 WMI 订阅。
+    /// </summary>
     public void StartWatching() {
         IsKindleConnected();
 
