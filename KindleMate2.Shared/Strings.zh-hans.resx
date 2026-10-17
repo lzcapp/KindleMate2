@@ -240,6 +240,15 @@
   <data name="Imported_X" xml:space="preserve">
     <value>导入</value>
   </data>
+  <data name="Import_Skipped_Clippings_Format" xml:space="preserve">
+    <value>，跳过 {0} 条（日期解析失败 {1} / 页码异常 {2} / 超出上限 {3}）</value>
+  </data>
+  <data name="Import_Skipped_Tables_Format" xml:space="preserve">
+    <value>，跳过 {0} 个数据表</value>
+  </data>
+  <data name="Import_Skipped_Timestamps_Format" xml:space="preserve">
+    <value>，{0} 条记录因时间戳异常被忽略</value>
+  </data>
   <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
     <value>确认要删除这本书中的所有标注吗？</value>
   </data>

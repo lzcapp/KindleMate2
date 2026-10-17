@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
@@ -136,27 +136,48 @@ namespace KindleMate2.Application.Services.KM2DB {
             } else {
                 var clippings = listClippings.Where(row => row.BookName != null && row.BookName.Equals(bookName)).ToList();
 
+                // 指定的书**一条标注都没有**:此前会照写一个只有标题的近乎空文件并返回 true —— UI 于
+                // 是提示"导出成功",用户却得到一个空文件。这里直接判失败(返回 false),由调用方提示
+                // "无可导出内容"。注意只在**完全没有条目**时拒:该书有条目、只是正文为空仍属合法导出。
+                if (clippings.Count == 0) {
+                    return false;
+                }
+
                 // 文件名消歧必须**看目标目录**:单书导出看不到同批的其他书,只能靠"目录里已有的同名文件
                 // 是不是同一本"来判定 —— 否则「A/B」与「A:B」净化后同为 A_B,第二次会静默覆盖第一次
                 // (.md 与 .html 一起丢)。作者用于撞名时退化成「作者 - 书名」,与 Obsidian 侧同一候选序。
-                var author = clippings.Count > 0 ? clippings[0].AuthorName : null;
+                var author = clippings[0].AuthorName;
                 filename = ExportFileNameAllocator.AssignSingleFileName(filePath, bookName, author);
 
                 markdown.Append(StringHelper.BuildMarkdownWithClippings(clippings));
+            }
+
+            // 整路径长度兜底:按书导出时文件名已由 ExportFileNameAllocator 按同一预算(最长扩展名
+            // .html)截断;这里再算一次是为了**导出全部**分支的固定名(Clippings)——
+            // .md / .html 共用同一基名,故统一按 .html 留预算。剩余预算 < 1 字节时返回空串,
+            // 由调用方提示"无内容可导出"(极端深的导出目录才会触发)。
+            filename = StringHelper.TruncateFileNameToFitPath(filePath, filename, FileExtension.HTML);
+            if (filename.Length == 0) {
+                // 目录本身已吃掉全部预算:连一个字符的文件名都放不下,不写退化名,直接判失败。
+                return false;
             }
 
             if (!Directory.Exists(filePath)) {
                 Directory.CreateDirectory(filePath);
             }
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
+            // 一律 UTF-8 **无 BOM**:与 Obsidian(ObsidianExportWriter)、JSON(ExportManager.WriteJson)
+            // 及本程序其它数据文件口径一致。BOM 会让部分 Markdown 工具把开头的 U+FEFF 当正文渲染。
+            // .md 与 .html 都不带 BOM(2026-10 审阅补齐 —— 原 PR 只改了 .md,同一批产物编码不一致)。
+            var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), utf8NoBom);
 
             var htmlContent = AppConstants.HtmlBegin;
             MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
             htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
             htmlContent += AppConstants.HtmlEnd;
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, utf8NoBom);
 
             File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
 

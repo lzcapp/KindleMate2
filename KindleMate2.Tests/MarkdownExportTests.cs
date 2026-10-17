@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -187,6 +188,159 @@ public sealed class MarkdownExportTests : IDisposable {
 
         var mdFiles = Directory.GetFiles(outDir, "*.md");
         Assert.NotEmpty(mdFiles);
+    }
+
+    // ——————————————————————— 正文转义 / 编码 / 空导出(本 PR) ———————————————————————
+
+    [Fact]
+    public void ClippingsToMarkdown_EscapesContentThatWouldChangeDocumentStructure() {
+        // 正文原样写入时:行首 '#' 会变成标题、'|' 会拆表格、裸 HTML 会被 Markdig 透传、
+        // 行首有序列表会变成 <ol> —— 导出的排版因此取决于标注内容。这条钉住"正文一律按字面量渲染"。
+        const string content = "# 这不是标题\n甲 | 乙\n<b>不是标签</b>\n1. 有序列表行";
+        SeedClipping("k1", content, book: "深度工作");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir));
+
+        var mdPath = Directory.GetFiles(outDir, "*.md").Single();
+        var md = File.ReadAllText(mdPath);
+        // ① 行首 '#' 被转义;② '|' 被转义(与 Obsidian 表格单元格同写法);③ 裸 HTML 被转义;
+        // ④ 有序列表只转义分隔符(数字前的反斜杠不是 CommonMark 转义,会渲染出来)。
+        Assert.Contains(@"\# 这不是标题", md, StringComparison.Ordinal);
+        Assert.Contains(@"甲 \| 乙", md, StringComparison.Ordinal);
+        Assert.Contains(@"\<b>不是标签\</b>", md, StringComparison.Ordinal);
+        Assert.Contains(@"1\. 有序列表行", md, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"\1.", md, StringComparison.Ordinal);
+
+        // 生成 HTML 时:正文的 '#' 不得成为标题,'<b>' 不得被当成标签透传,有序列表不得成 <ol>。
+        var html = File.ReadAllText(Directory.GetFiles(outDir, "*.html").Single());
+        var headings = Regex.Matches(html, "<h[1-6][^>]*>(.*?)</h[1-6]>", RegexOptions.Singleline)
+            .Select(m => m.Groups[1].Value);
+        Assert.DoesNotContain(headings, h => h.Contains("这不是标题", StringComparison.Ordinal));
+        Assert.Contains("&lt;b&gt;不是标签&lt;/b&gt;", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("<ol", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("1. 有序列表行", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_MarkdownHasNoByteOrderMark() {
+        SeedClipping("k1", "内容", book: "深度工作");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir));
+
+        // 读字节而不是文本:ReadAllText / StreamReader 会自动吃掉 BOM,那样断言恒绿。
+        var bytes = File.ReadAllBytes(Directory.GetFiles(outDir, "*.md").Single());
+        Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
+            "Markdown 带了 UTF-8 BOM");
+        // 首字符是标题的 '#' —— 进一步证明没有 BOM 占位。
+        Assert.Equal((byte)'#', bytes[0]);
+        // .html 是同一批产物里的另一份(2026-10 审阅:原来只改了 .md,编码不一致),同样不得带 BOM。
+        var htmlBytes = File.ReadAllBytes(Directory.GetFiles(outDir, "*.html").Single());
+        Assert.False(htmlBytes.Length >= 3 && htmlBytes[0] == 0xEF && htmlBytes[1] == 0xBB && htmlBytes[2] == 0xBF,
+            "HTML 带了 UTF-8 BOM");
+        Assert.Equal((byte)'<', htmlBytes[0]);
+    }
+
+    [Fact]
+    public void LookupsToMarkdown_MarkdownHasNoByteOrderMark() {
+        SeedLookup("en:apple", "apple");
+        var outDir = Path.Combine(_dir, "vocab-out");
+
+        Assert.True(_lookupService.LookupsToMarkdown(outDir));
+
+        var bytes = File.ReadAllBytes(Directory.GetFiles(outDir, "*.md").Single());
+        Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
+            "Markdown 带了 UTF-8 BOM");
+        Assert.Equal((byte)'#', bytes[0]);
+        var htmlBytes = File.ReadAllBytes(Directory.GetFiles(outDir, "*.html").Single());
+        Assert.False(htmlBytes.Length >= 3 && htmlBytes[0] == 0xEF && htmlBytes[1] == 0xBB && htmlBytes[2] == 0xBF,
+            "HTML 带了 UTF-8 BOM");
+        Assert.Equal((byte)'<', htmlBytes[0]);
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_NonexistentBook_ReturnsFalseAndWritesNothing() {
+        // 指定一本不存在的书:此前会写出一个只有标题的空文件并报成功。
+        SeedClipping("k1", "内容一", book: "深度工作");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.False(_clippingService.ClippingsToMarkdown(outDir, "并不存在的书"));
+
+        Assert.False(Directory.Exists(outDir) && Directory.GetFiles(outDir, "*.md").Length > 0,
+            "不存在的书不该产出任何 Markdown 文件");
+    }
+
+    [Fact]
+    public void LookupsToMarkdown_NonexistentWord_ReturnsFalseAndWritesNothing() {
+        SeedLookup("en:apple", "apple");
+        var outDir = Path.Combine(_dir, "vocab-out");
+
+        Assert.False(_lookupService.LookupsToMarkdown(outDir, "banana"));
+
+        Assert.False(Directory.Exists(outDir) && Directory.GetFiles(outDir, "*.md").Length > 0,
+            "不存在的词不该产出任何 Markdown 文件");
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_ExistingBookWhoseEntriesHaveNoLocation_StillSucceeds() {
+        // 反例保护:书**有条目**(只是位置为空,故 BuildMarkdownWithClippings 会跳过正文)仍属
+        // 合法导出 —— 守卫必须只拒"该书一条都没有",不能把这种"合法但正文为空"的导出也拒掉。
+        _clippingRepo.Add(new Clipping {
+            Key = "k-nolocation",
+            Content = "有内容但位置为空",
+            BookName = "无位置的书",
+            AuthorName = "作者",
+            ClippingTypeLocation = string.Empty,
+        });
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, "无位置的书"));
+        Assert.Single(Directory.GetFiles(outDir, "*.md"));
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_VeryLongBookName_WholePathStaysWithinByteLimit() {
+        // 单段文件名有 240 字节上限,但"目录 + 文件名 + 扩展名"叠加后另有一层整路径上限。
+        var longBook = new string('长', 400);   // 1200 字节,远超单段上限
+        SeedClipping("k1", "内容", book: longBook);
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, longBook));
+
+        var mdPath = Directory.GetFiles(outDir, "*.md").Single();
+        Assert.True(Encoding.UTF8.GetByteCount(mdPath) <= StringHelper.DefaultMaxPathUtf8Bytes,
+            $"整路径 {Encoding.UTF8.GetByteCount(mdPath)} 字节,超过 {StringHelper.DefaultMaxPathUtf8Bytes}");
+    }
+
+    [Fact]
+    public void ClippingsToMarkdown_TwoDifferentVeryLongBookNames_BothFilesSurvive() {
+        // 回归(2026-10 审阅):整路径截断若发生在撞名判定**之后**,两个不同但共享长前缀的超长书名
+        // 会截断成同一个文件名,第二次单书导出静默覆盖第一次(allocator 的存在意义正是防这个)。
+        // 现在 allocator 先按整路径预算截断、再拿最终名字做消歧,且序号本身不会被截掉。
+        var prefix = new string('长', 120);
+        var bookA = prefix + "（上册）";
+        var bookB = prefix + "（下册）";
+        SeedClipping("k1", "上册的内容", book: bookA, author: "");
+        SeedClipping("k2", "下册的内容", book: bookB, author: "");
+        var outDir = Path.Combine(_dir, "out");
+
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, bookA));
+        Assert.True(_clippingService.ClippingsToMarkdown(outDir, bookB));
+
+        var mdFiles = Directory.GetFiles(outDir, "*.md");
+        Assert.Equal(2, mdFiles.Length);
+        var all = string.Concat(mdFiles.Select(File.ReadAllText));
+        Assert.Contains("上册的内容", all, StringComparison.Ordinal);
+        Assert.Contains("下册的内容", all, StringComparison.Ordinal);
+        // 两个身份行都在:证明各自产物都还在(谁都没被覆盖)。
+        Assert.Contains("## 📖 " + bookA, all, StringComparison.Ordinal);
+        Assert.Contains("## 📖 " + bookB, all, StringComparison.Ordinal);
+        // 整路径仍在字节预算内。
+        Assert.All(mdFiles, f => Assert.True(
+            Encoding.UTF8.GetByteCount(f) <= StringHelper.DefaultMaxPathUtf8Bytes,
+            $"整路径 {Encoding.UTF8.GetByteCount(f)} 字节,超过 {StringHelper.DefaultMaxPathUtf8Bytes}:{f}"));
+        Assert.Equal(2, Directory.GetFiles(outDir, "*.html").Length);
     }
 
     // ————————————————————————— 撞名消歧(PR-A) —————————————————————————

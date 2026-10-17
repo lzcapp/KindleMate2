@@ -46,8 +46,17 @@ public class DeviceManager : IDeviceManager {
         _debounce = new DebouncedAction(DebounceInterval, OnDebounceElapsed);
     }
 
+    /// <summary>
+    /// 启动 WMI 设备监听。**注意:当前 Avalonia 壳尚未调用本方法**(全仓只有接口声明、各平台实现
+    /// 与测试引用它) —— 所以下面这条"二次调用会泄漏上一组 watcher"的保护目前属**防御性修复**;
+    /// 等壳按预期接线后,重复调用/窗口重建不会再泄漏 WMI 订阅。
+    /// </summary>
     public void StartWatching() {
         IsKindleConnected();
+
+        // 幂等/重入保护:二次调用时先释放上一组 watcher —— 否则旧 watcher 既不再被 Stop、
+        // 也不再被 Dispose,会持续持有 WMI 订阅(句柄泄漏,且设备事件被重复上报)。
+        StopWatchers();
 
         const string usbCreationQuery = "SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2";
         _usbDeviceArrivalWatcher = new ManagementEventWatcher(usbCreationQuery);
@@ -68,6 +77,20 @@ public class DeviceManager : IDeviceManager {
         _mtpDeviceRemovalWatcher = new ManagementEventWatcher(mtpDeletionQuery);
         _mtpDeviceRemovalWatcher.EventArrived += DeviceRemovedEventHandler;
         _mtpDeviceRemovalWatcher.Start();
+    }
+
+    /// <summary>停止并释放全部 WMI watcher,并把字段置空;可重复调用(幂等)。</summary>
+    private void StopWatchers() {
+        StopWatcher(ref _usbDeviceArrivalWatcher);
+        StopWatcher(ref _usbDeviceRemovalWatcher);
+        StopWatcher(ref _mtpDeviceArrivalWatcher);
+        StopWatcher(ref _mtpDeviceRemovalWatcher);
+    }
+
+    private static void StopWatcher(ref ManagementEventWatcher? watcher) {
+        watcher?.Stop();
+        watcher?.Dispose();
+        watcher = null;
     }
 
     private readonly object _lockObj = new object();
@@ -422,13 +445,6 @@ public class DeviceManager : IDeviceManager {
         // 幂等,并挡住 Dispose 之后才到达的 WMI 事件(可能与 Stop/Dispose watcher 并发)。
         _debounce.Dispose();
 
-        _usbDeviceArrivalWatcher?.Stop();
-        _usbDeviceArrivalWatcher?.Dispose();
-        _usbDeviceRemovalWatcher?.Stop();
-        _usbDeviceRemovalWatcher?.Dispose();
-        _mtpDeviceArrivalWatcher?.Stop();
-        _mtpDeviceArrivalWatcher?.Dispose();
-        _mtpDeviceRemovalWatcher?.Stop();
-        _mtpDeviceRemovalWatcher?.Dispose();
+        StopWatchers();
     }
 }

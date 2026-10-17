@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -169,29 +169,70 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// 批量插入。**先走整批单事务(最快);整批失败则降级为逐条插入** —— 与
+        /// <c>ClippingRepository.Add(List&lt;Clipping&gt;)</c> 同一策略:逐条时跳过违反约束或数据非法的行,
+        /// 使"判重漏网 / 脏数据"的后果从**整份文件全部导入失败**降为**只少几条**。
+        /// 实际插入的条数由返回值给出。
+        /// </summary>
+        /// <remarks>
+        /// 判重的最终裁判是数据库约束(vocab 主键 <c>id</c>):批量一律 <c>OR IGNORE</c>,
+        /// 与 UNIQUE 冲突的行(含 tombstone)静默跳过 —— 不再靠"应用层 HashSet 现读活表",
+        /// 那正是"删过再导被复活"的根源。快路径会因**数据非法**(<c>id</c>/<c>word</c> 为空,
+        /// <c>AddParameters</c> 里 <c>?? throw</c>)整批回滚,故补上逐条降级兜底。
+        /// <para>
+        /// **代价**:逐条阶段每条各自提交,中途遇到非可跳过的系统性失败(磁盘满 / 只读 / IO 错)时,
+        /// 已提交的行不会回滚 —— 调用方仍会收到异常,但库内可能留下"部分导入"的结果(与 clippings
+        /// 的既有语义一致,重跑导入靠主键幂等)。
+        /// </para>
+        /// <para>
+        /// 逐条循环里的 <c>when(IsSkippableInsertFailure)</c> 目前基本不可达(逐条 INSERT 带
+        /// <c>OR IGNORE</c>,约束冲突不会抛;数据非法行已被显式跳过),保留作对称防御。
+        /// </para>
+        /// </remarks>
         public int Add(List<Vocab> vocabs) {
-            var count = 0;
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            using var transaction = connection.BeginTransaction();
-            try {
-                // 批量插入一律 OR IGNORE:判重的最终裁判是数据库约束(vocab 主键 id),不再靠
-                // 应用层 HashSet 现读活表 —— 那正是"删过再导被复活"的根源(活表里已删行看不见)。
-                // 与 UNIQUE 冲突的行(含 tombstone)静默跳过,返回值只计真正插入的行数。
-                using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, transaction);
-                foreach (Vocab vocab in vocabs) {
+            // ① 快路径:整批单事务(OR IGNORE,唯一约束冲突静默跳过)
+            using (var transaction = connection.BeginTransaction()) {
+                try {
+                    var count = 0;
+                    using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, transaction);
+                    foreach (Vocab vocab in vocabs) {
+                        AddParameters(cmd, vocab);
+                        if (cmd.ExecuteNonQuery() > 0) {
+                            count++;
+                        }
+                    }
+                    transaction.Commit();
+                    return count;
+                } catch {
+                    try { transaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
+                }
+            }
+
+            // ② 兜底:逐条插入,每条独立事务;显式跳过数据非法(无 id / word)的行,
+            //    只吞可跳过项(约束冲突),系统性问题向上抛。
+            var inserted = 0;
+            foreach (Vocab vocab in vocabs) {
+                if (string.IsNullOrWhiteSpace(vocab.Id) || string.IsNullOrWhiteSpace(vocab.Word)) {
+                    continue;
+                }
+                using var rowTransaction = connection.BeginTransaction();
+                try {
+                    using var cmd = new SqliteCommand(InsertSql(orIgnore: true), connection, rowTransaction);
                     AddParameters(cmd, vocab);
                     if (cmd.ExecuteNonQuery() > 0) {
-                        count++;
+                        inserted++;
                     }
+                    rowTransaction.Commit();
+                } catch (Exception ex) when (DatabaseHelper.IsSkippableInsertFailure(ex)) {
+                    // 防御性:OR IGNORE 下约束冲突本不会抛;保留以便将来去掉 OR IGNORE 时仍不吞坏数据。
+                    try { rowTransaction.Rollback(); } catch { /* 回滚失败也不能击穿兜底承诺 */ }
                 }
-                transaction.Commit();
-            } catch {
-                transaction.Rollback();
-                throw;
             }
-            return count;
+            return inserted;
         }
 
         private static string InsertSql(bool orIgnore) =>
@@ -234,27 +275,19 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             return cmd.ExecuteNonQuery() > 0;
         }
 
-        public bool UpdateFrequencyByWordKey(Vocab vocab) {
-            using var connection = new SqliteConnection(connectionString);
-            connection.Open();
-
-            var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection);
-            var wordKey = vocab.WordKey;
-            if (string.IsNullOrWhiteSpace(wordKey)) {
-                throw new InvalidOperationException();
-            }
-            cmd.Parameters.AddWithValue("@word_key", wordKey);
-            cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
-            return cmd.ExecuteNonQuery() > 0;
-        }
-
         /// <summary>
         /// Bulk-updates frequency for many vocabs in a single transaction with one reused
         /// command. Replaces the previous per-vocab call pattern that opened a new
         /// connection (and auto-committed) once per row — the dominant cost when an
         /// import triggers a full frequency recompute over thousands of vocab rows.
-        /// Rows with a null/blank word_key are skipped (they can never match any
-        /// lookup), which keeps the batch from aborting on legacy junk rows.
+        ///
+        /// **按主键 <c>id</c> 定位**(而非 <c>word_key</c>):<c>word_key</c> 读取时经
+        /// <see cref="DatabaseHelper.GetSafeString"/> 被 <c>Trim</c> 过,而库里存的是原始值 ——
+        /// 词键带前后空白时,用读回来的(已 Trim 的)word_key 去 <c>WHERE word_key = ?</c> 会**匹配不到**
+        /// 那一行,词频写不进去(UpdateFrequency 的统计因此对这类行恒为 0)。<c>id</c> 是
+        /// <c>PRIMARY KEY</c>,由本程序生成、不含首尾空白(读取时虽然同样经
+        /// <see cref="DatabaseHelper.GetSafeString"/> Trim,但 Trim 前后值一致),按它定位既精确又走主键索引。
+        /// Rows with a null/blank id are skipped, which keeps the batch from aborting on junk rows.
         /// </summary>
         public int UpdateFrequencyByWordKey(List<Vocab> vocabs) {
             var count = 0;
@@ -263,14 +296,14 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
 
             using var transaction = connection.BeginTransaction();
             try {
-                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE word_key = @word_key AND deleted_at IS NULL", connection, transaction);
+                using var cmd = new SqliteCommand("UPDATE vocab SET frequency = @frequency WHERE id = @id AND deleted_at IS NULL", connection, transaction);
                 foreach (Vocab vocab in vocabs) {
-                    var wordKey = vocab.WordKey;
-                    if (string.IsNullOrWhiteSpace(wordKey)) {
+                    var id = vocab.Id;
+                    if (string.IsNullOrWhiteSpace(id)) {
                         continue;
                     }
                     cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@word_key", wordKey);
+                    cmd.Parameters.AddWithValue("@id", id);
                     cmd.Parameters.AddWithValue("@frequency", vocab.Frequency);
                     count += cmd.ExecuteNonQuery();
                 }

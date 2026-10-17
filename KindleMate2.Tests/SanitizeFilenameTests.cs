@@ -69,8 +69,20 @@ public sealed class SanitizeFilenameTests {
     [InlineData("aux ", "_aux")]            // 小写保留名 + 尾随空白(比较须大小写无关)
     [InlineData("NUL.", "_NUL")]            // 尾点被去掉后才落回保留名
     [InlineData("NUL\t", "NUL_")]           // 反例:制表符是控制字符,先被替换成 '_' → 不再是保留名
+    // 扩展名之前带空格:Windows 解析时会先剥掉基名尾部空格 → "CON .txt" 实际被当成 "CON.txt",
+    // 仍是保留名。只按 GetFileNameWithoutExtension(得到基名 "CON ")判会漏掉这一类。
+    [InlineData("CON .txt", "_CON .txt")]
+    [InlineData("nul .log", "_nul .log")]
     public void SanitizeFilename_PrefixesWindowsReservedNames(string input, string expected) {
         Assert.Equal(expected, StringHelper.SanitizeFilename(input));
+    }
+
+    [Fact]
+    public void SanitizeFilename_ReservedNameWithSpaceBeforeExtension_IsIdempotent() {
+        // 加前缀后不再是保留名,再净化一次不应再变(否则会堆出 "__CON .txt")。
+        var once = StringHelper.SanitizeFilename("CON .txt");
+        Assert.Equal("_CON .txt", once);
+        Assert.Equal(once, StringHelper.SanitizeFilename(once));
     }
 
     [Fact]
@@ -166,5 +178,41 @@ public sealed class SanitizeFilenameTests {
         var result = StringHelper.SanitizeFilename(reserved + new string('x', 300), maxUtf8Bytes: 3);
 
         Assert.Equal("_" + reserved, result);
+    }
+
+    // ————————————————————————— 整路径长度守卫 —————————————————————————
+
+    [Fact]
+    public void TruncateFileNameToFitPath_ShortName_Unchanged() {
+        // 正常长度不受影响:输出与输入逐字相同。
+        Assert.Equal("深度工作", StringHelper.TruncateFileNameToFitPath(@"C:\Exports", "深度工作", ".md"));
+    }
+
+    [Fact]
+    public void TruncateFileNameToFitPath_LongName_TruncatedSoWholePathFits() {
+        var dir = @"C:\very\deep\exports\directory";
+        var result = StringHelper.TruncateFileNameToFitPath(dir, new string('长', 400), ".html");
+
+        Assert.NotEmpty(result);
+        var total = Encoding.UTF8.GetByteCount(dir) + Encoding.UTF8.GetByteCount(result) + 1 + Encoding.UTF8.GetByteCount(".html");
+        Assert.True(total <= StringHelper.DefaultMaxPathUtf8Bytes, $"整路径 {total} 字节超限");
+        AssertValidUtf8(result);
+    }
+
+    [Fact]
+    public void TruncateFileNameToFitPath_NeverSplitsSurrogatePair() {
+        var dir = @"C:\Exports";
+        var result = StringHelper.TruncateFileNameToFitPath(dir, string.Concat(Enumerable.Repeat("📚", 200)), ".md");
+
+        AssertValidUtf8(result);
+        var total = Encoding.UTF8.GetByteCount(dir) + Encoding.UTF8.GetByteCount(result) + 1 + 3;
+        Assert.True(total <= StringHelper.DefaultMaxPathUtf8Bytes);
+    }
+
+    [Fact]
+    public void TruncateFileNameToFitPath_DirectoryAlreadyOverBudget_ReturnsEmpty() {
+        // 目录本身已吃掉全部预算 → 返回空串,由调用方判为"无法落盘"(而不是写一个退化名)。
+        var dir = new string('d', StringHelper.DefaultMaxPathUtf8Bytes + 10);
+        Assert.Equal(string.Empty, StringHelper.TruncateFileNameToFitPath(dir, "name", ".md"));
     }
 }

@@ -28,9 +28,12 @@ namespace KindleMate2.Application.Services.KM2DB {
 
                 var delimiterIndex = new List<int>();
 
-                for (var i = 2; i < lines.Count; i++) {
+                for (var i = 0; i < lines.Count; i++) {
                     lines[i] = StringHelper.RemoveControlChar(lines[i]);
-                    if (lines[i].StartsWith("===") && lines[i - 2].Trim().Equals("") && lines[i].EndsWith("===")) {
+                    // 分隔符按**整行独立判定**(不依赖上下文行 —— 正文可多行,分隔符上一行未必是空行,
+                    // 任何像 lines[i-2] 为空这样的判据都会漏掉多行正文条目的分隔符,把相邻两条并成一条)。
+                    // 起点取 0 以保证首两行也被 RemoveControlChar 清洗。
+                    if (IsDelimiterLine(lines[i])) {
                         delimiterIndex.Add(i);
                     }
                 }
@@ -83,6 +86,36 @@ namespace KindleMate2.Application.Services.KM2DB {
                 };
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 判定一行是否为条目分隔符。规则:**整行 trim 后非空、长度 ≥ 3、且每个字符都是 '='**。
+        /// <para>
+        /// 为什么是宽松规则而非「精确等于 <see cref="Symbols.Delimiter"/>(10 个 '=')」:原实现是
+        /// <c>StartsWith("===") &amp;&amp; EndsWith("===")</c>(宽松),收紧到恰好 10 个属于**行为收窄**;
+        /// <c>formats.md</c> §1.1/§1.2 虽把分隔符记为 10 个 <c>=</c>(该处「未实测」只指行尾 CRLF),
+        /// 但仓库内既有用例 <c>ClippingPageNumberTests</c> 的 fixture 就写着 9 个 <c>=</c>,且不能排除
+        /// 不同固件 / 越狱插件写出不同数量 <c>=</c> 的可能,故保留宽容性。就**单行谓词**而言,本规则
+        /// 比原实现更严(不再接受 <c>===abc===</c> 这类)。
+        /// </para>
+        /// <para>
+        /// ⚠ 已知的残留误判(刻意接受):因为不再依赖「上一行是空行」的上下文判据,正文中**整行只有
+        /// '='(≥3 个)**时会被误认成分隔符 —— 旧判据只在特定位置才会这样误判。Kindle 正文里出现
+        /// 这种行的概率极低;若换成精确 10 个 '=',又会把上面那份 9 个 '=' 的既有 fixture / 未知
+        /// 固件挡在外面,两害相权取其轻。
+        /// </para>
+        /// </summary>
+        private static bool IsDelimiterLine(string line) {
+            var trimmed = line.Trim();
+            if (trimmed.Length < 3) {
+                return false;
+            }
+            foreach (var c in trimmed) {
+                if (c != '=') {
+                    return false;
+                }
+            }
+            return true;
         }
         
         public bool RebuildDatabase(out Dictionary<string, string> result) {
@@ -418,10 +451,18 @@ namespace KindleMate2.Application.Services.KM2DB {
                     clipping.ClippingTypeLocation = string.Format(AppConstants.LocationFormat, location.From, location.To);
                 
                     var clippingTypeLocation = string.Empty;
-                    metadata = metadata.Replace("- ", "", StringComparison.InvariantCultureIgnoreCase);
+                    // 只去掉**行首**的项目符号 "- "(Kindle 元数据行以 "- " 开头)。
+                    // 旧实现是 Replace("- ", "") 的**全局**替换,会把行内所有 "- " 一并删掉
+                    // (例如位置区间被写成 "100 - 101" 时),篡改类型/位置串。
+                    if (metadata.StartsWith("- ", StringComparison.Ordinal)) {
+                        metadata = metadata[2..];
+                    }
                     var indexOf = metadata.LastIndexOf('|');
                     if (indexOf >= 0) {
-                        clippingTypeLocation = metadata[..(indexOf - 1)];
+                        // 去掉 | 前的一个空格;若 | 前没有空格(某些区域/样本的格式),不能按
+                        // indexOf-1 取,否则会啃掉类型词/位置串的最后一个字符。
+                        var cut = indexOf > 0 && metadata[indexOf - 1] == ' ' ? indexOf - 1 : indexOf;
+                        clippingTypeLocation = metadata[..cut];
                     }
                     // 真实页码:在**已去掉日期段**的 clippingTypeLocation 上再解析一次。
                     // 直接在整行 metadata 上取 location.Page 不行 —— 位置型条目的 Location 段被移除后,
@@ -587,7 +628,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 if (vocab.WordKey == null) {
                     continue;
                 }
-                frequencyMap.TryGetValue(vocab.WordKey, out var frequency);
+                // 查表侧与上面的 GroupBy 保持同一口径(都 Trim),避免因上游读取是否 Trim 而漏算。
+                // 注意:词频能否**写回**还取决于仓储按哪一列定位 —— 见
+                // VocabRepository.UpdateFrequencyByWordKey(按主键 id,而非会被 Trim 的 word_key)。
+                frequencyMap.TryGetValue(vocab.WordKey.Trim(), out var frequency);
                 updates.Add(new Vocab {
                     WordKey = vocab.WordKey,
                     Frequency = frequency,
@@ -723,9 +767,19 @@ namespace KindleMate2.Application.Services.KM2DB {
             if (!crossBookDuplicates) {
                 // 导入收尾的清理:判重只在**同一本书内**生效。跨书同文是两条各自独立的高亮 ——
                 // 两条导入链路都**有意保留**它:My Clippings.txt 走 HandleClippings 的
-                // key=日期|位置 判重(跨书 key 不同,两条都留);KM/km3 .dat 走 KmateDedup 的
+                // key=日期|类型+位置 判重;KM/km3 .dat 走 KmateDedup 的
                 // (书, 作者, 内容) 判重。跨书判重会把用户**库里已有**的那条一并删掉,
                 // 所以这里逐书递归,复用同一套判定(精确重复 + 包含检查都限本书内)。
+                //
+                // ⚠ 但 My Clippings 侧的判重键**不含书名** —— key = 标注日期 + "|" + 类型+位置
+                // (见 HandleClippings,clippingTypeLocation 由 metadata 去掉日期段得到,只有
+                // 「类型 + 页码/位置」),而 clippings.key 是 PRIMARY KEY NOT NULL UNIQUE
+                // (DatabaseHelper)。因此「两本不同的书 + 同一秒 + 同一位置 + 同一类型」会算出
+                // **同一个 key**:后到的那条在 HandleClippings 里被判为重复、**静默跳过**
+                // (不是被这里的跨书清理删掉,而是根本没进库)。Kindle 的 Location 是**每本书各自
+                // 编号**,跨书位置相同很常见,所以这不是纯理论情形。
+                // 这是**已知限制**(审计 P2-14):真正的修复要让 key 纳入书名,涉及 clippings.key
+                // 主键迁移与 original_clipping_lines 的同步迁移(属 schema 版本升级),本次未处理。
                 //
                 // 分组键取 (书, 作者),与 KmateDedup 的作用域对齐 —— 只按书名分组会把
                 // 「同名、不同作者」的两本书并成一本,可能误删。

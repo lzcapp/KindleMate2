@@ -6,7 +6,7 @@
 
 KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自 Kindle 设备的
 `My Clippings.txt` 与 `vocab.db`，统一落在本地 SQLite 库中，供检索、编辑、
-统计与导出（Markdown / HTML+CSS / CSV / JSON / 分享卡 PNG / Obsidian vault）。
+统计与导出（Markdown / HTML+CSS / CSV / JSON / 分享卡 PNG / Obsidian vault / Anki 牌组）。
 
 > 两个源文件的**结构与字段语义**（含若干极易误解的字段，例如 `LOOKUPS.pos` 其实是
 > 书中位置而非词性）单独记在 [`formats.md`](formats.md)。
@@ -49,7 +49,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
 | `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
 | `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
-| `KindleMate2.Tests` | **按宿主 OS 条件化**：非 Windows 宿主上 `net10.0`；Windows 宿主上 `net10.0-windows` | 只引用 Application / Infrastructure / Domain；Windows 宿主条件引用 `Devices.Windows`（否则 `net10.0` 无法引用 `net10.0-windows` 程序集），以便在 CI 覆盖 Windows 设备实现。平台专属测试文件用 `#if WINDOWS` 圈起 |
+| `KindleMate2.Tests` | **按宿主 OS 条件化**：非 Windows 宿主上 `net10.0`；Windows 宿主上 `net10.0-windows` | 引用 Application / Infrastructure / Domain 与 Devices.MacOS / Devices.Posix / Devices.Linux（后三者均为中性 `net10.0`）；Windows 宿主上额外条件引用 `Devices.Windows`（`net10.0-windows`），以便在 CI 覆盖 Windows 设备实现。平台专属测试文件用 `#if WINDOWS` 圈起 |
 
 ### 3. 项目依赖关系
 
@@ -72,13 +72,13 @@ graph TD
     DEV --> SH
 
     POS --> POSIX["KindleMate2.Devices.Posix<br/>net10.0"]
+    POS --> APP
+    POS --> SH
+
     POSIX --> APP
-    POSIX --> DOM
-    POSIX --> INF
     POSIX --> SH
 
     INF --> DOM
-    INF --> SH
 
     DOM --> SH
 
@@ -90,6 +90,10 @@ graph TD
     T -. "仅 Windows TFM" .-> DEV
 ```
 
+> 上图画的是各 `.csproj` 里的**直接** `ProjectReference` 边。`Devices.Posix` /
+> `Devices.MacOS` / `Devices.Linux` 对 `Domain` / `Infrastructure` 的引用是**经 `Application`
+> 传递**而来的；`Infrastructure` 对 `Shared` 的引用则是**经 `Domain` 传递**的 —— 传递边不画在本图里。
+
 ### 4. 平台专有代码的边界
 
 **原则：平台专有代码一律收敛到独立程序集，不在业务层散布条件编译。**
@@ -97,7 +101,7 @@ graph TD
 - Windows 专有程序集是 `KindleMate2.Devices.Windows`（USB 盘符枚举、MTP(MediaDevices)、WMI 事件监听，`net10.0-windows`，依赖 `MediaDevices` + `System.Management`）。
 - macOS / Linux 的设备实现是纯 BCL 的 `KindleMate2.Devices.Posix`（`net10.0`：libmtp 的 P/Invoke 绑定、libusb 只读 USB 探测、卷扫描），由两个薄壳 `Devices.MacOS` / `Devices.Linux` 注入各自的候选挂载根；因此这两个程序集可在**任意平台**编译与单测（用例把卷根指到临时目录）。
 - `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
-- **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
+- **`IDeviceManager` 的注册由各平台壳负责**，不在 Application 层 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现（早期那套集中注册文件 `Application/DependencyInjection.cs` 已删除）。
 - Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
 - **测试工程同样按宿主 OS 条件化**（2026-10，PR #165）：Windows 宿主上 `KindleMate2.Tests` 编 `net10.0-windows` 并条件引用 `Devices.Windows`，从而让 `WindowsDeviceManagerTests` 能进 CI；非 Windows 宿主仍编 `net10.0`（`Devices.Windows` 是单目标 `net10.0-windows`，从 `net10.0` 引用会 NU1201）。平台专属的测试文件必须用 `#if WINDOWS` 圈起，否则非 Windows 编译不过。
 
@@ -108,7 +112,8 @@ graph TD
 ### `Services/DatabaseSession.cs`（UI 与业务之间的组装点）
 
 按"当前打开的库路径"组装仓储 + 服务 + 各工厂 + `DeviceManager` / `ImportManager` /
-`ExportManager`。这是绕开 `Application/DependencyInjection.cs` 中硬编码连接串的正解，
+`ExportManager`。早期那套集中注册（`Application/DependencyInjection.cs`，已删除）把所有仓储
+硬编码到写死的相对路径 `KM2.dat` 连接串上；`DatabaseSession` 是按路径参数化、绕开它的正解，
 所有 UI 动作都经由它。
 
 ```
@@ -142,13 +147,19 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
    后者重建 `lookups` 用的是老的 5 列脚本，会抹掉 `deleted_at` / `origin_batch`；
    本迁移按 `PRAGMA table_info` 探测列是否存在，故对新库、老库、半迁移库都幂等）；
    最后 `DatabaseHelper.EnsureIndexesIfNeeded()` 幂等补齐查询索引（`clippings` 复合索引、
-   `vocab.word_key`），失败同样仅告警。索引 SQL 同源于 `GetIndexScripts()`。
+   `vocab.word_key`、`lookups.timestamp`），失败同样仅告警。索引 SQL 同源于 `GetIndexScripts()`。
+   **迁移检测不再吞异常**：`MigrateLookupsSchemaIfNeeded` 的 legacy 探测（单列
+   `UNIQUE(timestamp)`）此前把探测失败的异常当成「无需迁移」静默跳过，会让老库永远得不到重建；
+   现在区分「已确认无需迁移」（返回）与「无法判定」（抛出，经 `MigrationWarning` 告知用户）。
    **迁移后置条件验证**：`DatabaseHelper.NeedsSoftDeleteColumns()` 确认软删两列真的补上了 ——
    表在、列缺 = 迁移失败，按 **Fatal 拒绝打开**（错误框 + 退出；修复磁盘 / 占用后重启即恢复，
    迁移按列探测幂等，重跑安全）。原因：半迁移库「读得写不得」（读路径按 `HasColumn` 分支，
    写路径会 `no such column`），与其让用户撞含糊的 SQLite 报错，不如说清成因；
    缺表 / 读不出不归该探测管，交由既有缺表提示与「库打不开」错误框接手，
    免得把「结构损坏」误诊成「迁移失败」。
+   连接串统一由 `DatabaseHelper.BuildConnectionString()` 构造，并**显式**带上 `Default Timeout`
+   （命令超时 → 锁竞争时的等待窗口），集中一处以免各调用点漂移。
+   （例外：Anki 导出写临时 `.anki2` 库时自建连接串并 `Pooling=false`，见 `AnkiApkgWriter`。）
 3. 进程退出（`AppDomain.ProcessExit`）→ `DatabaseHelper.BackupDatabase()` 自动备份到
    `Backups/OnExit/`，随后 `DatabaseHelper.PruneBackups()` 只保留最新 3 份。
 
@@ -170,6 +181,11 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 
 - `GetAll()` 只返回活跃行（UI / 导出 / 词频 / 状态栏都按"用户看得见的条目"算）；
   `GetAllIncludingDeleted()` 只给导入判重用。
+- **批量插入统一「整批快路径 + 逐条降级」**：先走整批单事务（`INSERT OR IGNORE`），整批失败
+  再降级为逐条独立事务 —— 冲突项跳过、空 `key`/`word` 等非法行**显式跳过**，磁盘满 / 库被锁等
+  系统性问题向上抛。`lookups` / `vocab` 现与 `clippings` / `original_clipping_lines` 对称
+  （此前二者无降级，一条脏数据会让整批回滚）。判定「可跳过」只看 SQLite 约束冲突
+  （主码 `19`，含扩展码），**不再**把任意 `InvalidOperationException` 当可跳过（避免吞掉真实故障）。
 - `origin_batch` 指向 `import_batches.id`：每次导入开一行批次记录（来源类型 + 路径 +
   时间 + 计数），事后可对账"这批词是哪次导进来的"，也是将来「撤销本次导入」的抓手。
   批次只记账、**不参与判重**；批次行本身写不进去（表缺失 / 库被占 / 磁盘满）时
@@ -207,6 +223,25 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 > **旧格式库不能直接打开。** 那套关系型旧库（样本在仓库外 fixtures）虽有 `clippings` 表但**没有 `key` 列**，
 > 直接打开会报 `no such column: key`。迁入旧数据的通道是
 > **菜单「管理 → 导入 Kindle Mate 数据库 / 导入 Kindle Mate 2 数据库 / 导入 KMate 数据库」**（迁移，而非原地读取）。
+
+### 设备 vocab.db 源库的只读打开与逐表降级（2026-10-15）
+
+设备上的 `vocab.db` 是**只读数据源**：`VocabDatabaseServiceFactory` 以 `Mode=ReadOnly` 打开
+（与读 `km3.dat` 的 `KmateSourceReader` 同口径）—— 可写打开在只读挂载 / 被占用时会失败，
+还可能顺手生成 `-journal` 污染设备盘。
+
+源库的表/列**不由本程序保证**（不同固件、越狱插件、或一份被截断的库都可能缺表缺列），
+故先经 `VocabSourceSchema.Probe()` 探测实表实列：
+
+- 表存在且**必需列**齐全 → 按实际存在的列构造 SELECT（缺的**可选**列补 `NULL`），照常导入；
+- 表缺失或必需列不全 → 该表**逐表跳过**，不影响 `WORDS` / `LOOKUPS` / `BOOK_INFO` 里的其它表。
+
+跳过明细（逐表跳过数 + 时间戳非法/越界被忽略的记录数）与标注导入的日期/页码/上限跳过计数
+一并写进导入结果文案，不再静默丢失。unix 毫秒时间戳先做区间校验（`> 0` 且在
+`DateTimeOffset` 可表示范围内），越界按「无时间」处理，不抛异常。
+
+> ⚠ 只放宽**源库**（设备 vocab.db）容错；目标库（KM2.dat）的 schema 仍由本程序建库脚本 /
+> 启动迁移与打开前校验保证（缺表由迁移补齐、软删除迁移列缺失按 Fatal 拒绝打开），不在此放宽。
 
 ---
 
@@ -282,6 +317,15 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 - **构建 SDK 必须 ≥ 10**：Avalonia 12 的 XAML 源生成器引用 `Microsoft.CodeAnalysis 4.14`，
   在 SDK 8/9 上会被 Roslyn **静默跳过**（只发 CS9057 警告），表现为每个 `.axaml.cs` 满屏
   `CS0103: InitializeComponent 不存在`。
-- **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
+- **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。下载前与生成替换脚本前各有一道**可执行文件名守卫**：`Environment.ProcessPath` 的基名必须是本应用（`KindleMate2`），否则拒绝自动替换 —— 以 `dotnet …dll` 宿主时其目录是 .NET 运行时目录，误覆盖后果远超本应用（口径是"可执行文件名"，不校验安装位置）。解压 tar.gz/zip 走 BCL（`TarFile`/`ZipFile`），其自带对**符号链接与 `..` 路径穿越条目**的拦截（实测抛 `IOException`、目标目录外不落文件）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。
+- **两条已知导入边界**（详见 `formats.md` §六；两者性质不同，别混为一谈）：
+  ① **时间语义两源不一致**（审计 P2-13，**不可回溯**，只能文档化）—— 标注的时间是设备**本地墙钟**
+  的自然语言文本（**无时区**），生词的时间是 unix 毫秒、按**导入机时区**换算成本地时间；
+  `My Clippings.txt` 侧根本没有时区信息，**存量数据无法回溯修正**，不要试图"统一"。
+  ② **`clippings.key` 不含书名**（审计 P2-14，**已知限制**，待 schema 升级修复）—— `key = 日期|类型+位置`，
+  而它是 `PRIMARY KEY NOT NULL UNIQUE`；两本不同的书在「同一秒 + 同一位置 + 同一类型」时会撞 key，
+  后到的那条被**静默跳过**（Kindle 的 Location 每本书各自编号，跨书位置相同很常见）。修复需改
+  `clippings.key` 主键并迁移 `original_clipping_lines`，属 schema 版本升级，**未在本次处理**（另立项）；
+  现状由 `KindleMate2.Tests/AuditLeftoverTests` 的用例钉住。

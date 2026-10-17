@@ -46,6 +46,12 @@ public static class WordDefinitionService {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(8);
 
     /// <summary>
+    /// 未注入 <c>httpClient</c> 时使用的共享客户端。**静态复用**(连接池/socket 可复用),
+    /// 保留本用途自己的 8 秒超时 —— 不与检查更新(20 秒)、下载(10 分钟)共用实例。
+    /// </summary>
+    private static readonly HttpClient SharedClient = CreateHttpClient();
+
+    /// <summary>
     /// 查一个词的释义。**任何失败(断网/超时/接口变更/被限流/没有这个词)都返回 <c>null</c>**,
     /// 调用方据此不显示释义块。
     /// </summary>
@@ -58,8 +64,8 @@ public static class WordDefinitionService {
 
         if (string.IsNullOrWhiteSpace(word)) return null;
 
-        using var owned = httpClient is null ? CreateHttpClient() : null;
-        var client = httpClient ?? owned!;
+        // httpClient 是测试注入点:注入则用注入的,否则复用静态实例(不再每次新建)。
+        var client = httpClient ?? SharedClient;
 
         try {
             using var response = await client
