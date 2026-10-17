@@ -179,6 +179,10 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             //    但**只跳过可跳过项**(重复 key / key 为空);磁盘满、库被锁等系统性问题向上抛。
             var inserted = 0;
             foreach (OriginalClippingLine originalClippingLine in listOriginalClippings) {
+                // 数据非法(无 key):显式跳过(IsSkippableInsertFailure 已收窄到只认约束冲突)。
+                if (string.IsNullOrWhiteSpace(originalClippingLine.Key)) {
+                    continue;
+                }
                 using var rowTransaction = connection.BeginTransaction();
                 try {
                     if (InsertOne(connection, rowTransaction, originalClippingLine)) {

@@ -399,6 +399,11 @@ namespace KindleMate2.Infrastructure.Repositories.KM2DB {
             //    否则会被误报成「导入成功、只少几条」。
             var inserted = 0;
             foreach (Clipping clipping in listClippings) {
+                // 数据非法(无 key):显式跳过 —— 不再依赖"抛 InvalidOperationException 再吞"的旧口径
+                // (IsSkippableInsertFailure 已收窄到只认约束冲突,见其说明)。
+                if (string.IsNullOrWhiteSpace(clipping.Key)) {
+                    continue;
+                }
                 using var rowTransaction = connection.BeginTransaction();
                 try {
                     if (InsertOne(connection, rowTransaction, clipping)) {
