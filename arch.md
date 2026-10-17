@@ -146,6 +146,10 @@ Avalonia View  →  ViewModel  →  DatabaseSession  →  Infrastructure 仓储 
    **这几步在 `Task.Run` 后台线程执行**：它们是同步文件 IO，大库建索引可达秒级，而
    `PrepareDatabaseAsync()` 由 `MainWindow.OnOpened` 在 UI 线程调用 —— 同步跑会冻结启动界面。
    各方法各自开连接、无共享可变状态，后台执行安全；失败仅告警的语义不变。
+   **并用进程级串行闸门（`AsyncSerialGate`）串行化**：后台化之后 UI 在迁移期间可交互，用户此时
+   切语言会重建主窗口、新窗口的 `OnOpened` 会再跑一次 `PrepareDatabaseAsync`；两段迁移不能并发
+   操作同一个库（`ALTER TABLE ... ADD COLUMN` 是 check-then-act），后到者排队等前一个跑完
+   （迁移按列探测幂等，第二次是 no-op）。闸门是 `static`，因为重建窗口会换一个新的 VM 实例。
    **迁移后置条件验证**：`DatabaseHelper.NeedsSoftDeleteColumns()` 确认软删两列真的补上了 ——
    表在、列缺 = 迁移失败，按 **Fatal 拒绝打开**（错误框 + 退出；修复磁盘 / 占用后重启即恢复，
    迁移按列探测幂等，重跑安全）。原因：半迁移库「读得写不得」（读路径按 `HasColumn` 分支，

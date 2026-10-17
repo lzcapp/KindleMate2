@@ -170,6 +170,10 @@ jobs:
           grep -q "search types i18n:.*result=OK" "$out"
           # 设置保存必须走原子写(临时文件 + 替换),保存目录里不该残留 .tmp;往返取值正确。
           grep -q "settings:.*result=OK" "$out"
+          # 源码断言:上面的探针在**旧的非原子实现**下同样会绿(File.WriteAllText 也不留 .tmp、
+          # 往返也正确),区分不了"退回非原子写"。所以把"Save 必须委托 AtomicFile"本身钉死:
+          # 删掉这一行调用(或改回 File.WriteAllText)不报错、单测也够不着(AppSettings 在 Avalonia 工程)。
+          grep -q 'AtomicFile.WriteAllText(FilePath' KindleMate2.Avalonia/Services/AppSettings.cs
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
@@ -297,6 +301,9 @@ jobs:
           grep -q "search types i18n:.*result=OK" "$work/smoke.txt"
           # 设置保存必须原子写且往返正确(同 Windows 作业的理由)
           grep -q "settings:.*result=OK" "$work/smoke.txt"
+          # 源码断言:探针区分不了"退回 File.WriteAllText"(旧实现同样不留 .tmp、往返也正确),
+          # 故把"AppSettings.Save 必须委托 AtomicFile"这条接线本身钉死(同 Windows 作业)。
+          grep -q 'AtomicFile.WriteAllText(FilePath' KindleMate2.Avalonia/Services/AppSettings.cs
           # 自检必须把联网查释义关掉:CI 不该依赖第三方词典(慢、易 flaky),也不该把词条发出去
           grep -q "online definition: enabled=False" "$work/smoke.txt"
           # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,

@@ -179,7 +179,16 @@ internal static class Program {
 
             // 应用级设置往返(主题 / 语言)+ **原子写**:Save 走"临时文件 + 原子替换",
             // 保存目录里不应残留 .tmp;再把设置读回来必须拿到刚写进去的值。
+            // 先清掉上次运行遗留的目录:若历史运行在临时文件阶段崩溃/被杀,残留的 .tmp 会让
+            // 「tempFiles=0」这条断言在本机误报(CI 全新 runner 不受影响,但开发机跑 --smoke 会红)。
             var settingsDir = Path.Combine(Path.GetTempPath(), "km2settings");
+            try {
+                if (Directory.Exists(settingsDir)) {
+                    Directory.Delete(settingsDir, true);
+                }
+            } catch (Exception ex) {
+                report.AppendLine($"settings: 清理临时目录失败(继续): {ex.Message}");
+            }
             var settings = AppSettings.Load(settingsDir);
             settings.Theme = "light";
             settings.Language = "zh-hant";

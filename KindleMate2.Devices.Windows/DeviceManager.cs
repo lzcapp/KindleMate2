@@ -85,9 +85,15 @@ public class DeviceManager : IDeviceManager {
 
     /// <summary>
     /// 探测结果缓存窗口。窗口内重复调用直接复用上次结果 ——
-    /// 启动时 <c>StartWatching()</c> 与界面首次刷新、以及 WMI 事件抖动,都会在毫秒级内连调数次;
-    /// 没有缓存就是连开数次 MTP 会话(单会话协议,既慢又可能与导入/写回抢设备)。
-    /// 取 1.5 秒:远短于 8 秒轮询与 2.5 秒防抖,不至于让"刚拔了设备"滞后太久。
+    /// 8 秒轮询、用户动作(同步 / 从设备导入 / 关于页)以及测试里的重入调用,可能在很短时间
+    /// 内各触发一次探测;没有缓存就会连开数次 MTP 会话(单会话协议,既慢又可能与导入/写回抢设备)。
+    /// 取 1.5 秒:远短于 8 秒轮询,不至于让"刚拔了设备"滞后太久。
+    ///
+    /// 注意作用范围:UI 的设备状态只由 <c>MainWindow</c> 的 8 秒轮询刷新(见
+    /// <c>RefreshDeviceStatusAsync</c>),本缓存只减少探测次数、**不改变 UI 刷新节奏**
+    /// (拔设备后最多等下一轮轮询)。Windows 的 WMI 事件链路(<c>StartWatching</c> /
+    /// <c>ConnectionChanged</c>)目前没有在 Avalonia 壳里接线,属既有缺口,不在本类内解决 ——
+    /// 因此"启动时 StartWatching 与首次刷新连调数次"并不成立,缓存的实际收益是合并轮询与用户动作。
     /// </summary>
     private static readonly TimeSpan ProbeCacheDuration = TimeSpan.FromMilliseconds(1500);
 

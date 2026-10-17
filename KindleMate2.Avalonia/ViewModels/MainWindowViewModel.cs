@@ -99,6 +99,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable {
     private bool _definitionExpanded;
 
     /// <summary>
+    /// 启动期「迁移 / 补索引」的**进程级**串行闸门。迁移移到后台线程后,UI 在迁移期间可交互:
+    /// 用户此时切语言会重建主窗口,新窗口的 <c>OnOpened</c> 会再跑一次 <see cref="PrepareDatabaseAsync"/> ——
+    /// 两个迁移会并发操作同一个 SQLite 库(<c>ALTER TABLE ... ADD COLUMN</c> 是 check-then-act:
+    /// 都先查列不存在、再都去加),极端情况下多弹一个 duplicate column / locked 告警。
+    /// 用闸门把后到者挡到前一个跑完(迁移按列探测幂等,第二次是 no-op)。
+    /// **必须 static**:重建窗口会换一个新的 VM 实例。
+    /// </summary>
+    private static readonly AsyncSerialGate MigrationGate = new();
+
+    /// <summary>
     /// **进程级**放行开关。自检路径(--smoke / --ops)会把它关掉:CI 不该依赖第三方词典
     /// (会慢、会 flaky),也不该把词条发出去。与 DeviceManager 的 detectMtpDevices 同类,是"测试确定性接缝"。
     /// **刻意没有"用户开关"**(2026-09-23 用户拍定)。理由:触发范围本来就窄 ——
@@ -526,7 +536,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable {
             // 放进 Task.Run 后台执行(失败仅告警的语义不变)。
             // 这几个 DatabaseHelper 方法各自开连接、不共享可变状态,后台执行安全;await 之后
             // 续体会回到 UI 线程,下面的 MigrationWarning 赋值/通知仍在 UI 线程上。
-            await Task.Run(() => {
+            // 再经 MigrationGate 串行化:后台化之后 UI 在迁移期间可交互,若此时切语言,重建出的新窗口
+            // 会再跑一次本方法 —— 两段迁移不能并发操作同一个库(见 MigrationGate 注释)。
+            await MigrationGate.RunAsync(() => Task.Run(() => {
                 DatabaseHelper.MigrateSchemaIfNeeded(databasePath);
                 DatabaseHelper.MigrateLookupsSchemaIfNeeded(databasePath);
                 // 软删除列 + import_batches 表(就地演进第一步)。必须在 MigrateLookupsSchemaIfNeeded 之后:
@@ -534,7 +546,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable {
                 DatabaseHelper.EnsureSoftDeleteSchemaIfNeeded(databasePath);
                 // 老库补建查询索引(clippings 复合索引、vocab.word_key;幂等,新建的库已由建库脚本带上)。
                 DatabaseHelper.EnsureIndexesIfNeeded(databasePath);
-            });
+            }));
         } catch (Exception ex) {
             // 原版此处只弹一个警告框,不阻断启动
             MigrationWarning = ex.Message;
