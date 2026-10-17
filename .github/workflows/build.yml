@@ -220,6 +220,15 @@ jobs:
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)
           grep -q "about device:.*result=OK" "$out"
+          # 「搜索范围」下拉文案必须随语言重算:写成 static 字段会固化首次访问时的语言,
+          # 切语言后下拉永远停在旧语言(单测工程不引 Avalonia,够不着 TypeTextMap)。
+          grep -q "search types i18n:.*result=OK" "$out"
+          # 设置保存必须走原子写(临时文件 + 替换),保存目录里不该残留 .tmp;往返取值正确。
+          grep -q "settings:.*result=OK" "$out"
+          # 源码断言:上面的探针在**旧的非原子实现**下同样会绿(File.WriteAllText 也不留 .tmp、
+          # 往返也正确),区分不了"退回非原子写"。所以把"Save 必须委托 AtomicFile"本身钉死:
+          # 删掉这一行调用(或改回 File.WriteAllText)不报错、单测也够不着(AppSettings 在 Avalonia 工程)。
+          grep -q 'AtomicFile.WriteAllText(FilePath' KindleMate2.Avalonia/Services/AppSettings.cs
           echo "windows 发布产物自检通过(win-x64 self-contained)"
 
       # 写操作端到端探针(--ops)。补一个长期盲区:上面所有步骤都只跑 --smoke(只读链路),
@@ -409,6 +418,13 @@ jobs:
           # 「重命名生词」两处菜单的可用性。VM 那层单测够不着(单测工程不引 Avalonia),
           # 而拼键/撞名那两条纯规则在 WordRenameRulesTests 里 —— 两层各钉各的。
           grep -q "word rename:.*result=OK" "$work/smoke.txt"
+          # 「搜索范围」下拉文案必须随语言重算(同 Windows 作业的理由)
+          grep -q "search types i18n:.*result=OK" "$work/smoke.txt"
+          # 设置保存必须原子写且往返正确(同 Windows 作业的理由)
+          grep -q "settings:.*result=OK" "$work/smoke.txt"
+          # 源码断言:探针区分不了"退回 File.WriteAllText"(旧实现同样不留 .tmp、往返也正确),
+          # 故把"AppSettings.Save 必须委托 AtomicFile"这条接线本身钉死(同 Windows 作业)。
+          grep -q 'AtomicFile.WriteAllText(FilePath' KindleMate2.Avalonia/Services/AppSettings.cs
           # 自检必须把联网查释义关掉:CI 不该依赖第三方词典(慢、易 flaky),也不该把词条发出去
           grep -q "online definition: enabled=False" "$work/smoke.txt"
           # 源码断言:左栏那两项的显隐必须还绑着(编译期绑定只保证属性存在,

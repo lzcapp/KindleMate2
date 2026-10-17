@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using KindleMate2.Avalonia.Models;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
 using KindleMate2.Infrastructure.Helpers;
@@ -177,14 +178,31 @@ internal static class Program {
                               $" target={KindleMate2.Application.Services.UpdateInstaller.TargetForCurrentPlatform()}");
             report.AppendLine($"framework: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 
-            // 应用级设置往返(主题 / 语言)
+            // 应用级设置往返(主题 / 语言)+ **原子写**:Save 走"临时文件 + 原子替换",
+            // 保存目录里不应残留 .tmp;再把设置读回来必须拿到刚写进去的值。
+            // 先清掉上次运行遗留的目录:若历史运行在临时文件阶段崩溃/被杀,残留的 .tmp 会让
+            // 「tempFiles=0」这条断言在本机误报(CI 全新 runner 不受影响,但开发机跑 --smoke 会红)。
             var settingsDir = Path.Combine(Path.GetTempPath(), "km2settings");
+            try {
+                if (Directory.Exists(settingsDir)) {
+                    Directory.Delete(settingsDir, true);
+                }
+            } catch (Exception ex) {
+                report.AppendLine($"settings: 清理临时目录失败(继续): {ex.Message}");
+            }
             var settings = AppSettings.Load(settingsDir);
             settings.Theme = "light";
             settings.Language = "zh-hant";
             settings.Save();
             var reloaded = AppSettings.Load(settingsDir);
-            report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} path={reloaded.FilePath}");
+            var settingsFiles = Directory.Exists(settingsDir)
+                ? Directory.GetFiles(settingsDir)
+                : Array.Empty<string>();
+            var tempResidue = settingsFiles.Count(f => f.EndsWith(".tmp", StringComparison.Ordinal));
+            var settingsOk = reloaded.Theme == "light" && reloaded.Language == "zh-hant" && tempResidue == 0;
+            report.AppendLine($"settings: theme={reloaded.Theme} lang={reloaded.Language} path={reloaded.FilePath}" +
+                              $" tempFiles={tempResidue}" +
+                              $" -> result={(settingsOk ? "OK" : "失败!设置原子写或往返不正确")}");
 
             // 多语言资源核对:切换 Culture 后取同一条文案,验证三套卫星资源均可用
             var original = Strings.Culture;
@@ -193,6 +211,22 @@ internal static class Program {
                 report.AppendLine($"i18n[{code}]: menu={Strings.Ui_Menu_Statistics} | type={Strings.Ui_Type_Highlight} | summary={Strings.Ui_Status_SummaryClippings} | syncHint={Strings.Ui_Menu_SyncToDevice_NeedsDevice}");
             }
             Strings.Culture = original;
+
+            // 「搜索范围」下拉的本地化必须**每次读取现算**:TypeTextMap.SearchTypes 若写成
+            // static 字段,会在**首次访问**时把当时的语言固化下来 —— 切语言走的是"重建窗口让
+            // XAML 重新求值",而 C# 静态字段不会重算,于是下拉框永远停在旧语言(实测症状)。
+            // 钉法:同一进程内切换 Culture,前后两次读取必须给出不同的文案。
+            {
+                var originalSearchTypeCulture = Strings.Culture;
+                Strings.Culture = new System.Globalization.CultureInfo("zh-Hans");
+                var searchTypeZh = TypeTextMap.SearchTypes[0];
+                Strings.Culture = new System.Globalization.CultureInfo("en");
+                var searchTypeEn = TypeTextMap.SearchTypes[0];
+                Strings.Culture = originalSearchTypeCulture;
+                var typeMapOk = searchTypeZh.Length > 0 && searchTypeEn.Length > 0 && searchTypeZh != searchTypeEn;
+                report.AppendLine($"search types i18n: zh='{searchTypeZh}' en='{searchTypeEn}'" +
+                                  $" -> result={(typeMapOk ? "OK" : "失败!搜索范围下拉未随语言重算")}");
+            }
 
             // —— 回归:启动应自动建库(对齐原版 FrmMain 的数据库生命周期) ——
             // 原版:库固定为 <当前目录>/KM2.dat,不存在则 CreateDatabase 自动创建。

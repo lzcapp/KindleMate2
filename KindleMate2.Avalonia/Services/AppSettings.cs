@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared.Diagnostics;
 
 namespace KindleMate2.Avalonia.Services;
@@ -44,7 +45,13 @@ public sealed class AppSettings {
         try {
             if (File.Exists(path)) {
                 var json = File.ReadAllText(path);
-                var loaded = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+                var loaded = JsonSerializer.Deserialize<AppSettings>(json, Options);
+                if (loaded == null) {
+                    // 合法 JSON 但内容是 null(如文件里只有一个 "null")——反序列化不抛异常,
+                    // 却会静默回退默认值,把主题/语言/跳过版本全丢掉。至少留一条日志。
+                    AppLog.Write("[AppSettings] settings.json 反序列化结果为空,回退默认设置");
+                    return new AppSettings { FilePath = path };
+                }
                 loaded.FilePath = path;
                 return loaded;
             }
@@ -56,9 +63,9 @@ public sealed class AppSettings {
 
     public void Save() {
         try {
-            var dir = Path.GetDirectoryName(FilePath);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Options));
+            // 原子写:写临时文件 + 原子替换 —— 直接 File.WriteAllText 在崩溃/并发下会留下半截
+            // JSON,Load 只得静默回退默认值,用户的主题/语言/跳过版本就这样无声丢掉了。
+            AtomicFile.WriteAllText(FilePath, JsonSerializer.Serialize(this, Options));
         } catch (Exception ex) {
             AppLog.Write(ex);
         }

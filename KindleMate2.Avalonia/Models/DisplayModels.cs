@@ -195,8 +195,15 @@ public static class TypeTextMap {
         _ => (string.Empty, TypeKind.None)
     };
 
-    /// <summary>搜索范围下拉项。索引与 <see cref="MatchClipping"/> 的判定顺序一致。</summary>
-    public static IReadOnlyList<string> SearchTypes { get; } = new[] {
+    /// <summary>
+    /// 搜索范围下拉项。索引与 <see cref="MatchClipping"/> 的判定顺序一致。
+    ///
+    /// **每次读取都现算**,刻意不用 <c>static</c> 字段初始化:后者会在**首次访问**时按当时的
+    /// <see cref="CultureInfo.CurrentUICulture"/> 取值并永久固化。切换语言走的是"重建窗口让 XAML
+    /// 重新求值",而 C# 的静态字段不会被重算 —— 于是下拉框会一直停在旧语言(实测症状)。
+    /// 现算的开销可以忽略(切换/绑定极少发生),换来的是文案永远跟着当前文化。
+    /// </summary>
+    public static IReadOnlyList<string> SearchTypes => new[] {
         Strings.Ui_Search_Type_All,
         Strings.Ui_Search_Type_Books,
         Strings.Ui_Search_Type_Author,
