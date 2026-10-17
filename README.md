@@ -68,8 +68,10 @@ sha256sum -c SHA256SUMS        # Windows 可用 Get-FileHash
   若你装过 `2026.09.13`–`2026.09.22` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
   升级后请把残留的 `KindleMate2.Avalonia.exe` 与 `KindleMate2.Avalonia.dll` 删掉。
 - **从旧 Linux tar.gz 升级**：库还在原来的解压目录，先搬一次（见上方 Linux 一节）。
-- **想把程序换到新目录**：新目录首次运行会新建一个空库；把旧的 `KM2.dat` 拷进新目录即可，
-  也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
+- **想把程序换到新目录**：**Windows 上**数据目录就是程序目录 —— 新目录首次运行会新建一个空库，
+  把旧的 `KM2.dat` 拷进新目录即可，也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
+  **Linux / macOS 的数据目录固定在** `~/.local/share/KindleMate2/` / `~/Library/Application Support/KindleMate2/`
+  （见上方各平台一节）—— 换程序目录**不会**新建空库，库也不会跟着走；要迁移数据请把 `KM2.dat` 放进数据目录。
 
 > 主题与语言**不会**随库迁移：旧版把这两项存在库里，新版存在系统的应用数据目录
 > （Windows 为 `%APPDATA%\KindleMate2\settings.json`），升级后需要重新选一次。

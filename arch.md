@@ -91,7 +91,7 @@ graph TD
 
 > 上图画的是各 `.csproj` 里的**直接** `ProjectReference` 边。`Devices.Posix` /
 > `Devices.MacOS` / `Devices.Linux` 对 `Domain` / `Infrastructure` 的引用是**经 `Application`
-> 传递**而来的，`Infrastructure` 对 `Shared` 同理 —— 传递边不画在本图里。
+> 传递**而来的；`Infrastructure` 对 `Shared` 的引用则是**经 `Domain` 传递**的 —— 传递边不画在本图里。
 
 ### 4. 平台专有代码的边界
 

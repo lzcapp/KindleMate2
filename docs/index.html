@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-lang="zh">
 <head>
 <meta charset="utf-8">
@@ -531,10 +531,14 @@
         <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>。</p>
       <p class="t-en" style="margin-top:10px"><strong>From an older Linux tar.gz:</strong> your library is still in the old extracted folder — move it once:
         <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>.</p>
-      <p class="t-zh" style="margin-top:10px"><strong>想把程序换到新目录：</strong>新目录首次运行会新建一个空库；
-        把旧的 <code>KM2.dat</code> 拷进新目录即可，也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。</p>
-      <p class="t-en" style="margin-top:10px"><strong>Moving the program to a new folder:</strong> the first run there creates an empty library.
-        Copy your old <code>KM2.dat</code> into the new folder, or use Manage → Import Kindle Mate 2 Database to merge the old library in.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>想把程序换到新目录：</strong><strong>Windows 上</strong>数据目录就是程序目录 ——
+        新目录首次运行会新建一个空库；把旧的 <code>KM2.dat</code> 拷进新目录即可，也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
+        <strong>Linux / macOS 的数据目录固定在</strong> <code>~/.local/share/KindleMate2/</code> / <code>~/Library/Application Support/KindleMate2/</code> ——
+        换程序目录<strong>不会</strong>新建空库、库也不会跟着走；要迁移数据请把 <code>KM2.dat</code> 放进数据目录。</p>
+      <p class="t-en" style="margin-top:10px"><strong>Moving the program to a new folder:</strong> <strong>on Windows</strong> the data directory is the program folder —
+        the first run in a new folder creates an empty library; copy your old <code>KM2.dat</code> into the new folder, or use Manage → Import Kindle Mate 2 Database to merge the old library in.
+        <strong>On Linux / macOS the data directory is fixed</strong> at <code>~/.local/share/KindleMate2/</code> / <code>~/Library/Application Support/KindleMate2/</code> —
+        moving the program does <strong>not</strong> create an empty library or move the library with it; put <code>KM2.dat</code> into the data directory instead.</p>
       <p class="t-zh" style="margin-top:10px">主题与语言<strong>不会</strong>随库迁移：旧版把这两项存在库里，新版存在系统的应用数据目录
         （Windows 为 <code>%APPDATA%\KindleMate2\settings.json</code>），升级后需要重新选一次。</p>
       <p class="t-en" style="margin-top:10px">Theme and language do <strong>not</strong> travel with the library: the old shell stored both inside the database, while the new build
