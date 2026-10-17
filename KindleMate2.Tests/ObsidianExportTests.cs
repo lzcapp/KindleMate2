@@ -124,9 +124,35 @@ public sealed class ObsidianExportTests : IDisposable {
         Assert.Equal("  刘慈欣  ", ReadQuotedFrontmatterValue(md, "author"));
     }
 
+    [Theory]
+    [InlineData("bell\u0007x")]     // C0 控制字符(BEL)
+    [InlineData("esc\u001Bx")]      // C0 控制字符(ESC)
+    [InlineData("del\u007Fx")]      // DEL
+    [InlineData("nel\u0085x")]      // C1 控制字符(NEL)
+    [InlineData("ls\u2028x")]       // Unicode 行分隔符
+    [InlineData("ps\u2029x")]       // Unicode 段分隔符
+    [InlineData("tab\tx")]          // 制表符(既有转义,一并钉住)
+    public void WriteVault_EscapesYamlControlCharacters_StaysValidAndRoundTrips(string author) {
+        // 其余不可打印字符若不转义,产出的 frontmatter 就是非法 YAML。用作者字段承载这些字符
+        // (书名会参与文件名派生,不适合塞控制字符)。
+        var clippings = new List<Clipping> { Clipping("k", "正文", book: "书", author: author) };
+
+        ExportManager.WriteObsidianVault(clippings, new List<Lookup>(), _dir, FixedAt);
+
+        var md = File.ReadAllText(Directory.GetFiles(BooksDir, "*.md").Single());
+        var scalar = ReadFrontmatterLine(md, "author");
+        // ① 标量自身合法(引号 / 反斜杠 / 十六进制转义都成对、成序列);② 能逐字还原原值。
+        AssertValidYamlDoubleQuoted(scalar);
+        Assert.Equal(author, ReadQuotedFrontmatterValue(md, "author"));
+        // ③ 不该残留任何原始不可打印字符(frontmatter 只剩可打印字符 + 合法转义序列)。
+        Assert.DoesNotContain(scalar, c => c < 0x20 || c == '\x7F'
+            || (c >= '\u0080' && c <= '\u009F') || c == '\u2028' || c == '\u2029');
+    }
+
     /// <summary>
     /// 断言一个 YAML 双引号标量**自身合法**:整体被双引号包住,内部每个 <c>"</c> 都被转义,
-    /// 每个 <c>\</c> 都起一个合法转义序列(<c>\\</c> / <c>\"</c> / <c>\n</c> / <c>\r</c> / <c>\t</c>)。
+    /// 每个 <c>\</c> 都起一个合法转义序列(<c>\\</c> / <c>\"</c> / <c>\n</c> / <c>\r</c> / <c>\t</c>,
+    /// 或 <c>\xNN</c> / <c>\uNNNN</c> / <c>\UNNNNNNNN</c> 形式的十六进制转义)。
     /// </summary>
     /// <remarks>
     /// 为什么不能只靠 <see cref="UnquoteYamlDoubleQuoted"/> 回读:那个反转义器对未转义的 <c>"</c>
@@ -135,7 +161,7 @@ public sealed class ObsidianExportTests : IDisposable {
     /// 能抓住。故这里独立做一次**结构合法性**校验,不依赖 writer 的转义实现。
     /// <para>
     /// 刻意不引入真正的 YAML 解析器(如 YamlDotNet):为一条断言给测试工程加依赖不划算,
-    /// 而这个结构检查足以覆盖"引号/反斜杠没转义"这一类缺陷。真要做严格 YAML 往返,
+    /// 而这个结构检查足以覆盖"引号/反斜杠/控制字符没转义"这一类缺陷。真要做严格 YAML 往返,
     /// 属于另一个量级的改动。
     /// </para>
     /// </remarks>
@@ -153,8 +179,29 @@ public sealed class ObsidianExportTests : IDisposable {
             }
             i++;
             Assert.True(i < body.Length, $"标量以孤立的反斜杠结尾:{scalar}");
-            Assert.True(body[i] is '\\' or '"' or 'n' or 'r' or 't',
-                $"非法转义序列 '\\{body[i]}':{scalar}");
+            switch (body[i]) {
+                case '\\':
+                case '"':
+                case 'n':
+                case 'r':
+                case 't':
+                    break;
+                case 'x': AssertHexEscapeLength(scalar, body, ref i, 2); break;
+                case 'u': AssertHexEscapeLength(scalar, body, ref i, 4); break;
+                case 'U': AssertHexEscapeLength(scalar, body, ref i, 8); break;
+                default:
+                    Assert.Fail($"非法转义序列 '\\{body[i]}':{scalar}");
+                    break;
+            }
+        }
+    }
+
+    /// <summary>校验十六进制转义 <c>\xNN</c> / <c>\uNNNN</c> / <c>\UNNNNNNNN</c> 的后继 hex 位并跳过。</summary>
+    private static void AssertHexEscapeLength(string scalar, string body, ref int index, int digits) {
+        for (var d = 0; d < digits; d++) {
+            index++;
+            Assert.True(index < body.Length, $"十六进制转义位数不足:{scalar}");
+            Assert.True(Uri.IsHexDigit(body[index]), $"十六进制转义含非 hex 字符 '{body[index]}':{scalar}");
         }
     }
 
@@ -424,16 +471,26 @@ public sealed class ObsidianExportTests : IDisposable {
                 continue;
             }
             i++;
-            sb.Append(body[i] switch {
-                'n' => '\n',
-                'r' => '\r',
-                't' => '\t',
-                '\\' => '\\',
-                '"' => '"',
-                _ => body[i],
-            });
+            switch (body[i]) {
+                case 'n': sb.Append('\n'); break;
+                case 'r': sb.Append('\r'); break;
+                case 't': sb.Append('\t'); break;
+                case '\\': sb.Append('\\'); break;
+                case '"': sb.Append('"'); break;
+                case 'x': AppendHexEscape(body, ref i, 2, sb); break;
+                case 'u': AppendHexEscape(body, ref i, 4, sb); break;
+                case 'U': AppendHexEscape(body, ref i, 8, sb); break;
+                default: sb.Append(body[i]); break;
+            }
         }
         return sb.ToString();
+    }
+
+    /// <summary>反转义 <c>\xNN</c> / <c>\uNNNN</c> / <c>\UNNNNNNNN</c>(<paramref name="index"/> 停在最后一位 hex)。</summary>
+    private static void AppendHexEscape(string body, ref int index, int digits, StringBuilder sb) {
+        var codePoint = int.Parse(body.Substring(index + 1, digits), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        index += digits;
+        sb.Append(char.ConvertFromUtf32(codePoint));
     }
 
     /// <summary>抽出 index.md 里所有 <c>[[目标]]</c> / <c>[[目标|别名]]</c> 的**目标**部分。</summary>
