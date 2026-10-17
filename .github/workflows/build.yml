@@ -173,6 +173,10 @@ jobs:
           if grep -n 'File.Copy(session.DatabasePath' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs; then
             echo "清空前的保底备份不得退回 File.Copy —— 请用 DatabaseHelper.CreateConsistentSnapshot"; exit 1
           fi
+          # ⑦ 删除查询行后必须重算词频(vocab.frequency 是落库值,统计页读它)。
+          #    三处 = 删除单条查询 / 删除整个词(连带删该键全部查询)/ 生词重命名·并入;
+          #    删掉任一处都不会有单测变红(单测工程不引 Avalonia,够不着 VM),故在这里钉数量。
+          test "$(grep -c 'session.Km2DatabaseService.UpdateFrequency();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)

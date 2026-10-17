@@ -1314,6 +1314,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
 
             var vocabDeleted = session.VocabService.DeleteVocabByWordKey(wordKey);
             var lookupDeleted = session.LookupService.DeleteLookup(wordKey);
+            if (vocabDeleted || lookupDeleted) {
+                // 删词会连带删掉该词键下的全部查询行 ⇒ 重算词频,免得统计页停在旧值(同删除单条查询)。
+                session.Km2DatabaseService.UpdateFrequency();
+            }
             return vocabDeleted || lookupDeleted ? "-" : string.Empty;
         }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true);
     }
@@ -1446,8 +1450,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
         if (_selectedItem?.Lookup is { } lookup) {
             var wordKey = lookup.WordKey ?? string.Empty;
             var timestamp = lookup.Timestamp ?? string.Empty;
-            return RunOperationAsync(() => session.LookupRepository.Delete(wordKey, timestamp) ? "-" : string.Empty,
-                true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true, restoreRowIndex: rowIndex);
+            return RunOperationAsync(() => {
+                if (!session.LookupRepository.Delete(wordKey, timestamp)) {
+                    return string.Empty;
+                }
+                // 查询行删掉后 frequency 不会自己变 —— 统计页的「查询次数」/ TopWords / 频次分布都读
+                // 这个**落库值**(见 StatisticsViewModel),不在这里重算就会停在删除前的偏高值。
+                session.Km2DatabaseService.UpdateFrequency();
+                return "-";
+            }, true, string.Empty, Strings.Delete_Failed, silentOnSuccess: true, restoreRowIndex: rowIndex);
         }
         return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_NoSelection));
     }

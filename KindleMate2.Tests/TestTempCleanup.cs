@@ -43,7 +43,9 @@ internal static class TestTempCleanup {
         "km2-anki-",
         "km2-pubexport-",
         "km2-schema-integrity-tests-",
-        "km2-schema-version-"
+        "km2-schema-version-",
+        // 2026-10 补齐:删除查询后重算词频的用例(LookupDeleteFrequencyTests)新前缀。
+        "km2-freq-tests-"
     };
 
     [ModuleInitializer]
