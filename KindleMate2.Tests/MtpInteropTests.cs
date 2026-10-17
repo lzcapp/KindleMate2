@@ -130,9 +130,22 @@ public sealed class MtpInteropTests {
         Assert.Contains("999", KindleMate2.Devices.Posix.MtpInterop.MtpError.Describe(999));
     }
 
+    /// <summary>
+    /// 门控理由:<c>LIBMTP_Init</c> + <c>LIBMTP_Detect_Raw_Devices</c> 是**只读枚举**、不写设备,
+    /// 但它确实会经由 libusb / IOKit **枚举真实 USB 总线** —— 开发机插着 Kindle 时,一次普通的
+    /// <c>dotnet test</c> 就会去碰真机(甚至可能触发系统侧的设备匹配)。按项目约定,凡触碰真机的
+    /// 用例一律用 <see cref="ManualTestGate"/> 门控并打 <c>Manual</c> 标签,CI 靠
+    /// <c>--filter "Category!=Manual"</c> 排除。纯 ABI 断言(结构体尺寸/偏移)不碰设备,
+    /// 仍在上面正常跑,不受影响。
+    /// </summary>
     [Fact]
+    [Trait("Category", "Manual")]
     public void InitAndDetect_ReturnDocumentedErrorCode_WhenLibraryIsPresent() {
-        // 在没装 libmtp 的环境(CI 的 ubuntu/windows 作业)直接跳过 —— 这里要验的是
+        if (!ManualTestGate.RequireDevice(_output, "libmtp 真机探测(会枚举真实 USB 总线)")) {
+            return;
+        }
+
+        // 在没装 libmtp 的环境(CI 的 ubuntu/windows 作业)直接返回 —— 这里要验的是
         // "绑定能解析、调用能返回",不是"库到处都有"。
         if (!KindleMate2.Devices.Posix.MtpInterop.IsAvailable()) {
             return;

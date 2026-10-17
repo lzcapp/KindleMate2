@@ -309,9 +309,16 @@ public sealed class MacOSDeviceManagerTests : IDisposable {
         if (Directory.Exists(KindleVolume)) Directory.Delete(KindleVolume, true);
     }
 
+    /// <summary>
+    /// 等待事件数达到 <paramref name="expected"/> 的**硬上限**(不是期望值):轮询间隔 20 ms、
+    /// 防抖窗口 100 ms,正常应在亚秒级到达。给到 15 s 是留足**宿主负载**余量 —— 实测在
+    /// 「多个 dotnet 进程 + 重装 SDK 同时跑」的机器上,5 s 预算会被线程池/计时器调度拖爆,
+    /// 于是本用例在全量并行套件里偶发假红(单独跑必过)。
+    /// 超时仍返回 false ⇒ 断言失败:"事件压根没来"(真回归)不会被放过,只是报错晚一点。
+    /// </summary>
     private static bool WaitForEventCount(List<bool> events, int expected) {
         var timeout = Stopwatch.StartNew();
-        while (timeout.Elapsed < TimeSpan.FromSeconds(5)) {
+        while (timeout.Elapsed < TimeSpan.FromSeconds(15)) {
             lock (events) {
                 if (events.Count >= expected) return true;
             }

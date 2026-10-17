@@ -9,6 +9,15 @@ namespace KindleMate2.Tests;
 /// (macOS 的 <c>Dispose_StopsWatching</c> 在慢 CI 上偶发失败正是这个成因。)
 /// </summary>
 public sealed class DebouncedActionTests {
+    /// <summary>
+    /// 等待回调的**上限**(不是期望值):防抖窗口最长 80 ms,这里给到 15 s 是留足负载余量
+    /// —— 满负载的机器上(实测本机:多个 <c>dotnet</c> 进程 + 重装 SDK 同时跑),
+    /// 单纯的线程池/计时器调度就可能把一次 30 ms 的回调拖到 5 s 以上。
+    /// 但它是**硬上限**:超时即失败(见 <see cref="WaitUntil"/>),所以"回调压根没触发"
+    /// (例如 Schedule 退化成了 no-op)绝不可能蒙混过关 —— 只是报错晚一点。
+    /// </summary>
+    private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(15);
+
     [Fact]
     public async Task Schedule_FiresOnceAfterTheQuietPeriod() {
         var fired = 0;
@@ -17,7 +26,7 @@ public sealed class DebouncedActionTests {
         action.Schedule();
         Assert.Equal(0, Volatile.Read(ref fired));   // 静默期内不触发
 
-        await WaitUntil(() => Volatile.Read(ref fired) == 1, TimeSpan.FromSeconds(2));
+        await WaitUntil(() => Volatile.Read(ref fired) == 1, WaitTimeout);
         await Task.Delay(120);
         Assert.Equal(1, Volatile.Read(ref fired));   // 且只触发一次
     }
@@ -34,7 +43,7 @@ public sealed class DebouncedActionTests {
         action.Schedule();
         action.Schedule();
 
-        await WaitUntil(() => Volatile.Read(ref fired) == 1, TimeSpan.FromSeconds(2));
+        await WaitUntil(() => Volatile.Read(ref fired) == 1, WaitTimeout);
         await Task.Delay(120);
         Assert.Equal(1, Volatile.Read(ref fired));
     }
@@ -88,12 +97,21 @@ public sealed class DebouncedActionTests {
         });
 
         action.Schedule();
-        await WaitUntil(() => Volatile.Read(ref attempts) == 1, TimeSpan.FromSeconds(2));
+        await WaitUntil(() => Volatile.Read(ref attempts) == 1, WaitTimeout);
+        Assert.Equal(1, Volatile.Read(ref attempts));
 
         action.Schedule();
-        await WaitUntil(() => Volatile.Read(ref attempts) == 2, TimeSpan.FromSeconds(2));
+        await WaitUntil(() => Volatile.Read(ref attempts) == 2, WaitTimeout);
+        // 关键:**真的发生过两次回调**,而不是"计时器没动、超时后静默放行"。
+        // (原先这里两次 WaitUntil 之后没有任何断言,WaitUntil 超时又只静默返回 ——
+        //  若 Schedule 退化成 no-op,用例照样绿。)
+        Assert.Equal(2, Volatile.Read(ref attempts));
     }
 
+    /// <summary>
+    /// 轮询等待;<b>超时即抛</b>而不是静默返回 —— 静默返回会让所有依赖它的用例变成"假绿"
+    /// (条件永远不满足也报通过),而这正是本用例此前没有断言也在 CI 里长期全绿的原因。
+    /// </summary>
     private static async Task WaitUntil(Func<bool> condition, TimeSpan timeout) {
         var deadline = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < deadline) {
@@ -102,5 +120,6 @@ public sealed class DebouncedActionTests {
             }
             await Task.Delay(10);
         }
+        throw new TimeoutException($"等待超时({timeout.TotalMilliseconds:N0} ms):条件始终未满足。");
     }
 }

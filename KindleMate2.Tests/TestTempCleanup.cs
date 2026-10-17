@@ -33,8 +33,10 @@ internal static class TestTempCleanup {
     /// 那些不是测试建的，不该由测试进程删。
     ///
     /// 新增测试类若用了新前缀，把它加到这里。**漏加的后果只是那个目录残留，不会出错。**
+    /// 漏登记会被 <see cref="TempDirPrefixTests"/> 拦下(它会扫描测试源码里的
+    /// <c>Path.GetTempPath()</c> 字面量前缀并比对白名单)。
     /// </summary>
-    private static readonly string[] OwnedPrefixes = {
+    internal static readonly string[] OwnedPrefixes = {
         "km2-backupcollision-tests-", "km2-backupname-tests-", "km2-prune-tests-",
         "km2-clipclean-tests-", "km2-maintenance-tests-", "km2-index-tests-",
         "km2-tests-", "km2-snapshot-tests-", "kmate-import-tests-",
@@ -44,9 +46,23 @@ internal static class TestTempCleanup {
         "km2-pubexport-",
         "km2-schema-integrity-tests-",
         "km2-schema-version-",
-        // 2026-10 补齐:删除查询后重算词频的用例(LookupDeleteFrequencyTests)新前缀。
-        "km2-freq-tests-",
-        "km2-atomic-tests-"
+        // 2026-10 补齐:以下 8 个前缀是**历史漏登记**的(审计报告列了 7 个,实扫测试源码
+        // 又多出 km2-import-batch-tests-),对应目录此前永不清扫、持续累积。
+        "km2-csv-", "km2-fname-", "km2-json-", "km2-obsidian-",
+        "km2-sync-export-", "km2-vocab-index-tests-", "km2-vocab-stem-",
+        "km2-import-batch-tests-",
+        // 本 PR 新增的 --ops 夹具目录前缀(新增时即登记)。
+        "km2-ops-fixture-",
+        // 其它 open PR 新增测试用的前缀(跨 PR 集成):提前登记,免得合并后 TempDirPrefixTests
+        // 因"别的分支带来的新前缀"在这份白名单里找不到而红。
+        "km2-clearall-backup-tests-",                                          // #157
+        "km2-lookups-migration-tests-", "km2-lookups-ts-index-tests-",         // #158
+        "km2-safe-numeric-tests-",                                             // #158
+        "km2-clipping-parse-",                                                 // #159
+        "km2-import-hardening-",                                               // #160
+        "km2-freq-tests-",                                                     // #161
+        "km2-atomic-tests-",                                                   // #164(该分支自己也会登记,合并取并集)
+        "km2-audit-leftovers-"                                                 // #166
     };
 
     [ModuleInitializer]

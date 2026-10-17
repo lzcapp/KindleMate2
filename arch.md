@@ -30,7 +30,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | 平台实现 | `KindleMate2.Devices.Windows` | Windows 专有设备实现（USB 盘符 + MTP(MediaDevices) + WMI） |
 | 平台实现 | `KindleMate2.Devices.Posix` | macOS/Linux 共用的设备实现（libmtp P/Invoke + libusb 只读探测 + 卷扫描） |
 | 平台壳 | `KindleMate2.Devices.MacOS` / `KindleMate2.Devices.Linux` | 上面 Posix 实现的薄壳（候选挂载根不同），均为中性 `net10.0` |
-| 测试 | `KindleMate2.Tests` | 单元测试（`dotnet test`；真机/联网探测默认跳过，需环境变量开启） |
+| 测试 | `KindleMate2.Tests` | 单元测试（`dotnet test`；Windows 宿主另编 `net10.0-windows` 以覆盖 `Devices.Windows`；真机/联网探测需环境变量开启） |
 
 > 历史说明：早期的 WPF（`KindleMate2.UI`）与 Windows Forms（`KindleMate2`）两个壳
 > 已于 2026-09-13 退役删除，`DarkModeForms` 子模块随之移除。
@@ -49,7 +49,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
 | `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
 | `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
-| `KindleMate2.Tests` | `net10.0` | 引用 Application / Infrastructure / Domain 与 Devices.MacOS / Devices.Posix / Devices.Linux（后三者均为中性 `net10.0`），可跨平台运行 |
+| `KindleMate2.Tests` | **按宿主 OS 条件化**：非 Windows 宿主上 `net10.0`；Windows 宿主上 `net10.0-windows` | 引用 Application / Infrastructure / Domain 与 Devices.MacOS / Devices.Posix / Devices.Linux（后三者均为中性 `net10.0`）；Windows 宿主上额外条件引用 `Devices.Windows`（`net10.0-windows`），以便在 CI 覆盖 Windows 设备实现。平台专属测试文件用 `#if WINDOWS` 圈起 |
 
 ### 3. 项目依赖关系
 
@@ -82,11 +82,12 @@ graph TD
 
     DOM --> SH
 
-    T["KindleMate2.Tests<br/>net10.0"] --> APP
+    T["KindleMate2.Tests<br/>net10.0（Windows 宿主：net10.0-windows）"] --> APP
     T --> INF
     T --> DOM
     T --> POS
     T --> POSIX
+    T -. "仅 Windows TFM" .-> DEV
 ```
 
 > 上图画的是各 `.csproj` 里的**直接** `ProjectReference` 边。`Devices.Posix` /
@@ -104,6 +105,7 @@ graph TD
 - 设备轮询（`MainWindow` 的 8 秒 `DispatcherTimer`）自带 **`Interlocked` 互斥**：上一轮探测未结束就跳过本轮，不排队、不阻塞 UI 线程；探测异常一律记 `AppLog`，不静默。
 - **`IDeviceManager` 的注册由各平台壳负责**，不在 Application 层 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现（早期那套集中注册文件 `Application/DependencyInjection.cs` 已删除）。
 - Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
+- **测试工程同样按宿主 OS 条件化**（2026-10，PR #165）：Windows 宿主上 `KindleMate2.Tests` 编 `net10.0-windows` 并条件引用 `Devices.Windows`，从而让 `WindowsDeviceManagerTests` 能进 CI；非 Windows 宿主仍编 `net10.0`（`Devices.Windows` 是单目标 `net10.0-windows`，从 `net10.0` 引用会 NU1201）。平台专属的测试文件必须用 `#if WINDOWS` 圈起，否则非 Windows 编译不过。
 
 ---
 
@@ -288,8 +290,8 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 |---|---|---|
 | 只读自检 | `KindleMate2 --smoke <db> [out]` | 列表 / 详情 / 统计 / 关于 / 设置 / 搜索 / 多语言 |
 | 写操作端到端 | `--ops <db> <clippings.txt> <vocab.db> <out>` | 导入 → 导出 → 备份 → 退出备份落点 → 重命名 → 删除 → 清理 → 重建 → 清空 → 空库重导 |
-| 单元测试 | `dotnet test KindleMate2.Tests` | 跨平台 TFM；真机 / 联网探测默认跳过，需 `KM2_MANUAL_DEVICE_TESTS=1` / `KM2_MANUAL_NETWORK_TESTS=1` 手动开启 |
-| CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
+| 单元测试 | `dotnet test KindleMate2.Tests` | 跨平台 TFM（Windows 宿主上另编 `net10.0-windows` 以覆盖 `Devices.Windows`）；真机 / 联网探测需 `KM2_MANUAL_DEVICE_TESTS=1` / `KM2_MANUAL_NETWORK_TESTS=1` 手动开启（xUnit 2.9.3 无动态跳过，未开启时报告为 PASSED 而非 SKIPPED，CI 用 `--filter "Category!=Manual"` 排除并断言） |
+| CI（验证） | `.github/workflows/build.yml` | windows 全量构建 + 单测 + `--smoke` / `--ops` 自检；ubuntu/macOS 跨平台构建 + 单测 + 启动自检 |
 | CI（发布） | `.github/workflows/release.yml` | 12 个资产：Windows 6 变体 zip + Linux 4 变体 tar.gz（内含 `kindlemate2` 启动器）+ macOS 2 个 dmg（内含 .app）；发布前对 `linux-x64_runtime` 与 macOS 产物各做一次「解压/挂载即跑」自检 |
 
 两套自检**全程在临时副本上执行**，不会改动传入的真实数据库。
