@@ -30,7 +30,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | 平台实现 | `KindleMate2.Devices.Windows` | Windows 专有设备实现（USB 盘符 + MTP(MediaDevices) + WMI） |
 | 平台实现 | `KindleMate2.Devices.Posix` | macOS/Linux 共用的设备实现（libmtp P/Invoke + libusb 只读探测 + 卷扫描） |
 | 平台壳 | `KindleMate2.Devices.MacOS` / `KindleMate2.Devices.Linux` | 上面 Posix 实现的薄壳（候选挂载根不同），均为中性 `net10.0` |
-| 测试 | `KindleMate2.Tests` | 单元测试（`dotnet test`；真机/联网探测默认跳过，需环境变量开启） |
+| 测试 | `KindleMate2.Tests` | 单元测试（`dotnet test`；Windows 宿主另编 `net10.0-windows` 以覆盖 `Devices.Windows`；真机/联网探测需环境变量开启） |
 
 > 历史说明：早期的 WPF（`KindleMate2.UI`）与 Windows Forms（`KindleMate2`）两个壳
 > 已于 2026-09-13 退役删除，`DarkModeForms` 子模块随之移除。
@@ -49,7 +49,7 @@ KindleMate2 是 Kindle 标注 / 生词本的管理与整理工具。数据来自
 | `KindleMate2.Devices.Posix` | `net10.0` | 纯 BCL（libmtp P/Invoke + libusb 探测），macOS / Linux 共用 |
 | `KindleMate2.Devices.MacOS` | `net10.0` | Posix 实现的 macOS 薄壳（`/Volumes` 挂载根） |
 | `KindleMate2.Devices.Linux` | `net10.0` | Posix 实现的 Linux 薄壳（`/media`、`/run/media` 等挂载根） |
-| `KindleMate2.Tests` | `net10.0` | 只引用 Application / Infrastructure / Domain，可跨平台运行 |
+| `KindleMate2.Tests` | **按宿主 OS 条件化**：非 Windows 宿主上 `net10.0`；Windows 宿主上 `net10.0-windows` | 只引用 Application / Infrastructure / Domain；Windows 宿主条件引用 `Devices.Windows`（否则 `net10.0` 无法引用 `net10.0-windows` 程序集），以便在 CI 覆盖 Windows 设备实现。平台专属测试文件用 `#if WINDOWS` 圈起 |
 
 ### 3. 项目依赖关系
 
@@ -82,11 +82,12 @@ graph TD
 
     DOM --> SH
 
-    T["KindleMate2.Tests<br/>net10.0"] --> APP
+    T["KindleMate2.Tests<br/>net10.0（Windows 宿主：net10.0-windows）"] --> APP
     T --> INF
     T --> DOM
     T --> POS
     T --> POSIX
+    T -. "仅 Windows TFM" .-> DEV
 ```
 
 ### 4. 平台专有代码的边界
@@ -98,6 +99,7 @@ graph TD
 - `Application` 只定义跨平台接口 `IDeviceManager`；三者之外的平台才落到 `Application.Services.NullDeviceManager` 兜底（如实报告"未连接"，同步操作抛 `PlatformNotSupportedException` 而不是静默失败）。
 - **`IDeviceManager` 的注册由各平台壳负责**，不在 `Application/DependencyInjection.cs` 里 —— 否则 Application 就得引用平台专有程序集。Avalonia 在 `Services/DatabaseSession.cs` 内按平台选择实现。
 - Avalonia 壳仅在 Windows TFM 下引用 `Devices.Windows`，因此 `KindleMate2.Devices.Windows.dll` 只出现在 `net10.0-windows` 的输出目录中。**该 TFM 自 2026-10-03 起按宿主 OS 条件化**（`$([MSBuild]::IsOSPlatform('Windows'))`，只在 Windows 宿主上构建）—— 因为 `net10.0-windows` 自带 `WINDOWS` 常量，会让 `DatabaseSession.CreateDeviceManager` 选中 `Devices.Windows`，而它依赖的 `MediaDevices`（Windows COM/MTA）在 macOS/Linux 上**必然抛异常**（`Failed to set MTA apartment state`），表现为设备永远显示"未连接"。条件化后非 Windows 宿主上根本不存在这个 TFM，IDE 没有误选的余地。
+- **测试工程同样按宿主 OS 条件化**（2026-10，PR #165）：Windows 宿主上 `KindleMate2.Tests` 编 `net10.0-windows` 并条件引用 `Devices.Windows`，从而让 `WindowsDeviceManagerTests` 能进 CI；非 Windows 宿主仍编 `net10.0`（`Devices.Windows` 是单目标 `net10.0-windows`，从 `net10.0` 引用会 NU1201）。平台专属的测试文件必须用 `#if WINDOWS` 圈起，否则非 Windows 编译不过。
 
 ---
 

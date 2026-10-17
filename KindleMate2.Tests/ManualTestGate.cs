@@ -22,10 +22,18 @@ namespace KindleMate2.Tests;
 /// 所谓"默认全部跳过"仅指"默认不产生任何真机/外网副作用",不代表测试报告里显示 skipped。
 /// </para>
 /// <para>
-/// 为了不让"假绿"骗过 CI,<c>build.yml</c> 里另有一条断言:统计
-/// <c>--filter "Category=Manual"</c> 的用例数必须 &gt; 0,且"不带 filter 的用例数 = 带
-/// <c>Category!=Manual</c> 的用例数 + Manual 用例数"。这样若有人误删 Trait、
-/// 或把 Manual 用例挪出过滤范围,CI 会直接报错,而不是悄悄多跑几条真机用例。
+/// 为了不让"假绿"骗过 CI,有两层防护:
+/// <list type="number">
+///   <item>运行期:<c>build.yml</c> 断言 <c>Category=Manual</c> 用例数 &gt; 0,且"不带 filter 的
+///     用例数 = 带 <c>Category!=Manual</c> 的用例数 + Manual 用例数" —— 它能发现「Manual 集合
+///     整体丢失/类别名整体写错」与「过滤器失效/被忽略」,但**发现不了单独某一类漏打 Trait**
+///     (总数关系仍是过滤器互补的恒等式);</item>
+///   <item>源码期:<c>ManualTraitCoverageTests</c> 扫描测试源码,要求凡调用
+///     <see cref="ManualTestGate"/> 的文件必须同时声明 <c>[Trait("Category", "Manual")]</c>,
+///     补上「单点漏打 Trait」这个缺口。</item>
+/// </list>
+/// 此外 gate 本身的 env 早退保证 CI 不会真的读写设备/联网 —— 即使 Trait 漏了也只是"被记为
+/// PASSED 的执行",不会产生真机/外网副作用。
 /// </para>
 /// </summary>
 internal static class ManualTestGate {

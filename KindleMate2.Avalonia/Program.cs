@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using KindleMate2.Avalonia.Services;
 using KindleMate2.Avalonia.ViewModels;
+using KindleMate2.Infrastructure.Helpers;
 using KindleMate2.Shared;
 using KindleMate2.Shared.Constants;
 
@@ -1274,14 +1275,15 @@ internal static class Program {
         try {
             if (Directory.Exists(work)) Directory.Delete(work, true);
             Directory.CreateDirectory(work);
-            // 在原当前目录下先把源库解析成绝对路径 —— 下面会把 cwd 切到临时目录,
-            // 末尾的「导入 Kindle Mate 2 数据库」回归还要用它当源。
-            var sourceDbFull = Path.GetFullPath(dbPath);
             // 与原版一致的固定路径模型:库文件名必须是 KM2.dat,且当前目录即"程序目录"。
             // 这样备份 / 导出 / 导入目录全部落在临时副本上 —— 既不碰真实数据,走的又是产品真实路径。
             var dbCopy = Path.Combine(work, AppConstants.DatabaseFileName);
             File.Copy(dbPath, dbCopy, true);
             Environment.CurrentDirectory = work;
+
+            // 末尾「导入 Kindle Mate 2 数据库」回归用的**有数据**源快照(见第 9 步抽取)。
+            var km2ReimportSource = Path.Combine(work, "KM2-import-source.dat");
+            var km2ReimportExpected = 0;
 
             var vm = new MainWindowViewModel();
             vm.OpenDatabaseAsync(dbCopy).GetAwaiter().GetResult();
@@ -1490,7 +1492,11 @@ internal static class Program {
             // key = 「日期|位置」,两条内容不同但日期与位置相同的条目会算出同一个 key。
             // 判重集合若不在批内同步更新,两条都会进批次,插入时撞 UNIQUE(clippings.key)。
             // 放在最后并先清空,避免影响前面各步的统计。
-            vm.ClearAllDataAsync().GetAwaiter().GetResult();
+            //
+            // ⚠ 清空必须直接走服务层:上一段 batch fallback 是**直接写仓储**的,VM 的内存集合
+            // 不知道库里已有数据,ClearAllDataAsync() 的 HasAnyData 门禁会早退 ——
+            // 实测这会让「清空」实际没发生,后面的 duplicate-key 期望 1 条变成 2 条(0→0 同类假绿)。
+            vm.Session!.Km2DatabaseService.DeleteAllData();
             if (File.Exists(clippingsPath)) {
                 var raw = File.ReadAllLines(clippingsPath);
                 var firstSep = Array.IndexOf(raw, "==========");
@@ -1502,23 +1508,36 @@ internal static class Program {
                     var dupVm = new MainWindowViewModel();
                     dupVm.OpenDatabaseAsync(Path.Combine(work, AppConstants.DatabaseFileName)).GetAwaiter().GetResult();
                     var dupResult = dupVm.ImportKindleClippingsAsync(dupSample).GetAwaiter().GetResult();
+                    var dupOk = dupResult.Ok && dupVm.ClipTable.Count == 1;
                     report.AppendLine($"duplicate-key import: ok={dupResult.Ok} title={dupResult.Title} msg={dupResult.Message}");
-                    report.AppendLine($"  -> clips={dupVm.ClipTable.Count}(期望 1:重复 key 应被跳过而不是让整批失败)");
+                    report.AppendLine($"  -> clips={dupVm.ClipTable.Count}(期望 1:重复 key 应被跳过而不是让整批失败) check={dupOk}");
+                    report.AppendLine($"duplicate-key import check: ok={dupOk}");
                 }
             }
 
-            // 9. 空库重新导入 —— 验证导入确实写入(前面因判重导入 0 条),同时测量真实批量导入耗时
+            // 9. 空库重新导入 —— 先清空再导入,验证导入确实写入(duplicate-key 只证明不撞 UNIQUE),
+            //    同时测量真实批量导入耗时,并留一份**有数据的一致快照**给末尾的 KM2 重导回归。
             if (File.Exists(clippingsPath)) {
+                // 同样直连服务层清空(理由同上:VM 的内存状态与库可能不同步)。
+                vm.Session!.Km2DatabaseService.DeleteAllData();
                 // 进度上报核对:用同步 sink 捕获阶段序列,确认应用层确实在按阶段上报(含条数)
                 var stages = new List<KindleMate2.Application.Models.OperationProgress>();
                 var swImport = System.Diagnostics.Stopwatch.StartNew();
-                vm.ImportKindleClippingsAsync(clippingsPath).GetAwaiter().GetResult();
+                var importResult = vm.ImportKindleClippingsAsync(clippingsPath).GetAwaiter().GetResult();
                 swImport.Stop();
                 vm.Session!.ImportManager.ImportKindleClippings(clippingsPath, new SyncProgress(stages.Add));
+                var clipsAfterReimport = vm.Session.ClippingService.GetCount();
+                var reimportOk = importResult.Ok && clipsAfterReimport == 1 && vm.ClipTable.Count == 1;
                 report.AppendLine($"reimport into empty: {swImport.ElapsedMilliseconds} ms -> clips={vm.ClipTable.Count}");
                 report.AppendLine($"  progress stages: {string.Join(" > ", stages.Select(p => p.Stage).Distinct())}");
                 var withCounts = stages.LastOrDefault(p => p.Total > 0);
                 report.AppendLine($"  末次带数量的上报: {withCounts.Stage} {withCounts.Current}/{withCounts.Total}");
+                report.AppendLine($"reimport into empty check: ok={reimportOk}");
+                // 末尾 KM2 重导的源:在数据还在时抽一份事务一致快照 ——
+                // 不能再拿命令行传入的空库当源(0→0 即使导入链路全坏也照样通过)。
+                // VACUUM INTO 保证不复制"半写"状态,见 DatabaseHelper.CreateConsistentSnapshot。
+                km2ReimportExpected = clipsAfterReimport;
+                DatabaseHelper.CreateConsistentSnapshot(dbCopy, km2ReimportSource);
             }
             if (File.Exists(vocabDbPath)) {
                 var swVocab = System.Diagnostics.Stopwatch.StartNew();
@@ -1582,15 +1601,24 @@ internal static class Program {
             vm.DomainIndex = 0;
 
             // 回归:新增入口「导入 Kindle Mate 2 数据库」(本程序自己的库格式)。
-            // 用命令行传入的**原始库**当 KM2 源(它与工作副本同格式、且全程未被改动),
-            // 先清空工作副本再整批导回来 —— 断言条数回到 baseline,证明合并分支真的走通,
-            // 而不是"不抛异常就算过"。放在最后:它会把工作副本填满,不影响前面各步的统计。
+            // 源是第 9 步抽的**有数据**一致快照 —— 先清空工作副本再整批导回来,
+            // 断言"清空后 0 条、导入后回到快照条数",证明真的写回而不是"不抛异常就算过"。
+            // 放在最后:它会把工作副本填满,不影响前面各步的统计。
             vm.ClearAllDataAsync().GetAwaiter().GetResult();
             var km2AfterClear = vm.Session!.ClippingService.GetCount();
-            var km2ImportResult = vm.ImportKm2DatabaseAsync(sourceDbFull).GetAwaiter().GetResult();
+            var km2ImportResult = vm.ImportKm2DatabaseAsync(km2ReimportSource).GetAwaiter().GetResult();
             var km2After = vm.Session.ClippingService.GetCount();
+            var km2ReimportOk = km2ImportResult.Ok
+                                && km2ReimportExpected > 0
+                                && km2AfterClear == 0
+                                && km2After == km2ReimportExpected;
             report.AppendLine($"import KM2 db: ok={km2ImportResult.Ok} title={km2ImportResult.Title} msg={km2ImportResult.Message}");
-            report.AppendLine($"  -> clips 清空后 {km2AfterClear} / 导入后 {km2After}(期望 0 -> baseline {clips0})");
+            report.AppendLine($"  -> km2 reimport: 快照 {km2ReimportExpected} 条 / 清空后 {km2AfterClear} / 导入后 {km2After}");
+            if (km2ReimportExpected > 0) {
+                report.AppendLine($"km2 reimport check: ok={km2ReimportOk}");
+            } else {
+                report.AppendLine("km2 reimport check: 跳过(未提供 clippings 夹具,无法验证写回)");
+            }
 
             Environment.CurrentDirectory = originalCwd;
             File.WriteAllText(outFile, report.ToString());

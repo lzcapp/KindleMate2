@@ -10,7 +10,10 @@ namespace KindleMate2.Tests;
 ///
 /// 动机:白名单是**手工维护**的,而漏登记不会报错 —— 只是那个临时目录在进程退出时不被清扫、
 /// 在开发机上持续累积(2026-10 审计发现已漏 8 个前缀)。这类"漏了也不红"的约定正好适合用
-/// 一条元测试钉死:以后新增测试类只要用了新前缀而忘了登记,这里立刻红。
+/// 一条元测试钉死:以后新增测试类只要**沿用同一种写法**又忘了登记,这里立刻红。
+/// (扫描只覆盖「<c>Path.GetTempPath()</c> 后面紧跟一个字符串字面量」这一种写法;
+///  变量/插值/helper 等写法不受保护。当前全仓 28 处都是这一种写法,所以现在够用;
+///  若以后换写法,需要扩展这里的正则或收敛构造入口。)
 /// </summary>
 public sealed class TempDirPrefixTests {
     /// <summary>
@@ -25,7 +28,8 @@ public sealed class TempDirPrefixTests {
         var dir = TestSourceDirectory();
         Assert.True(Directory.Exists(dir), $"找不到测试源码目录:{dir}(是否在源码树外运行?)");
 
-        // 只认「GetTempPath() 后面紧跟一个字符串字面量」这一种写法 —— 全仓库的测试都用它造临时目录。
+        // 只认「GetTempPath() 后面紧跟一个字符串字面量」这一种写法 —— 当前全仓库的测试都用它
+        // 造临时目录(变量/插值/helper 等写法不会被扫到,见类注释的已知限制)。
         // 模式用字符串拼接构造,否则本文件里的模式文本本身会被自己匹配到(自匹配陷阱)。
         var pattern = "Path" + @"\.Combine\(\s*Path\.GetTempPath\(\),\s*""([^""]+)""";
         var regex = new Regex(pattern);

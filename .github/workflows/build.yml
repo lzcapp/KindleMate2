@@ -52,11 +52,15 @@ jobs:
       # 量化断言「Manual 类别确实被排除」。为什么需要: xUnit.net 2.9.3 **没有运行期动态跳过**
       # (实测抛 SkipException.ForSkip 会被记为失败)，所以 ManualTestGate 在未设 env 时只能
       # 打印说明 + 早退 —— 这些用例的报告状态是 **PASSED 而非 SKIPPED**，光看"全绿"分不出
-      # "默认跳过"和"根本没跑对"。这里改从**数量关系**上钉死:
-      #   ① Manual 集合必须非空 —— 否则 'Category!=Manual' 是个空操作，
-      #      谁把 Trait 删了都会让真机/外网用例在每次 CI 里被真跑，却毫无提示;
-      #   ② (Category!=Manual) + (Category=Manual) 必须恰好等于总数 —— 类别名写错、
-      #      或某条用例同时/都不属于这两类，都会让这个等式不成立。
+      # "默认跳过"和"根本没跑对"。这里从**数量关系**上钉两根桩:
+      #   ① Manual 集合必须非空 —— 防「全部 Trait 被删 / 类别名整体写错」让
+      #      'Category!=Manual' 退化成空操作;
+      #   ② (Category!=Manual) + (Category=Manual) 必须恰好等于总数 —— 防过滤器失效/被忽略
+      #      (过滤器不生效时三个数会相等，等式不成立)。
+      # 注意:② 是「过滤器互补」的恒等式 —— **单独漏打某一个类的 Trait 时等式仍然成立**
+      # (Manual 少 N、非Manual 多 N)，那个缺口由源码级元测试 ManualTraitCoverageTests 覆盖
+      # (扫描测试源码:凡调用 ManualTestGate 的文件必须声明 [Trait("Category","Manual")])。
+      # 另外 gate 的 env 早退本身保证即使 Trait 漏了也不会真的读写设备/联网。
       - name: Assert Manual test category is excluded
         shell: bash
         run: |
@@ -235,8 +239,9 @@ jobs:
           ./publish/smoke/KindleMate2.exe --ops "$db" "$(cygpath -w "$clips")" "$vocab" "$out"
           cat "$out"
 
-          # 4) 断言。模式全部取自**本机实跑出来的真实报告**(2026-10-15 逐行核对),
-          #    不是照产品代码猜的字符串。
+          # 4) 断言。模式全部取自**本机实跑出来的真实报告**(2026-10-15 逐行核对,
+          #    2026-10-17 加强:duplicate-key / 空库重导 / KM2 重导三条链路现在都有自己的
+          #    ok=True 检查行,不再只断言"导入动作没抛异常")。
           #    写法上刻意用 `if ! grep -qF "$var"` 而非行首 `grep`:scripts/check-smoke-greps.sh
           #    只扫行首 `grep ` 的行、并拿 **--smoke 报告**去校验它们;而 --ops 报告是另一份产物,
           #    行首 grep 会被它判成「未识别」而退出码 2(拿 smoke 报告校验则必然失配)。
@@ -249,16 +254,20 @@ jobs:
           a_rebuild='rebuild: ok=True'
           a_clear='clear: ok=True'
           a_exitbackup='exit backup: Backups/OnExit 份数=1(期望 1)'
+          a_dupcheck='duplicate-key import check: ok=True'
+          a_reimportcheck='reimport into empty check: ok=True'
           a_km2import='import KM2 db: ok=True'
+          a_km2check='km2 reimport check: ok=True'
           for pattern in "$a_import" "$a_export" "$a_backup" "$a_rename" "$a_delete" \
-                         "$a_rebuild" "$a_clear" "$a_exitbackup" "$a_km2import"; do
+                         "$a_rebuild" "$a_clear" "$a_exitbackup" \
+                         "$a_dupcheck" "$a_reimportcheck" "$a_km2import" "$a_km2check"; do
             # `--` 是必须的:第一条模式以 `->` 开头,grep 会把它当成选项(unknown option -- >)。
             if ! grep -qF -- "$pattern" "$out"; then
               echo "::error::--ops 报告里缺少预期输出: $pattern"
               exit 1
             fi
           done
-          echo "windows --ops 写链自检通过(导入/导出/备份/重命名/删除/重建/清空/退出备份/空库重导)"
+          echo "windows --ops 写链自检通过(导入/导出/备份/重命名/删除/重建/清空/退出备份/重复key/空库重导/KM2重导)"
 
   # 跨平台验证。2026-09-13 WinForms 壳与 DarkModeForms 子模块退休后,
   # 解决方案只剩跨平台项目(Shared/Domain/Infrastructure/Application/Devices.Windows/Tests/Avalonia),

@@ -46,11 +46,23 @@ internal static class TestTempCleanup {
         "km2-pubexport-",
         "km2-schema-integrity-tests-",
         "km2-schema-version-",
-        // 2026-10 补齐:以下 8 个前缀此前漏登记,对应目录永不清扫、持续累积。
+        // 2026-10 补齐:以下 8 个前缀是**历史漏登记**的(审计报告列了 7 个,实扫测试源码
+        // 又多出 km2-import-batch-tests-),对应目录此前永不清扫、持续累积。
         "km2-csv-", "km2-fname-", "km2-json-", "km2-obsidian-",
         "km2-sync-export-", "km2-vocab-index-tests-", "km2-vocab-stem-",
         "km2-import-batch-tests-",
-        "km2-ops-fixture-"
+        // 本 PR 新增的 --ops 夹具目录前缀(新增时即登记)。
+        "km2-ops-fixture-",
+        // 其它 open PR 新增测试用的前缀(跨 PR 集成):提前登记,免得合并后 TempDirPrefixTests
+        // 因"别的分支带来的新前缀"在这份白名单里找不到而红。
+        "km2-clearall-backup-tests-",                                          // #157
+        "km2-lookups-migration-tests-", "km2-lookups-ts-index-tests-",         // #158
+        "km2-safe-numeric-tests-",                                             // #158
+        "km2-clipping-parse-",                                                 // #159
+        "km2-import-hardening-",                                               // #160
+        "km2-freq-tests-",                                                     // #161
+        "km2-atomic-tests-",                                                   // #164(该分支自己也会登记,合并取并集)
+        "km2-audit-leftovers-"                                                 // #166
     };
 
     [ModuleInitializer]
