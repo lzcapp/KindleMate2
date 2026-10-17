@@ -318,3 +318,12 @@ InvariantCulture），行留着占住唯一键。这样"删过的词再导一次
 - **自动更新**：Avalonia 壳内置更新检查与安装（`Application/Services/UpdateChecker` + `UpdateInstaller`，数据源为本仓库的 GitHub Releases API，下载后按发布页的 `SHA256SUMS` 做 SHA-256 完整性校验）。下载前与生成替换脚本前各有一道**可执行文件名守卫**：`Environment.ProcessPath` 的基名必须是本应用（`KindleMate2`），否则拒绝自动替换 —— 以 `dotnet …dll` 宿主时其目录是 .NET 运行时目录，误覆盖后果远超本应用（口径是"可执行文件名"，不校验安装位置）。解压 tar.gz/zip 走 BCL（`TarFile`/`ZipFile`），其自带对**符号链接与 `..` 路径穿越条目**的拦截（实测抛 `IOException`、目标目录外不落文件）。**不使用 AppCast**（旧的 `docs/update_*.xml` 是 WinForms 壳 AutoUpdater 时代的产物，已随壳退役删除）。
 - 行为对齐原则：**UI 与跨平台可变，功能与行为须与已退役的原 WinForms 版完全一致**。
   少数经用户确认的例外已在代码注释与提交说明中标注。
+- **两条已知导入边界**（详见 `formats.md` §六；两者性质不同，别混为一谈）：
+  ① **时间语义两源不一致**（审计 P2-13，**不可回溯**，只能文档化）—— 标注的时间是设备**本地墙钟**
+  的自然语言文本（**无时区**），生词的时间是 unix 毫秒、按**导入机时区**换算成本地时间；
+  `My Clippings.txt` 侧根本没有时区信息，**存量数据无法回溯修正**，不要试图"统一"。
+  ② **`clippings.key` 不含书名**（审计 P2-14，**已知限制**，待 schema 升级修复）—— `key = 日期|类型+位置`，
+  而它是 `PRIMARY KEY NOT NULL UNIQUE`；两本不同的书在「同一秒 + 同一位置 + 同一类型」时会撞 key，
+  后到的那条被**静默跳过**（Kindle 的 Location 每本书各自编号，跨书位置相同很常见）。修复需改
+  `clippings.key` 主键并迁移 `original_clipping_lines`，属 schema 版本升级，**未在本次处理**（另立项）；
+  现状由 `KindleMate2.Tests/AuditLeftoverTests` 的用例钉住。

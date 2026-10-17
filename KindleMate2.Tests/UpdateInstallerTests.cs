@@ -240,11 +240,32 @@ public sealed class UpdateInstallerTests : IDisposable {
 
     // ————————————————————— 下载 + SHA-256 校验 —————————————————————
 
+    /// <summary>合法的 64 位十六进制哈希样本(64 × 'a')。</summary>
+    private const string HashA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    /// <summary>合法的 64 位十六进制哈希样本(64 × 'b')。</summary>
+    private const string HashB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    /// <summary>合法的 64 位哈希,大小写混合(十六进制不区分大小写)。</summary>
+    private const string HashMixedCase = "AbCdEf0123456789AbCdEf0123456789AbCdEf0123456789AbCdEf0123456789";
+    /// <summary>64 个 'z' —— 长度对但不是十六进制,必须被拒。</summary>
+    private const string NotHex64 = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
+
+    /// <summary>
+    /// 清单里某文件的哈希 —— 行形如 <c>&lt;64 位 hex&gt;␠␠&lt;文件名&gt;</c>(GNU 文本模式可带 <c>*</c> 前缀)。
+    /// **只认合法的 64 位十六进制**:SHA256SUMS 被篡改/损坏时,垃圾串不能被当作"期望哈希"返回
+    /// (否则后续比对失败的错误信息会误导成"哈希不匹配",实际是清单坏了)。非法行跳过、继续找下一行。
+    /// 只支持 GNU sha256sum 生成的**裸文件名**清单(本仓库 release.yml 同款);CRLF 由 Trim 兼容。
+    /// </summary>
     [Theory]
-    [InlineData("abc123  pkg.zip\n", "pkg.zip", "abc123")]
-    [InlineData("abc123 *pkg.zip\n", "pkg.zip", "abc123")]                 // GNU 文本模式的 * 前缀
-    [InlineData("aaa  other.zip\nbbb  pkg.zip\n", "pkg.zip", "bbb")]
-    [InlineData("aaa  pkg.tar.gz\n", "pkg.zip", null)]                     // 清单里没有该文件
+    [InlineData(HashA + "  pkg.zip\n", "pkg.zip", HashA)]
+    [InlineData(HashA + " *pkg.zip\n", "pkg.zip", HashA)]                                   // GNU 文本模式的 * 前缀
+    [InlineData(HashA + "  pkg.zip\r\n", "pkg.zip", HashA)]                                 // CRLF 行尾(Trim 兼容)
+    [InlineData(HashA + "  other.zip\n" + HashB + "  pkg.zip\n", "pkg.zip", HashB)]
+    [InlineData(HashMixedCase + "  pkg.zip\n", "pkg.zip", HashMixedCase)]                   // 大小写混合合法
+    [InlineData(HashA + "  pkg.tar.gz\n", "pkg.zip", null)]                                 // 清单里没有该文件
+    [InlineData("abc123  pkg.zip\n", "pkg.zip", null)]                                      // 非 64 位
+    [InlineData("deadbeef  pkg.zip\n", "pkg.zip", null)]                                    // 非 64 位
+    [InlineData(NotHex64 + "  pkg.zip\n", "pkg.zip", null)]                                 // 64 位但非十六进制
+    [InlineData("abc123  pkg.zip\n" + HashB + "  pkg.zip\n", "pkg.zip", HashB)]             // 非法行跳过、继续下一行
     public void ParseExpectedHash_ReadsSha256SumLines(string text, string name, string? expected) {
         Assert.Equal(expected, UpdateInstaller.ParseExpectedHash(text, name));
     }
@@ -266,15 +287,15 @@ public sealed class UpdateInstallerTests : IDisposable {
             Cleanup(ok);
         }
 
-        // ② 哈希不匹配(包被篡改)→ 中止
+        // ② 哈希不匹配(包被篡改)→ 中止。用合法的 64 位 hex,确保走的是"比对不符"而非"清单非法"。
         await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
             new UpdateAsset("pkg.zip", url, payload.Length, sums),
-            null, new HttpClient(new ChecksumHandler(payload, "deadbeef  pkg.zip\n"))));
+            null, new HttpClient(new ChecksumHandler(payload, HashB + "  pkg.zip\n"))));
 
         // ③ 清单里没有该文件 → 中止(不静默放行)
         await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(
             new UpdateAsset("pkg.zip", url, payload.Length, sums),
-            null, new HttpClient(new ChecksumHandler(payload, "deadbeef  other.zip\n"))));
+            null, new HttpClient(new ChecksumHandler(payload, HashB + "  other.zip\n"))));
 
         // ④ 发布页没有 SHA256SUMS 资产 → **失败关闭**:不装没校验过的字节
         await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateInstaller.DownloadAsync(

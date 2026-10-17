@@ -249,13 +249,13 @@ public class ExportManager : IExportManager {
             return result;
         }
 
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("KindleMate2-Dictionary");
         using var gate = new SemaphoreSlim(4);
         var tasks = words.Select(async word => {
             await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
-                var def = await WordDefinitionService.LookupAsync(word, http, cancellationToken)
+                // 复用 WordDefinitionService 自己的 static 客户端(同为 8s 超时/UA),
+                // 不在 ExportManager 里再建一个同用途实例(测试注入 seam 仍在 LookupAsync 上)。
+                var def = await WordDefinitionService.LookupAsync(word, null, cancellationToken)
                     .ConfigureAwait(false);
                 return (word, text: def?.ToDisplayText() ?? string.Empty);
             } finally {

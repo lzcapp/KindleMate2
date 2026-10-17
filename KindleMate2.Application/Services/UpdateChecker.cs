@@ -44,6 +44,12 @@ public static class UpdateChecker {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(20);
 
     /// <summary>
+    /// 未注入 <c>httpClient</c> 时使用的共享客户端。**静态复用**(连接池/socket 可复用),
+    /// 保留本用途自己的 20 秒超时 —— 不与下载(10 分钟)、查词(8 秒)共用实例。
+    /// </summary>
+    private static readonly HttpClient SharedClient = CreateHttpClient();
+
+    /// <summary>
     /// 查最新版本。返回 null 表示**没有更新或无法判断** —— 网络不通、被限流、JSON 结构变化都归为这一类,
     /// 因为"检查更新失败"不该拦着用户用软件:细节写日志,界面按"已是最新"处理。
     /// </summary>
@@ -54,8 +60,8 @@ public static class UpdateChecker {
         var rid = runtimeIdentifier ?? RuntimeInformation.RuntimeIdentifier;
 
         try {
-            using var owned = httpClient is null ? CreateHttpClient() : null;
-            var client = httpClient ?? owned!;
+            // httpClient 是测试注入点:注入则用注入的,否则复用静态实例(不再每次新建)。
+            var client = httpClient ?? SharedClient;
 
             using var response = await client.GetAsync(ReleasesApiUrl, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) {
