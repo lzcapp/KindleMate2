@@ -398,12 +398,12 @@ public sealed class UpdateInstallerTests : IDisposable {
     /// <summary>
     /// 以 `dotnet KindleMate2.dll` 等方式宿主时,<c>ProcessPath</c> 不是本应用可执行文件
     /// (如 <c>dotnet.exe</c>),其目录是 .NET 运行时目录 —— 绝不能把新包覆盖进去了。
-    /// 注意 <c>KindleMate2.Avalonia.exe</c> 也必须被拒:AssemblyName 是 <c>KindleMate2</c>。
+    /// 注意 <c>KindleMate2.Avalonia.exe</c> **不在这里**:它是 2026.09.13–09.23 的旧名,
+    /// Windows 上属于待迁移的合法安装形态(见下面的 Windows 迁移用例),不再是拒绝项。
     /// </summary>
     [Theory]
     [InlineData("dotnet.exe")]
     [InlineData("dotnet")]
-    [InlineData("KindleMate2.Avalonia.exe")]
     [InlineData("java.exe")]
     public void ApplyAndRestart_RejectsWhenExecutableIsNotTheInstalledApp(string exeName) {
         var prepared = Path.Combine(_work, "prepared");
@@ -433,6 +433,41 @@ public sealed class UpdateInstallerTests : IDisposable {
     public void EnsureInstalledLayout_OnInstalledLayout_DoesNotThrow() {
         var (executable, _) = InstalledLayoutExecutable();
         UpdateInstaller.EnsureInstalledLayout(executable);   // 不抛即通过
+    }
+
+    /// <summary>
+    /// 2026.09.13–09.23 的旧名 <c>KindleMate2.Avalonia.exe</c>:Windows 上必须**接受**
+    /// (那些用户机器上的 <c>ProcessPath</c> 就是这个,拒绝掉他们只能手动更新);
+    /// macOS/Linux 上仍拒绝(旧名历史上只在 Windows 用过,不属于那里的安装形态)。
+    /// 拒绝/接受两侧都钉住 —— 删掉接受侧,旧用户会退化成"只能手动下载安装包";
+    /// 删掉拒绝侧,守卫就白放开了旧名。
+    /// </summary>
+    [Fact]
+    public void EnsureInstalledLayout_LegacyWindowsName_IsAcceptedOnlyOnWindows() {
+        var legacy = Path.Combine(_work, "host", "KindleMate2.Avalonia.exe");
+
+        if (OperatingSystem.IsWindows()) {
+            UpdateInstaller.EnsureInstalledLayout(legacy);   // 不抛即通过
+        } else {
+            var ex = Assert.Throws<InvalidOperationException>(() => UpdateInstaller.EnsureInstalledLayout(legacy));
+            Assert.Contains("KindleMate2", ex.Message);      // 错误文案对用户可读(沿既有口径)
+        }
+    }
+
+    /// <summary>
+    /// 重启名迁移映射(纯字符串逻辑,跨平台可跑):规范名原样、旧名迁到规范名、其他名字原样。
+    /// 其中"旧名 → KindleMate2.exe"是关键 —— 少了它,从旧名启动的更新会以旧名重启,
+    /// 用户会一直停在兼容启动器上、永远完不成改名迁移。
+    /// </summary>
+    [Theory]
+    [InlineData("KindleMate2.exe", "KindleMate2.exe")]
+    [InlineData("KindleMate2.Avalonia.exe", "KindleMate2.exe")]
+    [InlineData("dotnet.exe", "dotnet.exe")]
+    public void ResolveWindowsLaunchFileName_MapsLegacyNameToCanonical(string input, string expected) {
+        // 用宿主拼出来的路径:包含目录段,又不写死盘符/分隔符(跨平台可跑)。
+        var path = Path.Combine(_work, "install", input);
+
+        Assert.Equal(expected, UpdateInstaller.ResolveWindowsLaunchFileName(path));
     }
 
     /// <summary>空/缺失的可执行路径同样不是"安装形态",应当拒绝而不是把空串当安装目录。</summary>
@@ -468,6 +503,33 @@ public sealed class UpdateInstallerTests : IDisposable {
             Assert.Equal(expected, File.ReadAllText(scriptPath));   // 全文逐字一致(拆分未改脚本内容)
             Assert.Contains(prepared, File.ReadAllText(scriptPath)); // 待安装目录确实被带进脚本
             Assert.Single(ApplyScripts().Except(before));
+        } finally {
+            File.Delete(scriptPath);
+        }
+    }
+
+    /// <summary>
+    /// Windows 上从旧名 <c>KindleMate2.Avalonia.exe</c> 启动的更新:替换脚本里的
+    /// <c>start ""</c> 必须指向**规范名** <c>KindleMate2.exe</c> —— 兼容启动器只是让旧更新脚本/
+    /// 旧快捷方式能落到新版的桥,更新完成后应以规范名常驻;否则每次更新都停在兼容副本上。
+    /// </summary>
+    [Fact]
+    public void WriteApplyScript_OnWindows_FromLegacyName_RestartsWithCanonicalName() {
+        if (!OperatingSystem.IsWindows()) {
+            return;   // 旧名只在 Windows 有意义(沿用本文件既有写法)
+        }
+
+        var prepared = Path.Combine(_work, "prepared");
+        Directory.CreateDirectory(prepared);
+        var legacyExecutable = Path.Combine(_work, "install", "KindleMate2.Avalonia.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(legacyExecutable)!);
+
+        var scriptPath = UpdateInstaller.WriteApplyScript(prepared, legacyExecutable, 4242);
+        try {
+            var script = File.ReadAllText(scriptPath);
+            var canonicalExecutable = Path.Combine(Path.GetDirectoryName(legacyExecutable)!, "KindleMate2.exe");
+            Assert.Contains($"start \"\" \"{canonicalExecutable}\"", script);
+            Assert.DoesNotContain($"start \"\" \"{legacyExecutable}\"", script);   // 不得以旧名重启
         } finally {
             File.Delete(scriptPath);
         }

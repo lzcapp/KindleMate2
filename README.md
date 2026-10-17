@@ -65,13 +65,19 @@ sha256sum -c SHA256SUMS        # Windows 可用 Get-FileHash
 - **从 Windows Forms 版（≤ `2026.09.07`）升级**：解压覆盖到原目录后，双击的仍是 `KindleMate2.exe`（可执行文件名与旧版一致）。
   建议取 `_runtime` 自包含包 —— 旧壳依赖的是 .NET 8 运行时，而不带该后缀的新包要求 .NET 10。
   与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 `DarkModeForms.dll`、`ReaLTaiizor.dll`）留着不影响使用，删掉也可以。
-  若你装过 `2026.09.13`–`2026.09.22` 之间的版本，那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
-  升级后请把残留的 `KindleMate2.Avalonia.exe` 与 `KindleMate2.Avalonia.dll` 删掉。
+- **从 `2026.09.13`–`2026.09.23`（含两端）的版本升级**：那一版的可执行文件名是 `KindleMate2.Avalonia.exe`，
+  升级后请改用同目录的 `KindleMate2.exe`。新版 Windows 包另附一个同名的**一次性兼容启动器**
+  （内容与 `KindleMate2.exe` 相同），让旧快捷方式与旧版「检查更新」的重启都落到新版；
+  确认迁移后可把它和旧的 `KindleMate2.Avalonia.dll` 一并删掉。
 - **从旧 Linux tar.gz 升级**：库还在原来的解压目录，先搬一次（见上方 Linux 一节）。
 - **想把程序换到新目录**：**Windows 上**数据目录就是程序目录 —— 新目录首次运行会新建一个空库，
   把旧的 `KM2.dat` 拷进新目录即可，也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
   **Linux / macOS 的数据目录固定在** `~/.local/share/KindleMate2/` / `~/Library/Application Support/KindleMate2/`
   （见上方各平台一节）—— 换程序目录**不会**新建空库，库也不会跟着走；要迁移数据请把 `KM2.dat` 放进数据目录。
+
+> **升级后打不开（`Method not found`）？** 若看到
+> `打开失败: Method not found: 'Void … ImportManager..ctor(…)`，说明启动的是残留的旧
+> `KindleMate2.Avalonia.exe`：关掉报错窗口，运行同目录的 `KindleMate2.exe` 即可；`KM2.dat` 数据不受影响。
 
 > 主题与语言**不会**随库迁移：旧版把这两项存在库里，新版存在系统的应用数据目录
 > （Windows 为 `%APPDATA%\KindleMate2\settings.json`），升级后需要重新选一次。

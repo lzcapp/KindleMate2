@@ -66,14 +66,23 @@ clippings and vocabulary carry over, with nothing to import or reconfigure.
   `KindleMate2.exe`, whose name is unchanged. Prefer the `_runtime` (self-contained) build: the old shell depended on the
   .NET 8 runtime, while builds without that suffix now require .NET 10. Files that share a name with the new build are
   overwritten; other leftovers from the old shell (e.g. `DarkModeForms.dll`, `ReaLTaiizor.dll`) are harmless but can be
-  deleted. If you installed a build between `2026.09.13` and `2026.09.22`, its executable was named
-  `KindleMate2.Avalonia.exe` — delete the leftover `KindleMate2.Avalonia.exe` and `KindleMate2.Avalonia.dll`.
+  deleted.
+- **From a build between `2026.09.13` and `2026.09.23` (inclusive)**: that build's executable was named
+  `KindleMate2.Avalonia.exe`; after upgrading, use `KindleMate2.exe` in the same folder. The new Windows package also
+  ships a same-named **one-shot compatibility launcher** (identical to `KindleMate2.exe`), so old shortcuts and the
+  restart performed by the old in-app update both land on the new build; once you have migrated you can delete it
+  together with the old `KindleMate2.Avalonia.dll`.
 - **From an older Linux tar.gz**: your library is still in the old extracted folder — move it once (see the Linux section above).
 - **Moving the program to a new folder**: **on Windows** the data directory *is* the program folder — the first run in a
   new folder creates an empty library; copy your old `KM2.dat` into the new folder, or use Manage → Import Kindle Mate 2
   Database to merge the old library in. **On Linux / macOS the data directory is fixed** at `~/.local/share/KindleMate2/` /
   `~/Library/Application Support/KindleMate2/` (see the per-platform sections above) — moving the program does **not**
   create an empty library or move the library with it; put `KM2.dat` into the data directory instead.
+
+> **App won't start after upgrading (`Method not found`)?** If it fails with
+> `Method not found: 'Void … ImportManager..ctor(…)` (in the Chinese UI shown as `打开失败: …`),
+> it is still launching the leftover old `KindleMate2.Avalonia.exe`: close the error dialog and run
+> `KindleMate2.exe` in the same folder instead; your `KM2.dat` data is not affected.
 
 > Theme and language do **not** travel with the library: the old shell stored both inside the database, while the new build
 > keeps them in the platform's application-data directory (on Windows: `%APPDATA%\KindleMate2\settings.json`).

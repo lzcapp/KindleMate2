@@ -134,4 +134,35 @@
              Text="KindleMate2 版本取自 git tag: $(_Km2Tag) -> $(_Km2Semver)" />
   </Target>
 
+  <!--
+    一次性迁移用兼容启动器(2026-10-18 加,见 .github/workflows/release.yml 文件头变更 G)。
+
+    背景:2026.09.13–09.23 发布的 Windows 包可执行名是 `KindleMate2.Avalonia.exe`,2026.09.24
+    起改名为 `KindleMate2.exe`。那两个老版本内置的更新器生成的重启脚本用
+    `Path.GetFileName(executablePath)` —— 即 `start "" "{安装目录}\KindleMate2.Avalonia.exe"`。
+    应用内更新用 xcopy 合并覆盖新包,而新包**没有**旧名文件,于是旧 exe 从未被覆盖:重启的是
+    **旧二进制** + 新版 `KindleMate2.Application.dll`,用户看到
+    `打开失败: Method not found: 'Void ...ImportManager..ctor(...)'`
+    (MissingMethodException:旧壳调新库)。手动解压覆盖后点旧桌面快捷方式同理。
+
+    修复只能从**新包这一侧**做:旧更新脚本是已经发布出去的旧版本生成的,无法回改。故在 Windows
+    发布产物里附一个旧名副本 —— 旧更新脚本按旧名重启、旧快捷方式指向旧名,都会落到这个副本上。
+
+    为什么是 apphost 的**副本**而不是转发/包装程序:apphost 内嵌的托管入口固定为同目录下的
+    `KindleMate2.dll`,复制改名后仍启动新的 `KindleMate2.dll`(已实测该副本的冒烟自检报告与规范名
+    逐字节一致);无需额外代码、额外工程或签名差异,删除时也只是少一个文件。
+
+    移除条件:确认已无 2026.09.13–09.23 存量用户后(至少跨过一个发布周期的升级提示),删除本
+    Target 并同步删除 release.yml 的「Verify legacy launcher in publish output」断言、
+    build.yml 的「Legacy launcher self-check」步骤,以及 arch.md / README 的兼容说明。
+
+    条件说明:只对 Windows TFM 且**有 RuntimeIdentifier**(即真实发布,而非普通 build/test)生效;
+    Linux/macOS 发布走 net10.0、且那里历史启动器名一直是 `KindleMate2`,不需要副本。
+  -->
+  <Target Name="Km2AddLegacyWindowsLauncher"
+          AfterTargets="Publish"
+          Condition="'$(TargetFramework)' == 'net10.0-windows' and '$(RuntimeIdentifier)' != ''">
+    <Copy SourceFiles="$(PublishDir)KindleMate2.exe" DestinationFiles="$(PublishDir)KindleMate2.Avalonia.exe" />
+  </Target>
+
 </Project>
