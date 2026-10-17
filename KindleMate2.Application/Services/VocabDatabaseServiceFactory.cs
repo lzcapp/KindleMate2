@@ -16,16 +16,23 @@ public class VocabDatabaseServiceFactory : IVocabDatabaseServiceFactory {
         _vocabRepository = vocabRepository;
     }
 
-    public VocabDatabaseService Create(string vocabDbPath) {
-        var connectionString = BuildSourceConnectionString(vocabDbPath);
+    public VocabDatabaseService Create(string vocabDbPath) => Create(vocabDbPath, out _);
+
+    /// <summary>
+    /// 与 <see cref="Create(string)"/> 同一条实现,额外回传实际使用的源库连接串。
+    /// 这是给测试用的 seam:只读 / 可写在「只读访问」上黑盒不可区分(SQLite 对不可写文件会
+    /// 自动降级成只读句柄),只能从接线处断言工厂确实用的是 <see cref="BuildSourceConnectionString"/>。
+    /// </summary>
+    internal VocabDatabaseService Create(string vocabDbPath, out string sourceConnectionString) {
+        sourceConnectionString = BuildSourceConnectionString(vocabDbPath);
 
         // 源库的表/列由设备决定,先探测一次实表/实列:仓储据此逐表降级,
         // 服务据此把"跳过了哪些表"计入导入结果(不阻断其它表)。
-        var schema = VocabSourceSchema.Probe(connectionString);
+        var schema = VocabSourceSchema.Probe(sourceConnectionString);
 
-        var bookInfoRepository = new BookInfoRepository(connectionString, schema);
-        var vocabLookupRepository = new Infrastructure.Repositories.VocabDB.LookupRepository(connectionString, schema);
-        var wordRepository = new WordRepository(connectionString, schema);
+        var bookInfoRepository = new BookInfoRepository(sourceConnectionString, schema);
+        var vocabLookupRepository = new Infrastructure.Repositories.VocabDB.LookupRepository(sourceConnectionString, schema);
+        var wordRepository = new WordRepository(sourceConnectionString, schema);
 
         return new VocabDatabaseService(
             bookInfoRepository,

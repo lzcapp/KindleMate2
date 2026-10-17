@@ -40,6 +40,8 @@ public sealed class ImportHardeningTests : IDisposable {
     /// 源库(设备 vocab.db)必须以 <c>ReadOnly</c> 打开:它是设备写就的数据源,可写打开会在
     /// 只读挂载 / 被占用时失败,还可能生成 journal 污染设备盘。
     /// 双档断言:连接串的模式,以及对该连接发起的写操作确实被拒。
+    /// ⚠ 本用例只验证 <c>BuildSourceConnectionString</c> 的返回值与写拒绝,钉不住 <c>Create()</c>
+    /// 是否真的用它 —— 工厂接线由下一个用例(只读源文件经 Create() 仍可导入)覆盖。
     /// </summary>
     [Fact]
     public void SourceConnection_IsReadOnly_AndRejectsWrites() {
@@ -53,6 +55,50 @@ public sealed class ImportHardeningTests : IDisposable {
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "CREATE TABLE probe (x INTEGER)";
         Assert.Throws<SqliteException>(() => cmd.ExecuteNonQuery());
+    }
+
+    /// <summary>
+    /// 工厂接线的 **test seam** 断言:<c>Create()</c> 内部实际使用的源库连接串必须是 ReadOnly。
+    /// 只读 / 可写在「只读访问」上黑盒不可区分(SQLite 对不可写文件会自动降级成只读句柄),
+    /// 所以用内部重载回传连接串来钉住接线,而不是靠"文件不可写"这类环境前提。
+    /// </summary>
+    [Fact]
+    public void SourceConnection_FactoryUsesReadOnlyConnectionString() {
+        var sourceDb = CreateSourceDb("ro-wiring.db", WordsDdl, LookupsDdl, BookInfoDdl,
+            "INSERT INTO WORDS (id, word, timestamp) VALUES ('en:apple', 'apple', 1735689600000)");
+
+        var factory = new VocabDatabaseServiceFactory(
+            new Km2LookupRepository(_targetCs), new Km2VocabRepository(_targetCs));
+        _ = factory.Create(sourceDb, out var sourceConnectionString);
+
+        Assert.Equal(SqliteOpenMode.ReadOnly, new SqliteConnectionStringBuilder(sourceConnectionString).Mode);
+
+        // 同一份源库经工厂仍能正常导入
+        var result = ImportWords(sourceDb, out var ok);
+        Assert.True(ok);
+        Assert.Single(new Km2VocabRepository(_targetCs).GetAll());
+        Assert.Equal("0", result[AppConstants.SkippedTableCount]);
+    }
+
+    /// <summary>
+    /// 源库文件本身不可写时,经真实工厂 <c>Create()</c> 的导入仍应成功 —— ReadOnly 打开不需要
+    /// 写权限,也不会因"只读"而整份失败。
+    /// </summary>
+    [Fact]
+    public void SourceConnection_ReadOnlyFile_ImportStillSucceedsThroughFactory() {
+        var sourceDb = CreateSourceDb("ro-file.db", WordsDdl, LookupsDdl, BookInfoDdl,
+            "INSERT INTO WORDS (id, word, timestamp) VALUES ('en:apple', 'apple', 1735689600000)");
+
+        MakeReadOnly(sourceDb);
+        try {
+            var result = ImportWords(sourceDb, out var ok);
+
+            Assert.True(ok, "源库文件只读不应让导入失败(应走 ReadOnly 打开)");
+            Assert.Single(new Km2VocabRepository(_targetCs).GetAll());
+            Assert.Equal("0", result[AppConstants.SkippedTableCount]);
+        } finally {
+            MakeWritable(sourceDb);
+        }
     }
 
     // ————————————————————————— ② 缺表逐表降级 —————————————————————————
@@ -124,6 +170,25 @@ public sealed class ImportHardeningTests : IDisposable {
         Assert.Equal("0", result[AppConstants.SkippedTableCount]);
     }
 
+    /// <summary>
+    /// 源库里存在含 ']' 的畸形表名时,探测**不得**让整份导入失败:表名走参数绑定读取
+    /// <c>pragma_table_info</c>(旧实现用 <c>[表名]</c> 拼 SQL,Probe 会抛 <see cref="SqliteException"/>,
+    /// 整份导入失败 —— 与本 PR「逐表降级」目标相悖)。
+    /// </summary>
+    [Fact]
+    public void MalformedTableName_ProbeDegradesInsteadOfFailingImport() {
+        var sourceDb = CreateSourceDb("odd-table-name.db", WordsDdl, LookupsDdl, BookInfoDdl,
+            "CREATE TABLE \"bad]name\" (x INTEGER)",
+            "INSERT INTO WORDS (id, word, timestamp) VALUES ('en:apple', 'apple', 1735689600000)");
+
+        var result = ImportWords(sourceDb, out var ok);
+
+        Assert.True(ok, "畸形表名不应让整份导入失败");
+        var vocab = Assert.Single(new Km2VocabRepository(_targetCs).GetAll());
+        Assert.Equal("apple", vocab.Word);
+        Assert.Equal("0", result[AppConstants.SkippedTableCount]);
+    }
+
     // ————————————————————————— ④ 时间戳越界防护 —————————————————————————
 
     /// <summary>
@@ -157,30 +222,58 @@ public sealed class ImportHardeningTests : IDisposable {
 
     // ————————————————————————— ⑤ 跳过计数呈现给用户 —————————————————————————
 
-    /// <summary>标注导入:日期解析失败的条目此前被静默丢弃,现在必须出现在成功提示里。</summary>
+    /// <summary>
+    /// 标注导入:页码异常 + 日期解析失败混在一起时的跳过明细,并钉住 <c>{0}/{1}/{2}</c> 的参数顺序
+    /// (total=2、dateFailed=1、pageFailed=1;若把 total 与 dateFailed 对调,断言会失败)。
+    /// </summary>
     [Fact]
-    public void ImportKindleClippings_Message_ShowsDateParseSkipCount() {
+    public void ImportKindleClippings_Message_ShowsMixedSkipCountsInOrder() {
         var path = Path.Combine(_dir, "My Clippings.txt");
         File.WriteAllText(path, """
-Book (Author)
-- Highlight | Page 5 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+Page Fail (Author)
+- Highlight | no location info here
 
-some content
+page-fail content
 ==========
-Book (Author)
+Date Fail (Author)
 - Highlight | Page 6 | addedd on a totally unparseable date string
 
-more content
+date-fail content
+==========
+Book OK (Author)
+- Highlight | Page 5 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+ok content
 ==========
 """);
 
         var message = NewClippingsManager().ImportKindleClippings(path);
 
-        var expected = string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Clippings_Format, 1, 1, 0, 0);
+        // 跳过 2 条:页码异常 1(第 1 条) + 日期解析失败 1(第 2 条);超出上限 0。
+        var expected = string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Clippings_Format, 2, 1, 1, 0);
         Assert.Contains(expected, message, StringComparison.Ordinal);
     }
 
-    /// <summary>生词导入:逐表跳过与时间戳异常两个计数都要出现在成功提示里。</summary>
+    /// <summary>没有任何跳过时,成功文案**不得**追加"跳过"后缀(回归成"跳过 0 条"会被这里拦住)。</summary>
+    [Fact]
+    public void CleanImport_Message_HasNoSkipSuffix() {
+        var path = Path.Combine(_dir, "clean.txt");
+        File.WriteAllText(path, """
+Book (Author)
+- Highlight | Page 5 | Added on Tuesday, May 20, 2025, 8:00:00 AM
+
+clean content
+==========
+""");
+
+        var message = NewClippingsManager().ImportKindleClippings(path);
+
+        var expected = Strings.Parsed_X + Strings.Space + "1" + Strings.Space + Strings.X_Clippings +
+                       Strings.Symbol_Comma + Strings.Imported_X + Strings.Space + "1" + Strings.Space + Strings.X_Clippings;
+        Assert.Equal(expected, message);
+    }
+
+    /// <summary>生词导入:逐表跳过与时间戳异常两个计数都要出现,且顺序固定(表跳过在前、时间戳在后)。</summary>
     [Fact]
     public void ImportKindleWords_Message_ShowsTableAndTimestampSkips() {
         var sourceDb = CreateSourceDb("words-msg.db", WordsDdl,
@@ -190,12 +283,9 @@ more content
 
         var message = NewWordsManager().ImportKindleWords(sourceDb);
 
-        Assert.Contains(
-            string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Tables_Format, 2),
-            message, StringComparison.Ordinal);
-        Assert.Contains(
-            string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Timestamps_Format, 1),
-            message, StringComparison.Ordinal);
+        var tableSuffix = string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Tables_Format, 2);
+        var timestampSuffix = string.Format(CultureInfo.InvariantCulture, Strings.Import_Skipped_Timestamps_Format, 1);
+        Assert.EndsWith(tableSuffix + timestampSuffix, message, StringComparison.Ordinal);
     }
 
     // ————————————————————————— helpers —————————————————————————
@@ -219,6 +309,24 @@ more content
             cmd.ExecuteNonQuery();
         }
         return path;
+    }
+
+    /// <summary>把文件设为只读(跨平台):Windows 用只读属性,Unix 用 0400 权限。</summary>
+    private static void MakeReadOnly(string path) {
+        if (OperatingSystem.IsWindows()) {
+            File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+        } else {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead);
+        }
+    }
+
+    /// <summary>恢复可写(便于测试清理时删除临时目录)。</summary>
+    private static void MakeWritable(string path) {
+        if (OperatingSystem.IsWindows()) {
+            File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
+        } else {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
     }
 
     /// <summary>经**真实工厂**创建服务(顺带覆盖源库 ReadOnly + 探测快照这条链路)。</summary>

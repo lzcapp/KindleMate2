@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.Sqlite;
+using Microsoft.Data.Sqlite;
 
 namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     /// <summary>
@@ -70,13 +70,23 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
             var columnsByTable = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             foreach (var table in tables) {
                 var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                using (var command = connection.CreateCommand()) {
-                    command.CommandText = $"PRAGMA table_info([{table}])";
+                try {
+                    // 表名必须走**参数绑定**:表名来自 sqlite_master(不受本程序控制),用 [表名] 拼
+                    // 标识符会被含 ']' 的表名拼坏(甚至多语句注入),让 Probe 抛异常 → 整份导入失败,
+                    // 与本类「逐表降级」的目标相悖。pragma_table_info 是表值函数,参数绑定即可。
+                    using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT name FROM pragma_table_info($table)";
+                    command.Parameters.AddWithValue("$table", table);
                     using var reader = command.ExecuteReader();
                     while (reader.Read()) {
-                        // table_info 的列序:cid / name / type / notnull / dflt_value / pk
-                        columns.Add(reader.GetString(1));
+                        // 只 SELECT 了 name 一列,故序位 0;完整 table_info 的列序是
+                        // cid / name / type / notnull / dflt_value / pk。
+                        columns.Add(reader.GetString(0));
                     }
+                } catch (SqliteException) {
+                    // 单表探测失败(畸形表名 / 损坏的 schema 行):该表按「不可用」处理,
+                    // 跳过它、不阻断其它表的导入。
+                    continue;
                 }
                 columnsByTable[table] = columns;
             }

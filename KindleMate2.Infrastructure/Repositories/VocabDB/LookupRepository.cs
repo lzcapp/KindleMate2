@@ -1,4 +1,4 @@
-﻿using KindleMate2.Domain.Entities.VocabDB;
+using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.VocabDB;
 using KindleMate2.Infrastructure.Helpers;
 using Microsoft.Data.Sqlite;
@@ -7,6 +7,8 @@ namespace KindleMate2.Infrastructure.Repositories.VocabDB {
     public class LookupRepository(string connectionString, VocabSourceSchema? schema = null) : ILookupRepository {
         // 源库(设备 vocab.db)的表/列由设备决定,可能缺表缺列。探测一次并缓存。
         private readonly VocabSourceSchema _schema = schema ?? VocabSourceSchema.Probe(connectionString);
+        // 注意:逐表降级只覆盖 GetAll()(导入链路的唯一入口);GetById / GetCount 仍按固定 schema
+        // 直查,畸形源库上会抛 —— 不要把它们当成"已加固"的读接口。
         public Lookup? GetById(string id) {
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
