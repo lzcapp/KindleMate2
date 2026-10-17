@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -24,6 +25,14 @@ namespace KindleMate2.Avalonia.Views;
 
 public partial class MainWindow : Window {
     private DispatcherTimer? _deviceTimer;
+
+    /// <summary>
+    /// 设备状态探测是否有一轮仍在跑。8 秒 <see cref="DispatcherTimer"/> 的每一跳、启动首刷、
+    /// 以及可能的并发调用都是 fire-and-forget,此前**无互斥** —— 上一轮的 MTP 探测(可秒级)
+    /// 还没结束就又起一轮,会并发开 MTP 会话。用 <see cref="Interlocked"/> 标志让"上一轮未结束
+    /// 就跳过本轮",不排队、不阻塞 UI 线程。
+    /// </summary>
+    private int _deviceProbeInFlight;
 
     /// <summary>
     /// 「检查更新」弹窗是否已在处理中 —— 启动自动检查与「帮助 → 检查更新」可能并发,
@@ -286,15 +295,23 @@ public partial class MainWindow : Window {
 
     private async Task RefreshDeviceStatusAsync() {
         if (Vm is not { } vm || !vm.HasSession) return;
-        (string Text, bool Connected) probe;
+        // 上一轮未结束就跳过本轮(不排队):探测会开 MTP 会话,秒级,叠加会让会话堆积。
+        if (Interlocked.CompareExchange(ref _deviceProbeInFlight, 1, 0) != 0) return;
         try {
-            probe = await Task.Run(vm.ProbeDevice);
-        } catch {
-            // 走与正常路径同一个本地化键 —— 此前硬编码中文,英文界面下会漏出中文
-            probe = (Strings.Ui_Status_DeviceOffline, false);
+            (string Text, bool Connected) probe;
+            try {
+                probe = await Task.Run(vm.ProbeDevice);
+            } catch (Exception ex) {
+                // 走与正常路径同一个本地化键 —— 此前硬编码中文,英文界面下会漏出中文。
+                // 别静默吞掉:没有日志时"设备状态莫名变未连接"根本无从查起。
+                KindleMate2.Shared.Diagnostics.AppLog.Write($"[Device] 设备状态探测失败:{ex}");
+                probe = (Strings.Ui_Status_DeviceOffline, false);
+            }
+            vm.DeviceStatus = probe.Text;
+            vm.IsDeviceConnected = probe.Connected;
+        } finally {
+            Interlocked.Exchange(ref _deviceProbeInFlight, 0);
         }
-        vm.DeviceStatus = probe.Text;
-        vm.IsDeviceConnected = probe.Connected;
     }
 
     /// <summary>
@@ -306,6 +323,9 @@ public partial class MainWindow : Window {
     protected override void OnClosed(EventArgs e) {
         _deviceTimer?.Stop();
         _deviceTimer = null;
+        // 释放 VM 持有的会话与在飞查词:切语言会重建窗口,旧 VM 不释放会泄漏一份 DatabaseSession;
+        // 最后一个在线释义 CTS 此前也从不释放(它只被"下一次查词"替换)。Dispose 幂等。
+        Vm?.Dispose();
         base.OnClosed(e);
     }
 
@@ -921,7 +941,9 @@ public partial class MainWindow : Window {
             previous?.Close();
             // 旧窗口只 Close 不会释放会话:DatabaseSession 持有 DeviceManager 等资源,
             // 不显式释放则每切一次语言都泄漏一份。Stop 由 OnClosed 负责。
-            (previous?.DataContext as MainWindowViewModel)?.ReleaseSession();
+            // OnClosed 已 Dispose 旧 VM,这里再显式 Dispose 一次(幂等)作为兜底 —— 不依赖
+            // Close() 一定同步触发 OnClosed。
+            (previous?.DataContext as MainWindowViewModel)?.Dispose();
             return true;
         } catch (Exception ex) {
             KindleMate2.Shared.Diagnostics.AppLog.Write(ex);
