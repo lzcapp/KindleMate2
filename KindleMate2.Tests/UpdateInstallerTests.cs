@@ -19,13 +19,21 @@ namespace KindleMate2.Tests;
 /// </summary>
 public sealed class UpdateInstallerTests : IDisposable {
     private readonly string _work;
+    private readonly string _originalScriptTempRoot;
 
     public UpdateInstallerTests() {
         _work = Path.Combine(Path.GetTempPath(), "km2-update-tests-" + Guid.NewGuid().ToString("N")[..10]);
         Directory.CreateDirectory(_work);
+        // 替换脚本的落盘目录改到本测试自己的目录:既隔离了「拒绝时未落脚本」的全局临时目录扫描,
+        // 也避免与系统临时目录里别的进程留下的同名文件互相干扰。
+        _originalScriptTempRoot = UpdateInstaller.ScriptTempRoot;
+        var scriptRoot = Path.Combine(_work, "apply-scripts");
+        Directory.CreateDirectory(scriptRoot);
+        UpdateInstaller.ScriptTempRoot = scriptRoot;
     }
 
     public void Dispose() {
+        UpdateInstaller.ScriptTempRoot = _originalScriptTempRoot;
         try { Directory.Delete(_work, true); } catch { /* best effort */ }
     }
 
@@ -356,11 +364,15 @@ public sealed class UpdateInstallerTests : IDisposable {
             UpdateInstaller.ResolveAppBundlePath(Path.Combine(_work, "KindleMate2.Avalonia")));
     }
 
-    // ————————————————————— 安装布局守卫 —————————————————————
+    // ————————————————————— 可执行文件名守卫 —————————————————————
+    //
+    // 口径说明(2026-10 审阅):这里校验的是**可执行文件名**,不是"安装位置"—— 开发期 apphost
+    // (`dotnet run` 产出的 bin/…/KindleMate2.exe)同样能通过。修掉的是真正会破坏共享运行时的
+    // `dotnet …dll` 场景(ProcessPath 是 dotnet.exe,其目录是 .NET 运行时目录)。
 
-    /// <summary>临时目录里本类创建过的替换脚本 —— 用来断言"被拒时一个脚本都没写出来"。</summary>
+    /// <summary>本类替换脚本落盘目录里的脚本 —— 用来断言"被拒时一个脚本都没写出来"。</summary>
     private static HashSet<string> ApplyScripts() =>
-        Directory.EnumerateFiles(Path.GetTempPath(), "km2-apply-update-*").ToHashSet();
+        Directory.EnumerateFiles(UpdateInstaller.ScriptTempRoot, "km2-apply-update-*").ToHashSet();
 
     /// <summary>
     /// 以 `dotnet KindleMate2.dll` 等方式宿主时,<c>ProcessPath</c> 不是本应用可执行文件
@@ -384,6 +396,24 @@ public sealed class UpdateInstallerTests : IDisposable {
         Assert.Empty(ApplyScripts().Except(before));       // 拒绝必须发生在写脚本之前
     }
 
+    /// <summary>UI 下载前会先调同一个公开入口做快速失败:非安装形态直接抛,不进入下载。</summary>
+    [Theory]
+    [InlineData("dotnet.exe")]
+    [InlineData("dotnet")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void EnsureInstalledLayout_RejectsNonAppExecutable(string? exeName) {
+        var path = exeName is null ? null : Path.Combine(_work, "host", exeName);
+        Assert.Throws<InvalidOperationException>(() => UpdateInstaller.EnsureInstalledLayout(path));
+    }
+
+    /// <summary>安装形态下公开入口不抛(VM 在 PrepareAsync 之前调用它做 fail-fast)。</summary>
+    [Fact]
+    public void EnsureInstalledLayout_OnInstalledLayout_DoesNotThrow() {
+        var (executable, _) = InstalledLayoutExecutable();
+        UpdateInstaller.EnsureInstalledLayout(executable);   // 不抛即通过
+    }
+
     /// <summary>空/缺失的可执行路径同样不是"安装形态",应当拒绝而不是把空串当安装目录。</summary>
     [Fact]
     public void ApplyAndRestart_RejectsEmptyExecutablePath() {
@@ -394,18 +424,28 @@ public sealed class UpdateInstallerTests : IDisposable {
             UpdateInstaller.ApplyAndRestart(prepared, string.Empty, 4242));
     }
 
-    /// <summary>可执行名是本应用(安装形态)时,行为不变 —— 脚本照常生成、内容里带上待安装目录。</summary>
+    /// <summary>
+    /// 可执行名是本应用(安装形态)时,行为不变 —— 脚本照常生成,且**全文**与直接调
+    /// <c>Build*Script</c> 的结果逐字一致:证明 WriteApplyScript/ApplyAndRestart 拆分没有改变脚本内容。
+    /// </summary>
     [Fact]
     public void WriteApplyScript_OnInstalledLayout_StillProducesTheScript() {
         var prepared = Path.Combine(_work, "prepared");
         Directory.CreateDirectory(prepared);
 
-        var (executable, _) = InstalledLayoutExecutable();
+        var (executable, installDirectory) = InstalledLayoutExecutable();
+        var expected = OperatingSystem.IsWindows()
+            ? UpdateInstaller.BuildWindowsScript(prepared, installDirectory, 4242, Path.GetFileName(executable))
+            : OperatingSystem.IsMacOS()
+                ? UpdateInstaller.BuildMacOsScript(prepared, installDirectory, 4242)
+                : UpdateInstaller.BuildLinuxScript(prepared, installDirectory, 4242);
+
         var before = ApplyScripts();
         var scriptPath = UpdateInstaller.WriteApplyScript(prepared, executable, 4242);
         try {
             Assert.True(File.Exists(scriptPath));
-            Assert.Contains(prepared, File.ReadAllText(scriptPath));
+            Assert.Equal(expected, File.ReadAllText(scriptPath));   // 全文逐字一致(拆分未改脚本内容)
+            Assert.Contains(prepared, File.ReadAllText(scriptPath)); // 待安装目录确实被带进脚本
             Assert.Single(ApplyScripts().Except(before));
         } finally {
             File.Delete(scriptPath);
@@ -482,18 +522,22 @@ public sealed class UpdateInstallerTests : IDisposable {
     }
 
     /// <summary>
-    /// 解压并断言「要么抛异常、要么目标目录外没有被创建任何东西」。抛了则必须是
-    /// <see cref="IOException"/>(BCL 的显式拦截);且两者必居其一 —— 否则断言是空的。
+    /// 解压并断言三件事:①必须抛 <see cref="IOException"/>(BCL 的显式拦截,不是静默跳过);
+    /// ②目标目录之外没有被创建任何文件;③**失败原子性** —— 目标目录里一个条目都没落下来。
     /// </summary>
+    /// <remarks>
+    /// 之前的断言写成"要么抛异常、要么目标目录外没东西",留了一条"既不抛也没落条目"的空通道
+    /// (BCL 若改成静默跳过条目,zip 用例会假绿)。2026-10 审阅收紧为必须抛 + 目录为空。
+    /// </remarks>
     private void AssertExtractCannotEscape(string archive, string escapedPath) {
         var destination = Path.Combine(_work, "dest-" + Guid.NewGuid().ToString("N")[..6]);
-        var ex = Record.Exception(() => UpdateInstaller.Extract(archive, destination));
 
+        // 生产 Extract 会先创建目标目录,再交给 BCL;越界条目必须在**写入任何条目之前**被拒绝。
+        var ex = Assert.ThrowsAny<IOException>(() => UpdateInstaller.Extract(archive, destination));
+
+        Assert.NotNull(ex);
         Assert.False(File.Exists(escapedPath), "目标目录外被创建了文件(符号链接 / 路径穿越)");
-        var createdLink = File.Exists(Path.Combine(destination, "link")) || Directory.Exists(Path.Combine(destination, "link"));
-        Assert.True(ex is not null || !createdLink, "既未拒绝也未落任何条目 —— 断言未覆盖任何实际行为");
-        if (ex is not null) {
-            Assert.IsAssignableFrom<IOException>(ex);
-        }
+        Assert.True(Directory.Exists(destination), "目标目录应已创建(Extract 先建目录再解压)");
+        Assert.Empty(Directory.EnumerateFileSystemEntries(destination));   // 失败原子性:一个条目都不该落下
     }
 }

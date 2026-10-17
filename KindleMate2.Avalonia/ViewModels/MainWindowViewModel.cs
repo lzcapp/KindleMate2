@@ -1801,12 +1801,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
                 StatusText = string.Format(CultureInfo.CurrentCulture, Strings.Ui_Update_Downloading,
                     (int)Math.Round(fraction * 100)));
 
+            // 只有以「安装形态」启动时才自动替换(开发期 `dotnet …dll` 时 ProcessPath 是 dotnet.exe,
+            // 其目录是 .NET 运行时目录)。这里先做**快速失败**:非安装形态没必要先白下载一整包;
+            // 生成替换脚本前 ApplyAndRestart 内会再校验一次,防调用方绕过。
+            var executable = Environment.ProcessPath ?? string.Empty;
+            UpdateInstaller.EnsureInstalledLayout(executable);
+
             var target = UpdateInstaller.TargetForCurrentPlatform();
             var prepared = await UpdateInstaller.PrepareAsync(asset, target, progress).ConfigureAwait(true);
 
-            // 只有以「安装形态」启动时才自动替换(开发期 `dotnet …dll` 时 ProcessPath 是 dotnet.exe,
-            // 其目录是 .NET 运行时目录)。ApplyAndRestart 内的布局守卫会据此拒绝并抛出明确原因。
-            var executable = Environment.ProcessPath ?? string.Empty;
             UpdateInstaller.ApplyAndRestart(prepared, executable, Environment.ProcessId);
 
             StatusText = Strings.Ui_Update_Restarting;

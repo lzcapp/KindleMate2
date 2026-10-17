@@ -161,6 +161,9 @@ jobs:
           test "$(grep -c 'if (IsBusy) return Task.FromResult(OperationResult.Silent)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 7
           # ⑤ 维护/清空/重建三处破坏性操作动手前都要先落保底备份(重建是本次审查补上的)。
           test "$(grep -c 'session.ExportManager.BackupDatabase();' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs)" -eq 3
+          # ⑥ 更新下载前必须先做「可执行文件名守卫」的快速失败(非安装形态不该白下载一整包)。
+          #    ApplyAndRestart 内还会再校验一次,但那条在下载之后 —— 删掉这行不会有单测变红(VM 够不着)。
+          grep -q 'UpdateInstaller.EnsureInstalledLayout(executable)' KindleMate2.Avalonia/ViewModels/MainWindowViewModel.cs
           # 关于页「运行环境」必须带 RID（旧写法在 macOS/Linux 上都显示 Unix，分不出平台）
           grep -q "about runtime:.*result=OK" "$out"
           # 关于页「设备」段:未连接整段隐藏、字段为空 ⇔ 不显示(可见性与数据脱节会被这条抓住)

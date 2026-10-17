@@ -103,6 +103,9 @@ public static class UpdateInstaller {
     /// <summary>临时目录根。生产恒为系统临时目录;测试改写它以隔离「失败清理」断言。</summary>
     internal static string TempRoot { get; set; } = Path.GetTempPath();
 
+    /// <summary>替换脚本的落盘目录。生产恒为系统临时目录;测试改写它以隔离「守卫拒绝时未落脚本」断言。</summary>
+    internal static string ScriptTempRoot { get; set; } = Path.GetTempPath();
+
     private static void TryDeleteDirectory(string directory) {
         try { Directory.Delete(directory, true); } catch { /* best effort */ }
     }
@@ -200,15 +203,22 @@ public static class UpdateInstaller {
     internal const string AppExecutableName = "KindleMate2";
 
     /// <summary>
-    /// 「已安装布局」守卫:<paramref name="executablePath"/> 的基名必须确实是本应用可执行文件。
+    /// **可执行文件名守卫**:<paramref name="executablePath"/> 的基名必须确实是本应用可执行文件。
     ///
     /// **为什么必须有**:<see cref="ApplyAndRestart"/> 拿可执行文件所在目录当**安装目录**去覆盖。
     /// 若应用是以 <c>dotnet KindleMate2.dll</c> 启动的,<c>Environment.ProcessPath</c> 是
     /// <c>dotnet.exe</c>,其目录是 **.NET 运行时安装目录** —— 脚本会把新包 <c>xcopy</c> 进去,
     /// 破坏的是共享运行时,后果远超本应用。开发期跑 dll、或用别的方式宿主时不具备自动替换的前提,
     /// 应当明确报错而不是静默替换(与 <see cref="ResolveAppBundlePath"/> 同一套风格)。
+    ///
+    /// **口径说明**:本方法只校验**可执行文件名**,不校验可执行文件所在的目录/安装位置 —— 所以
+    /// <c>dotnet run</c> 等开发场景下 apphost 同样叫 <c>KindleMate2.exe</c>、也会通过。这已覆盖
+    /// 实际会破坏共享运行时的 `dotnet …dll` 场景;更强的"安装位置"判定不在本次范围(2026-10 审阅口径)。
+    ///
+    /// 同时作为**快速失败**入口供 UI 在下载前调用(避免非安装形态白下载一整包);替换脚本生成前
+    /// 仍会再校验一次,防调用方绕过。
     /// </summary>
-    internal static void EnsureInstalledLayout(string? executablePath) {
+    public static void EnsureInstalledLayout(string? executablePath) {
         var name = string.IsNullOrEmpty(executablePath) ? string.Empty : Path.GetFileNameWithoutExtension(executablePath);
         if (!string.Equals(name, AppExecutableName, StringComparison.OrdinalIgnoreCase)) {
             throw new InvalidOperationException(
@@ -236,7 +246,7 @@ public static class UpdateInstaller {
     }
 
     /// <summary>
-    /// 生成替换脚本并落盘,**不启动**它。先过安装布局守卫 —— 非法形态一个脚本都不该写出来。
+    /// 生成替换脚本并落盘,**不启动**它。先过**可执行文件名守卫** —— 非法形态一个脚本都不该写出来。
     /// 与启动分离是为了让守卫与脚本内容可在测试里直接验证(启动会真的跑替换脚本)。
     /// </summary>
     internal static string WriteApplyScript(string preparedPath, string executablePath, int processId) {
@@ -250,7 +260,7 @@ public static class UpdateInstaller {
                 ? (BuildMacOsScript(preparedPath, ResolveAppBundlePath(executablePath), processId), ".sh")
                 : (BuildLinuxScript(preparedPath, installDirectory, processId), ".sh");
 
-        var scriptPath = Path.Combine(Path.GetTempPath(), "km2-apply-update-" + Guid.NewGuid().ToString("N")[..8] + extension);
+        var scriptPath = Path.Combine(ScriptTempRoot, "km2-apply-update-" + Guid.NewGuid().ToString("N")[..8] + extension);
         File.WriteAllText(scriptPath, script);
         return scriptPath;
     }
