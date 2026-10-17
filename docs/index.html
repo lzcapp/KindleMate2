@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-lang="zh">
 <head>
 <meta charset="utf-8">
@@ -306,15 +306,21 @@
       </article>
 
       <article class="card">
-        <h3><span class="t-zh">编辑标注与生词</span><span class="t-en">Edit clippings &amp; words</span></h3>
-        <p class="t-zh">正文、笔记、释义均可直接修改，改完即落库。</p>
-        <p class="t-en">Edit text, notes and definitions directly; changes are saved to the database.</p>
+        <h3><span class="t-zh">编辑标注 / 重命名生词</span><span class="t-en">Edit clippings / rename words</span></h3>
+        <p class="t-zh">标注正文与笔记可直接修改，改完即落库；生词可重命名（改名即合并该词的全部查询，撞名自动并入）。</p>
+        <p class="t-en">Edit highlight text and notes directly — changes are saved to the database; words can be renamed (renaming merges all lookups of that word, and a name clash is merged silently).</p>
       </article>
 
       <article class="card">
         <h3><span class="t-zh">删除与回收站</span><span class="t-en">Delete with recycle bin</span></h3>
-        <p class="t-zh">支持删除单条、整本书或某个词，且删除可恢复。</p>
-        <p class="t-en">Delete a single entry, a whole book or a single word — and restore it from the recycle bin.</p>
+        <p class="t-zh">支持删除单条、整本书或某个词；回收站可恢复<strong>标注</strong>删除（删除的生词无法恢复）。</p>
+        <p class="t-en">Delete a single entry, a whole book or a single word; the recycle bin restores <strong>highlight</strong> deletions (deleted words cannot be restored).</p>
+      </article>
+
+      <article class="card">
+        <h3><span class="t-zh">分享为图片</span><span class="t-en">Share as image</span></h3>
+        <p class="t-zh">把选中的标注渲染成一张 PNG 分享卡。</p>
+        <p class="t-en">Render a selected highlight as a PNG share card.</p>
       </article>
 
       <article class="card">
@@ -355,8 +361,8 @@
 
       <article class="card">
         <h3><span class="t-zh">界面多语言</span><span class="t-en">UI languages</span></h3>
-        <p class="t-zh">简体中文 / 繁体中文 / English 三套资源，全部文案走资源文件。</p>
-        <p class="t-en">Simplified Chinese, Traditional Chinese and English resources; every string lives in resource files.</p>
+        <p class="t-zh">简体中文 / 繁体中文 / English 三套资源（另可「跟随系统」），全部文案走资源文件。</p>
+        <p class="t-en">Simplified Chinese, Traditional Chinese and English resources (plus a "follow the system" option); every string lives in resource files.</p>
       </article>
 
       <article class="card">
@@ -513,10 +519,10 @@
     <div class="note">
       <p class="t-zh"><strong>从 Windows Forms 版（≤ <code>2026.09.07</code>）升级：</strong>解压覆盖后，双击的仍是 <code>KindleMate2.exe</code>。
         建议取 <code>_runtime</code> 自包含包（旧壳依赖 .NET 8 运行时，不带该后缀的新包要求 .NET 10）。
-        与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 <code>DarkModeForms.dll</code>）留着不影响使用，删掉也可以。</p>
+        与新版同名的文件会被覆盖；旧壳遗留的其它文件（如 <code>DarkModeForms.dll</code>、<code>ReaLTaiizor.dll</code>）留着不影响使用，删掉也可以。</p>
       <p class="t-en"><strong>From the Windows Forms build (≤ <code>2026.09.07</code>):</strong> you still double-click <code>KindleMate2.exe</code>.
         Prefer the <code>_runtime</code> self-contained build (the old shell needed the .NET 8 runtime; builds without that suffix now require .NET 10).
-        Files sharing a name with the new build are overwritten; other leftovers from the old shell (e.g. <code>DarkModeForms.dll</code>) are harmless.</p>
+        Files sharing a name with the new build are overwritten; other leftovers from the old shell (e.g. <code>DarkModeForms.dll</code>, <code>ReaLTaiizor.dll</code>) are harmless but can be deleted.</p>
       <p class="t-zh" style="margin-top:10px"><strong>装过 <code>2026.09.13</code>–<code>2026.09.22</code> 的版本：</strong>那一版的可执行文件名是
         <code>KindleMate2.Avalonia.exe</code>，升级后请把残留的 <code>KindleMate2.Avalonia.exe</code> 与 <code>KindleMate2.Avalonia.dll</code> 删掉。</p>
       <p class="t-en" style="margin-top:10px"><strong>From <code>2026.09.13</code>–<code>2026.09.22</code>:</strong> that build's executable was named
@@ -525,8 +531,18 @@
         <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>。</p>
       <p class="t-en" style="margin-top:10px"><strong>From an older Linux tar.gz:</strong> your library is still in the old extracted folder — move it once:
         <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>.</p>
-      <p class="t-zh" style="margin-top:10px">主题与语言<strong>不会</strong>随库迁移：升级后需要在设置里重新选一次。</p>
-      <p class="t-en" style="margin-top:10px">Theme and language do <strong>not</strong> travel with the library — pick them once more in settings.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>想把程序换到新目录：</strong><strong>Windows 上</strong>数据目录就是程序目录 ——
+        新目录首次运行会新建一个空库；把旧的 <code>KM2.dat</code> 拷进新目录即可，也可以用「管理 → 导入 Kindle Mate 2 数据库」把旧库整份合并进来。
+        <strong>Linux / macOS 的数据目录固定在</strong> <code>~/.local/share/KindleMate2/</code> / <code>~/Library/Application Support/KindleMate2/</code> ——
+        换程序目录<strong>不会</strong>新建空库、库也不会跟着走；要迁移数据请把 <code>KM2.dat</code> 放进数据目录。</p>
+      <p class="t-en" style="margin-top:10px"><strong>Moving the program to a new folder:</strong> <strong>on Windows</strong> the data directory is the program folder —
+        the first run in a new folder creates an empty library; copy your old <code>KM2.dat</code> into the new folder, or use Manage → Import Kindle Mate 2 Database to merge the old library in.
+        <strong>On Linux / macOS the data directory is fixed</strong> at <code>~/.local/share/KindleMate2/</code> / <code>~/Library/Application Support/KindleMate2/</code> —
+        moving the program does <strong>not</strong> create an empty library or move the library with it; put <code>KM2.dat</code> into the data directory instead.</p>
+      <p class="t-zh" style="margin-top:10px">主题与语言<strong>不会</strong>随库迁移：旧版把这两项存在库里，新版存在系统的应用数据目录
+        （Windows 为 <code>%APPDATA%\KindleMate2\settings.json</code>），升级后需要重新选一次。</p>
+      <p class="t-en" style="margin-top:10px">Theme and language do <strong>not</strong> travel with the library: the old shell stored both inside the database, while the new build
+        keeps them in the platform's application-data directory (on Windows: <code>%APPDATA%\KindleMate2\settings.json</code>). Pick them once more.</p>
     </div>
   </section>
 
@@ -791,8 +807,8 @@ dotnet test  KindleMate2.Tests/KindleMate2.Tests.csproj</code></pre>
 
     <div class="foot-meta" style="margin-top:24px">
       <span>Kindle Mate 2 · GPL-3.0 License</span>
-      <span class="t-zh">本页最后更新：2026-09-28</span>
-      <span class="t-en">Page last updated: 2026-09-28</span>
+      <span class="t-zh">本页最后更新：2026-10-15</span>
+      <span class="t-en">Page last updated: 2026-10-15</span>
       <a href="https://github.com/lzcapp/KindleMate2/edit/main/README.md" target="_blank" rel="noopener">
         <span class="t-zh">改进本页</span><span class="t-en">Improve this page</span>
       </a>

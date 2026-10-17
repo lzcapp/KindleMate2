@@ -27,8 +27,7 @@ namespace KindleMate2.Domain.Interfaces.KM2DB {
 
         bool Update(Vocab vocab);
 
-        bool UpdateFrequencyByWordKey(Vocab vocab);
-
+        /// <summary>批量重算词频(按主键 id 逐行回写,见实现注释)。</summary>
         int UpdateFrequencyByWordKey(List<Vocab> vocabs);
 
         bool Delete(string id);

@@ -69,8 +69,11 @@ clippings and vocabulary carry over, with nothing to import or reconfigure.
   deleted. If you installed a build between `2026.09.13` and `2026.09.22`, its executable was named
   `KindleMate2.Avalonia.exe` — delete the leftover `KindleMate2.Avalonia.exe` and `KindleMate2.Avalonia.dll`.
 - **From an older Linux tar.gz**: your library is still in the old extracted folder — move it once (see the Linux section above).
-- **Moving the program to a new folder**: the first run there creates an empty library. Copy your old `KM2.dat` into the new
-  folder, or use Manage → Import Kindle Mate 2 Database to merge the old library in.
+- **Moving the program to a new folder**: **on Windows** the data directory *is* the program folder — the first run in a
+  new folder creates an empty library; copy your old `KM2.dat` into the new folder, or use Manage → Import Kindle Mate 2
+  Database to merge the old library in. **On Linux / macOS the data directory is fixed** at `~/.local/share/KindleMate2/` /
+  `~/Library/Application Support/KindleMate2/` (see the per-platform sections above) — moving the program does **not**
+  create an empty library or move the library with it; put `KM2.dat` into the data directory instead.
 
 > Theme and language do **not** travel with the library: the old shell stored both inside the database, while the new build
 > keeps them in the platform's application-data directory (on Windows: `%APPDATA%\KindleMate2\settings.json`).
@@ -112,14 +115,15 @@ and the headless self-checks.
 - [x] Sync to a connected Kindle device
 - [x] About window shows connected-device info (connection / volume path / firmware / storage)
 - [x] Edit Highlights
-- [x] Edit Vocabulary List
-- [x] Delete (single / whole book / single word) and **recycle bin** (deletions are restorable)
+- [x] Rename words (renaming merges all lookups of that word; a name clash is merged silently)
+- [x] Delete (single / whole book / single word); the **recycle bin** restores **highlight** deletions (deleted words cannot be restored)
 - [x] Rename books (title + author)
+- [x] Share a selected highlight as an image (PNG share card)
 - [x] Clean / Rebuild / Backup / Clear database
 - [x] Export Function (Markdown / CSV / JSON / Obsidian vault; CSV importable to Anki; Anki deck `.apkg` you can drag straight into Anki)
 - [x] Statistics Function
 - [x] Night Mode (Dark Mode)
-- [x] Language Switch (简体中文 / 繁體中文 / English)
+- [x] Language Switch (简体中文 / 繁體中文 / English, or follow the system)
 - [x] Search Function (book / author / content / note)
 - [x] **Cross-platform** (official packages for Windows / Linux / macOS; device sync supports USB mass storage + MTP on all three)
 

@@ -87,7 +87,10 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// 没有索引时每条 <c>UPDATE … WHERE word_key = ?</c> 都要全表扫一遍 vocab,整体退化成
         /// O(vocab²)。实测(20000 lookups / 5000 vocab,同一事务内):
         /// 无索引 576ms → 有索引 5ms。
-        /// 它同时服务 <c>GetByWordKey</c> / <c>DeleteByWordKey</c> / <c>UpdateFrequencyByWordKey</c>。
+        /// 它同时服务 <c>GetByWordKey</c> / <c>DeleteByWordKey</c>。
+        /// (词频重算的批量回写此后改为**按主键 <c>id</c> 定位** —— 因为 <c>word_key</c> 读取时被
+        /// <c>GetSafeString</c> Trim、与库里的原始值可能不等,按它做 WHERE 会漏行;见
+        /// <c>VocabRepository.UpdateFrequencyByWordKey</c>。本索引仍服务上述按词键的等值查询。)
         ///
         /// **不要再给 <c>[lookups].[word_key]</c> 加索引。** 现有
         /// <c>UNIQUE([word_key], [timestamp])</c> 会自动建出 <c>sqlite_autoindex_lookups_1</c>,
