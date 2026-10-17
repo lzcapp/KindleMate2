@@ -855,8 +855,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     // 这是**有意偏离原版**的一处,已在提交说明中标注。
 
     public Task<OperationResult> ExportAllMarkdownAsync() {
-        // 与写操作互斥:连接串没设 busy_timeout,导入/清理持锁期间并行导出会 SQLITE_BUSY
-        // 失败,还会被误报成「没有可导出的内容」。忙碌时与 RunOperationAsync 同样静默让路。
+        // 与写操作互斥:导入/清理持锁期间并行导出会撞 SQLITE_BUSY。连接串虽已统一带
+        // 命令超时(DatabaseHelper.BuildConnectionString 的 Default Timeout),但那只让命令在锁上
+        // 重试等待,长导入仍可能等超时后失败,还会被误报成「没有可导出的内容」。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -880,8 +881,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 为 false(默认)时完全离线,Definition 列留空。
     /// </summary>
     public Task<OperationResult> ExportAllCsvAsync(bool includeDefinitions = false) {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -913,8 +914,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 别据此认为两格式逐字段可对齐,<c>stem</c> 的补齐口径目前也不一致(见 ExportManager.FillStemsFromVocabs)。
     /// </remarks>
     public Task<OperationResult> ExportAllJsonAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -941,8 +942,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// 拼装全部基于同一份中间模型(见 <c>ExportManager.ExportObsidianVault</c>),故分组 / 省略口径与 JSON 一致。
     /// </remarks>
     public Task<OperationResult> ExportObsidianAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -967,8 +968,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
     /// **默认离线**:释义字段留空由用户自己填 —— 联网查释义会把全部生词发给第三方,不放进这个入口。
     /// </remarks>
     public Task<OperationResult> ExportAnkiDeckAsync() {
-        // 与写操作互斥(理由同 ExportAllMarkdownAsync):连接串没设 busy_timeout,
-        // 导入/清理持锁期间并行导出会 SQLITE_BUSY 失败。忙碌时静默让路。
+        // 与写操作互斥(理由同 ExportAllMarkdownAsync):导入/清理持锁期间并行导出会撞
+        // SQLITE_BUSY(连接串的命令超时只提供等待窗口,长操作仍可能等超时失败)。忙碌时静默让路。
         if (IsBusy) return Task.FromResult(OperationResult.Silent);
         if (_session is not { } session) {
             return Task.FromResult(new OperationResult(false, Strings.Error, Strings.Ui_Status_OpenDatabaseFirst));
@@ -1238,7 +1239,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged {
             // 清空前的这份保底备份读不出日期,用户就没法按名字找回来。
             var stamp = DateTime.Now.ToString(AppConstants.FileTimestampFormat, CultureInfo.InvariantCulture);
             var fileName = $"{Path.GetFileNameWithoutExtension(session.DatabasePath)}_{stamp}{Path.GetExtension(session.DatabasePath)}";
-            File.Copy(session.DatabasePath, Path.Combine(session.BackupDirectory, fileName), true);
+            // 走一致性快照(VACUUM INTO)而不是 File.Copy —— 理由见
+            // DatabaseHelper.CreateConsistentSnapshot 的 remarks(为什么不用 File.Copy):
+            // 直接复制库文件会在 rollback journal 下静默产出部分改写的文件、在 WAL 下丢掉最近提交,
+            // 恰在这份"清空前的唯一保底备份"最需要可靠时,产出损坏或漏行的结果。
+            // 这里刻意用 CreateConsistentSnapshot 而非 DatabaseHelper.BackupDatabase:后者的文件名
+            // 带 `_backup_` 中缀,会与手动/维护备份混在同一层;保底备份沿用旧式
+            // `<库名>_<时间戳><扩展名>` 命名(用户能按名字找回,也与 `_backup_` 备份一眼可分)。
+            // 注:PruneBackups 只清理 Backups/OnExit(App.axaml.cs),根目录备份本就不在保留策略范围内。
+            DatabaseHelper.CreateConsistentSnapshot(
+                session.DatabasePath,
+                Path.Combine(session.BackupDirectory, fileName),
+                overwrite: true);
             return session.Km2DatabaseService.DeleteAllData() ? Strings.Data_Cleared : string.Empty;
         }, true, Strings.Successful, Strings.Clear_Failed);
     }

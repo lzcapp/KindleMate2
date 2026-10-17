@@ -22,15 +22,17 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                 // Check if the string ends with a valid closing parenthesis
                 if (!input.EndsWith(Symbols.ClosingParenthesis) && !input.EndsWith(Symbols.ClosingParenthesisChinese)) {
-                    var indexOfHyphen = input.LastIndexOf(Symbols.Hyphen);
-                    if (indexOfHyphen == -1 || indexOfHyphen >= input.Length - 1) {
+                    // 只认「两侧带空格」的 ' - ' 作分隔符:裸 '-' 会把书名内的连字符
+                    // (Spider-Man / Zoo-ology …)误当作者分隔,写出错误的书名/作者并污染按书聚合。
+                    var indexOfSeparator = input.LastIndexOf(Symbols.TitleAuthorSeparator, StringComparison.Ordinal);
+                    if (indexOfSeparator == -1) {
                         return new Header {
                             Title = input.Trim(),
                             Author = string.Empty,
                         };
                     }
-                    var author = input[(indexOfHyphen + 1)..].Trim();
-                    var book = input[..indexOfHyphen].Trim();
+                    var author = input[(indexOfSeparator + Symbols.TitleAuthorSeparator.Length)..].Trim();
+                    var book = input[..indexOfSeparator].Trim();
                         
                     if (!string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(book)) {
                         return new Header {
@@ -39,7 +41,7 @@ namespace KindleMate2.Infrastructure.Helpers {
                         };
                     }
 
-                    // If hyphen parsing fails, treat entire input as title
+                    // If separator parsing fails, treat entire input as title
                     return new Header {
                         Title = input.Trim(),
                         Author = string.Empty,
@@ -107,47 +109,6 @@ namespace KindleMate2.Infrastructure.Helpers {
                     Author = string.Empty,
                 };
             }
-        }
-
-        /// <summary>
-        /// Parses metadata information from clipping metadata string.
-        /// </summary>
-        /// <param name="input">The metadata string to parse</param>
-        /// <returns>A Metadata object with parsed information</returns>
-        // ReSharper disable once UnusedMember.Local
-        private static Metadata ParseMetadata(string input) {
-            var result = new Metadata();
-            
-            try {
-                if (string.IsNullOrEmpty(input)) {
-                    throw new ArgumentException("[input] is null or empty.", nameof(input));
-                }
-                
-                var sections = BriefTypeTranslations.Dividers
-                    .Aggregate(input, (str, token) => str.Replace(token, "|"))
-                    .Split('|')
-                    .Select(s => s.Trim())
-                    .ToList();
-
-                if (sections.Count < 2) {
-                    throw new ArgumentException($@"Invalid metadata entry. Expected a page and/or location and created date entry: {input}", nameof(input));
-                }
-
-                var firstSection = sections[0];
-                
-                result.Type = ParseEntryType(input);
-                result.DateOfCreation = ParseToUtcDate(sections.Last());
-
-                Location location = ParseLocation(firstSection);
-                result.Page = location.Page;
-                result.Location = location;
-            } catch (Exception e) when (e is not ArgumentException) {
-                // Re-throw argument exceptions as they have specific meaning
-                // For other exceptions, wrap with context but don't log to console
-                throw new InvalidOperationException($"Failed to parse metadata from input '{input}': {e.Message}", e);
-            }
-            
-            return result;
         }
 
         public static BriefType ParseEntryType(string pageMetadata) {
@@ -361,14 +322,6 @@ namespace KindleMate2.Infrastructure.Helpers {
             return DateTime.TryParseExact(input, "yyyy年M月d日 tth:m:s", ZhCn, DateTimeStyles.None, out parsedDate);
         }
 
-        private static DateTime? ParseToUtcDate(string serializedDate) {
-            if (DateTime.TryParse(serializedDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTime date) || CultureInfoArray.Any(culture => DateTime.TryParse(serializedDate, new CultureInfo(culture), DateTimeStyles.AssumeUniversal, out date))) {
-                return date;
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Parses location information from clipping metadata string.
         /// </summary>
@@ -418,8 +371,6 @@ namespace KindleMate2.Infrastructure.Helpers {
             "You have reached the clipping limit for this item",
             "您已达到本内容的剪贴上限"
         ];
-        
-        private static readonly string[] CultureInfoArray = ["it-IT", "fr-FR", "es-ES", "pt-PT"];
 
         public static bool IsClippingLimitReached(string content) {
             return ClippingLimitReachedWarning.Any(content.Contains);
