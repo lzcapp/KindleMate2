@@ -66,6 +66,22 @@ name: release
 #   ④ LGPL 源码包(libmtp/libusb)下载即校验钉死的 SHA-256,并纳入签名的 SHA256SUMS。
 #   ⑤ 资产数量断言(12 个)+ 所有 upload-artifact 加 if-no-files-found: error。
 #
+# 2026-10-18 变更 G:Windows 旧可执行名迁移(一次性兼容启动器)。2026.09.13–09.23 的 Windows 包
+#   可执行名是 KindleMate2.Avalonia.exe,09.24 起改名为 KindleMate2.exe。那批老版本内置的更新器
+#   用 `Path.GetFileName(executablePath)` 拼重启命令,xcopy 合并覆盖新包后旧 exe 从未被覆盖
+#   (新包没有旧名文件)→ 重启的是旧二进制 + 新 Application.dll,报
+#   `MissingMethodException: ImportManager..ctor(…)`(2026-10-17 用户报障)。旧更新脚本由已发布
+#   的旧版本生成、无法回改,只能从新包侧兜住:
+#     ① KindleMate2.Avalonia.csproj 的 Target Km2AddLegacyWindowsLauncher 在 Windows publish 后把
+#        KindleMate2.exe 复制成 KindleMate2.Avalonia.exe(apphost 副本,旧更新脚本/旧快捷方式因此
+#        能启动到新版);
+#     ② 本文件的 publish 作业断言该副本存在且与规范 exe 哈希一致(失败关闭,防止哪天 Target 失效
+#        却照样发版);
+#     ③ UpdateInstaller 接受旧可执行名,替换脚本以规范名 KindleMate2.exe 重启(完成迁移);
+#     ④ Release notes 「从旧版升级」段说明迁移与残留旧 exe 的排障办法。
+#   移除条件:确认已无 2026.09.13–09.23 存量用户后,删除该 Target、本文件与 build.yml 的对应断言
+#   步骤,以及 README / arch.md 的兼容说明(见 csproj Target 注释)。
+#
 # 注:应用内自动更新直接走本仓库的 GitHub Releases API(见 Application/Services/UpdateChecker),
 # 不使用 AppCast —— 旧的 update_*.xml 是 WinForms 壳 AutoUpdater 时代的产物,已随壳退役删除。
 # 因此发版无"更新 AppCast"这一步。
@@ -185,6 +201,26 @@ jobs:
 
       - name: Publish (${{ matrix.suffix }})
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows -c Release -r ${{ matrix.rid }} --self-contained ${{ matrix.self }} -p:Version=${{ needs.version.outputs.version }} -o publish/${{ matrix.suffix }}
+
+      # 旧可执行名迁移的**失败关闭**闸(变更 G):Windows 包必须同时带 KindleMate2.Avalonia.exe
+      # (一次性兼容启动器),且与 KindleMate2.exe 字节完全相同。缺了它,2026.09.13–09.23 存量用户
+      # 的旧更新脚本/旧快捷方式会重启残留的旧二进制,报 MissingMethodException —— 而那种问题
+      # 只有用户升级后才会看到。csproj Target 哪天被误删/条件失效,这里必须让发版直接红。
+      - name: Verify legacy launcher in publish output
+        shell: pwsh
+        run: |
+          $dir = "publish/${{ matrix.suffix }}"
+          $legacy = Join-Path $dir 'KindleMate2.Avalonia.exe'
+          $canonical = Join-Path $dir 'KindleMate2.exe'
+          if (-not (Test-Path -LiteralPath $legacy)) {
+            throw "Windows 发布产物缺少旧名兼容启动器:$legacy"
+          }
+          $legacyHash = (Get-FileHash -LiteralPath $legacy -Algorithm SHA256).Hash
+          $canonicalHash = (Get-FileHash -LiteralPath $canonical -Algorithm SHA256).Hash
+          if ($legacyHash -ne $canonicalHash) {
+            throw "旧名兼容启动器与 KindleMate2.exe 内容不一致:$legacyHash vs $canonicalHash"
+          }
+          Write-Output "旧名兼容启动器校验通过(与 KindleMate2.exe 哈希一致):$legacy"
 
       - name: Package zip (KindleMate2_${{ matrix.suffix }}.zip)
         shell: pwsh
@@ -697,6 +733,10 @@ jobs:
             '- 带 `_runtime` = 自包含(免装 .NET 运行时);不带 = 需先安装对应平台的 .NET 10 运行时。macOS 只提供自包含包。',
             '- **本版起目标框架由 .NET 8 升到 .NET 10**(.NET 8 支持于 2026-11-10 终止):使用**不带 `_runtime` 后缀**的包,请把 .NET 8 运行时替换为 [.NET 10 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)(Windows 需 Desktop Runtime);改用带 `_runtime` 的包则无需安装任何运行时。',
             '- Linux 自本版起要求 glibc ≥ 2.27(此前为 2.23):CentOS 7 等老发行版请改用自包含包或先升级系统。',
+            '',
+            '**从旧版升级**',
+            '- 从 2026.09.13–2026.09.23 老版本升级:Windows 包内附带一次性兼容启动器 KindleMate2.Avalonia.exe(与 KindleMate2.exe 内容相同)。旧版应用内更新按旧文件名重启、以及旧桌面快捷方式,都会落到新版。',
+            '- 若已在 2026.10.17 及更早版本上升级后看到 打开失败: Method not found: … ImportManager..ctor(…),那是残留的旧 KindleMate2.Avalonia.exe 在运行:关闭它,改运行同目录的 KindleMate2.exe 即可,KM2.dat 数据不受影响。',
             '',
             '**校验下载(完整性)**',
             '- 每个 Release 附 `SHA256SUMS`(SHA-256 清单)、`SHA256SUMS.asc`(维护者 GPG 签名)与公钥 `KindleMate2-release-key.asc`。',

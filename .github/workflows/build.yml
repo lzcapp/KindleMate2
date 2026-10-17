@@ -131,6 +131,31 @@ jobs:
       - name: Publish smoke (win-x64, self-contained)
         run: dotnet publish KindleMate2.Avalonia/KindleMate2.Avalonia.csproj -f net10.0-windows -c Release -r win-x64 --self-contained true -o publish/smoke
 
+      # 旧可执行名迁移(2026-10-18,见 release.yml 文件头变更 G)。2026.09.13–09.23 的 Windows 包
+      # 叫 KindleMate2.Avalonia.exe(09.24 起才改名);那些版本内置的更新器按旧文件名重启,
+      # 新包又没旧名文件 → 旧 exe 残留 + 新 Application.dll = MissingMethodException(用户报障)。
+      # 修复靠 csproj Target Km2AddLegacyWindowsLauncher 在 Windows publish 后附一个旧名
+      # apphost 副本。这里实跑该副本:少了它,存量用户的旧更新脚本/旧快捷方式直接落到不存在的路径。
+      # 断言写法刻意用 `if ! grep …`(不落行首):scripts/check-smoke-greps.sh 会拿 --smoke 报告
+      # 校验行首 grep,那段报告格式不属于本步骤的产物。
+      - name: Legacy launcher self-check (published)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ./publish/smoke/KindleMate2.Avalonia.exe
+          work="$(mktemp -d)"
+          touch "$work/empty.dat"
+          # 原生 exe 只认 Windows 路径(mktemp 给的是 MSYS 形式),故转一下;必须传绝对路径。
+          db="$(cygpath -w "$work/empty.dat")"
+          legacy_out="$(cygpath -w "$work/smoke.txt")"
+          ./publish/smoke/KindleMate2.Avalonia.exe --smoke "$db" "$legacy_out"
+          cat "$legacy_out"
+          if ! grep -q "startup: fatal=False ok=True" "$legacy_out"; then
+            echo "::error::旧名兼容启动器 --smoke 报告缺少 startup 成功行"
+            exit 1
+          fi
+          echo "旧名兼容启动器自检通过(KindleMate2.Avalonia.exe 能正常启动)"
+
       # 实跑发布产物:验证 apphost、SQLite 原生库、卫星资源与平台设备实现都随发布产物一起
       # 落地 —— 也就是 release 真正交付的那个形态(上面各步验的是 obj/bin 里的中间产物)。
       # Windows 上设备实现应为 Devices.Windows.DeviceManager(macOS/Linux 各有自己的实现,只有

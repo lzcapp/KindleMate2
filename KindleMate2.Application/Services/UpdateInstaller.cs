@@ -237,6 +237,21 @@ public static class UpdateInstaller {
     internal const string AppExecutableName = "KindleMate2";
 
     /// <summary>
+    /// **历史遗留的 Windows 可执行名**(不带扩展名)。
+    ///
+    /// 2026.09.13–09.23 发布的 Windows 包叫 <c>KindleMate2.Avalonia.exe</c>(程序集名当时是
+    /// <c>KindleMate2.Avalonia</c>),2026.09.24 起才改为 <c>KindleMate2.exe</c>。旧版内置的更新器
+    /// 按 <c>Path.GetFileName(ProcessPath)</c> 重启(见 <see cref="WriteApplyScript"/>),xcopy
+    /// 合并覆盖后新包又没有旧名文件,于是重启的是**残留的旧二进制** + 新版
+    /// <c>KindleMate2.Application.dll</c> —— 旧壳调新库,报
+    /// <c>MissingMethodException: ImportManager..ctor(...)</c>(2026-10-17 用户报障)。
+    ///
+    /// **旧名只在 Windows 上用过**(macOS/Linux 的启动器/真程序名历史上一直是 <c>KindleMate2</c>),
+    /// 所以只有 Windows 接受它;且它只是**迁移桥**,不是第二种合法安装形态。
+    /// </summary>
+    internal const string LegacyWindowsExecutableName = "KindleMate2.Avalonia";
+
+    /// <summary>
     /// **可执行文件名守卫**:<paramref name="executablePath"/> 的基名必须确实是本应用可执行文件。
     ///
     /// **为什么必须有**:<see cref="ApplyAndRestart"/> 拿可执行文件所在目录当**安装目录**去覆盖。
@@ -249,15 +264,43 @@ public static class UpdateInstaller {
     /// <c>dotnet run</c> 等开发场景下 apphost 同样叫 <c>KindleMate2.exe</c>、也会通过。这已覆盖
     /// 实际会破坏共享运行时的 `dotnet …dll` 场景;更强的"安装位置"判定不在本次范围(2026-10 审阅口径)。
     ///
+    /// **Windows 额外接受旧名 <see cref="LegacyWindowsExecutableName"/>**:2026.09.13–09.23 的
+    /// 用户机器上 <c>ProcessPath</c> 就是旧名,若在这里拒绝,"从旧版升级"的用户永远走不到自动更新
+    /// (只能手动下载)。接受它之后,替换脚本会以规范名 <c>KindleMate2.exe</c> 重启(见
+    /// <see cref="ResolveWindowsLaunchFileName"/>),下一次启动就完成迁移。macOS/Linux **不接受**
+    /// 旧名:那里历史上从没叫过 <c>KindleMate2.Avalonia</c>,接受它只会把守卫的覆盖面白放开。
+    ///
     /// 同时作为**快速失败**入口供 UI 在下载前调用(避免非安装形态白下载一整包);替换脚本生成前
     /// 仍会再校验一次,防调用方绕过。
     /// </summary>
     public static void EnsureInstalledLayout(string? executablePath) {
         var name = string.IsNullOrEmpty(executablePath) ? string.Empty : Path.GetFileNameWithoutExtension(executablePath);
-        if (!string.Equals(name, AppExecutableName, StringComparison.OrdinalIgnoreCase)) {
-            throw new InvalidOperationException(
-                $"当前不是以安装形态运行(可执行文件为 \"{Path.GetFileName(executablePath)}\",不是 {AppExecutableName}),无法自动替换;请手动下载安装包更新");
+        if (string.Equals(name, AppExecutableName, StringComparison.OrdinalIgnoreCase)) {
+            return;
         }
+        // Windows 上的旧名(2026.09.13–09.23)是待迁移的安装形态,不是非法宿主。
+        if (OperatingSystem.IsWindows() &&
+            string.Equals(name, LegacyWindowsExecutableName, StringComparison.OrdinalIgnoreCase)) {
+            return;
+        }
+        throw new InvalidOperationException(
+            $"当前不是以安装形态运行(可执行文件为 \"{Path.GetFileName(executablePath)}\",不是 {AppExecutableName}),无法自动替换;请手动下载安装包更新");
+    }
+
+    /// <summary>
+    /// 替换脚本里 Windows 该用哪个可执行文件名重启(只对 Windows 调用)。
+    ///
+    /// 从旧名 <see cref="LegacyWindowsExecutableName"/> 启动时返回规范名 <c>KindleMate2.exe</c>
+    /// —— 这是迁移的关键一步:新包内虽有旧名的兼容启动器(见 csproj 的
+    /// <c>Km2AddLegacyWindowsLauncher</c>),但**替换后再按旧名重启会让迁移永远完不成**,
+    /// 每次都停在兼容副本上。其余名字原样返回 <see cref="Path.GetFileName(string)"/>。
+    /// </summary>
+    internal static string ResolveWindowsLaunchFileName(string executablePath) {
+        var fileName = Path.GetFileName(executablePath);
+        return string.Equals(Path.GetFileNameWithoutExtension(fileName), LegacyWindowsExecutableName,
+            StringComparison.OrdinalIgnoreCase)
+            ? AppExecutableName + ".exe"
+            : fileName;
     }
 
     /// <summary>
@@ -282,6 +325,15 @@ public static class UpdateInstaller {
     /// <summary>
     /// 生成替换脚本并落盘,**不启动**它。先过**可执行文件名守卫** —— 非法形态一个脚本都不该写出来。
     /// 与启动分离是为了让守卫与脚本内容可在测试里直接验证(启动会真的跑替换脚本)。
+    ///
+    /// Windows 的重启名走 <see cref="ResolveWindowsLaunchFileName"/>:从旧名
+    /// <see cref="LegacyWindowsExecutableName"/> 启动的更新,替换后按**规范名**
+    /// <c>KindleMate2.exe</c> 重启,完成改名迁移(否则每次更新都会停在兼容副本上)。
+    ///
+    /// **为什么不能靠"更新时顺手删掉旧 exe"代替迁移**:真正会踩坑的是**已经发布出去的旧版本**内置
+    /// 的更新器 —— 它的重启脚本由旧代码在旧机器上生成,写死了旧的 <c>start</c> 目标,我们无法回改。
+    /// 因此只能在**新包**里带一个旧名兼容启动器(csproj Target <c>Km2AddLegacyWindowsLauncher</c>),
+    /// 让旧脚本按旧名启动时落到新版程序上;删旧文件反而会让旧脚本的 <c>start</c> 指向不存在的路径。
     /// </summary>
     internal static string WriteApplyScript(string preparedPath, string executablePath, int processId) {
         EnsureInstalledLayout(executablePath);
@@ -289,7 +341,7 @@ public static class UpdateInstaller {
         var installDirectory = Path.GetDirectoryName(executablePath)!;
 
         var (script, extension) = OperatingSystem.IsWindows()
-            ? (BuildWindowsScript(preparedPath, installDirectory, processId, Path.GetFileName(executablePath)), ".cmd")
+            ? (BuildWindowsScript(preparedPath, installDirectory, processId, ResolveWindowsLaunchFileName(executablePath)), ".cmd")
             : OperatingSystem.IsMacOS()
                 ? (BuildMacOsScript(preparedPath, ResolveAppBundlePath(executablePath), processId), ".sh")
                 : (BuildLinuxScript(preparedPath, installDirectory, processId), ".sh");

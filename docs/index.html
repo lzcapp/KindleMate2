@@ -523,10 +523,19 @@
       <p class="t-en"><strong>From the Windows Forms build (≤ <code>2026.09.07</code>):</strong> you still double-click <code>KindleMate2.exe</code>.
         Prefer the <code>_runtime</code> self-contained build (the old shell needed the .NET 8 runtime; builds without that suffix now require .NET 10).
         Files sharing a name with the new build are overwritten; other leftovers from the old shell (e.g. <code>DarkModeForms.dll</code>, <code>ReaLTaiizor.dll</code>) are harmless but can be deleted.</p>
-      <p class="t-zh" style="margin-top:10px"><strong>装过 <code>2026.09.13</code>–<code>2026.09.22</code> 的版本：</strong>那一版的可执行文件名是
-        <code>KindleMate2.Avalonia.exe</code>，升级后请把残留的 <code>KindleMate2.Avalonia.exe</code> 与 <code>KindleMate2.Avalonia.dll</code> 删掉。</p>
-      <p class="t-en" style="margin-top:10px"><strong>From <code>2026.09.13</code>–<code>2026.09.22</code>:</strong> that build's executable was named
-        <code>KindleMate2.Avalonia.exe</code> — delete the leftover <code>KindleMate2.Avalonia.exe</code> and <code>KindleMate2.Avalonia.dll</code> after upgrading.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>从 <code>2026.09.13</code>–<code>2026.09.23</code>（含两端）的版本升级：</strong>那一版的可执行文件名是
+        <code>KindleMate2.Avalonia.exe</code>，升级后请改用同目录的 <code>KindleMate2.exe</code>。新版 Windows 包另附一个同名的<strong>一次性兼容启动器</strong>
+        （内容与 <code>KindleMate2.exe</code> 相同），让旧快捷方式与旧版「检查更新」的重启都落到新版；确认迁移后可把它和旧的 <code>KindleMate2.Avalonia.dll</code> 一并删掉。</p>
+      <p class="t-en" style="margin-top:10px"><strong>From a build between <code>2026.09.13</code> and <code>2026.09.23</code> (inclusive):</strong> that build's executable was named
+        <code>KindleMate2.Avalonia.exe</code>; after upgrading, use <code>KindleMate2.exe</code> in the same folder. The new Windows package also ships a same-named
+        <strong>one-shot compatibility launcher</strong> (identical to <code>KindleMate2.exe</code>), so old shortcuts and the restart performed by the old in-app update both land on the new build;
+        once migrated, delete it together with the old <code>KindleMate2.Avalonia.dll</code>.</p>
+      <p class="t-zh" style="margin-top:10px"><strong>升级后打不开（<code>Method not found</code>）？</strong>若看到
+        <code>打开失败: Method not found: 'Void … ImportManager..ctor(…)</code>，说明启动的是残留的旧 <code>KindleMate2.Avalonia.exe</code>：
+        关掉报错窗口，运行同目录的 <code>KindleMate2.exe</code> 即可；<code>KM2.dat</code> 数据不受影响。</p>
+      <p class="t-en" style="margin-top:10px"><strong>App won't start after upgrading (<code>Method not found</code>)?</strong> If it fails with
+        <code>Method not found: 'Void … ImportManager..ctor(…)</code> (in the Chinese UI shown as <code>打开失败: …</code>), it is still launching the leftover old
+        <code>KindleMate2.Avalonia.exe</code>: close the error dialog and run <code>KindleMate2.exe</code> in the same folder instead; your <code>KM2.dat</code> data is unaffected.</p>
       <p class="t-zh" style="margin-top:10px"><strong>从旧 Linux tar.gz 升级：</strong>库还在原来的解压目录，先搬一次：
         <code>mkdir -p ~/.local/share/KindleMate2 &amp;&amp; cp 旧目录/KM2.dat ~/.local/share/KindleMate2/</code>。</p>
       <p class="t-en" style="margin-top:10px"><strong>From an older Linux tar.gz:</strong> your library is still in the old extracted folder — move it once:
