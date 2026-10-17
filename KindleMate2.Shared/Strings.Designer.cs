@@ -611,6 +611,33 @@ namespace KindleMate2.Shared {
         
         
         /// <summary>
+        ///   查找类似 ，跳过 {0} 条（日期解析失败 {1} / 页码异常 {2} / 超出上限 {3}） 的本地化字符串。
+        /// </summary>
+        public static string Import_Skipped_Clippings_Format {
+            get {
+                return ResourceManager.GetString("Import_Skipped_Clippings_Format", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ，跳过 {0} 个数据表 的本地化字符串。
+        /// </summary>
+        public static string Import_Skipped_Tables_Format {
+            get {
+                return ResourceManager.GetString("Import_Skipped_Tables_Format", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ，{0} 条记录因时间戳异常被忽略 的本地化字符串。
+        /// </summary>
+        public static string Import_Skipped_Timestamps_Format {
+            get {
+                return ResourceManager.GetString("Import_Skipped_Timestamps_Format", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入 的本地化字符串。
         /// </summary>
         public static string Imported_X {

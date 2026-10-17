@@ -18,6 +18,10 @@
         public const string SkippedDateCount = "SkippedDateCount";
         public const string SkippedPageCount = "SkippedPageCount";
         public const string SkippedLimitCount = "SkippedLimitCount";
+        /// <summary>生词(源库 vocab.db)导入中因缺表/缺必需列而整表跳过的表数。</summary>
+        public const string SkippedTableCount = "SkippedTableCount";
+        /// <summary>生词(源库 vocab.db)导入中因时间戳非法/越界被忽略的记录数。</summary>
+        public const string SkippedTimestampCount = "SkippedTimestampCount";
 
         public const string SettingTheme = "theme";
         public const string SettingLanguage = "lang";

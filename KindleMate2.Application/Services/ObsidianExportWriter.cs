@@ -282,13 +282,21 @@ internal static class ObsidianExportWriter {
     /// 把值包成 YAML **双引号标量**并转义。
     /// </summary>
     /// <remarks>
+    /// <para>
     /// 为什么统一用双引号而不是"按需加引号":YAML 裸标量的边界规则很细(冒号后跟空格、行首
     /// <c>#</c>、<c>---</c>、前导 / 尾随空格、特殊首字符…),逐条判断既容易漏又难维护;
     /// 一律加引号只需处理两种转义(<c>\</c> 与 <c>"</c>)外加控制字符,行为可预测。
+    /// </para>
     /// <para>
     /// 换行必须写成 <c>\n</c> 字面量:双引号标量里**真实换行**会被折叠成空格,书名里的换行
     /// 就此丢失;写成 <c>\n</c> 才能在 YAML 解析时还原。顺序上先转义 <c>\</c>,否则后续插入的
     /// 反斜杠会被二次转义。
+    /// </para>
+    /// <para>
+    /// 除 <c>\ " \n \r \t</c> 外,**其余不可打印字符也必须转义**,否则产出的 frontmatter 非法:
+    /// C0(0x00–0x1F,已转义的 <c>\n \r \t</c> 除外)、DEL(0x7F)、C1(0x80–0x9F)以及行 / 段分隔符
+    /// U+2028 / U+2029。按 YAML 双引号标量规则用 <c>\xNN</c>(两位)<c>\uNNNN</c>(四位)写出 ——
+    /// 都是解析器认得的合法转义,能逐字还原原值。
     /// </para>
     /// </remarks>
     internal static string EscapeYamlDoubleQuoted(string value) {
@@ -303,7 +311,18 @@ internal static class ObsidianExportWriter {
                 case '\n': sb.Append("\\n"); break;
                 case '\r': sb.Append("\\r"); break;
                 case '\t': sb.Append("\\t"); break;
-                default: sb.Append(c); break;
+                case '\x7f': sb.Append("\\x7F"); break;
+                default:
+                    if (c < 0x20) {
+                        // 其余 C0 控制字符:8 位转义足够(值域 0x00–0x1F)。
+                        sb.Append("\\x").Append(((int)c).ToString("X2", CultureInfo.InvariantCulture));
+                    } else if (c is >= '\u0080' and <= '\u009F' or '\u2028' or '\u2029') {
+                        // C1 控制字符 与 Unicode 行 / 段分隔符:YAML 视为不可打印,必须转义。
+                        sb.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
+                    } else {
+                        sb.Append(c);
+                    }
+                    break;
             }
         }
         sb.Append('"');

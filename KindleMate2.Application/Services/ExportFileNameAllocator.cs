@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using KindleMate2.Domain.Models.Export;
 using KindleMate2.Infrastructure.Helpers;
+using KindleMate2.Shared.Constants;
 
 namespace KindleMate2.Application.Services;
 
@@ -116,15 +117,27 @@ internal static class ExportFileNameAllocator {
     /// <param name="directory">目标目录;分配时读它看已有哪些文件。</param>
     /// <param name="name">原始名(书名 / 词);文件名与身份行都由它派生。</param>
     /// <param name="author">作者(仅 clippings 侧有);撞名时用于退化成「作者 - 书名」。</param>
+    /// <param name="maxPathUtf8Bytes">
+    /// 整路径(目录 + 分隔符 + 文件名 + 扩展名)的 UTF-8 字节预算,默认
+    /// <see cref="StringHelper.DefaultMaxPathUtf8Bytes"/>。截断按**最长扩展名** <c>.html</c> 计,
+    /// 这样同一基名的 <c>.md</c> / <c>.html</c> 都不会超限。
+    /// </param>
     /// <remarks>
     /// <para>
     /// 为什么单书场景不能照搬批量的 <see cref="HashSet{T}"/>:一次调用只看得到**一本**书,内存里没有
     /// "其他书"可撞,于是改为**看目标目录** —— 这正是批量与单书两条路唯一实质不同的地方。
     /// </para>
     /// <para>
+    /// **截断必须在撞名判定之前**:判的是"最终要落盘的名字"。若先按未截断名判定、落盘前再截断,
+    /// 两个不同的超长名字可能截断成同一个文件而**静默互相覆盖**(正是本类要防的丢数据);
+    /// 同理,叠加序号时也要先把序号与扩展名的字节从预算里扣掉,避免序号本身被截掉。
+    /// (2026-10 审阅发现并修正。)
+    /// </para>
+    /// <para>
     /// 消歧规则:① 目录下没有 <c>净化(名).md</c> → 直接用;② 有、且**读其身份行确认是同一本** →
     /// **复用该文件名**(幂等覆盖,重复导出同一本书不会堆出 <c> (2)</c>);③ 有、但不是同一本 →
     /// 退化为 <c>净化(作者 - 名)</c>,仍冲突再追加 <c> (2)</c>、<c> (3)</c>… 直到落空。
+    /// 全部候选都放不进整路径预算时返回**空串**,由调用方判"无法落盘"(不写退化名)。
     /// </para>
     /// <para>
     /// 身份判据只读**文件首部**(<see cref="IdentityScanLineLimit"/> 行内),不读整个文件 ——
@@ -137,11 +150,25 @@ internal static class ExportFileNameAllocator {
     /// "被删 / 被改 / 拷贝时遗漏"的失效,而它一旦失效,要么覆盖、要么全变 <c> (2)</c>,都比"多一个孤儿"更糟。
     /// </para>
     /// </remarks>
-    internal static string AssignSingleFileName(string directory, string name, string? author = null) {
+    internal static string AssignSingleFileName(string directory, string name, string? author = null,
+        int maxPathUtf8Bytes = StringHelper.DefaultMaxPathUtf8Bytes) {
         var candidates = BuildCandidates(name, author);
         var identity = IdentityOf(name);
 
+        // 先压进整路径预算、再拿最终名字做撞名判定(顺序理由见 remarks)。
+        var fitted = new List<string>(candidates.Count);
         foreach (var candidate in candidates) {
+            var fittedName = FitToPath(directory, candidate, maxPathUtf8Bytes);
+            if (fittedName.Length > 0 && !fitted.Contains(fittedName, FileNameComparer)) {
+                fitted.Add(fittedName);
+            }
+        }
+        if (fitted.Count == 0) {
+            // 目录本身已吃掉全部预算:连一个字符的文件名都放不下,不写退化名。
+            return string.Empty;
+        }
+
+        foreach (var candidate in fitted) {
             if (IsReusable(directory, candidate, identity)) {
                 return candidate;
             }
@@ -149,13 +176,43 @@ internal static class ExportFileNameAllocator {
 
         // 全部候选都被**别人**占用 → 在最后一个候选后叠加序号,并在每个序号上也做身份判定:
         // 否则"重导同一本书"会每次又往后挪一位、堆出一串 (2)(3)(4)…
-        var baseName = candidates[^1];
+        var baseName = fitted[^1];
         for (var n = 2; ; n++) {
-            var numbered = baseName + " (" + n.ToString(CultureInfo.InvariantCulture) + ")";
+            var numbered = FitToPathWithSuffix(directory, baseName,
+                " (" + n.ToString(CultureInfo.InvariantCulture) + ")", maxPathUtf8Bytes);
+            if (numbered.Length == 0) {
+                // 加序号后也放不进预算:放弃,由调用方判"无法落盘"。
+                return string.Empty;
+            }
             if (IsReusable(directory, numbered, identity)) {
                 return numbered;
             }
         }
+    }
+
+    /// <summary>
+    /// 把候选名压进整路径预算:按最长扩展名 <c>.html</c> 截断,并去掉二次截断可能新产生的尾部空格 / 点
+    /// (与 <see cref="StringHelper.SanitizeFilename"/> 的可移植性规则保持一致)。放不下时返回空串。
+    /// </summary>
+    private static string FitToPath(string directory, string candidate, int maxPathUtf8Bytes) {
+        var fitted = StringHelper.TruncateFileNameToFitPath(directory, candidate, FileExtension.HTML, maxPathUtf8Bytes);
+        return fitted.TrimEnd(' ', '.');
+    }
+
+    /// <summary>
+    /// 在整路径预算内生成 <c>base + suffix</c>:先扣掉目录、扩展名与**序号**的字节,再截 base,
+    /// 保证序号不会被截掉(否则消歧名会退化成与 base 相同、反而重新撞名)。放不下时返回空串。
+    /// </summary>
+    private static string FitToPathWithSuffix(string directory, string baseName, string suffix, int maxPathUtf8Bytes) {
+        var overhead = Encoding.UTF8.GetByteCount(directory)
+                       + Encoding.UTF8.GetByteCount(FileExtension.HTML) + 1
+                       + Encoding.UTF8.GetByteCount(suffix);
+        var budget = maxPathUtf8Bytes - overhead;
+        if (budget <= 0) {
+            return string.Empty;
+        }
+        var stem = StringHelper.TruncateToUtf8Bytes(baseName, budget).TrimEnd(' ', '.');
+        return stem.Length == 0 ? string.Empty : stem + suffix;
     }
 
     /// <summary>按优先级构造候选文件名:先 <c>净化(名)</c>,有作者再退化为 <c>净化(作者 - 名)</c>。</summary>

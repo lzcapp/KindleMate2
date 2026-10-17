@@ -1,4 +1,4 @@
-﻿using KindleMate2.Application.Services;
+using KindleMate2.Application.Services;
 using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Infrastructure.Helpers;
@@ -128,6 +128,12 @@ namespace KindleMate2.Application.Services.KM2DB {
             } else {
                 var lookups = listLookups.Where(row => row.WordKey != null && row.Word.Equals(word)).ToList();
 
+                // 指定的词**一条查询记录都没有**:与标注侧同一处理 —— 不写一个只有标题的近乎空文件
+                // 再报成功,直接判失败,由调用方提示"无可导出内容"。
+                if (lookups.Count == 0) {
+                    return false;
+                }
+
                 // 与 clippings 侧同一套消歧:看目标目录判断已有同名文件是不是同一个词(生词没有作者,
                 // 故只有「净化(词) →  (2)(3)…」这一条候选序)。详见 ExportFileNameAllocator。
                 filename = ExportFileNameAllocator.AssignSingleFileName(filePath, word);
@@ -135,18 +141,28 @@ namespace KindleMate2.Application.Services.KM2DB {
                 markdown.Append(StringHelper.BuildMarkdownWithLookups(lookups));
             }
 
+            // 整路径长度兜底:按词导出时文件名已由 ExportFileNameAllocator 按同一预算(最长扩展名
+            // .html)截断;这里再算一次是为了**导出全部**分支的固定名(Vocabs)。
+            filename = StringHelper.TruncateFileNameToFitPath(filePath, filename, FileExtension.HTML);
+            if (filename.Length == 0) {
+                return false;
+            }
+
             if (!Directory.Exists(filePath)) {
                 Directory.CreateDirectory(filePath);
             }
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), Encoding.UTF8);
+            // 一律 UTF-8 **无 BOM**(与 Obsidian / JSON 及标注侧 Markdown 导出同口径;.md 与 .html 都不带,
+            // 2026-10 审阅补齐 —— 原来只改了 .md,同一批产物编码不一致)。
+            var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.MD), markdown.ToString(), utf8NoBom);
 
             var htmlContent = AppConstants.HtmlBegin;
             MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseTableOfContent().Build();
             htmlContent += Markdown.ToHtml(markdown.ToString(), pipeline);
             htmlContent += AppConstants.HtmlEnd;
 
-            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(filePath, filename + FileExtension.HTML), htmlContent, utf8NoBom);
 
             File.WriteAllText(Path.Combine(filePath, AppConstants.CSSFileName), AppConstants.Css);
 
