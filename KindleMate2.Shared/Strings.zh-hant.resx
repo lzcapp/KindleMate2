@@ -240,6 +240,15 @@
   <data name="Imported_X" xml:space="preserve">
     <value>導入</value>
   </data>
+  <data name="Import_Skipped_Clippings_Format" xml:space="preserve">
+    <value>，跳過 {0} 條（日期解析失敗 {1} / 頁碼異常 {2} / 超出上限 {3}）</value>
+  </data>
+  <data name="Import_Skipped_Tables_Format" xml:space="preserve">
+    <value>，跳過 {0} 個資料表</value>
+  </data>
+  <data name="Import_Skipped_Timestamps_Format" xml:space="preserve">
+    <value>，{0} 條記錄因時間戳異常被忽略</value>
+  </data>
   <data name="Confirm_Delete_Clippings_Book" xml:space="preserve">
     <value>確認要刪除這本書中的所有標註嗎？</value>
   </data>

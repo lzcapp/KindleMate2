@@ -1,4 +1,4 @@
-﻿namespace KindleMate2.Shared.Constants {
+namespace KindleMate2.Shared.Constants {
     public static class BriefTypeTranslations {
         /// <summary>
         /// Kindle 各区域 My Clippings 的类型标记(经 ToLower 后做包含匹配)。
@@ -10,6 +10,5 @@
         public static readonly List<string> Highlight = ["highlight", "subrayado", "surlignement", "标注", "的标注", "destaque", "evidenziazione", "markierung", "podkreślenie", "ハイライト", "отрывок"];
         public static readonly List<string> Bookmark = ["bookmark", "marcador", "signet", "书签", "的书签", "segnalibro", "zakładka", "bladwijzer", "lesezeichen", "ブックマーク", "закладка"];
         public static readonly List<string> Cut = ["cut", "文章剪切", "剪切", "剪贴"];
-        public static readonly List<string> Dividers = ["页"];
     }
 }

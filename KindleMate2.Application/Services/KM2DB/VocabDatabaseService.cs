@@ -4,6 +4,7 @@ using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Domain.Entities.VocabDB;
 using KindleMate2.Domain.Interfaces.KM2DB;
 using KindleMate2.Domain.Interfaces.VocabDB;
+using KindleMate2.Infrastructure.Repositories.VocabDB;
 using KindleMate2.Shared.Constants;
 using IVocabLookupRepository = KindleMate2.Domain.Interfaces.VocabDB.ILookupRepository;
 using IKm2DbLookupRepository = KindleMate2.Domain.Interfaces.KM2DB.ILookupRepository;
@@ -15,6 +16,13 @@ namespace KindleMate2.Application.Services.KM2DB {
         /// <summary>上报进度的条数间隔:构建/判重阶段每这么多行切一次 UI 线程。</summary>
         private const int ProgressReportInterval = 100;
 
+        /// <summary>
+        /// <see cref="DateTimeOffset.FromUnixTimeMilliseconds"/> 能表示的上界(9999-12-31T23:59:59.999Z)。
+        /// 源库 timestamp 是 INTEGER,可能被写成 <c>long.MaxValue</c> 之类的脏值;超出它换算会抛异常,
+        /// 让整份导入失败。故先做区间校验,越界按「无时间」处理并计数(见 <see cref="IsConvertibleUnixMilliseconds"/>)。
+        /// </summary>
+        private const long MaxUnixMilliseconds = 253402300799999L;
+
         private readonly IBookInfoRepository _bookInfoRepository;
         private readonly IVocabLookupRepository _vocabLookupRepository;
         private readonly IWordRepository _wordRepository;
@@ -22,12 +30,16 @@ namespace KindleMate2.Application.Services.KM2DB {
         private readonly IKm2DbLookupRepository _km2DbLookupRepository;
         private readonly IVocabRepository _vocabRepository;
 
-        public VocabDatabaseService(IBookInfoRepository bookInfoRepository, IVocabLookupRepository vocabLookupRepository, IWordRepository wordRepository, IKm2DbLookupRepository km2DbLookupRepository, IVocabRepository vocabRepository) {
+        /// <summary>源库(设备 vocab.db)的实表/实列快照;为 null 时(旧调用方)不报"逐表跳过"明细。</summary>
+        private readonly VocabSourceSchema? _sourceSchema;
+
+        public VocabDatabaseService(IBookInfoRepository bookInfoRepository, IVocabLookupRepository vocabLookupRepository, IWordRepository wordRepository, IKm2DbLookupRepository km2DbLookupRepository, IVocabRepository vocabRepository, VocabSourceSchema? sourceSchema = null) {
             _bookInfoRepository = bookInfoRepository;
             _vocabLookupRepository = vocabLookupRepository;
             _wordRepository = wordRepository;
             _km2DbLookupRepository = km2DbLookupRepository;
             _vocabRepository = vocabRepository;
+            _sourceSchema = sourceSchema;
         }
 
         /// <summary>
@@ -47,6 +59,10 @@ namespace KindleMate2.Application.Services.KM2DB {
                 var lookupCount = lookups.Count;
                 var insertedVocabCount = 0;
                 var insertedLookupCount = 0;
+                // 时间戳非法/越界(按「无时间」处理)而被忽略的记录数 —— 与"逐表跳过"一并呈现给用户。
+                var skippedTimestampCount = 0;
+                // 缺表/缺必需列而整表跳过的表数(源库快照为空时按 0 计,不虚报)。
+                var skippedTableCount = _sourceSchema?.UnusableTables().Count ?? 0;
 
                 // 源库 book_key 理论唯一,但重复/空 id 会让 ToDictionary 抛 ArgumentException、
                 // 整份导入失败。这里容忍重复(取首条),空 id 兜底为 ""。
@@ -83,11 +99,22 @@ namespace KindleMate2.Application.Services.KM2DB {
                     // 时间戳无效即跳过。注意**不能只判 null**:源库 schema 里
                     // WORDS.timestamp 是 INTEGER DEFAULT 0,所以"没有时间"的行读出来是 0 而不是 NULL,
                     // 只判 null 会把它们按 1970-01-01 导进来。0 与负数一并视为无效
-                    // (unix 毫秒里负数不可能是合法的阅读时间)。
-                    if (timestamp is null or <= 0 || word == null) {
+                    // (unix 毫秒里负数不可能是合法的阅读时间);超出可表示范围(如 long.MaxValue)同样无效。
+                    if (word == null) {
                         continue;
                     }
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
+                    if (!IsConvertibleUnixMilliseconds(timestamp)) {
+                        skippedTimestampCount++;
+                        continue;
+                    }
+                    DateTimeOffset dateTimeOffset;
+                    try {
+                        dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp!.Value);
+                    } catch (ArgumentOutOfRangeException) {
+                        // 区间校验后理论上到不了这里;留作最后一道防线,避免一条脏值弄挂整份导入。
+                        skippedTimestampCount++;
+                        continue;
+                    }
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     // 持久化键:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域会给出
                     // 非公历年,同一份数据在不同机器上算出不同的 (word_key, timestamp),判重与唯一约束都会错。
@@ -145,11 +172,18 @@ namespace KindleMate2.Application.Services.KM2DB {
                     }
 
                     // 同 WORDS:LOOKUPS.timestamp 也是 INTEGER DEFAULT 0,只判 null 会把
-                    // 默认值当成 1970-01-01。
-                    if (timestamp is null or <= 0) {
+                    // 默认值当成 1970-01-01。越界(如 long.MaxValue)同样按「无时间」处理。
+                    if (!IsConvertibleUnixMilliseconds(timestamp)) {
+                        skippedTimestampCount++;
                         continue;
                     }
-                    DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp);
+                    DateTimeOffset dateTimeOffset;
+                    try {
+                        dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp!.Value);
+                    } catch (ArgumentOutOfRangeException) {
+                        skippedTimestampCount++;
+                        continue;
+                    }
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
                     // 持久化键:必须用 InvariantCulture。CurrentCulture 在泰历/回历等区域会给出
                     // 非公历年,同一份数据在不同机器上算出不同的 (word_key, timestamp),判重与唯一约束都会错。
@@ -185,7 +219,9 @@ namespace KindleMate2.Application.Services.KM2DB {
                 result = new Dictionary<string, string> {
                     { AppConstants.LookupCount, lookupCount.ToString() },
                     { AppConstants.InsertedLookupCount, insertedLookupCount.ToString() },
-                    { AppConstants.InsertedVocabCount, insertedVocabCount.ToString() }
+                    { AppConstants.InsertedVocabCount, insertedVocabCount.ToString() },
+                    { AppConstants.SkippedTableCount, skippedTableCount.ToString() },
+                    { AppConstants.SkippedTimestampCount, skippedTimestampCount.ToString() }
                 };
 
                 return true;
@@ -239,5 +275,12 @@ namespace KindleMate2.Application.Services.KM2DB {
                 progress?.Report(new OperationProgress(stage, processed, total));
             }
         }
+
+        /// <summary>
+        /// 是否是可安全换算的 unix 毫秒:<c>&gt; 0</c> 且在 <see cref="DateTimeOffset"/> 可表示范围内。
+        /// 0 / 负数(源库"没有时间"的默认值)与越界脏值都返回 false,按「无时间」处理,不抛异常。
+        /// </summary>
+        private static bool IsConvertibleUnixMilliseconds(long? value) =>
+            value is > 0 and <= MaxUnixMilliseconds;
     }
 }
