@@ -1,4 +1,4 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
+using KindleMate2.Domain.Entities.KM2DB;
 using KindleMate2.Shared.Constants;
 using Markdig.Helpers;
 using System.Runtime.InteropServices;
@@ -166,7 +166,11 @@ namespace KindleMate2.Infrastructure.Helpers {
             // 必须放在 Trim / 截断 / 去尾点**之后**:顺序反过来时 " CON "、"CON."、"aux " 会先被判为
             // "非保留名",修剪 / 截断之后才落回 "CON"/"aux" —— 恰好生成那个非法名(原实现在 Windows 上
             // 一直如此,2026-09-21 探针实测确认)。判定的对象必须是**最终要落盘的那个字符串**。
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized);
+            //
+            // 基名还要再 TrimEnd(' ', '.') 一次:Windows 解析文件名时会先剥掉基名尾部的空格 / 点,
+            // 于是 "CON .txt" 实际会被当成 "CON.txt" —— 仍是保留名。只按 GetFileNameWithoutExtension
+            // 判(得到基名 "CON ")会漏掉「扩展名之前带空格 / 点」的这一类。
+            var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitized).TrimEnd(' ', '.');
             if (ReservedFileNames.Contains(nameWithoutExtension.ToUpperInvariant())) {
                 sanitized = "_" + sanitized;
             }
@@ -227,6 +231,48 @@ namespace KindleMate2.Infrastructure.Helpers {
                 length += charCount;
             }
             return value[..length];
+        }
+
+        /// <summary>
+        /// 组合后的**整路径**(目录 + 文件名 + 扩展名)允许的最大 UTF-8 字节数。
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SanitizeFilename"/> 管的是**单段文件名**的上限(<see cref="DefaultMaxUtf8Bytes"/>);
+        /// 但整条路径另有一层上限:目录越长,留给文件名的实际预算越少 —— Windows 的经典 MAX_PATH 是
+        /// 260 个 UTF-16 码元(含盘符),导出目录常位于较深的用户目录下,极端长的书名会把整条路径撑过上限,
+        /// 落盘时抛 <see cref="PathTooLongException"/>。这里取 255 字节(与多数文件系统的单段 NAME_MAX 同值)
+        /// 作为**保守**门槛:ASCII 下约等于 255 个码元,中文按字节更早触发截断。正常长度的目录 / 书名远达不到,
+        /// 故常规导出行为与改动前逐字相同。
+        /// </remarks>
+        public const int DefaultMaxPathUtf8Bytes = 255;
+
+        /// <summary>
+        /// 截短 <paramref name="fileName"/>,使 <c>目录 + 文件名 + 扩展名</c> 的**整路径**不超过
+        /// <paramref name="maxPathUtf8Bytes"/> 字节;按码点边界截断,绝不切出半个字符。
+        /// </summary>
+        /// <param name="directory">目标目录(可带或不带结尾分隔符)。</param>
+        /// <param name="fileName">文件名(不含扩展名);超出剩余预算时被截短。</param>
+        /// <param name="extension">扩展名(含前导点,如 <c>.md</c>)。</param>
+        /// <param name="maxPathUtf8Bytes">整路径 UTF-8 字节上限(默认 <see cref="DefaultMaxPathUtf8Bytes"/>)。</param>
+        /// <remarks>
+        /// 目录(含其与文件名之间的那一枚分隔符)与扩展名都**原样计入**,只截文件名 —— 目录由用户 /
+        /// 调用方决定,不该被本 helper 改写。剩余预算不足 1 字节时返回**空串**,由调用方判为"无法落盘"
+        /// (而不是写一个退化名)。截断复用 <see cref="TruncateToUtf8Bytes"/>,与单段文件名同一套字节口径。
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">任一参数为 null 时抛出。</exception>
+        public static string TruncateFileNameToFitPath(
+            string directory,
+            string fileName,
+            string extension,
+            int maxPathUtf8Bytes = DefaultMaxPathUtf8Bytes) {
+            ArgumentNullException.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(extension);
+
+            // +1:Path.Combine 在目录与文件名之间补的那一枚路径分隔符。
+            var overhead = Encoding.UTF8.GetByteCount(directory) + Encoding.UTF8.GetByteCount(extension) + 1;
+            var budget = maxPathUtf8Bytes - overhead;
+            return budget <= 0 ? string.Empty : TruncateToUtf8Bytes(fileName, budget);
         }
 
         /// <summary>
@@ -387,6 +433,165 @@ namespace KindleMate2.Infrastructure.Helpers {
         }
 
         /// <summary>
+        /// 把正文转义成 Markdown **字面量**,使其不会改变导出文档的结构。
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// 修的缺陷:正文原样写入时,行首的 <c>#</c> 会被 Markdig 渲染成一个标题、行首 <c>[1]: url</c>
+        /// 会被当成链接引用定义而整行消失、任意位置的 <c>|</c> 会拆掉表格、裸 <c>&lt;tag&gt;</c>
+        /// 会被当成 HTML 原样透传 —— 导出的排版因此取决于标注内容本身。本方法把这几点转义成字面量
+        /// (其中 <c>|</c> 的写法与 Obsidian 导出对**表格单元格**的处理
+        /// (<c>ObsidianExportWriter.EscapeTableCell</c>)一致;Obsidian 的正文本身仍未转义,见
+        /// <see cref="BuildMarkdownWithLookups"/> 的说明)。
+        /// </para>
+        /// <para>
+        /// 刻意**只**转义会引发结构变化的字符,不做"全 ASCII 标点转义"(那会把普通标点也写成
+        /// <c>\,</c> <c>\.</c> 之类,可读性尽失):
+        /// <list type="bullet">
+        /// <item>行首(至多 3 个前导空格,CommonMark 的块级标记缩进上限)的块级标记:<c>#</c>
+        ///   <c>&gt;</c> <c>-</c> <c>+</c> <c>*</c> <c>_</c> <c>=</c> <c>~</c> <c>`</c>;</item>
+        /// <item>行首的有序列表:数字原样保留、只转义分隔符(<c>1\.</c> / <c>12\)</c>) ——
+        ///   反斜杠转义只对 ASCII 标点有效,转义数字(<c>\1.</c>)会把反斜杠本身渲染出来;</item>
+        /// <item>行首的链接引用定义(<c>[1]: url</c>):转义开头的 <c>[</c>,否则整行会被 Markdig 当定义
+        ///   吃掉、完全不渲染;</item>
+        /// <item>任意位置的行内标记:<c>|</c>(表格)、<c>&lt;</c>(裸 HTML)、<c>\</c>(转义前缀)、
+        ///   <c>`</c>(行内代码)。</item>
+        /// </list>
+        /// 换行原样保留(正文的段落结构不该被压掉)。
+        /// </para>
+        /// <para>
+        /// **已知限制**:4 个及以上前导空格的行是 CommonMark 的缩进代码块,代码块内反斜杠**不生效**,
+        /// 行内转义(<c>\</c> <c>\|</c> <c>\&lt;</c> <c>\`</c>)在那种行里会原样显示反斜杠。正文里的
+        /// 缩进代码块极少见(标注正文通常从行首开始),这里不做"逐行判断是否处于代码块内"的上下文分析,
+        /// 以免引入状态机;块级标记判定已限制在 ≤3 个前导空格,至少不会在代码块里额外转义 <c>#</c> 等。
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="content"/> 为 null 时抛出。</exception>
+        public static string EscapeMarkdownContent(string content) {
+            ArgumentNullException.ThrowIfNull(content);
+
+            if (content.Length == 0) {
+                return content;
+            }
+
+            // 按 '\n' 切行,行尾可能残留的 '\r' 由行内分支原样带过(不参与块级判定)。
+            var lines = content.Split('\n');
+            var sb = new StringBuilder(content.Length + 16);
+            for (var i = 0; i < lines.Length; i++) {
+                if (i > 0) {
+                    sb.Append('\n');
+                }
+                AppendEscapedMarkdownLine(sb, lines[i]);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>转义单行并追加到 <paramref name="sb"/>(见 <see cref="EscapeMarkdownContent"/>)。</summary>
+        private static void AppendEscapedMarkdownLine(StringBuilder sb, string line) {
+            // 前导空格原样保留:CommonMark 允许块级标记前有**至多 3 个**空格;4 个以上就是缩进代码块,
+            // 块内反斜杠不生效(转义反而会显示反斜杠,见 EscapeMarkdownContent 的已知限制说明)。
+            var start = 0;
+            while (start < line.Length && line[start] == ' ') {
+                start++;
+            }
+            if (start > 0) {
+                sb.Append(line, 0, start);
+            }
+
+            var i = start;
+            if (start <= 3 && i < line.Length) {
+                var delimiter = FindOrderedListDelimiter(line, i);
+                if (delimiter >= 0) {
+                    // 有序列表:数字原样输出、**只转义分隔符**("1\." / "12\)")。
+                    // 不能转义首位数字:"\1" 不是 CommonMark 转义(反斜杠只对 ASCII 标点生效),
+                    // 会把反斜杠原样渲染出来(2026-10 审阅实测)。
+                    sb.Append(line, i, delimiter - i);
+                    sb.Append('\\').Append(line[delimiter]);
+                    i = delimiter + 1;
+                } else if (IsMarkdownBlockMarker(line, i)) {
+                    // 先单独转义首字符再跳过:否则它会在下面的行内分支里被**二次**转义(如行首的 '`')。
+                    sb.Append('\\').Append(line[i]);
+                    i++;
+                } else if (IsLinkReferenceDefinition(line, i)) {
+                    // 行首 "[1]: url" 会被解析成链接引用定义,整行不出现在渲染结果里 —— 转义开头的 '['。
+                    sb.Append("\\[");
+                    i++;
+                }
+            }
+            for (; i < line.Length; i++) {
+                switch (line[i]) {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '`': sb.Append("\\`"); break;
+                    case '|': sb.Append("\\|"); break;
+                    case '<': sb.Append("\\<"); break;
+                    default: sb.Append(line[i]); break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// <paramref name="line"/> 从 <paramref name="index"/> 起是否为一个标记**块级**结构的起始。
+        /// </summary>
+        /// <remarks>
+        /// 只判块级:行内 <c>*</c> / <c>_</c> 等不在其中(它们不改变文档结构,转义反而让正常正文变丑)。
+        /// 有序列表按 CommonMark:1–9 位数字 + <c>.</c> 或 <c>)</c> + 空白 / 行尾;转义由调用方
+        /// 改为"数字原样 + 只转义分隔符",见 <see cref="FindOrderedListDelimiter"/>。
+        /// </remarks>
+        private static bool IsMarkdownBlockMarker(string line, int index) {
+            switch (line[index]) {
+                case '#':
+                case '>':
+                case '-':
+                case '+':
+                case '*':
+                case '_':
+                case '=':
+                case '~':
+                case '`':
+                    return true;
+                default:
+                    return FindOrderedListDelimiter(line, index) >= 0;
+            }
+        }
+
+        /// <summary>
+        /// 若 <paramref name="line"/> 从 <paramref name="index"/> 起是 CommonMark 有序列表标记,
+        /// 返回**分隔符**(<c>.</c> 或 <c>)</c>)的下标;否则返回 -1。
+        /// </summary>
+        /// <remarks>
+        /// 规则:1–9 位 ASCII 数字 + <c>.</c>/<c>)</c> + 空白、<c>\r</c> 或行尾。
+        /// 返回分隔符位置是为了只转义它(<c>1\.</c>):反斜杠转义对数字无效,转义数字会显示反斜杠。
+        /// </remarks>
+        private static int FindOrderedListDelimiter(string line, int index) {
+            if (!char.IsAsciiDigit(line[index])) {
+                return -1;
+            }
+            var i = index;
+            while (i < line.Length && char.IsAsciiDigit(line[i])) {
+                i++;
+            }
+            if (i - index > 9 || i >= line.Length || (line[i] != '.' && line[i] != ')')) {
+                return -1;
+            }
+            var after = i + 1;
+            return after >= line.Length || line[after] == ' ' || line[after] == '\t' || line[after] == '\r'
+                ? i
+                : -1;
+        }
+
+        /// <summary>
+        /// <paramref name="line"/> 从 <paramref name="index"/> 起是否像一个**链接引用定义**行
+        /// (<c>[label]: destination</c>)。
+        /// </summary>
+        /// <remarks>
+        /// 只做"够用"的近似:以 <c>[</c> 开头且本行后面出现 <c>]:</c> 即认为会被解析成定义。
+        /// 转义开头的 <c>[</c> 即可让它降级为普通文本(不会再有整行被吞掉的问题)。
+        /// </remarks>
+        private static bool IsLinkReferenceDefinition(string line, int index) =>
+            line[index] == '[' &&
+            line.IndexOf("]:", index, StringComparison.Ordinal) > index;
+
+        /// <summary>
         /// Builds markdown content from a list of clippings for a specific book.
         /// </summary>
         /// <param name="clippings">List of clippings to process</param>
@@ -423,7 +628,9 @@ namespace KindleMate2.Infrastructure.Helpers {
 
                     markdown.AppendLine("**" + clippingLocation + "**");
                     markdown.AppendLine();
-                    markdown.AppendLine(content);
+                    // 正文转义成 Markdown 字面量:否则行首 '#' / 行首链接引用定义 / 任意 '|' / 裸 HTML
+                    // 会让导出排版取决于标注内容(其中 '|' 的写法与 Obsidian 表格单元格一致)。
+                    markdown.AppendLine(EscapeMarkdownContent(content));
                     markdown.AppendLine();
                 }
                 
@@ -439,6 +646,14 @@ namespace KindleMate2.Infrastructure.Helpers {
         /// </summary>
         /// <param name="lookups">List of lookups to process</param>
         /// <returns>StringBuilder containing the formatted markdown</returns>
+        /// <remarks>
+        /// **usage 正文刻意不套 <see cref="EscapeMarkdownContent"/>**(本方法会先往 usage 正文里注入
+        /// <c>**`word`**</c> 高亮,若先整串转义,含 <c>|</c> <c>&lt;</c> <c>\</c> <c>`</c> 的词会匹配不到、
+        /// 丢高亮;若在注入后再整串转义,注入的标记本身又会被转义掉)。代价是 usage 里若出现行首
+        /// <c>#</c> / <c>|</c> / 裸 HTML 等,仍可能影响渲染 —— 属已知限制,留待后续用"分段转义 + 注入
+        /// 高亮"的方式跟进(2026-10 审阅记录)。标注正文走 <see cref="BuildMarkdownWithClippings"/>,
+        /// 那里**已**转义。
+        /// </remarks>
         /// <exception cref="ArgumentNullException">Thrown when lookups is null</exception>
         public static StringBuilder BuildMarkdownWithLookups(List<Lookup> lookups) {
             ArgumentNullException.ThrowIfNull(lookups);

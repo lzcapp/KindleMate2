@@ -1,5 +1,3 @@
-﻿using KindleMate2.Domain.Entities.KM2DB;
-
 namespace KindleMate2.Domain.Entities.MyClippings {
     public class MyClipping {
         public string Header { get; set; } = string.Empty;
@@ -11,13 +9,6 @@ namespace KindleMate2.Domain.Entities.MyClippings {
     public class Header {
         public string Title { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
-    }
-    
-    public class Metadata {
-        public BriefType Type { get; set; }
-        public int Page { get; set; } = -1;
-        public Location Location { get; set; } = new Location();
-        public DateTime? DateOfCreation { get; set; }
     }
     
     public class Location {

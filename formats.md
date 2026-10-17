@@ -186,6 +186,9 @@ LOOKUPS.dict_key  →  DICT_INFO.id
    "显式写入的 NULL" 与 "schema 默认的 0"。
 7. **表名全大写**：`WORDS` / `LOOKUPS` / `BOOK_INFO` / `DICT_INFO` / `METADATA` / `VERSION`。
 8. **空字符串也算"外键成立"**：`DICT_INFO.id` 与 `LOOKUPS.dict_key` 都可能是空字符串。
+9. **源库表/列不保证齐全**：不同固件 / 越狱插件 / 被截断的库都可能缺表缺列。导入按
+   `sqlite_master` + `PRAGMA table_info` 探测后**逐表降级**（缺表或缺必需列的表跳过，
+   缺可选列的表按实列导入），源库以**只读**方式打开，不因一条 `no such column` 整份失败。
 
 ---
 
