@@ -30,7 +30,7 @@ jobs:
       #     框架依赖变体的用户端要求随之变为 .NET 10 Desktop Runtime,
       #     而 .NET 8 运行时本身在 2026-11-10 停更,故该变化是收拢而非新增负担。
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -349,7 +349,7 @@ jobs:
 
       # SDK 版本同 build-and-test:必须 10.x(Avalonia 源生成器要求 Roslyn >= 4.14)。
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
 

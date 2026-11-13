@@ -115,7 +115,7 @@ jobs:
           ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
           cache: true
@@ -190,7 +190,7 @@ jobs:
           ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           # 必须 10.x(见文件头变更 D):Avalonia 12 的源生成器要求 Roslyn >= 4.14。
           dotnet-version: 10.0.x
@@ -256,7 +256,7 @@ jobs:
           ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -343,7 +343,7 @@ jobs:
           ref: refs/tags/${{ needs.version.outputs.version }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
 
